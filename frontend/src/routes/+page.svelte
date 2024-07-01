@@ -1,8 +1,22 @@
 <script>
     let board = Array(3).fill("").map(() => Array(3).fill(""));
 
-    function handleClick(row, col) {
-        console.log(`Clicked on row ${row} and col ${col}`);
+    async function handleClick(row, col) {
+        const response = await fetch('http://127.0.0.1:3000/tic-tac-toe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ row, col }),
+        });
+
+        if (!response.ok) {
+            console.error('HTTP error', response.status);
+            return;
+        }
+
+        const updatedBoard = await response.json();
+        board = updatedBoard;
     }
 </script>
 
