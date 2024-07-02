@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-              cd /var/www
+              cd ~/www
               rm -rf app
               tar xzf app_package.tgz
               mv app_package app
