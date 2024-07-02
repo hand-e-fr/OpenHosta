@@ -19,7 +19,8 @@ jobs:
     - name: Distribute app
       run: |
         mkdir -p app_package
-        cp -R * app_package
+        shopt -s extglob
+        cp -R !(app_package) app_package
         tar czf app_package.tgz app_package
         rm -rf app_package
 
