@@ -24,22 +24,20 @@ jobs:
         tar czf app_package.tgz app_package
         rm -rf app_package
 
+
+#        host: ${{ secrets.HOST }}
+#        username: ${{ secrets.USERNAME }}
+#        key: ${{ secrets.SSH_KEY }}
+
     - name: Deploy app
-      uses: appleboy/ssh-action@master
+      uses: pierrickdelrieu/scp-action@v0.1.0
       with:
         host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          pwd
-          ls -la
-          cd ~/www
-          pwd
-          ls -la
-          rm -rf app
-          tar xzf app_package.tgz
-          mv app_package app
-          rm app_package.tgz
+        ssh_port: ${{ secrets.SSH_PORT }}
+        ssh_username: ${{ secrets.USERNAME }}
+        ssh_key: ${{ secrets.SSH_KEY }}
+        source: app_package.tgz
+        target: /home/ubuntu/app_package.tgz
 
     - name: Clean up
       run: |
