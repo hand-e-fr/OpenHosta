@@ -1,11 +1,17 @@
-FROM node:16-slim
+FROM node:lts-alpine as build
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY package*.json ./
-
-RUN npm install --only=production
-
+COPY package.json .
+COPY package-lock.json .
+RUN npm install
 COPY . .
+RUN npm run build
 
-CMD [ "npm", "start" ]
+FROM node:lts-alpine AS production
+COPY --from=build /app/build .
+COPY --from=build /app/package.json .
+COPY --from=build /app/package-lock.json .
+RUN npm ci --omit dev
+EXPOSE 3000
+CMD ["node", "."]
