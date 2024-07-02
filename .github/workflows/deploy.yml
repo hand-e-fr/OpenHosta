@@ -31,13 +31,11 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /var/www
-            rm -rf app
-            mkdir app
-            tar -xzf app.tar.gz -C app
-            rm app.tar.gz
-            cd app
-            docker-compose up -d
+              cd /var/www
+              rm -rf app
+              tar xzf app_package.tgz
+              mv app_package app
+              rm app_package.tgz
 
     - name: Clean up
       run: |
