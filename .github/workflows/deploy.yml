@@ -47,7 +47,7 @@ jobs:
           if [ -d ~/www/app ]; then
             rm -rf app
           fi
-          tar xzf app_package.tgz/
+          tar xzf app_package.tgz
           mv app_package app
           rm app_package.tgz
     - name: Clean up
