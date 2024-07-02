@@ -29,8 +29,8 @@ jobs:
         port: ${{ secrets.PORT }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
-        source: app_package.tgz
-        target: ~/www/app_package.tgz
+        source: "app_package.tgz"
+        target: ~/www/
     - name: Deploy app
       uses: appleboy/ssh-action@master
       with:
@@ -43,7 +43,7 @@ jobs:
           docker-compose down
           cd ..
           rm -rf app
-          tar xzf app_package.tgz
+          tar xzf app_package.tgz/
           mv app_package app
           rm app_package.tgz
     - name: Clean up
