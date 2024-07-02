@@ -50,6 +50,8 @@ jobs:
           tar xzf app_package.tgz
           mv app_package app
           rm app_package.tgz
+          cd app
+          docker-compose up -d
     - name: Clean up
       run: |
           rm -rf app
