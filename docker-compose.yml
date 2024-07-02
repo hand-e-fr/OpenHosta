@@ -3,8 +3,8 @@ services:
   back:
     build: ./backend
     restart: on-failure
-    env_file:
-      - .env
+#    env_file:
+#      - .env
     volumes:
       - .:/back
     ports:
