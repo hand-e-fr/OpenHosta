@@ -36,7 +36,7 @@
                     alert('Well played! You won!');
                 } else if (response.winner === 1) {
                     alert('You lost! Better luck next time!');
-                } else if (response.winner === 3) {
+                } else if (response.winner === 0) {
                     alert('It\'s a draw!');
                 }
                 isPlayerX = !isPlayerX;
