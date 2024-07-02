@@ -16,26 +16,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Distribute app
-      run: |
-        mkdir -p app_package
-        shopt -s extglob
-        cp -R !(app_package) app_package
-        tar czf app_package.tgz app_package
-        rm -rf app_package
-
     - name: Deploy app
       uses: appleboy/ssh-action@master
       with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-              cd ~/www
-              rm -rf app
-              tar xzf app_package.tgz
-              mv app_package app
-              rm app_package.tgz
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          pwd
+          ls -la
+          cd ~/www
+          pwd
+          ls -la
+          rm -rf app
+          tar xzf app_package.tgz
+          mv app_package app
+          rm app_package.tgz
 
     - name: Clean up
       run: |
