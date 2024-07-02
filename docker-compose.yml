@@ -3,6 +3,8 @@ services:
   back:
     build: ./backend
     restart: on-failure
+    env_file:
+      - .env
     volumes:
       - .:/back
     ports:
@@ -10,6 +12,8 @@ services:
   front:
     build: ./frontend
     restart: on-failure
+    env_file:
+      - .env
     volumes:
       - .:/front
     depends_on:
