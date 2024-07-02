@@ -12,8 +12,8 @@ services:
   front:
     build: ./frontend
     restart: on-failure
-    env_file:
-      - .env
+#    env_file:
+#      - .env
     volumes:
       - .:/front
     depends_on:
