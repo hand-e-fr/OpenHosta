@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Distribute app
+      run: |
+        tar -czf app.tar.gz .
+
+    - name: Deploy app
+      uses: appleboy/ssh-action@master
+      with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /var/www
+            rm -rf app
+            mkdir app
+            tar -xzf app.tar.gz -C app
+            rm app.tar.gz
+            cd app
+            docker-compose up -d
+
+    - name: Clean up
+      run: |
+          rm -rf app
