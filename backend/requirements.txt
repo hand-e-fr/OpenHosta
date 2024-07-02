@@ -1,3 +1,4 @@
 Flask==3.0.3
 Werkzeug==3.0.3
-requests
+requests==2.31.0
+flask-cors==4.0.1

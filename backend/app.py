@@ -1,29 +1,60 @@
+import sys
+import json
+
 from flask import Flask
-from llm import emulator
-import random
-import string
+from flask import request
+from flask_cors import CORS
+from game import Game_tic_tac_toe
 
 app = Flask(__name__)
-llm = emulator()
+CORS(app)
+game = Game_tic_tac_toe()
 
 
-@llm.emulate
-def say_hello(first_letter: str) -> str:
-    """
-    This function returns a greeting message.
-    And the first word of the message must start with the first letter.
-    """
-    pass
+class GameMove:
+    def __init__(self, board, col, player, row):
+        self.board = board
+        self.col = col
+        self.player = player
+        self.row = row
+
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(**data)
 
 
-@app.route('/')
-def hello_world():
-    return say_hello(random.choice(string.ascii_uppercase))
+class GameMoveResponse:
+    def __init__(self, board, winner):
+        self.board = board
+        self.winner = winner
+
+    def to_json(self):
+        return json.dumps(self.__dict__)
 
 
-@app.route('/tic-tac-toe', methods=['POST'])
-def tic_tac_toe():
+class MyMove:
+    def __init__(self, board, played_case):
+        self.board = board
+        self.played_case = played_case
 
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(**data)
+
+
+@app.route('/tic-tac-toe/gpt_play', methods=['POST'])
+def tic_tac_toe_gpt():
+    move = GameMove.from_json(request.data)
+    winner = game.check_winner(move.board)
+    if winner != 0:
+        return GameMoveResponse(move.board, winner).to_json()
+    print(f"[DEBUG] move.board before: {move.board}", file=sys.stderr)
+    move.board = game.find_next_move(move.board)
+    print(f"[DEBUG] move.board after: {move.board}\n", file=sys.stderr)
+    winner = game.check_winner(move.board)
+    return GameMoveResponse(move.board, winner).to_json()
 
 
 if __name__ == '__main__':

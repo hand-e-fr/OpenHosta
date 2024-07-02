@@ -7,24 +7,41 @@
         if (board[row][col] !== ' ' || !isPlayerX) {
             return;
         }
-        buttonElement.disabled = true;
-        buttonElement.textContent = 'X';
+        buttonElement.textContent = board[row][col] = 'X';
         isPlayerX = !isPlayerX;
-        // const response = await fetch('http://127.0.0.1:3000/tic-tac-toe', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify({ row, col }),
-        // });
-        //
-        // if (!response.ok) {
-        //     console.error('HTTP error', response.status);
-        //     return;
-        // }
-        //
-        // const updatedBoard = await response.json();
-        // board = updatedBoard;
+        const response = await fetch('http://127.0.0.1:5000/tic-tac-toe/gpt_play', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ board, row, col, player: 'X' }),
+        })
+            .then(response => response.json())
+            .then(response => {
+                console.log(response)
+                try {
+                    board = Array.from(response.board);
+                } catch (e) {
+                    console.log(e);
+                    const emptyCells = [];
+                    board.forEach((row, i) => {
+                        row.forEach((cell, j) => {
+                            if (cell === ' ') emptyCells.push([i, j]);
+                        });
+                    });
+                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    board[randomCell[0]][randomCell[1]] = 'O';
+                }
+                if (response.winner === 2) {
+                    alert('Well played! You won!');
+                } else if (response.winner === 1) {
+                    alert('You lost! Better luck next time!');
+                } else if (response.winner === 3) {
+                    alert('It\'s a draw!');
+                }
+                isPlayerX = !isPlayerX;
+            })
+            .catch(err => console.log(err));
     }
 </script>
 
@@ -56,7 +73,6 @@
         height: 150px;
         width: 150px;
         font-size: 2rem;
-        background: linear-gradient(to right, #b11aff, #db8cff);
         border: none;
         color: white;
         border-radius: 50px;
@@ -108,6 +124,9 @@
                     bind:this={buttonsRefs[i][j]}
                     on:click={() => handleClick(i, j, buttonsRefs[i][j])}
                     disabled={cell !== ' '}
+                    style="background: {cell === 'X' ? 'linear-gradient(to right, #ff1a1a, #ff8c8c)' :
+                                        cell ==='O' ? 'linear-gradient(to right, #6aff1a, #a7ff8c)' :
+                                        'linear-gradient(to right, #b11aff, #db8cff)'};"
                 >
                     {cell}
                 </button>
