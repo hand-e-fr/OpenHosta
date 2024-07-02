@@ -18,7 +18,7 @@ jobs:
 
     - name: Distribute app
       run: |
-        tar -czf app.tar.gz .
+        tar --warning=no-file-changed -czf app.tar.gz .
 
     - name: Deploy app
       uses: appleboy/ssh-action@master
