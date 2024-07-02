@@ -7,7 +7,7 @@ from flask_cors import CORS
 from game import Game_tic_tac_toe
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins="http://game.openhosta.com")
 game = Game_tic_tac_toe()
 
 
