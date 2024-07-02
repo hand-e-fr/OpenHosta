@@ -48,7 +48,7 @@ class MyMove:
 def tic_tac_toe_gpt():
     move = GameMove.from_json(request.data)
     winner = game.check_winner(move.board)
-    if winner != 0:
+    if winner != -1:
         return GameMoveResponse(move.board, winner).to_json()
     print(f"[DEBUG] move.board before: {move.board}", file=sys.stderr)
     move.board = game.find_next_move(move.board)
