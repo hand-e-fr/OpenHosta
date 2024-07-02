@@ -39,10 +39,14 @@ jobs:
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          cd ~/www/app
-          docker-compose down
-          cd ..
-          rm -rf app
+          if [ -d ~/www/app ]; then
+            cd ~/www/app
+            docker-compose down
+          fi
+          cd ~/www
+          if [ -d ~/www/app ]; then
+            rm -rf app
+          fi
           tar xzf app_package.tgz/
           mv app_package app
           rm app_package.tgz
