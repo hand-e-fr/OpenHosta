@@ -37,7 +37,7 @@ When you produce an answer, you estimate the confidence level:
   - "medium-unique": You did your best, and with the provided description and your knowledge,  you are pretty sure this answer is the unique and valid answer.
   - "high-instance": You did your best, and you are sure that your provided answer is a valid answer. It is a well known function or you can easely implement a python code that yield elements from de list of valid answers. this answer is randomly chosen from the list of valid answers.
   - "high-unique": You did your best, and you are sure that your provided answer is the unique valid answer. It is a well known function or you can easely implement a python code that solve the question and calculate this answer given this input.
-
+  
 If outout is documented as python structure, you translates it to JSON.
 You encode the return in valid JSON format, without comment, using the following format:
 {"return":..., "confidence":...}
