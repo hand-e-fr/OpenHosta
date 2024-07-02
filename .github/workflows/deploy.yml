@@ -51,7 +51,7 @@ jobs:
           mv app_package app
           rm app_package.tgz
           cd app
-          docker-compose up -d
+          sudo docker-compose up --build -d
     - name: Clean up
       run: |
           rm -rf app
