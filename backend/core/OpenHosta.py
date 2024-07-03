@@ -2,14 +2,16 @@ import inspect
 import requests
 import json
 
-
-
-class emulator:
+class emulator():
     __last_return__ = None
     __last_content__ = None
     __last_data__ = { "return": None, "confidence": "low" }
 
     _default_api_key = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
+    # ADD by léandre for debug
+    __resp__ = None
+    __JsonN__ = None
+    __output__ = None
 
     def __init__(self, api_key=None):
         if api_key == None:
@@ -38,7 +40,7 @@ class emulator:
         "high-instance": You did your best, and you are sure that your provided answer is a valid answer. It is a well-known function or you can easily implement a Python code that yields elements from the list of valid answers. This answer is randomly chosen from the list of valid answers.
         "high-unique": You did your best, and you are sure that your provided answer is the unique valid answer. It is a well-known function or you can easily implement a Python code that solves the question and calculates this answer given this input.
 
-    If the output is documented as a Python structure, you should translate it to JSON.
+    If the output is documented as a Python structure, you should need to translate it to JSON.
     You should encode the return in valid JSON format, without comments, using the following format:
     {"return":..., "confidence":...}
 
@@ -62,7 +64,7 @@ class emulator:
 
     result = example_function(3, {"value": 7})
 
-    Expected JSON output:
+    Expected only JSON output:
 
     {"return": 10, "confidence": "medium-unique"}
 
@@ -80,7 +82,9 @@ This is the function documentation:
                         "type": "text",
                         "text": function_call
                         }
-                    ]}]
+                    ]}],
+            # Specifiy the output format in JSON
+            "response_format": {"type" : "json_object"}
         }
 
         headers = {
@@ -96,6 +100,8 @@ This is the function documentation:
         self.__last_return__ = {"code": response.status_code,
                            "text": response.text}
 
+        #ADD for debug by léandre
+        self.__resp__ = response
 
         if response.status_code == 200:
             data = response.json()  # Assuming the response is in JSON format
@@ -104,7 +110,11 @@ This is the function documentation:
             self.__last_content__ = json_string
             try:
                 l_ret_data = json.loads(json_string)
+                # Add by léandre for debug
+                self.__jsonN__ = l_ret_data
+
             except json.JSONDecodeError as e:
+                print(f"JSONDecodeError: {e}")
                 l_cleand = "\n".join(json_string.split('\n')[1:-1])
                 l_ret_data = json.loads(l_cleand)
 
@@ -144,9 +154,9 @@ This is the function documentation:
             try:
                 result = self.gpt4o(function_def, function_call)
             except:
-                print(function_def, function_call)
+                print(Exception)
+                print("error", function_call)
                 result = None
-
             return result
         return wrapper
 
@@ -162,3 +172,4 @@ def test():
         It adds two numbers.
         """
         pass
+    # print(llm.jsonN)
