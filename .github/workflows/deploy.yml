@@ -15,26 +15,43 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
     - name: Distribute app
       run: |
-        tar --warning=no-file-changed -czf app.tar.gz .
-
+        mkdir -p app_package
+        shopt -s extglob
+        cp -R !(app_package) app_package
+        tar czf app_package.tgz app_package
+        rm -rf app_package
+    - name: Transfer app
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        port: ${{ secrets.PORT }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        source: "app_package.tgz"
+        target: ~/www/
     - name: Deploy app
       uses: appleboy/ssh-action@master
       with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /var/www
+        host: ${{ secrets.HOST }}
+        port: ${{ secrets.PORT }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          if [ -d ~/www/app ]; then
+            cd ~/www/app
+            docker-compose down
+          fi
+          cd ~/www
+          if [ -d ~/www/app ]; then
             rm -rf app
-            mkdir app
-            tar -xzf app.tar.gz -C app
-            rm app.tar.gz
-            cd app
-            docker-compose up -d
-
+          fi
+          tar xzf app_package.tgz
+          mv app_package app
+          rm app_package.tgz
+          cd app
+          sudo docker-compose up --build -d
     - name: Clean up
       run: |
           rm -rf app
