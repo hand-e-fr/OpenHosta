@@ -9,7 +9,7 @@
         }
         buttonElement.textContent = board[row][col] = 'X';
         isPlayerX = !isPlayerX;
-        const response = await fetch('http://127.0.0.1:5000/tic-tac-toe/gpt_play', {
+        const response = await fetch('http://game.openhosta.com/api/tic-tac-toe/gpt_play', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
