@@ -68,8 +68,7 @@ class emulator:
                     "role": "system",
                     "content": [{
                         "type": "text",
-                        "text": emulator_pre_prompt + "---\n" + function_doc + "\n---"}]},
-                {
+                        "text":emulator_pre_prompt + "---\n" + function_doc + "\n---"}]},{
                     "role": "user",
                     "content": [
                         {
@@ -78,6 +77,7 @@ class emulator:
                         }
                     ]}]
         }
+
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}"
@@ -111,6 +111,9 @@ class emulator:
             print(f"Error {response.status_code}: {response.text}")
             self.__last_data__ = { "return": None, "confidence": "low" }
             l_ret = None
+
+
+
         return(l_ret)
 
     def emulate(self, func):
@@ -128,9 +131,6 @@ class emulator:
             func_return = f" -> {sig.return_annotation.__name__}" if sig.return_annotation != inspect.Signature.empty else ""
             function_def = f"def {func_name}({func_params}):{func_return}\n    '''\n    {func.__doc__}\n    '''"
 
-            func_prototype = f"def {func_name}({func_params}):{func_return}\n"
-            func_doc = func.__doc__
-
             # Construct the function call string
             func_call_args = ", ".join([str(value) for value in bound_args.arguments.values()])
             function_call = f"{func_name}({func_call_args})"
@@ -145,13 +145,15 @@ class emulator:
             return result
         return wrapper
 
-llm=emulator()
 
-@llm.emulate
-def add(a:int, b:int) -> int:
-    """
-    It multiply two numbers an substract.
-    """
-    pass
+def test():
+    llm=emulator()
 
-print(add(2, 3))
+    # Exemple d'utilisation du décorateur
+    @llm.emulate
+    def example_function(a:int, b:dict) -> int:
+        """
+        This is an example function.
+        It adds two numbers.
+        """
+        pass
