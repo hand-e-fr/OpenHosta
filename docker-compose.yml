@@ -12,6 +12,8 @@ services:
     restart: on-failure
 #    env_file:
 #      - .env
+    environment:
+      - PORT=3001
     volumes:
       - .:/front
     depends_on:
@@ -25,3 +27,15 @@ services:
     depends_on:
       - front
       - back
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_ROOT_URL=http://localhost/grafana/
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:
