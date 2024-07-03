@@ -43,8 +43,11 @@ class MyMove:
         data = json.loads(json_str)
         return cls(**data)
 
+@app.route('/api/')
+def hello_world():
+    return 'Hello, World!'
 
-@app.route('/tic-tac-toe/gpt_play', methods=['POST'])
+@app.route('/api/tic-tac-toe/gpt_play', methods=['POST'])
 def tic_tac_toe_gpt():
     move = GameMove.from_json(request.data)
     winner = game.check_winner(move.board)
