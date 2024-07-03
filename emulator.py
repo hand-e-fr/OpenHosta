@@ -68,14 +68,14 @@ class emulator:
                     "role": "system",
                     "content": [{
                         "type": "text",
-                        "text":emulator_pre_prompt + "---\n" + function_doc + "\n---"}]},{
+                        "text":emulator_pre_prompt + "---\n" + function_doc + "\n---"
+                    }]},{
                     "role": "user",
                     "content": [
                         {
                         "type": "text",
                         "text": function_call
-                        }
-                    ]}]
+                    }]}]
         }
 
         headers = {
