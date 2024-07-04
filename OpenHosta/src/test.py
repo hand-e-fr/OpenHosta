@@ -1,11 +1,12 @@
-import emulator as emu
-import enhancer as enh
+import OpenHosta as oh
 
-@enh.enhancer().enhance
-def compute(a:int, b:int)->int:
+llm = oh.emulator()
+
+@llm.enhance
+def compute(string:str)->str:
     """
-    The function sums the two numbers and multiplies the difference
+    This function reverse the string
     """
     pass
 
-compute(2, 3)
+print(compute("Hello World !"))
