@@ -9,7 +9,7 @@
         }
         buttonElement.textContent = board[row][col] = 'X';
         isPlayerX = !isPlayerX;
-        const response = await fetch('http://127.0.0.1:5000/tic-tac-toe/gpt_play', {
+        const response = await fetch('http://game.openhosta.com/api/tic-tac-toe/gpt_play', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -30,7 +30,7 @@
                         });
                     });
                     const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                    board[randomCell[0]][randomCell[1]] = 'O';
+                    board[randomCell[0]][randomCell[1]] = '0';
                 }
                 if (response.winner === 2) {
                     alert('Well played! You won!');
@@ -125,7 +125,7 @@
                     on:click={() => handleClick(i, j, buttonsRefs[i][j])}
                     disabled={cell !== ' '}
                     style="background: {cell === 'X' ? 'linear-gradient(to right, #ff1a1a, #ff8c8c)' :
-                                        cell ==='O' ? 'linear-gradient(to right, #6aff1a, #a7ff8c)' :
+                                        cell ==='0' ? 'linear-gradient(to right, #6aff1a, #a7ff8c)' :
                                         'linear-gradient(to right, #b11aff, #db8cff)'};"
                 >
                     {cell}

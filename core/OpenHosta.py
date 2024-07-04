@@ -2,14 +2,23 @@ import inspect
 import requests
 import json
 
+import uuid
+import time
+import hashlib
 
+class emulator():
+    # General variables
+    __version__ = 0.1
 
-class emulator:
     __last_return__ = None
     __last_content__ = None
     __last_data__ = { "return": None, "confidence": "low" }
 
     _default_api_key = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
+    # ADD by léandre for debug
+    __resp__ = None
+    __JsonN__ = None
+    __output__ = None
 
     def __init__(self, api_key=None):
         if api_key == None:
@@ -38,7 +47,7 @@ class emulator:
         "high-instance": You did your best, and you are sure that your provided answer is a valid answer. It is a well-known function or you can easily implement a Python code that yields elements from the list of valid answers. This answer is randomly chosen from the list of valid answers.
         "high-unique": You did your best, and you are sure that your provided answer is the unique valid answer. It is a well-known function or you can easily implement a Python code that solves the question and calculates this answer given this input.
 
-    If the output is documented as a Python structure, you should translate it to JSON.
+    If the output is documented as a Python structure, you should need to translate it to JSON.
     You should encode the return in valid JSON format, without comments, using the following format:
     {"return":..., "confidence":...}
 
@@ -62,7 +71,7 @@ class emulator:
 
     result = example_function(3, {"value": 7})
 
-    Expected JSON output:
+    Expected only JSON output:
 
     {"return": 10, "confidence": "medium-unique"}
 
@@ -80,7 +89,9 @@ This is the function documentation:
                         "type": "text",
                         "text": function_call
                         }
-                    ]}]
+                    ]}],
+            # Specifiy the output format in JSON
+            "response_format": {"type" : "json_object"}
         }
 
         headers = {
@@ -96,6 +107,8 @@ This is the function documentation:
         self.__last_return__ = {"code": response.status_code,
                            "text": response.text}
 
+        #ADD for debug by léandre
+        self.__resp__ = response
 
         if response.status_code == 200:
             data = response.json()  # Assuming the response is in JSON format
@@ -104,7 +117,11 @@ This is the function documentation:
             self.__last_content__ = json_string
             try:
                 l_ret_data = json.loads(json_string)
+                # Add by léandre for debug
+                self.__jsonN__ = l_ret_data
+
             except json.JSONDecodeError as e:
+                print(f"JSONDecodeError: {e}")
                 l_cleand = "\n".join(json_string.split('\n')[1:-1])
                 l_ret_data = json.loads(l_cleand)
 
@@ -144,12 +161,78 @@ This is the function documentation:
             try:
                 result = self.gpt4o(function_def, function_call)
             except:
-                print(function_def, function_call)
+                print(Exception)
+                print("error", function_call)
                 result = None
-
             return result
+
         return wrapper
 
+
+    def oracle(self, func):
+    
+        def get_output(func, *args, **kwargs):
+            data_function, tag_output = func(*args, **kwargs)
+            return data_function, tag_output
+
+        def get_hash_function(function_def):
+            return (hashlib.md5(function_def.encode()).hexdigest())
+
+        def get_timestamp():
+            return int(time.time())
+
+        def create_uidt():
+            return str(uuid.uuid4())
+
+        def wrapper_version(*args, **kwargs):
+            return self.__version__
+
+
+        def wrapper_function(*args, **kwargs):
+            # Obtenir la signature de la fonction
+            sig = inspect.signature(func)
+            
+            # Affiche les valeurs des arguments
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            
+            # Construct the function definition
+            func_name = func.__name__
+            
+            func_params = ", ".join(
+                [f"{param_name}: {param.annotation.__name__}" if param.annotation != inspect.Parameter.empty else param_name 
+                 for param_name, param in sig.parameters.items()]
+            )
+            
+            func_return = f" -> {sig.return_annotation.__name__}" if sig.return_annotation != inspect.Signature.empty else ""
+            
+            function_def = f"def {func_name}({func_params}):{func_return}\n    '''\n    {func.__doc__}\n    '''"
+
+            # Construct the function call string
+            func_call_args = ", ".join([str(value) for value in bound_args.arguments.values()])
+            function_call = f"{func_name}({func_call_args})"
+
+            return function_call, function_def
+
+
+        def create_json(*args, **kwargs):
+
+            function_call, function_def = wrapper_function(*args, **kwargs)
+            data_function, tag_output = get_output(func, *args, **kwargs)
+
+            data = {
+                "Version" : wrapper_version(*args, **kwargs),
+                "Id session": create_uidt(),
+                "Timestamp": get_timestamp(),
+                "func_call": function_call,
+                "func_hash": get_hash_function(function_def),
+                "Tag output": tag_output,
+                "Data": data_function
+            }
+            json_object = json.dumps(data, indent = 5)
+            return json_object
+
+        return create_json
 
 def test():
     llm=emulator()
@@ -162,3 +245,4 @@ def test():
         It adds two numbers.
         """
         pass
+    # print(llm.jsonN)
