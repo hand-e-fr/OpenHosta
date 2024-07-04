@@ -1,6 +1,4 @@
-Oui, bien sûr. Voici quelques améliorations possibles pour rendre la documentation plus claire et concise, tout en conservant le contenu et la structure d'origine.
-
-### Documentation de l'Emulator
+# Documentation OpenHosta
 
 Bienvenue dans la documentation d'OpenHosta, un outil puissant qui facilite l'intégration de fonctions spécifiques à un projet tout en permettant aux débutants de comprendre clairement le projet.
 
