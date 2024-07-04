@@ -144,16 +144,4 @@ class emulator:
 
             return result
         return wrapper
-
-
-def test():
-    llm=emulator()
-
-    # Exemple d'utilisation du décorateur
-    @llm.emulate
-    def example_function(a:int, b:dict) -> int:
-        """
-        This is an example function.
-        It adds two numbers.
-        """
-        pass
+    
