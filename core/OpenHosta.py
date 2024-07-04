@@ -233,16 +233,3 @@ This is the function documentation:
             return json_object
 
         return create_json
-
-def test():
-    llm=emulator()
-
-    # Exemple d'utilisation du décorateur
-    @llm.emulate
-    def example_function(a:int, b:dict) -> int:
-        """
-        This is an example function.
-        It adds two numbers.
-        """
-        pass
-    # print(llm.jsonN)

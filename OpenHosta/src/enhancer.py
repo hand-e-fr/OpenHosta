@@ -39,16 +39,11 @@ make it logical and easy to look at. You have to write it in mermaid syntax.
 You must not use the markdown syntax}
 "
 """
-# se documenter sur le rôle assistant
-# créer la fonction de parsing
-# créer la fonction de retour
-# créer la visualtion de diagramme et l'expérience utilisateur
-# faire la gestion d'erreur
 
 
 class enhancer:
-    __last_return__: str = None
-    __last_data__: dict = {
+    __last_enh_return__: str = None
+    __last_enh__: dict = {
         "enhanced": None,
         "critique": None,
         "suggested": None,
@@ -74,7 +69,7 @@ class enhancer:
         )
         self.top_d = enhancer._default_diversity if diversity == None else diversity
 
-    def ai_call_request(self, sys_prompt: str, func_prot: str, func_doc: str):
+    def ai_call_enh(self, sys_prompt: str, func_prot: str, func_doc: str):
         api_key = self.api_key
         url = "https://api.openai.com/v1/chat/completions"
 
@@ -133,7 +128,7 @@ class enhancer:
         for line in response.splitlines():
             if line.startswith("->"):
                 if current_section:
-                    self.__last_data__[current_section] = "\n".join(
+                    self.__last_enh__[current_section] = "\n".join(
                         current_text
                     ).strip()
                 current_section = line[3:].strip(":")
@@ -141,24 +136,28 @@ class enhancer:
             else:
                 current_text.append(line)
         if current_section:
-            self.__last_data__[current_section] = "\n".join(current_text).strip()
-            
-    def create_mermaid_file(self, mmd_script:str, name:str)->None:
+            self.__last_enh__[current_section] = "\n".join(current_text).strip()
+
+    def create_mermaid_file(self, mmd_script: str, name: str) -> None:
         if not mmd_script:
             raise ValueError("[MMD_ERROR] ValueError -> mmd_script")
         if not name:
             raise ValueError("[MMD_ERROR] ValueError -> mmd_script")
-    
+
         try:
             with open(f"{name}_diagram.mmd", "w") as file:
                 try:
                     file.write(mmd_script)
                 except:
-                    sys.stderr.write("[MMD_ERROR] An error occured when writing .mmd file")
+                    sys.stderr.write(
+                        "[MMD_ERROR] An error occured when writing .mmd file"
+                    )
         except IOError as e:
             sys.stderr.write(f"[MMD_ERROR] {e}")
-            
-    def create_help_file(self, name:str, enhanced:str, critique:str, suggested:str)->None:
+
+    def create_help_file(
+        self, name: str, enhanced: str, critique: str, suggested: str
+    ) -> None:
         if not enhanced and not type(enhanced) == str:
             raise ValueError("[ENH_ERROR] ValueError -> enhanced")
         if not critique and not type(critique) == str:
@@ -174,7 +173,9 @@ class enhancer:
                     file.write(f"- **How to improve your prompt:**\n{critique}\n")
                     file.write(f"- **Improvemed prompt suggestion:**\n{suggested}\n")
                 except:
-                    sys.stderr.write("[ENH_ERROR] An error occured when writing .mmd file")
+                    sys.stderr.write(
+                        "[ENH_ERROR] An error occured when writing .mmd file"
+                    )
         except IOError as e:
             sys.stderr.write(f"[ENH_ERROR] {e}")
 
@@ -186,13 +187,18 @@ class enhancer:
             sig = inspect.signature(func)
             func_prot = f"def {func_name} {sig}:\n"
 
-            self.__last_return__ = self.ai_call_request(
+            self.__last_enh_return__ = self.ai_call_enh(
                 enhancer_pre_prompt, func_prot, func_doc
             )
-            self.parse_data(self.__last_return__)
-            func.__doc__ = self.__last_data__["enhanced"]
-            self.create_mermaid_file(self.__last_data__["mermaid"], func.__name__)
-            self.create_help_file(func.__name__, self.__last_data__["enhanced"], self.__last_data__["critique"], self.__last_data__["suggested"])
-            return self.__last_return__
+            self.parse_data(self.__last_enh_return__)
+            func.__doc__ = self.__last_enh__["enhanced"]
+            self.create_mermaid_file(self.__last_enh__["mermaid"], func_name)
+            self.create_help_file(
+                func_name,
+                self.__last_enh__["enhanced"],
+                self.__last_enh__["critique"],
+                self.__last_enh__["suggested"],
+            )
+            return self.__last_enh_return__
 
         return wrapper
