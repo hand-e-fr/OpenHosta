@@ -2,7 +2,14 @@ import inspect
 import requests
 import json
 
+import uuid
+import time
+import hashlib
+
 class emulator():
+    # General variables
+    __version__ = 0.1
+
     __last_return__ = None
     __last_content__ = None
     __last_data__ = { "return": None, "confidence": "low" }
@@ -158,18 +165,71 @@ This is the function documentation:
                 print("error", function_call)
                 result = None
             return result
+
         return wrapper
 
 
-def test():
-    llm=emulator()
+    def oracle(self, func):
+    
+        def get_output(func, *args, **kwargs):
+            data_function, tag_output = func(*args, **kwargs)
+            return data_function, tag_output
 
-    # Exemple d'utilisation du décorateur
-    @llm.emulate
-    def example_function(a:int, b:dict) -> int:
-        """
-        This is an example function.
-        It adds two numbers.
-        """
-        pass
-    # print(llm.jsonN)
+        def get_hash_function(function_def):
+            return (hashlib.md5(function_def.encode()).hexdigest())
+
+        def get_timestamp():
+            return int(time.time())
+
+        def create_uidt():
+            return str(uuid.uuid4())
+
+        def wrapper_version(*args, **kwargs):
+            return self.__version__
+
+
+        def wrapper_function(*args, **kwargs):
+            # Obtenir la signature de la fonction
+            sig = inspect.signature(func)
+            
+            # Affiche les valeurs des arguments
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            
+            # Construct the function definition
+            func_name = func.__name__
+            
+            func_params = ", ".join(
+                [f"{param_name}: {param.annotation.__name__}" if param.annotation != inspect.Parameter.empty else param_name 
+                 for param_name, param in sig.parameters.items()]
+            )
+            
+            func_return = f" -> {sig.return_annotation.__name__}" if sig.return_annotation != inspect.Signature.empty else ""
+            
+            function_def = f"def {func_name}({func_params}):{func_return}\n    '''\n    {func.__doc__}\n    '''"
+
+            # Construct the function call string
+            func_call_args = ", ".join([str(value) for value in bound_args.arguments.values()])
+            function_call = f"{func_name}({func_call_args})"
+
+            return function_call, function_def
+
+
+        def create_json(*args, **kwargs):
+
+            function_call, function_def = wrapper_function(*args, **kwargs)
+            data_function, tag_output = get_output(func, *args, **kwargs)
+
+            data = {
+                "Version" : wrapper_version(*args, **kwargs),
+                "Id session": create_uidt(),
+                "Timestamp": get_timestamp(),
+                "func_call": function_call,
+                "func_hash": get_hash_function(function_def),
+                "Tag output": tag_output,
+                "Data": data_function
+            }
+            json_object = json.dumps(data, indent = 5)
+            return json_object
+
+        return create_json
