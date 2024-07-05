@@ -1,0 +1,14 @@
+[flake8]
+
+filename =
+    OpenHosta.py
+    setup.py
+extend-exclude =
+    src/__pycache__/
+    jipynb/
+max_line_length = 99
+ident-size = 3
+disable_noqa = True
+statistics = True
+output-file = errors.txt
+doctests = True

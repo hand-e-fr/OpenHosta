@@ -2,10 +2,6 @@
 
 Bienvenue dans la documentation d'OpenHosta, un outil puissant qui facilite l'intégration de fonctions spécifiques à un projet tout en permettant aux débutants de comprendre clairement le projet.
 
-## Exemple d'Implémentation
-
-Pour illustrer comment utiliser l'Emulator, nous allons créer une classe `Documentation` qui contient des méthodes pour ajouter deux nombres en utilisant à la fois une fonction AI simulée et une fonction humaine.
-
 ### Installation
 
 Assurez-vous d'avoir installé les dépendances nécessaires avant de commencer.
@@ -33,6 +29,8 @@ llm = emulator()
   - `@llm.oracle` : Décore une fonction pour capturer les informations et les résultats dans un format JSON. Il est couramment utilisé pour valider les résultats des fonctions IA et générer des données de test.
 
 ### Code Exemple
+
+Pour illustrer comment utiliser l'Emulator, nous allons créer une classe `Documentation` qui contient des méthodes pour ajouter deux nombres en utilisant à la fois une fonction AI simulée et une fonction humaine.
 
 ```python
 class Documentation():

@@ -107,7 +107,7 @@ class emulator:
     __resp__ = None
     __JsonN__ = None
     __output__ = None
-    
+
     __last_enh_return__: str = None
     __last_enh__: dict = {
         "enhanced": None,
@@ -116,14 +116,19 @@ class emulator:
         "mermaid": None,
     }
 
-    def __init__(self, api_key:str=None, model: str = None, creativity: float = None, diversity: float = None)->None:
-        self.api_key = emulator._default_api_key if api_key == None else api_key
-        self.model = emulator._default_ai_model if model == None else model
+    def __init__(
+        self,
+        api_key: str = None,
+        model: str = None,
+        creativity: float = None,
+        diversity: float = None,
+    ) -> None:
+        self.api_key = emulator._default_api_key if api_key is None else api_key
+        self.model = emulator._default_ai_model if model is None else model
         self.temperature = (
-            emulator._default_creativity if creativity == None else creativity
+            emulator._default_creativity if creativity is None else creativity
         )
-        self.top_d = emulator._default_diversity if diversity == None else diversity
-
+        self.top_d = emulator._default_diversity if diversity is None else diversity
 
     def gpt4o(self, function_doc, function_call):
         global emulator_pre_prompt
@@ -215,9 +220,9 @@ class emulator:
 
             try:
                 result = self.gpt4o(function_def, function_call)
-            except:
+            except Exception as e:
                 print(Exception)
-                print("error", function_call)
+                print(f"[EMU_ERROR] {e}", function_call)
                 result = None
             return result
 
@@ -293,7 +298,7 @@ class emulator:
             return json_object
 
         return create_json
-    
+
     def ai_call_enh(self, sys_prompt: str, func_prot: str, func_doc: str):
         api_key = self.api_key
         url = "https://api.openai.com/v1/chat/completions"
@@ -353,9 +358,7 @@ class emulator:
         for line in response.splitlines():
             if line.startswith("->"):
                 if current_section:
-                    self.__last_enh__[current_section] = "\n".join(
-                        current_text
-                    ).strip()
+                    self.__last_enh__[current_section] = "\n".join(current_text).strip()
                 current_section = line[3:].strip(":")
                 current_text = []
             else:
@@ -373,9 +376,9 @@ class emulator:
             with open(f"{name}_diagram.mmd", "w") as file:
                 try:
                     file.write(mmd_script)
-                except:
+                except Exception as e:
                     sys.stderr.write(
-                        "[MMD_ERROR] An error occured when writing .mmd file"
+                        "[MMD_ERROR]: {e}\nAn error occured when writing .mmd file"
                     )
         except IOError as e:
             sys.stderr.write(f"[MMD_ERROR] {e}")
@@ -383,11 +386,11 @@ class emulator:
     def create_help_file(
         self, name: str, enhanced: str, critique: str, suggested: str
     ) -> None:
-        if not enhanced and not type(enhanced) == str:
+        if not enhanced and not type(enhanced) is str:
             raise ValueError("[ENH_ERROR] ValueError -> enhanced")
-        if not critique and not type(critique) == str:
+        if not critique and not type(critique) is str:
             raise ValueError("[ENH_ERROR] ValueError -> critique")
-        if not suggested and not type(suggested) == str:
+        if not suggested and not type(suggested) is str:
             raise ValueError("[ENH_ERROR] ValueError -> suggested")
 
         try:
@@ -397,9 +400,9 @@ class emulator:
                     file.write(f"- **Enhanced prompt:**\n{enhanced}\n")
                     file.write(f"- **How to improve your prompt:**\n{critique}\n")
                     file.write(f"- **Improvemed prompt suggestion:**\n{suggested}\n")
-                except:
+                except Exception as e:
                     sys.stderr.write(
-                        "[ENH_ERROR] An error occured when writing .mmd file"
+                        "[ENH_ERROR] {e}: \nAn error occured when writing .mmd file"
                     )
         except IOError as e:
             sys.stderr.write(f"[ENH_ERROR] {e}")
