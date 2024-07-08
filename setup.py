@@ -2,8 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name='OpenHosta',
-    version='0.1.0',
+    version='1.0',
     author='Léandre Ramos, Merlin Devillard, William Jolivet, Emmanuel Batt',
+    license='MIT License',
     description='Open-Source programming project for natural language programming with AI',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
