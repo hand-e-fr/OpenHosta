@@ -5,6 +5,7 @@ import uuid
 import time
 import hashlib
 import sys
+import os
 
 emulator_pre_prompt: str = (
     """
@@ -373,7 +374,7 @@ class emulator:
             raise ValueError("[MMD_ERROR] ValueError -> mmd_script")
 
         try:
-            with open(f"{name}_diagram.mmd", "w") as file:
+            with open(f"{os.getcwd()}/{name}_diagram.mmd", "w") as file:
                 try:
                     file.write(mmd_script)
                 except Exception as e:
@@ -382,6 +383,7 @@ class emulator:
                     )
         except IOError as e:
             sys.stderr.write(f"[MMD_ERROR] {e}")
+        file.close()
 
     def create_help_file(
         self, name: str, enhanced: str, critique: str, suggested: str
@@ -394,7 +396,7 @@ class emulator:
             raise ValueError("[ENH_ERROR] ValueError -> suggested")
 
         try:
-            with open(f"{name}_enhanced.md", "w") as file:
+            with open(f"{os.getcwd()}/{name}_enhanced.md", "w") as file:
                 try:
                     file.write("# ENHANCER\n")
                     file.write(f"- **Enhanced prompt:**\n{enhanced}\n")
@@ -406,6 +408,7 @@ class emulator:
                     )
         except IOError as e:
             sys.stderr.write(f"[ENH_ERROR] {e}")
+        file.close()
 
     def enhance(self, func):
         def wrapper(*args, **kwargs):
