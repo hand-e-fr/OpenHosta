@@ -393,10 +393,10 @@ class emulator:
                     file.write(f"- **Improvemed prompt suggestion:**\n{suggested}\n")
                 except Exception as e:
                     sys.stderr.write(
-                        f"[ENH_ERROR] {e}: \nAn error occured when writing .mmd file"
+                        f"[HLP_ERROR] {e}: \nAn error occured when writing .mmd file"
                     )
         except IOError as e:
-            sys.stderr.write(f"[ENH_ERROR] {e}")
+            sys.stderr.write(f"[HELP_ERROR] {e}")
         finally:
             file.close()
 
