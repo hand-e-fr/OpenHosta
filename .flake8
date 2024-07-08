@@ -1,8 +1,8 @@
 [flake8]
 
 filename =
-    OpenHosta.py
-    setup.py
+    src/OpenHosta.py
+    src/setup.py
 extend-exclude =
     src/__pycache__/
     jipynb/
