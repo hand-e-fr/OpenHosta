@@ -1,9 +1,0 @@
-{
-    "Version": 0.1,
-    "Id session": "5dd9ffe4-c401-4158-ab9f-7cb70991d49b",
-    "Timestamp": 1720078341,
-    "func_call": "tests(<__main__.Documentation object at 0x7f6c481f7c50>, 5, 2)",
-    "func_hash": "6a136adf929de4c5a55d528e9ac4045e",
-    "Tag output": 0,
-    "Data": [7,7]
-    }
