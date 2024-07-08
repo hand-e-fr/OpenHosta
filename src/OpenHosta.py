@@ -119,23 +119,23 @@ class emulator:
 
     def __init__(
         self,
-        api_key: str = None,
         model: str = None,
         creativity: float = None,
         diversity: float = None,
+        api_key: str = None,
     ) -> None:
         self.api_key = emulator._default_api_key if api_key is None else api_key
         self.model = emulator._default_ai_model if model is None else model
         self.temperature = (
             emulator._default_creativity if creativity is None else creativity
         )
-        self.top_d = emulator._default_diversity if diversity is None else diversity
+        self.top_p = emulator._default_diversity if diversity is None else diversity
 
     def gpt4o(self, function_doc, function_call):
         global emulator_pre_prompt
         api_key = self.api_key
         l_body = {
-            "model": "gpt-4o",
+            "model": self.model,
             "messages": [
                 {
                     "role": "system",
@@ -310,7 +310,7 @@ class emulator:
         }
 
         data = {
-            "model": "gpt-4o",
+            "model": self.model,
             "messages": [
                 {"role": "system", "content": [{"type": "text", "text": sys_prompt}]},
                 {
@@ -337,7 +337,7 @@ class emulator:
                 },
             ],
             "temperature": self.temperature,
-            "top_p": self.temperature,
+            "top_p": self.top_p,
         }
 
         response = requests.post(url, headers=headers, data=json.dumps(data))
@@ -367,36 +367,25 @@ class emulator:
         if current_section:
             self.__last_enh__[current_section] = "\n".join(current_text).strip()
 
-    def create_mermaid_file(self, mmd_script: str, name: str) -> None:
-        if not mmd_script:
-            raise ValueError("[MMD_ERROR] ValueError -> mmd_script")
-        if not name:
-            raise ValueError("[MMD_ERROR] ValueError -> mmd_script")
-
+    def create_mermaid_file(self, mmd_script: str, name: str, dir: str) -> None:
         try:
-            with open(f"{os.getcwd()}/{name}_diagram.mmd", "w") as file:
+            with open(f"{dir}/{name}_diagram.mmd", "w") as file:
                 try:
                     file.write(mmd_script)
                 except Exception as e:
                     sys.stderr.write(
-                        "[MMD_ERROR]: {e}\nAn error occured when writing .mmd file"
+                        f"[MMD_ERROR]: {e}\nAn error occured when writing .mmd file"
                     )
         except IOError as e:
             sys.stderr.write(f"[MMD_ERROR] {e}")
-        file.close()
+        finally:
+            file.close()
 
     def create_help_file(
-        self, name: str, enhanced: str, critique: str, suggested: str
+        self, name: str, enhanced: str, critique: str, suggested: str, dir: str
     ) -> None:
-        if not enhanced and not type(enhanced) is str:
-            raise ValueError("[ENH_ERROR] ValueError -> enhanced")
-        if not critique and not type(critique) is str:
-            raise ValueError("[ENH_ERROR] ValueError -> critique")
-        if not suggested and not type(suggested) is str:
-            raise ValueError("[ENH_ERROR] ValueError -> suggested")
-
         try:
-            with open(f"{os.getcwd()}/{name}_enhanced.md", "w") as file:
+            with open(f"{dir}/{name}_enhanced.md", "w") as file:
                 try:
                     file.write("# ENHANCER\n")
                     file.write(f"- **Enhanced prompt:**\n{enhanced}\n")
@@ -404,11 +393,61 @@ class emulator:
                     file.write(f"- **Improvemed prompt suggestion:**\n{suggested}\n")
                 except Exception as e:
                     sys.stderr.write(
-                        "[ENH_ERROR] {e}: \nAn error occured when writing .mmd file"
+                        f"[ENH_ERROR] {e}: \nAn error occured when writing .mmd file"
                     )
         except IOError as e:
             sys.stderr.write(f"[ENH_ERROR] {e}")
-        file.close()
+        finally:
+            file.close()
+
+    def build_output(self, func: object) -> int:
+        path = ""
+
+        try:
+            if not func.__name__ and not type(func.__name__) is str:
+                raise ValueError("ValueError -> function name")
+            if (
+                not self.__last_enh__["enhanced"]
+                and not type(self.__last_enh__["enhanced"]) is str
+            ):
+                raise ValueError("ValueError -> enhanced output")
+            if (
+                not self.__last_enh__["critique"]
+                and not type(self.__last_enh__["critique"]) is str
+            ):
+                raise ValueError("ValueError -> critique output")
+            if (
+                not self.__last_enh__["suggested"]
+                and not type(self.__last_enh__["suggested"]) is str
+            ):
+                raise ValueError("ValueError -> seggested output")
+            if (
+                not self.__last_enh__["mermaid"]
+                and not type(self.__last_enh__["mermaid"]) is str
+            ):
+                raise ValueError("ValueError -> mermaid output")
+        except ValueError as e:
+            sys.stderr.write(f"[BUILD_ERROR] {e}")
+            return -1
+        finally:
+            dir = ".openhosta"
+            path = f"{os.getcwd()}/{dir}"
+            if not os.path.exists(dir):
+                try:
+                    os.mkdir(path)
+                except OSError as e:
+                    sys.stderr.write(f"[BUILD_ERROR] {e}")
+
+        print(f"PATH: {path}")
+        self.create_mermaid_file(self.__last_enh__["mermaid"], func.__name__, path)
+        self.create_help_file(
+            func.__name__,
+            self.__last_enh__["enhanced"],
+            self.__last_enh__["critique"],
+            self.__last_enh__["suggested"],
+            path,
+        )
+        return 0
 
     def enhance(self, func):
         def wrapper(*args, **kwargs):
@@ -423,13 +462,8 @@ class emulator:
             )
             self.parse_data(self.__last_enh_return__)
             func.__doc__ = self.__last_enh__["enhanced"]
-            self.create_mermaid_file(self.__last_enh__["mermaid"], func_name)
-            self.create_help_file(
-                func_name,
-                self.__last_enh__["enhanced"],
-                self.__last_enh__["critique"],
-                self.__last_enh__["suggested"],
-            )
+            if self.build_output(func) == -1:
+                return None
             return func
 
         return wrapper
