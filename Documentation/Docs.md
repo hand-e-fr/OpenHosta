@@ -82,9 +82,11 @@ function should be prototyped like this
 ```python
 @llm.oracle
 def analyse_data(word :str, text: str) -> int:
+
     result_1 = AI_find_occurence_of_a_word(word, text)
     result_2 = text.count(word)
     dataset = [result_1, result_2]
+
     if result_1 == result_2:
         return dataset, 0 # Return 0 or True if the results are the same
     else:
@@ -96,15 +98,17 @@ analyse_data("hello", "hello world hello")
 **The Json looks like this**
 
 ```json
-{"Version": 1.0,
-"Id session": "fc4e1b32-b5ef-413f-9812-a3387754e844",
-"Timestamp": 1720448026,
-"func_call": "analyse_data(hello, hello world hello)",
-"func_hash": "7d6c10838b87595afcfc62402068aac5",
-"Tag output": 0,
-"Data": [
-     2,
-     2
-     ]
+{
+    "Version": 1.0,
+    "Model used": "gpt-4o",
+    "Id session": "fc4e1b32-b5ef-413f-9812-a3388945e844",
+    "Timestamp": 1720448026,
+    "func_call": "analyse_data(hello, hello world hello)",
+    "func_hash": "7d6c10838b87595afcfc62402068bbc5",
+    "Tag output": 0,
+    "Data": [
+        2,
+        2
+    ]
 }
 ```
