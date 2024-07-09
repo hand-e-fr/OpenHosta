@@ -101,13 +101,9 @@ class emulator:
     __last_data__ = {"return": None, "confidence": "low"}
 
     _default_api_key = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
-    _default_ai_model: str = "gtp-4o"
+    _default_ai_model: str = "gpt-4o"
     _default_creativity: float = 0.5
     _default_diversity: float = 0.5
-
-    __resp__ = None
-    __JsonN__ = None
-    __output__ = None
 
     __last_enh_return__: str = None
     __last_enh__: dict = {
@@ -233,19 +229,11 @@ class emulator:
 
         def get_output(func, *args, **kwargs):
             data_function, tag_output = func(*args, **kwargs)
+            if tag_output != 0 and tag_output != 1 and tag_output != True and tag_output != False:
+                raise ValueError(
+                    f"Tag output should be 0 or 1 or True or False, but got {tag_output}")
+                
             return data_function, tag_output
-
-        def get_hash_function(function_def):
-            return hashlib.md5(function_def.encode()).hexdigest()
-
-        def get_timestamp():
-            return int(time.time())
-
-        def create_uidt():
-            return str(uuid.uuid4())
-
-        def wrapper_version(*args, **kwargs):
-            return self.__version__
 
         def wrapper_function(*args, **kwargs):
             sig = inspect.signature(func)
@@ -287,11 +275,12 @@ class emulator:
             data_function, tag_output = get_output(func, *args, **kwargs)
 
             data = {
-                "Version": wrapper_version(*args, **kwargs),
-                "Id session": create_uidt(),
-                "Timestamp": get_timestamp(),
+                "Version": self.__version__,
+                "Model used": self.model,
+                "Id session": str(uuid.uuid4()),
+                "Timestamp": int(time.time()),
                 "func_call": function_call,
-                "func_hash": get_hash_function(function_def),
+                "func_hash": hashlib.md5(function_def.encode()).hexdigest(),
                 "Tag output": tag_output,
                 "Data": data_function,
             }
