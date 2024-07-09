@@ -1,6 +1,6 @@
-# Guide de Contribution
+# Contribution Guide
 
-Merci de votre intérêt pour contribuer à OpenHosta ! Nous apprécions les contributions de la communauté et nous sommes ravis de collaborer avec vous pour améliorer ce projet.
+Thank you for your interest in contributing to OpenHosta! We appreciate community contributions and are excited to collaborate with you to improve this project.
 
 All types of contributions are encouraged and valued. See the Table of Contents for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution.
 
@@ -12,105 +12,98 @@ All types of contributions are encouraged and valued. See the Table of Contents 
 
 ### Table of Content
 
-- [Guide de Contribution](#guide-de-contribution)
+- [Contribution Guide](#contribution-guide)
     - [Table of Content](#table-of-content)
-  - [Comment contribuer](#comment-contribuer)
-    - [Signaler des Bugs](#signaler-des-bugs)
-    - [Proposer des Améliorations](#proposer-des-améliorations)
-    - [Soumettre des Modifications](#soumettre-des-modifications)
-  - [StyleGuide](#styleguide)
-    - [Revue de Code](#revue-de-code)
-    - [Style de Codage](#style-de-codage)
+  - [How to Contribute](#how-to-contribute)
+    - [Reporting Bugs](#reporting-bugs)
+    - [Suggesting Enhancements](#suggesting-enhancements)
+    - [Submitting Changes](#submitting-changes)
+  - [Style Guide](#style-guide)
+    - [Code Review](#code-review)
+    - [Coding Style](#coding-style)
     - [Documentation](#documentation)
-    - [Tests](#tests)
   - [Conclusion](#conclusion)
-    - [Informations Additionnelles](#informations-additionnelles)
+    - [Additional Information](#additional-information)
 
 ---
 
-## Comment contribuer
+## How to Contribute
 
-### Signaler des Bugs
+### Reporting Bugs
 
-Si vous trouvez un bug, veuillez ouvrir une issue sur notre [dépôt GitHub](https://github.com/hand-e-fr/OpenHosta-dev/issues) et inclure autant de détails que possible. Veuillez fournir les informations suivantes :
+If you find a bug, please open an issue on our [GitHub repository](https://github.com/hand-e-fr/OpenHosta-dev/issues) and include as many details as possible. Please provide the following information:
 
-- Une description claire et concise du bug.
-- Les étapes pour reproduire le bug.
-- La version de Python et les dépendances utilisées.
-- Toute autre information pertinente (logs, captures d'écran, etc.).
+- A clear and concise description of the bug.
+- Steps to reproduce the bug.
+- The version of Python and dependencies used.
+- Any other relevant information (logs, screenshots, etc.).
 
-### Proposer des Améliorations
+### Suggesting Enhancements
 
-Nous accueillons avec plaisir les suggestions d'amélioration. Si vous avez une idée pour améliorer OpenHosta, veuillez ouvrir une issue sur notre [dépôt GitHub](https://github.com/hand-e-fr/OpenHosta-dev/issues) et décrire votre suggestion en détail. Veuillez inclure :
+We welcome enhancement suggestions. If you have an idea to improve OpenHosta, please open an issue on our [GitHub repository](https://github.com/hand-e-fr/OpenHosta-dev/issues) and describe your suggestion in detail. Please include:
 
-- Une description claire et concise de l'amélioration proposée.
-- Les raisons pour lesquelles vous pensez que cette amélioration est nécessaire.
-- Toute autre information pertinente (exemples de code, liens vers d'autres projets, etc.).
+- A clear and concise description of the proposed enhancement.
+- Reasons why you believe this enhancement is necessary.
+- Any other relevant information (code examples, links to other projects, etc.).
 
-### Soumettre des Modifications
+### Submitting Changes
 
-Si vous souhaitez apporter des modifications au code, veuillez suivre les étapes suivantes :
+If you wish to make changes to the code, please follow these steps:
 
-1. **Fork le Dépôt** : Cliquez sur le bouton "Fork" en haut de la page pour créer une copie de ce dépôt sur votre compte GitHub.
+1. **Fork the Repository**: Click the "Fork" button at the top of the page to create a copy of this repository on your GitHub account.
 
-2. **Cloner votre Fork** : Clonez votre fork localement en utilisant la commande suivante :
+2. **Clone Your Fork**: Clone your fork locally using the following command:
     ```sh
-    git clone https://github.com/votre-utilisateur/OpenHosta-dev.git
+    git clone https://github.com/your-username/OpenHosta-dev.git
     ```
 
-3. **Créer une Branche** : Créez une nouvelle branche pour votre fonctionnalité ou correction de bug :
+3. **Create a Branch**: Create a new branch for your feature or bug fix:
     ```sh
-    git checkout -b ma-nouvelle-fonctionnalite
+    git checkout -b my-new-feature
     ```
 
-4. **Faire vos Modifications** : Apportez les modifications nécessaires dans votre éditeur de code préféré.
+4. **Make Your Changes**: Make the necessary changes in your preferred code editor.
 
-5. **Committer les Changements** : Ajoutez et commitez vos changements avec des messages de commit clairs et descriptifs :
+5. **Commit Your Changes**: Add and commit your changes with clear and descriptive commit messages:
     ```sh
     git add .
-    git commit -m "Ajout de ma nouvelle fonctionnalité"
+    git commit -m "Add my new feature"
     ```
 
-6. **Pousser votre Branche** : Poussez votre branche sur votre fork GitHub :
+6. **Push Your Branch**: Push your branch to your GitHub fork:
     ```sh
-    git push origin ma-nouvelle-fonctionnalite
+    git push origin my-new-feature
     ```
 
-7. **Ouvrir une Pull Request** : Allez sur le dépôt original et ouvrez une Pull Request depuis votre fork. Décrivez les modifications que vous avez apportées et pourquoi elles sont nécessaires.
+7. **Open a Pull Request**: Go to the original repository and open a Pull Request from your fork. Describe the changes you have made and why they are necessary.
 
 ---
 
-## StyleGuide
+## Style Guide
 
-### Revue de Code
+### Code Review
 
-Toutes les contributions feront l'objet d'une revue de code par les mainteneurs du projet. Veuillez être patient pendant que nous examinons votre Pull Request. Nous pouvons demander des modifications avant de fusionner votre contribution.
+All contributions will undergo a code review by the project maintainers. Please be patient while we review your Pull Request. We may request changes before merging your contribution.
 
-### Style de Codage
+### Coding Style
 
-Veuillez vous assurer que votre code suit les conventions de style du projet. Nous utilisons `black` comme guide de style pour Python. Vous pouvez utiliser des outils comme `flake8` pour vérifier que votre code respecte ces conventions.
+Please ensure that your code follows the project's style conventions. We use `black` as the style guide for Python. You can use tools like `flake8` to check that your code adheres to these conventions.
 
 ### Documentation
 
-Si vous ajoutez une nouvelle fonctionnalité, veuillez mettre à jour la documentation en conséquence. La documentation doit être claire, concise et inclure des exemples d'utilisation.
+If you add a new feature, please update the documentation accordingly. The documentation should be clear, concise, and include usage examples.
 
-### Tests
-
-Assurez-vous que votre contribution inclut des tests appropriés. Les tests doivent couvrir les cas d'utilisation courants ainsi que les cas limites. Vous pouvez exécuter les tests en utilisant la commande suivante :
-```sh
-pytest
-```
 ---
 
 ## Conclusion
 
-### Informations Additionnelles
-Nous avons adopté un [Code de Conduite](CODE_OF_CONDUCT.md) pour garantir un environnement respectueux et inclusif pour tous les contributeurs. Veuillez prendre un moment pour le lire avant de commencer à contribuer.
+### Additional Information
+We have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it before you start contributing.
 
-Si vous avez des questions ou besoin d'assistance supplémentaire, n'hésitez pas à nous contacter à l'adresse suivante : support@openhosta.com.
+If you have any questions or need further assistance, feel free to contact us at: support@openhosta.com.
 
 ---
 
-Merci encore pour votre intérêt à contribuer à OpenHosta !
+Thank you again for your interest in contributing to OpenHosta!
 
-**L'équipe OpenHosta**
+**The OpenHosta Team**

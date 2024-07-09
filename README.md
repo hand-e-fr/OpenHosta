@@ -92,7 +92,7 @@ Here is a simple usage example:
 ```python
 llm = OpenHosta.emulator()    # You need to put your API key and the model as parameters
 
-@llm.emulate                  # @llm.enhance | @llm.oracle
+@llm.emulate                  # or "@llm.enhance"
 def example(a:int, b:int)->int:  # Put your prompt in the docstrings
    """
    This is a very precise example prompt.  
@@ -111,14 +111,13 @@ llm = emulator()
 - `llm` contains three main decorators. Decorators in Python are functions that modify the behavior of other functions or methods, allowing for additional functionalities in a modular way:
   - `@llm.emulate`: Decorates a function to emulate its execution by an AI. You can choose the model using your API key.
   - `@llm.enhance`: Decorates a function and generates a Mermaid diagram to visualize and understand the model's reasoning, as well as a markdown help file to improve the function's prompt. Everything is stored in the `.openhosta` directory at the root of the working directory.
-  - `@llm.oracle`: Decorates a function to capture information and results in a JSON format. It is commonly used to validate AI function results and generate test data. It identifies each function by different parameters and is used to compare output values.
 
 ### Configuration
 
 The `emulator` class can have four parameters:
    - `model`: LLM model to which the program will send its requests
    - `creativity` & `diversity`: Correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/)
-   - `api_key`:
+   - `api_key`: Your own api-key to communicate with the llm
 
 Example:
 ```python
