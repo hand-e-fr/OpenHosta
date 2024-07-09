@@ -44,8 +44,12 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
    - Create and activate a virtual environment:
      ```bash
      python -m venv env
-     .\env\Scripts\activate
      ```
+   - Activate the virtual environement:
+      ```bash
+      .\env\Scripts\activate # Windows
+      source env/bin/activate # macOS/Linux
+      ```
 
 5. **API Key**
    - **API Key**: Log in to your OpenAI account from [openai.com](https://openai.com/), then create your API key.
