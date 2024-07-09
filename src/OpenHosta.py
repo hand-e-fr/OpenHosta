@@ -364,7 +364,6 @@ class emulator:
                 except OSError as e:
                     sys.stderr.write(f"[BUILD_ERROR] {e}")
 
-        print(f"PATH: {path}")
         self.create_mermaid_file(self.__last_enh__["mermaid"], func.__name__, path)
         self.create_help_file(
             func.__name__,
