@@ -1,4 +1,5 @@
-# OpenHosta Documentation
+# OpenHosta 
+v0.1.0 - Open-Source Project
 
 **- The future of development is human -**
 
@@ -8,7 +9,7 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
 
 ## Table of Content
 
-- [OpenHosta Documentation](#openhosta-documentation)
+- [OpenHosta](#openhosta)
   - [Table of Content](#table-of-content)
   - [How to install OpenHosta ?](#how-to-install-openhosta-)
     - [Prerequisites](#prerequisites)
