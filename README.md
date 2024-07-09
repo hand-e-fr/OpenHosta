@@ -151,7 +151,13 @@ See the [LICENSE](LICENSE) file for more details.
 
 ### Authors & Contact
 
-For any questions or further assistance, please refer to our comprehensive documentation or contact our technical support.
+For further questions or assistance, please refer to partner hand-e or contact us directly via github.
+
+**Authors**:
+   - Emmanuel Batt: Manager and Coordinator, Founder of Hand-e
+   - William Jolivet: DevOps, SysAdmin
+   - Léandre Ramos: MLOps, IA developer
+   - Merlin Devillard: UX designer, Prompt Engineer
 
 ---
 
