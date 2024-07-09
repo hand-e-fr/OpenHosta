@@ -2,50 +2,69 @@
 
 **- The future of development is human -**
 
-Bienvenue dans la documentation d'OpenHosta, un outil puissant qui facilite l'intégration de fonctions spécifiques à un projet tout en permettant aux débutants de comprendre clairement le projet. OpenHosta sert à émuler des fonctions grâce à l'IA, comparer leurs résultats avec des fonctions codées, et générer des logs détaillés pour chaque appel de fonction. 
-Pour ce projet, nous avons adopté un [Code de Conduite](CODE_OF_CONDUCT.md) pour garantir un environnement respectueux et inclusif pour tous les contributeurs. Veuillez prendre un moment pour le lire.
+Welcome to the OpenHosta documentation, a powerful tool that facilitates the integration of specific functions into a project while allowing beginners to clearly understand the project. OpenHosta is used to emulate functions using AI, compare their results with coded functions, and generate detailed logs for each function call.
+
+For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
+
+## Table of Content
+
+- [OpenHosta Documentation](#openhosta-documentation)
+  - [Table of Content](#table-of-content)
+  - [How to install OpenHosta ?](#how-to-install-openhosta-)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+  - [How to use OpenHosta ?](#how-to-use-openhosta-)
+    - [Usage](#usage)
+    - [Features](#features)
+    - [Configuration](#configuration)
+  - [Further information](#further-information)
+    - [Contributing](#contributing)
+    - [License](#license)
+    - [Authors \& Contact](#authors--contact)
 
 ---
+
+## How to install OpenHosta ?
 
 ### Prerequisites
 
 1. **Python 3.8+**
-   - Téléchargez et installez Python depuis [python.org](https://www.python.org/downloads/).
+   - Download and install Python from [python.org](https://www.python.org/downloads/).
 
 2. **pip**
-   - pip est généralement inclus avec Python. Vérifiez son installation avec :
+   - pip is generally included with Python. Verify its installation with:
      ```sh
      pip --version
      ```
 
 3. **Git**
-   - Téléchargez et installez Git depuis [git-scm.com](https://git-scm.com/downloads).
+   - Download and install Git from [git-scm.com](https://git-scm.com/downloads).
 
-4. **Environnement Virtuel (optionnel)**
-   - Créez et activez un environnement virtuel :
+4. **Virtual Environment (optional)**
+   - Create and activate a virtual environment:
      ```bash
      python -m venv env
      .\env\Scripts\activate
      ```
 
-5. **Clé API**
-   - **Clé API** : Connectez vous à votre compte openai depuis [openai.com](https://openai.com/), puis créez votre clé API.
+5. **API Key**
+   - **API Key**: Log in to your OpenAI account from [openai.com](https://openai.com/), then create your API key.
 
 ### Installation
 
-1. Clonez le **dépôt Git** sur votre machine locale en utilisant la commande suivante:
+1. Clone the **Git repository** to your local machine using the following command:
 
 ```bash
 git clone git@github.com:hand-e-fr/OpenHosta-dev.git
 ```
 
-2. Accédez au **répertoire** du projet cloné:
+2. Navigate to the **directory** of the cloned project:
 
 ```bash
 cd OpenHosta-dev
 ```
 
-3. Assurez-vous d'avoir installé les dépendances nécessaires avant de commencer.
+3. Ensure you have installed the necessary **dependencies** before starting.
 
 ```bash
 pip install -r requirements.txt
@@ -53,27 +72,29 @@ pip install -r requirements.txt
 
 ---
 
+## How to use OpenHosta ?
+
 ### Usage
 
-Assurez-vous d'importer la bibliothèque.
+Make sure to import the library.
 
 ```python
 import OpenHosta
 ```
 
-Voici un exemple simple d'utilisation:
+Here is a simple usage example:
 
 ```python
-llm = OpenHosta.emulator()    # Vous devez mettre vos clé api et le modèle en paramètre
+llm = OpenHosta.emulator()    # You need to put your API key and the model as parameters
 
 @llm.emulate                  # @llm.enhance | @llm.oracle
-def example(a:int, b:int)->int:  # Mettre votre prompt dans les docstrings
+def example(a:int, b:int)->int:  # Put your prompt in the docstrings
    """
-   This is an very precise example prompt.  
+   This is a very precise example prompt.  
    """
-   pass                       # La fonction ne contient donc pas d'instruction
+   pass                       # The function therefore contains no instructions
 
-example(4, 2)                 # Appel de la fonction pour activer le décorateur      
+example(4, 2)                 # Call the function to activate the decorator      
 ```
 
 ### Features
@@ -82,19 +103,19 @@ example(4, 2)                 # Appel de la fonction pour activer le décorateur
 llm = emulator()
 ```
 
-- `llm` contient trois décorateurs principaux. Les décorateurs en Python sont des fonctions qui modifient le comportement d'autres fonctions ou méthodes, permettant d'ajouter des fonctionnalités supplémentaires de manière modulable  :
-  - `@llm.emulate` : Décore une fonction pour émuler son exécution par une IA. Vous pouvez choisir le modèle grâce à votre clé API.
-  - `@llm.enhance` : Décore une fonction et génère un diagramme Mermaid pour visualiser et comprendre le raisonnement du modèle ainsi qu'un fichier markdown d'aide pour améliorer le prompt de la fonction. Le tout est stocké dans le répertoire `.openhosta` à la racine du répertoire de travail.
-  - `@llm.oracle` : Décore une fonction pour capturer les informations et les résultats dans un format JSON. Il est couramment utilisé pour valider les résultats des fonctions IA et générer des données de test. Il identifie chaque fonction par différents paramètres et sert à comparer les valeurs de sortie.
+- `llm` contains three main decorators. Decorators in Python are functions that modify the behavior of other functions or methods, allowing for additional functionalities in a modular way:
+  - `@llm.emulate`: Decorates a function to emulate its execution by an AI. You can choose the model using your API key.
+  - `@llm.enhance`: Decorates a function and generates a Mermaid diagram to visualize and understand the model's reasoning, as well as a markdown help file to improve the function's prompt. Everything is stored in the `.openhosta` directory at the root of the working directory.
+  - `@llm.oracle`: Decorates a function to capture information and results in a JSON format. It is commonly used to validate AI function results and generate test data. It identifies each function by different parameters and is used to compare output values.
 
 ### Configuration
 
-La classe `emulator` peut avoir quatres paramètres:
-   - `model` : Modèle de llm auqel le programme va envoyer ses requêtes
-   - `creativity` & `diversity` : Correspond au paramètre "temperature" et "top_p" des llm. Ces valeurs varient entre 0 et 1 (inclus). Pour plus d'information, veuillez consulter la documentation officielle  [OpenAI](https://openai.com/)
-   - `api_key` :
+The `emulator` class can have four parameters:
+   - `model`: LLM model to which the program will send its requests
+   - `creativity` & `diversity`: Correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/)
+   - `api_key`:
 
-Exemple:
+Example:
 ```python
 llm = OpenHosta.emulator(
    model="gpt-4o", 
@@ -106,29 +127,30 @@ llm = OpenHosta.emulator(
 
 ---
 
+## Further information
+
 ### Contributing
 
-Nous accueillons avec plaisir les contributions de la communauté. Que vous soyez un développeur expérimenté ou un débutant, vos contributions sont les bienvenues.
+We warmly welcome contributions from the community. Whether you are an experienced developer or a beginner, your contributions are welcome.
 
-Si vous souhaitez contribuer à ce projet, veuillez consulter notre [Guide de Contribution](CONTRIBUTING.md) et notre [Code de Conduite](CODE_OF_CONDUCT.md).
+If you wish to contribute to this project, please refer to our [Contribution Guide](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Parcourez les [issues](https://github.com/hand-e-fr/OpenHosta-dev/issues) existantes pour voir si quelqu'un travaille déjà sur ce que vous avez en tête ou pour trouver des idées de contributions.
+Browse the existing [issues](https://github.com/hand-e-fr/OpenHosta-dev/issues) to see if someone is already working on what you have in mind or to find contribution ideas.
 
 ### License
 
-Ce projet est sous licence MIT. Cela signifie que vous êtes libre d'utiliser, copier, modifier, fusionner, publier, distribuer, sous-licencier et/ou vendre des copies du logiciel, sous réserve des conditions suivantes :
+This project is licensed under the MIT License. This means you are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, subject to the following conditions:
 
-  -  Le texte de la licence ci-dessous doit être inclus dans toutes les copies ou portions substantielles du logiciel. 
+  - The text of the license below must be included in all copies or substantial portions of the software.
 
-Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+See the [LICENSE](LICENSE) file for more details.
 
 ### Authors & Contact
 
-Pour toute question ou assistance supplémentaire, n'hésitez pas à consulter notre documentation complète ou à contacter notre support technique.
+For any questions or further assistance, please refer to our comprehensive documentation or contact our technical support.
 
 ---
 
-Nous vous remercions de votre intérêt pour notre projet et de vos contributions potentielles !
+Thank you for your interest in our project and your potential contributions!
 
-**L'équipe OpenHosta**
-
+**The OpenHosta Team**
