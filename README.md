@@ -38,7 +38,7 @@ git clone git@github.com:hand-e-fr/OpenHosta-dev.git
 2. Accédez au **répertoire** du projet cloné:
 
 ```bash
-cd nom-du-projet
+cd OpenHosta-dev
 ```
 
 3. Assurez-vous d'avoir installé les dépendances nécessaires avant de commencer.
@@ -54,7 +54,22 @@ pip install -r requirements.txt
 Assurez-vous d'importer la bibliothèque.
 
 ```python
-from OpenHosta import emulator
+import OpenHosta
+```
+
+Voici un exemple simple d'utilisation:
+
+```python
+llm = OpenHosta.emulator()    # Vous devez mettre vos clé api et le modèle en paramètre
+
+@llm.emulate                  # @llm.enhance | @llm.oracle
+def example(a:int, b:int)->int:  # Mettre votre prompt dans les docstrings
+   """
+   This is an example very precise prompt.  
+   """
+   pass                       # La fonction ne contient donc pas d'instruction
+
+example(4, 2)                 # Appel de la fonction pour activer le décorateur      
 ```
 
 ### Features
@@ -63,11 +78,17 @@ from OpenHosta import emulator
 llm = emulator()
 ```
 
-- `llm` contient deux décorateurs principaux :
-  - `@llm.emulate` : Décore une fonction pour simuler son exécution par une IA. Il génère également un diagramme Mermaid pour visualiser et comprendre le raisonnement du modèle.
-  - `@llm.oracle` : Décore une fonction pour capturer les informations et les résultats dans un format JSON. Il est couramment utilisé pour valider les résultats des fonctions IA et générer des données de test.
+- `llm` contient trois décorateurs principaux :
+  - `@llm.emulate` : Décore une fonction pour émuler son exécution par une IA. Vous pouvez choisir le modèle grâce à votre clé API.
+  - `@llm.enhance` : Décore une fonction et génère un diagramme Mermaid pour visualiser et comprendre le raisonnement du modèle ainsi qu'un fichier markdown d'aide pour améliorer le prompt de la fonction. Le tout est stocké dans le répertoire `.openhosta` à la racine du répertoire de travail.
+  - `@llm.oracle` : Décore une fonction pour capturer les informations et les résultats dans un format JSON. Il est couramment utilisé pour valider les résultats des fonctions IA et générer des données de test. Il identifie chaque fonction par différents paramètres et sert à comparer les valeurs de sortie.
 
 ### Configuration
+
+La classe `emulator` peut avoir quatres paramètres:
+   - `model` : Modèle de llm auqel le programme va envoyer ses requêtes
+   - `creativity` & `diversity` : Correspond au paramètre "temperature" et "top_p" des llm. Pour plus d'information, veuillez consulter la documentation officielle  [openai.com](https://openai.com/)
+   - `api_key` :
 
 ---
 

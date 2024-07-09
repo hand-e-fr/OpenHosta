@@ -224,70 +224,7 @@ class emulator:
             return result
 
         return wrapper
-
-    def oracle(self, func):
-
-        def get_output(func, *args, **kwargs):
-            data_function, tag_output = func(*args, **kwargs)
-            if tag_output != 0 and tag_output != 1 and tag_output != True and tag_output != False:
-                raise ValueError(
-                    f"Tag output should be 0 or 1 or True or False, but got {tag_output}")
-                
-            return data_function, tag_output
-
-        def wrapper_function(*args, **kwargs):
-            sig = inspect.signature(func)
-
-            bound_args = sig.bind(*args, **kwargs)
-            bound_args.apply_defaults()
-
-            func_name = func.__name__
-
-            func_params = ", ".join(
-                [
-                    (
-                        f"{param_name}: {param.annotation.__name__}"
-                        if param.annotation != inspect.Parameter.empty
-                        else param_name
-                    )
-                    for param_name, param in sig.parameters.items()
-                ]
-            )
-
-            func_return = (
-                f" -> {sig.return_annotation.__name__}"
-                if sig.return_annotation != inspect.Signature.empty
-                else ""
-            )
-
-            function_def = f"def {func_name}({func_params}):{func_return}\n    '''\n    {func.__doc__}\n    '''"
-
-            func_call_args = ", ".join(
-                [str(value) for value in bound_args.arguments.values()]
-            )
-            function_call = f"{func_name}({func_call_args})"
-
-            return function_call, function_def
-
-        def create_json(*args, **kwargs):
-
-            function_call, function_def = wrapper_function(*args, **kwargs)
-            data_function, tag_output = get_output(func, *args, **kwargs)
-
-            data = {
-                "Version": self.__version__,
-                "Model used": self.model,
-                "Id session": str(uuid.uuid4()),
-                "Timestamp": int(time.time()),
-                "func_call": function_call,
-                "func_hash": hashlib.md5(function_def.encode()).hexdigest(),
-                "Tag output": tag_output,
-                "Data": data_function,
-            }
-            json_object = json.dumps(data, indent=5)
-            return json_object
-
-        return create_json
+    
 
     def ai_call_enh(self, sys_prompt: str, func_prot: str, func_doc: str):
         api_key = self.api_key

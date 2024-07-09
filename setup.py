@@ -10,13 +10,14 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/hand-e-fr/OpenHosta-dev/tree/main',
     packages=find_packages(),
+    license_file=('LICENSE',),
     install_requires=[
         'requests',
     ],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Programming Language :: Python :: 3.8',
-        'License :: Open-Source',
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
         'Natural Language :: French',
