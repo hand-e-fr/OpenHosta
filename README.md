@@ -79,6 +79,8 @@ pip install -r requirements.txt
 
 ## How to use OpenHosta ?
 
+This is a brief explanation, if you want more details, please refer to the complete [documentation](Documentation/Docs.md) and and [examples](Documentation/example.ipynb) available. 
+
 ### Usage
 
 Make sure to import the library.
