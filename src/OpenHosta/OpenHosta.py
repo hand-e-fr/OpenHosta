@@ -100,7 +100,7 @@ class emulator:
     __last_content__ = None
     __last_data__ = {"return": None, "confidence": "low"}
 
-    _default_api_key = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
+    _default_api_key = None
     _default_ai_model: str = "gpt-4o"
     _default_creativity: float = 0.5
     _default_diversity: float = 0.5
