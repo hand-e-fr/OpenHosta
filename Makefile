@@ -16,8 +16,15 @@ help:
 package:
 	python setup.py sdist bdist_wheel
 
-test:
+test_light:
 	python -m unittest discover $(TEST_DIR)
+
+test_medium:
+	python -m unittest discover $(TEST_DIR)
+
+test_complete:
+	python -m unittest discover $(TEST_DIR)
+
 
 format:
 	black $(SRC_DIR) $(TEST_DIR)
