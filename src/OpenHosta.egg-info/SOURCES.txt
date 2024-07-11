@@ -1,0 +1,9 @@
+LICENSE
+README.md
+pyproject.toml
+src/OpenHosta/OpenHosta.py
+src/OpenHosta/__init__.py
+src/OpenHosta.egg-info/PKG-INFO
+src/OpenHosta.egg-info/SOURCES.txt
+src/OpenHosta.egg-info/dependency_links.txt
+src/OpenHosta.egg-info/top_level.txt
