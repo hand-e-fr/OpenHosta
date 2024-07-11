@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "OpenHosta"
+version = "1.0"
+description = "Open-Source programming project for natural language programming with AI"
+keywords = ["AI", "GPT", "Natural language", "Autommatic", "Easy"]
+authors = [
+  { name="Léandre Ramos"},
+  { name="Merlin Devillardr"},
+  { name="William Jolivet"},
+  { name="Emmanuel Batt"},
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.8",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Natural Language :: French",
+    "Topic :: Software Development :: Code Generators"
+]
+
+[project.urls]
+Homepage = "https://github.com/hand-e-fr/OpenHosta-dev"
+Issues = "https://github.com/hand-e-fr/OpenHosta-dev/issues"
