@@ -1,32 +1,15 @@
 from transformers import GPT2Tokenizer, logging
-from transformers import logging
 from enum import Enum
 import sys
 
-logging.set_verbosity_error()
-
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-
-class ModelType:
+class ModelType(Enum):
     BEST = "gpt4o"
     FAST = "gpt4o"
     CHEAP = "gpt4o"
     SECURE = "gpt4o"
     
-
-class Analizer:
-    
-    _default_model:str = ModelType.BEST
-    _model_list:list = (ModelType.BEST, ModelType.FAST, ModelType.CHEAP, ModelType.SECURE)
-    
-    def __init__(self, model:str=None):
-        self.model = self._default_model if model is None else model
-        if model not in self._model_list:
-            sys.stderr.write(f"[ANALIZE_ERROR] Invalid model \"{model}\", rempplaced by best performance model \"{ModelType.BEST}\".")
-            self.model = self._default_model
-
-
 class Cost:
     
     _default_input_cost = 0.005
@@ -39,31 +22,70 @@ class Cost:
     def get_input_cost(self):
         return self.input
     
-    def get_output_code(self):
+    def get_output_cost(self):
         return self.output
-
-g_cost:dict = {"gpt4o": Cost(0.005, 0.015)}
-
-print(g_cost["gpt4o"].get_input_cost())
-print("gpt4o" in ModelType)
-
-"""
-def estimate_request_cost(input_text, estimated_output_token, model):
-    input_tokens = tokenizer.encode(input_text)
-    num_input_tokens = len(input_tokens)
-    num_output_tokens = estimated_output_tokens
-    if (model == "gpt4o"):
-        cost_input = (num_input_tokens / 1000) * COST_PER_1000_INPUT_TOKENS
-        cost_output = (num_output_tokens / 1000) * COST_PER_1000_OUTPUT_TOKENS
+    
+    def estimate_request_cost(self, input_text, estimated_output_token, model):
+        input_tokens = tokenizer.encode(input_text)
+        num_input_tokens = len(input_tokens)
+        num_output_tokens = estimated_output_token
+        cost_input = (num_input_tokens / 1000) * self.input
+        cost_output = (num_output_tokens / 1000) * self.output
         total_cost = cost_input + cost_output
-    return total_cost
+        return total_cost
+    
+class Speed:
+    
+    _default_token_perSec = 63.32
+    _default_latency = 0.48
+    
+    def __init__(self, latency:int=None, token_perSec:int=None):
+        self.latency = self._default_latency if latency is None else latency
+        self.token_perSec = self._default_token_perSec if token_perSec is None else token_perSec
+        
+    def get_latency(self):
+        return self.latency
+    
+    def get_token_perSec(self):
+        return self.token_perSec
+    
+class Quality:
+    
+    _default_MMLU_score = 0.864
+    _default_quality_index = 100
+    
+    def get_quality_score(self):
+        pass
 
-input_text = "Bonjour, comment ça va aujourd'hui ?"
-estimated_output_tokens = 8
+class Security:
+    pass
 
-cost, num_input_tokens, num_output_tokens = estimate_request_cost(input_text, estimated_output_tokens)
-
-print(f"Nombre de tokens d'entrée : {num_input_tokens}")
-print(f"Nombre de tokens de sortie estimé : {num_output_tokens}")
-print(f"Coût total estimé : ${cost:.5f}")
-"""
+class Analizer:
+    
+    __model_data__:dict = {"cost": None, 
+                           "duration": None, 
+                           "quality": None, 
+                           "secure": None}
+    
+    _default_model:str = ModelType.BEST
+    _model_list:list = (ModelType.BEST, ModelType.FAST, ModelType.CHEAP, ModelType.SECURE)
+    
+    def fill_model_data(model:str)->dict:
+        match model:
+            case ModelType.BEST:
+                return {"cost": Cost(0.005, 0.015), "duration": Speed(0.48, 63.32), "quality": None, "security": "low"}
+            case ModelType.FAST:
+                return {"cost": None, "duration": None, "quality": None, "secure": None}
+            case ModelType.CHEAP:
+                return {"cost": None, "duration": None, "quality": None, "secure": None}
+            case ModelType.SECURE:
+                return {"cost": None, "duration": None, "quality": None, "secure": None}
+            case _:
+                sys.stderr.write(f"[ANALIZE_ERROR] Invalid model \"{model}\", remplaced by best performance model \"{ModelType.BEST}\".")
+                return {"cost": Cost(None, None), "duration": Speed(None, None), "quality": None, "secure": None}
+    
+    def __init__(self, model:str=None):
+        self.model = self._default_model if model is None else model
+        if model not in self._model_list:
+            sys.stderr.write(f"[ANALIZE_ERROR] Invalid model \"{model}\", remplaced by best performance model \"{ModelType.BEST}\".")
+            self.model = self._default_model
