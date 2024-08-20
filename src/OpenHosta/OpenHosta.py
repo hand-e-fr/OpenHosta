@@ -126,8 +126,9 @@ class emulator:
             emulator._default_creativity if creativity is None else creativity
         )
         self.top_p = emulator._default_diversity if diversity is None else diversity
-
-    def gpt4o(self, function_doc, function_call):
+        
+        
+    def __gpt_4o(self, function_doc, function_call):
         global emulator_pre_prompt
         api_key = self.api_key
         l_body = {
@@ -185,8 +186,19 @@ class emulator:
             l_ret = None
 
         return l_ret
+    
+    def __parse_func_body(source:str)->str:
+        for line in source.splitlines():
+            print(line)
 
-    def emulate(self, func):
+    def pmac(self, func):
+        
+        def __getitem__(self, key):
+        # Retourne une fonction qui prend une chaîne en argument
+            def concat_with_key(value):
+                return f"{key} {value}"
+            return concat_with_key
+
         def wrapper(*args, **kwargs):
             sig = inspect.signature(func)
             bound_args = sig.bind(*args, **kwargs)
@@ -214,19 +226,23 @@ class emulator:
                 [str(value) for value in bound_args.arguments.values()]
             )
             function_call = f"{func_name}({func_call_args})"
+            # print(inspect.getsource(func), func.__doc__, function_def.splitlines()[0])
+            
 
             try:
-                result = self.gpt4o(function_def, function_call)
+                result = self.__gpt_4o(function_def, function_call)
             except Exception as e:
                 print(Exception)
                 print(f"[EMU_ERROR] {e}", function_call)
                 result = None
             return result
 
-        return wrapper
+        if callable(func):
+            return wrapper
+        print("Hello World !")
     
 
-    def ai_call_enh(self, sys_prompt: str, func_prot: str, func_doc: str):
+    def __ai_call_enh(self, sys_prompt: str, func_prot: str, func_doc: str):
         api_key = self.api_key
         url = "https://api.openai.com/v1/chat/completions"
 
@@ -278,7 +294,7 @@ class emulator:
             sys.stderr.write(f"Status: {response.status_code}")
             return None
 
-    def parse_data(self, response: str):
+    def __parse_data(self, response: str):
         current_section = None
         current_text = []
 
@@ -293,7 +309,7 @@ class emulator:
         if current_section:
             self.__last_enh__[current_section] = "\n".join(current_text).strip()
 
-    def create_mermaid_file(self, mmd_script: str, name: str, dir: str) -> None:
+    def __create_mermaid_file(self, mmd_script: str, name: str, dir: str) -> None:
         try:
             with open(f"{dir}/{name}_diagram.mmd", "w") as file:
                 try:
@@ -307,7 +323,7 @@ class emulator:
         finally:
             file.close()
 
-    def create_help_file(
+    def __create_help_file(
         self, name: str, enhanced: str, critique: str, suggested: str, dir: str
     ) -> None:
         try:
@@ -326,7 +342,7 @@ class emulator:
         finally:
             file.close()
 
-    def build_output(self, func: object) -> int:
+    def __build_output(self, func: object) -> int:
         path = ""
 
         try:

@@ -154,3 +154,5 @@ print(Models["BEST"].get_name())
 #         if model not in self._model_list:
 #             sys.stderr.write(f"[ANALIZE_ERROR] Invalid model \"{model}\", remplaced by best performance model: \"{ModelType.BEST}\".")
 #             self.model = self._default_model
+
+
