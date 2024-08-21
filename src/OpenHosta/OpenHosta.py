@@ -193,11 +193,11 @@ class emulator:
 
     def pmac(self, func):
         
-        def __getitem__(self, key):
-        # Retourne une fonction qui prend une chaîne en argument
-            def concat_with_key(value):
-                return f"{key} {value}"
-            return concat_with_key
+        # def __getitem__(self, key):
+        # # Retourne une fonction qui prend une chaîne en argument
+        #     def concat_with_key(value):
+        #         return f"{key} {value}"
+        #     return concat_with_key
 
         def wrapper(*args, **kwargs):
             sig = inspect.signature(func)
