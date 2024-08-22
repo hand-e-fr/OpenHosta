@@ -100,6 +100,19 @@ class Models(Enum):
     SECURE = "gpt-4o"
     
 def model_config(model:Models, api_key:str)->int:
+    """
+    Configures the model and API key for use.
+
+    Args:
+        model (Models): The model to configure.
+        api_key (str): The API key to use.
+
+    Returns:
+        int: 0 if configuration is successful, -1 otherwise.
+
+    Raises:
+        ValueError: If the model or api_key is of incorrect type.
+    """
     global _g_model, _g_apiKey
     
     try:
@@ -116,6 +129,17 @@ def model_config(model:Models, api_key:str)->int:
     return 0
 
 def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
+    """
+    Calls the AI to enhance the function documentation.
+
+    Args:
+        sys_prompt (str): The system prompt.
+        func_prot (str): The function prototype.
+        func_doc (str): The function documentation.
+
+    Returns:
+        str: The enhanced documentation or None if the request fails.
+    """
     api_key = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
     url = "https://api.openai.com/v1/chat/completions"
 
@@ -168,6 +192,16 @@ def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
         return None
 
 def _parse_data(response: str, last_enh:dict)->dict:
+    """
+    Parses the response data into sections.
+
+    Args:
+        response (str): The response string.
+        last_enh (dict): The dictionary to store parsed data.
+
+    Returns:
+        dict: The dictionary with parsed data.
+    """
     current_section = None
     current_text = []
 
@@ -184,6 +218,19 @@ def _parse_data(response: str, last_enh:dict)->dict:
     return last_enh
 
 def _build_attributes(func: object, last_enh) -> int:
+    """
+    Builds attributes for the function based on enhanced data.
+
+    Args:
+        func (object): The function object.
+        last_enh (dict): The dictionary with enhanced data.
+
+    Returns:
+        int: 0 if successful, -1 otherwise.
+
+    Raises:
+        ValueError: If any of the required keys in last_enh are missing or of incorrect type.
+    """
     try:
         if not func.__name__ and not type(func.__name__) is str:
             raise ValueError("ValueError -> function name")
@@ -218,6 +265,12 @@ def _build_attributes(func: object, last_enh) -> int:
     return 0
 
 def _enhance(func):
+    """
+    Enhances the function documentation using AI.
+
+    Args:
+        func (object): The function object.
+    """
     global _enhancer_pre_prompt
     
     last_enh: dict = {
@@ -238,83 +291,105 @@ def _enhance(func):
     _build_attributes(func, last_enh)
 
 def emulate(_switch:bool=False, _function_doc=None, _function_call=None, warn:bool=False, creativity:float=None, diversity:float=None):
-        if not _switch:
-            global _exec_index
-            return _exec_index["emulate"], warn, creativity, diversity
-        else:
-            global _emulator_pre_prompt, _g_model, _g_apiKey
+    """
+    Emulates the function behavior based on the provided documentation and call.
+
+    Args:
+        _switch (bool): Whether to switch to emulation mode.
+        _function_doc (str): The function documentation.
+        _function_call (str): The function call.
+        warn (bool): Whether to issue warnings.
+        creativity (float): The creativity parameter (0 to 1).
+        diversity (float): The diversity parameter (0 to 1).
+
+    Returns:
+        Any: The emulated function result or None if an error occurs.
+    """
+    if not _switch:
+        global _exec_index
+        return _exec_index["emulate"], warn, creativity, diversity
+    else:
+        global _emulator_pre_prompt, _g_model, _g_apiKey
+        
+        try:
+            if not _emulator_pre_prompt or not _g_model or not _g_apiKey:
+                raise ValueError("ValueError -> emulate empty values")
             
+            if (creativity is not None and (creativity < 0 or creativity > 1)) or (diversity is not None and (diversity < 0 or diversity > 1)):
+                raise ValueError("ValueError -> emulate out of range values (0<creativity|diversity<1)")
+        except ValueError as v:
+            print(f"[EMULATE_ERROR]: {v}")
+            return None
+        
+        api_key = _g_apiKey
+        l_body = {
+            "model": _g_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": _emulator_pre_prompt
+                            + "---\n"
+                            + str(_function_doc)
+                            + "\n---",
+                        }
+                    ],
+                },
+                {"role": "user", "content": [{"type": "text", "text": str(_function_call)}]},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": creativity if creativity is not None else 0.7,
+            "top_p": diversity if diversity is not None else 0.7,
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions", json=l_body, headers=headers
+        )
+
+        __last_return__ = {"code": response.status_code, "text": response.text}
+
+        __resp__ = response
+
+        if response.status_code == 200:
+            data = response.json()
+            json_string = data["choices"][0]["message"]["content"]
+            __last_content__ = json_string
             try:
-                if not _emulator_pre_prompt or not _g_model or not _g_apiKey:
-                    raise ValueError("ValueError -> emulate empty values")
-                
-                if (creativity is not None and (creativity < 0 or creativity > 1)) or (diversity is not None and (diversity < 0 or diversity > 1)):
-                    raise ValueError("ValueError -> emulate out of range values (0<creativity|diversity<1)")
-            except ValueError as v:
-                print(f"[EMULATE_ERROR]: {v}")
-                return None
-            
-            api_key = _g_apiKey
-            l_body = {
-                "model": _g_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": _emulator_pre_prompt
-                                + "---\n"
-                                + str(_function_doc)
-                                + "\n---",
-                            }
-                        ],
-                    },
-                    {"role": "user", "content": [{"type": "text", "text": str(_function_call)}]},
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": creativity if creativity is not None else 0.7,
-                "top_p": diversity if diversity is not None else 0.7,
-            }
+                l_ret_data = json.loads(json_string)
+                __jsonN__ = l_ret_data
 
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
-            }
+            except json.JSONDecodeError as e:
+                print(f"JSONDecodeError: {e}")
+                l_cleand = "\n".join(json_string.split("\n")[1:-1])
+                l_ret_data = json.loads(l_cleand)
 
-            response = requests.post(
-                "https://api.openai.com/v1/chat/completions", json=l_body, headers=headers
-            )
+            __last_data__ = l_ret_data
 
-            __last_return__ = {"code": response.status_code, "text": response.text}
+            l_ret = l_ret_data["return"]
+        else:
+            print(f"Error {response.status_code}: {response.text}")
+            __last_data__ = {"return": None, "confidence": "low"}
+            l_ret = None
 
-            __resp__ = response
-
-            if response.status_code == 200:
-                data = response.json()
-                json_string = data["choices"][0]["message"]["content"]
-                __last_content__ = json_string
-                try:
-                    l_ret_data = json.loads(json_string)
-                    __jsonN__ = l_ret_data
-
-                except json.JSONDecodeError as e:
-                    print(f"JSONDecodeError: {e}")
-                    l_cleand = "\n".join(json_string.split("\n")[1:-1])
-                    l_ret_data = json.loads(l_cleand)
-
-                __last_data__ = l_ret_data
-
-                l_ret = l_ret_data["return"]
-            else:
-                print(f"Error {response.status_code}: {response.text}")
-                __last_data__ = {"return": None, "confidence": "low"}
-                l_ret = None
-
-            return l_ret
+        return l_ret
 
 def pmac(func):
+    """
+    Decorator to enhance the function with additional capabilities.
 
+    Args:
+        func (function): The function to enhance.
+
+    Returns:
+        function: The enhanced function.
+    """
     def wrapper(*args, **kwargs):
         
         global _exec_index
@@ -369,6 +444,15 @@ def pmac(func):
     return wrapper
 
 def thought(key):
+    """
+    Generates a thought based on the given key.
+
+    Args:
+        key (str): The key for the thought.
+
+    Returns:
+        function: The inner function that generates the thought.
+    """
     def inner_func(*args, **kwargs):
         try:
             result = emulate(True, _function_doc=key, _function_call=str(args[0]))
