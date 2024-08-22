@@ -1,5 +1,5 @@
 PACKAGE_NAME = OpenHosta
-SRC_DIR = src
+SRC_DIR = src/OpenHosta
 TEST_DIR = tests
 DOC_DIR = Documentation
 
