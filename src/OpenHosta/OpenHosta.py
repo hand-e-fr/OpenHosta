@@ -4,6 +4,8 @@ import json
 import sys
 from enum import Enum
 import time as t
+import tiktoken
+import os
 
 _emulator_pre_prompt: str = (
     """
@@ -94,12 +96,102 @@ _g_model = ""
 _g_apiKey = ""
 _exec_index: dict = {"auto": 0, "emulate": 1, "formulate": 2, "predict": 3, "build": 4}
 
-
 class Models(Enum):
     BEST = "gpt-4o"
     FAST = "gpt-4o"
     CHEAP = "gpt-4o"
     SECURE = "gpt-4o"
+    
+class PromptMananger:
+    def __init__(self, json_path=None):
+        if json_path is None:
+            try:
+                self.path = os.path.join(os.path.dirname(__file__), 'prompts.json')
+            except Exception as e:
+                sys.write.stderr(f"[JSON_ERROR] Impossible to find prompt.json:\n{e}")
+                return
+        else:
+            self.path = json_path
+            
+        with open(self.path, 'r', encoding="utf-8") as file:
+            self.json = json.load(file)
+            self.prompts = {item['key']: item for item in self.json['prompts']}
+            
+    def get_prompt(self, key):
+        prompt = self.prompts.get(key)
+        if prompt:
+            return prompt['text']
+        sys.write.stderr(f"[JSON_ERROR] Prompt not found")
+        return None
+
+    def get_prompt_details(self, key):
+        prompt = self.prompts.get(key)
+        if prompt:
+            return prompt
+        sys.write.stderr(f"[JSON_ERROR] Prompt not found")
+        return None
+    
+class ModelAnalizer:
+    
+    _default_name:str = "Unknown"
+    _default_input_cost:int = 0.005
+    _default_output_cost:int = 0.015
+    _default_token_perSec = 63.32
+    _default_latency = 0.48
+    _default_quality_score:int = 0
+    _default_security_score:int = 0
+    
+    def __init__(self, 
+                 name:str,
+                 url:str,
+                 input_cost:float,
+                 output_cost:float, 
+                 latency:float, 
+                 token_perSec:float,
+                 quality_score:float,
+                 security_score:float
+                 ):
+        self.name = self._default_name if name is None else name
+        self.input_cost = self._default_input_cost if input_cost is None else input_cost
+        self.output_cost = self._default_output_cost if output_cost is None else output_cost
+        self.latency = self._default_latency if latency is None else latency
+        self.token_perSec = self._default_token_perSec if token_perSec is None else token_perSec
+        self.quality_score = self._default_quality_score if quality_score is None else quality_score
+        self.security_score = self._default_security_score if security_score is None else security_score
+        self.tokenizer = tiktoken.get_encoding("cl100k_base")
+           
+    def get_name(self):
+        return self.name
+    
+    def get_input_cost(self):
+        return self.input_cost
+    
+    def get_output_cost(self):
+        return self.output_cost
+    
+    def get_latency(self):
+        return self.latency
+    
+    def get_token_perSec(self):
+        return self.token_perSec
+    
+    def get_quality_score(self):
+        return self.quality_score
+    
+    def get_security_score(self):
+        return self.security_score
+    
+    def estimate_output_token(function_doc:str, function_call:str):
+        pass
+    
+    def compute_request_cost(self, input_text, estimated_output_token, model):
+        input_tokens = self.tokenizer.encode(input_text)
+        num_input_tokens = len(input_tokens)
+        num_output_tokens = estimated_output_token
+        cost_input = (num_input_tokens / 1000) * self.input_cost
+        cost_output = (num_output_tokens / 1000) * self.output_cost
+        total_cost = cost_input + cost_output
+        return total_cost
 
 
 def model_config(model: Models, api_key: str) -> int:
@@ -111,7 +203,7 @@ def model_config(model: Models, api_key: str) -> int:
         if not type(api_key) is str:
             raise ValueError("ValueError -> api_key")
     except ValueError as v:
-        sys.stderr.write(f"[CONFIG_ERROR] {v}")
+        sys.stderr.write(f"[CONFIG_ERROR] {v}")   
         return -1
     finally:
         _g_model = model.value
@@ -271,7 +363,7 @@ def emulate(
                     "ValueError -> emulate out of range values (0<creativity|diversity<1)"
                 )
         except ValueError as v:
-            print(f"[EMULATE_ERROR]: {v}")
+            sys.stderr.write(f"[EMULATE_ERROR]: {v}")
             return None
 
         api_key = _g_apiKey
@@ -322,7 +414,7 @@ def emulate(
                 __jsonN__ = l_ret_data
 
             except json.JSONDecodeError as e:
-                print(f"JSONDecodeError: {e}")
+                sys.stderr.write(f"JSONDecodeError: {e}")
                 l_cleand = "\n".join(json_string.split("\n")[1:-1])
                 l_ret_data = json.loads(l_cleand)
 
@@ -330,12 +422,11 @@ def emulate(
 
             l_ret = l_ret_data["return"]
         else:
-            print(f"Error {response.status_code}: {response.text}")
+            sys.stderr.write(f"Error {response.status_code}: {response.text}")
             __last_data__ = {"return": None, "confidence": "low"}
             l_ret = None
 
         return l_ret
-
 
 def pmac(func):
 
@@ -386,12 +477,12 @@ def pmac(func):
                     diversity=temp[3],
                 )
             except Exception as e:
-                print(Exception)
-                print(f"[EMU_ERROR] {e}", function_call)
+                sys.stderr.write(Exception)
+                sys.stderr.write(f"[EMU_ERROR] {e}", function_call)
                 result = None
             return result
         else:
-            print("[PMAC_ERROR] Unknown index for execution.")
+            sys.stderr.write("[PMAC_ERROR] Unknown index for execution.")
             return None
 
     wrapper.__suggest__ = _enhance
@@ -405,8 +496,8 @@ def thought(key):
         try:
             result = emulate(True, _function_doc=key, _function_call=str(args[0]))
         except Exception as e:
-            print(Exception)
-            print("[LMDA_ERROR]")
+            sys.stderr.write(Exception)
+            sys.stderr.write("[LMDA_ERROR]")
             result = None
         return result
 
