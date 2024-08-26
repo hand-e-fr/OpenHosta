@@ -2,6 +2,13 @@ import requests
 import json
 import sys
 
+from prompt import PromptMananger
+
+_x = PromptMananger()
+
+_enhancer_pre_prompt = _x.get_prompt("enhance")
+
+
 def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
     api_key = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
     url = "https://api.openai.com/v1/chat/completions"
@@ -95,7 +102,7 @@ def _build_attributes(func: object, last_enh) -> int:
     return 0
 
 
-def _enhance(func):
+def enhance(func):
     global _enhancer_pre_prompt
 
     last_enh: dict = {

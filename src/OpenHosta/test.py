@@ -11,6 +11,7 @@ score_array = []
 
 model_config(model=Models.BEST, api_key="sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C")
 
+@pmac
 def reverse_str_ia(a:str)->str:
     """
     This function reverse a string
@@ -18,6 +19,8 @@ def reverse_str_ia(a:str)->str:
     return emulate()
 
 print(reverse_str_ia("bonjour"))
+reverse_str_ia.__suggest__(reverse_str_ia)
+print(reverse_str_ia.advanced)
 
 # def reverse_string(s):
 #     return s[::-1]
