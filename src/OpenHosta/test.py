@@ -15,9 +15,9 @@ def reverse_str_ia(a:str)->str:
     """
     This function reverse a string
     """  
-    return emulate(depth=2)
+    return emulate()
 
-# print(reverse_str_ia("bonjour"))
+print(reverse_str_ia("bonjour"))
 
 # def reverse_string(s):
 #     return s[::-1]
@@ -86,14 +86,15 @@ def reverse_str_ia(a:str)->str:
 # plt.legend()
 # plt.show()
 
-def toto(a:int=0):
-    x = inspect.currentframe()
-    # print(x.f_locals.keys())
-    # print(x.f_locals.values())
-    # print(x.f_locals["a"])
-    func = x.f_back.f_locals[x.f_code.co_name]
-    print(func.__name__)
+#################################################################################################################""
 
-    
-toto()
-print(toto)
+# def toto(a:int=0):
+#     x = inspect.currentframe()
+#     # print(x.f_locals.keys())
+#     # print(x.f_locals.values())
+#     # print(x.f_locals["a"])
+#     func = x.f_back.f_locals[x.f_code.co_name]
+#     print(func.__name__)
+
+# toto()
+# print(toto)
