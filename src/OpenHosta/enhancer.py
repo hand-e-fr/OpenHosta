@@ -114,7 +114,7 @@ def enhance(func):
 
     func_name, func_doc = func.__name__, func.__doc__
 
-    last_return = _ai_call_enh(_enhancer_pre_prompt, func.__prot__, func_doc)
+    last_return = _ai_call_enh(_enhancer_pre_prompt, func._prot, func_doc)
 
     last_enh = _parse_data(last_return, last_enh)
 
