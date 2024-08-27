@@ -3,7 +3,7 @@ import numpy as np
 import time as t
 import inspect
 
-from OpenHosta import model_config, Models, pmac, emulate, thought
+from OpenHosta import model_config, Models, EMULATE, thought
 
 time_array = []
 score_array = []
@@ -11,16 +11,22 @@ score_array = []
 
 model_config(model=Models.BEST, api_key="sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C")
 
-@pmac
 def reverse_str_ia(a:str)->str:
     """
     This function reverse a string
     """  
-    return emulate()
+    return EMULATE()
 
-print(reverse_str_ia("bonjour"))
+print(reverse_str_ia("Bonjour"))
 reverse_str_ia.__suggest__(reverse_str_ia)
 print(reverse_str_ia.advanced)
+
+res = thought("Est-ce un prénom masculin ?")("Emmanuel")
+print(res)
+
+# print(reverse_str_ia("bonjour"))
+# reverse_str_ia.__suggest__(reverse_str_ia)
+# print(reverse_str_ia.advanced)
 
 # def reverse_string(s):
 #     return s[::-1]
@@ -88,16 +94,3 @@ print(reverse_str_ia.advanced)
 # plt.grid(True)
 # plt.legend()
 # plt.show()
-
-#################################################################################################################""
-
-# def toto(a:int=0):
-#     x = inspect.currentframe()
-#     # print(x.f_locals.keys())
-#     # print(x.f_locals.values())
-#     # print(x.f_locals["a"])
-#     func = x.f_back.f_locals[x.f_code.co_name]
-#     print(func.__name__)
-
-# toto()
-# print(toto)
