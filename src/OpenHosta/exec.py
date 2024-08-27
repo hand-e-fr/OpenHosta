@@ -76,6 +76,6 @@ class ExecutiveFunction:
         call = f"{func.__name__}({args_str})"
         return call
     
-    def attach_attributs(self, func: Callable, prototype:str):
+    def _attach_attributs(self, func: Callable, prototype:str):
         func.__suggest__ = enhance
         func._prot = prototype
