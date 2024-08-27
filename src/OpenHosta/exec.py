@@ -18,7 +18,7 @@ class ExecutiveFunction:
         infos["def"], func_prot = self._get_functionDef(func_obj)
         infos["call"] = self._get_functionCall(func_obj, caller)
     
-        self.attach_attributs(func_obj, func_prot)        
+        self._attach_attributs(func_obj, func_prot)        
         return self.exec(infos["def"], infos["call"], *args, **kwargs)
         
     def _extend_scope(self)->Callable:
