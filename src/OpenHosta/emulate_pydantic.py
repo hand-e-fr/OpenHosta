@@ -61,7 +61,7 @@ def _exec_emulate(
                         + "---\n"
                         + str(_function_doc)
                         + "\n---"
-                        + "This need to return the following JSON format"+ str(_function_return)
+                        + "This need to return the following JSON format"+ str(_function_return) # Ajouté par Léandre
                         + "\n---"
                     }
                 ],
