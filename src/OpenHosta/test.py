@@ -3,16 +3,13 @@ import numpy as np
 import time as t
 import inspect
 
-from OpenHosta import model_config, Models, emulate, thought
+from OpenHosta import config, Models, emulate, thought
 
 time_array = []
 score_array = []
 
-# HostaConfig.set_default_model.BEST()
-# HostaConfig.set_model(apikey=os.getenv("API_KEY"))
-# HostaConfig.save(id="")
 
-model_config(model=Models.BEST, api_key="sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C")
+config.set_default_apiKey(api_key="sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C")
 
 def reverse_str_ia(a:str)->str:
     """

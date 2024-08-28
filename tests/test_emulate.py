@@ -1,4 +1,3 @@
-import pytest as pt
 import sys
 
 class BasicTestEmulate:
