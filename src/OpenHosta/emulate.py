@@ -26,6 +26,7 @@ def set_model(model):
 def _exec_emulate(
     _function_doc=None,
     _function_call=None,
+    _function_return=None,
     warn: bool = False,
     creativity: float = None,
     diversity: float = None,
@@ -46,7 +47,7 @@ def _exec_emulate(
         sys.stderr.write(f"[EMULATE_ERROR]: {v}")
         return None
     
-
+    
     api_key = _g_apiKey
     l_body = {
         "model": _g_model,
@@ -59,7 +60,9 @@ def _exec_emulate(
                         "text": _emulator_pre_prompt
                         + "---\n"
                         + str(_function_doc)
-                        + "\n---",
+                        + "\n---"
+                        + "This need to return the following JSON format"+ str(_function_return)
+                        + "\n---"
                     }
                 ],
             },
@@ -77,18 +80,20 @@ def _exec_emulate(
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-
+    
     response = requests.post(
         "https://api.openai.com/v1/chat/completions", json=l_body, headers=headers
     )
 
     __last_return__ = {"code": response.status_code, "text": response.text}
 
-    __resp__ = response
+    __resp__ = response    
 
     if response.status_code == 200:
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
+        # print("json_string", json_string, flush=True)
+        # print("json asked", _function_return, flush=True)
         __last_content__ = json_string
         try:
             l_ret_data = json.loads(json_string)
