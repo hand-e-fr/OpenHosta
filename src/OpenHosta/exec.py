@@ -4,7 +4,7 @@ from typing import Callable
 
 from enhancer import enhance
 
-class ExecutiveFunction:
+class HostaInjector:
 
     def __init__(self, exec):
         if not callable(exec):

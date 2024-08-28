@@ -3,11 +3,14 @@ import numpy as np
 import time as t
 import inspect
 
-from OpenHosta import model_config, Models, EMULATE, thought
+from OpenHosta import model_config, Models, emulate, thought
 
 time_array = []
 score_array = []
 
+# HostaConfig.set_default_model.BEST()
+# HostaConfig.set_model(apikey=os.getenv("API_KEY"))
+# HostaConfig.save(id="")
 
 model_config(model=Models.BEST, api_key="sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C")
 
@@ -15,11 +18,11 @@ def reverse_str_ia(a:str)->str:
     """
     This function reverse a string
     """  
-    return EMULATE()
+    return emulate()
 
 print(reverse_str_ia("Bonjour"))
-reverse_str_ia.__suggest__(reverse_str_ia)
-print(reverse_str_ia.advanced)
+# reverse_str_ia.__suggest__()
+# print(reverse_str_ia.advanced)
 
 res = thought("Est-ce un prénom masculin ?")("Emmanuel")
 print(res)
