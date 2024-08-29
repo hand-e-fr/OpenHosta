@@ -55,7 +55,7 @@ We can finally **get started**, but first here is the **table of contents** to h
     - [Further Information](#further-information)
   - [Source Code Explanation](#source-code-explanation)
   - [Advanced Examples](#advanced-examples)
-  - [Beta Features](#beta-features)
+  - [Beta Features \& Benchmark](#beta-features--benchmark)
     - [References](#references)
 
 ---
@@ -90,7 +90,7 @@ We can finally **get started**, but first here is the **table of contents** to h
 
 ---
 
-## Beta Features
+## Beta Features & Benchmark
 
 ---
 
