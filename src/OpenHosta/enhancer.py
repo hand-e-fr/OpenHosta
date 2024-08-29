@@ -8,9 +8,10 @@ from config import _default_model
 _x = PromptMananger()
 _enhancer_pre_prompt = _x.get_prompt("enhance")
 
+
 def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
     global _default_model
-    
+
     api_key = _default_model.api_key
     url = _default_model.base_url
 
