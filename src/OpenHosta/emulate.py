@@ -36,7 +36,7 @@ def _exec_emulate(
     l_user_prompt = (
         "Here's the function definition:\n" 
         + _function_doc 
-        + "\nAnd This is the function call:\n" 
+        + "\nAnd this is the function call:\n" 
         + _function_call
         +  "\nThis need to return the following JSON format\n"
         + str(_function_return)

@@ -1,131 +1,101 @@
 # Documentation
 ___
 
-**You will find above a short desciption with examples to understand how OpenHosta works.Hope you will like it ! :)**
+Documentation for version: **1.0**
 
-*if you want to test it move the `example.ipynb` file in `src`*
+Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as** usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the Jupyter Notebook **test files** to help you take your first steps in discovering OpenHosta.
 
-#### Import the emulator
+For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
 
-```python
-from OpenHosta import emulator
-
-llm = emulator()
-```
-
-#### Let's create a new function. In fact, you need to place the decorator `llm.emulate` above the function. A decorator is used here to take the function as a parameter.
-
-Your function should be prototyped like this
-
-```python
-@llm.emulate
-def AI_find_occurence_of_a_word(word :str, text: str) -> int:
-    """
-    This function takes a word and a text and returns
-    the number of times the word appears in the text.
-    """
-    pass
-
-AI_find_occurence_of_a_word("hello", "hello world hello") # 2
-```
-
-output :
-```bash
-2
-```
 ___
 
-#### If you want to improve your prompt, see what's the AI understand and see a vizualizer of the reasonning please use the decorator `llm.enhance`
-Your function should be prototiped like this : 
+### Introduction
 
-```python
-@llm.enhance
-def AI_find_occurence_of_a_word_enhance(word :str, text: str) -> int:
-    """
-    This function takes a word and a text and returns
-    the number of times the word appears in the text.
-    """
-    pass
+#### First Step
 
-AI_find_occurence_of_a_word_enhance("hello", "hello world hello")
-```
+OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the **PMAC** concept, reimagining the **compilation** process in “Just-In-Time” languages. All our functionalities respect the **syntax and paradigm** of this language. 
 
-A directory `.openhosta` will appears and he will contain :
+The choice of LLM is mostly up to you, depending on your configuration level, but the vast majority are compatible. By default, OpenAI's **GPT-4o** is chosen. This has been tested by our team during development and **guarantees** a sufficient level of functionality. 
 
-**A mermaid vizualizer**
-```mermaid
-graph LR
-    A[Start] --> B[Receive inputs: word and text]
-    B --> C{Are inputs valid?}
-    C -- No --> D[Return error]
-    C -- Yes --> E[Convert both inputs to lowercase]
-    E --> F[Remove punctuation from text]
-    F --> G[Split text into words]
-    G --> H[Count exact matches of the word]
-    H --> I[Return the count]
-    I --> J[End]
-```
+Whatever your configuration, make sure you're provided with a **working API key** before proceeding. Keep in mind that each request will incur **costs** which are different depending on the model. You can find prices on distributor websites. Here are the prices for the OpenAI API: https://openai.com/api/pricing/
 
-**A understanding of the input prompt and an possible update version for more precision (*that you need to change manually if you agree this*).**
-___
-- **Enhanced prompt:**
-This function takes two inputs: a word (string) and a text (string). It returns an integer representing the number of times the specified word appears in the given text. The function should be case-insensitive, meaning it should count occurrences of the word regardless of whether it is in uppercase or lowercase. Additionally, the function should handle punctuation properly, ensuring that words followed by punctuation marks are still counted correctly. The function should also include error handling to manage cases where the inputs are not strings or are empty.
-- **How to improve your prompt:**
-The prompt is clear but lacks specificity in handling edge cases and punctuation. It also doesn't specify how to handle different forms of the word, such as plural or possessive forms. Furthermore, it doesn't mention whether the function should count overlapping occurrences of the word. The prompt could benefit from more detailed requirements to ensure robustness and accuracy.
-- **Improvemed prompt suggestion:**
-This function takes two inputs: a word (string) and a text (string). It returns an integer representing the number of times the specified word appears in the given text. The function should be case-insensitive, meaning it should count occurrences of the word regardless of whether it is in uppercase or lowercase. It should handle punctuation properly, ensuring that words followed by punctuation marks are still counted correctly. The function should not count overlapping occurrences of the word. Additionally, the function should include error handling to manage cases where the inputs are not strings or are empty. It should also handle different forms of the word, such as plural or possessive forms, by considering only exact matches of the word.`
-___
+We've already mentioned a few concepts about **AI** or **computer science**. If some of them may be **unclea**r to you, please have a look at the *“references”* section, where a series of explanatory links or definitions will be listed to **help** you understand.
 
-## How to use OpenHosta ?
+Finally, if you like the project and are thinking of contributing, please refer to our [Contribution Guide](CONTRIBUTING.md)
 
-This is a brief explanation, if you want more details, please refer to the complete [documentation](Documentation/Docs.md) and and [examples](Documentation/example.ipynb) available. 
+#### Why use OpenHosta?
 
-### Usage
+- **Beyond programming**
 
-Make sure to import the library.
+OpenHosta allows you to code functions that are complex or even impossible **before**, by adding the ambiguity of **human language**, or the processing of language relating to social codes or other parameters that are **difficult** to implement in Python for example. It **simplifies** tasks that would otherwise require significant time and expertise, thus expanding **possibilities** in Python programming.
 
-```python
-import OpenHosta
-```
+- **Python Ecosystem**
+- **Open-Source**
+- **AI-based**
 
-Here is a simple usage example:
+---
 
-```python
-llm = OpenHosta.emulator()    # You need to put your API key and the model as parameters
+We can finally **get started**, but first here is the **table of contents** to help you navigate through the various sections of the documentation.
 
-@llm.emulate                  # or "@llm.enhance"
-def example(a:int, b:int)->int:  # Put your prompt in the docstrings
-   """
-   This is a very precise example prompt.  
-   """
-   pass                       # The function therefore contains no instructions
+### Table of Content
 
-example(4, 2)                 # Call the function to activate the decorator      
-```
+- [Documentation](#documentation)
+    - [Introduction](#introduction)
+      - [First Step](#first-step)
+      - [Why use OpenHosta?](#why-use-openhosta)
+    - [Table of Content](#table-of-content)
+  - [Features](#features)
+    - [Get Started](#get-started)
+    - ["emulate()" Function](#emulate-function)
+    - [Pydantic Return](#pydantic-return)
+    - ["enhance"](#enhance)
+    - ["thought"](#thought)
+  - [Advanced Configuration](#advanced-configuration)
+    - ["Model" class](#model-class)
+    - [Further Information](#further-information)
+  - [Source Code Explanation](#source-code-explanation)
+  - [Advanced Examples](#advanced-examples)
+  - [Beta Features](#beta-features)
+    - [References](#references)
 
-### Features
+---
 
-```python
-llm = emulator()
-```
+## Features
 
-- `llm` contains three main decorators. Decorators in Python are functions that modify the behavior of other functions or methods, allowing for additional functionalities in a modular way:
-  - `@llm.emulate`: Decorates a function to emulate its execution by an AI. You can choose the model using your API key.
-  - `@llm.enhance`: Decorates a function and generates a Mermaid diagram to visualize and understand the model's reasoning, as well as a markdown help file to improve the function's prompt. Everything is stored in the `.openhosta` directory at the root of the working directory.
+### Get Started
 
-### Configuration
+### "emulate()" Function
 
-The `emulator` class can have four parameters:
-   - `model`: LLM model to which the program will send its requests
-   - `creativity` & `diversity`: Correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/)
-   - `api_key`: Your own api-key to communicate with the llm
+### Pydantic Return 
 
-Example:
-```python
-llm = OpenHosta.emulator(
-   model="gpt-4o", 
-   api_key="This_is_my_api_key",
-   creativity=0.7,
-   diversity=0.5
-)
-```
+### "enhance"
+
+### "thought"
+
+---
+
+## Advanced Configuration
+
+### "Model" class
+
+### Further Information
+
+---
+
+## Source Code Explanation
+
+---
+
+## Advanced Examples
+
+---
+
+## Beta Features
+
+---
+
+### References
+
+---
+
+---
