@@ -1,6 +1,7 @@
 import inspect
 import sys
-from typing import Callable
+from typing import Callable, Any, Dict
+from pydantic import BaseModel, create_model
 
 from enhancer import enhance
 
@@ -12,14 +13,15 @@ class HostaInjector:
         self.exec = exec
     
     def __call__(self, *args, **kwargs):
-        infos = {"def": "", "call": ""}
+        infos = {"def": "", "call": "", "return_type": ""}
         
         func_obj, caller = self._extend_scope()
         infos["def"], func_prot = self._get_functionDef(func_obj)
         infos["call"] = self._get_functionCall(func_obj, caller)
+        infos["return_type"] = self._get_functionReturnType(func_obj)
     
         self._attach_attributs(func_obj, func_prot)        
-        return self.exec(infos["def"], infos["call"], *args, **kwargs)
+        return self.exec(infos["def"], infos["call"], infos["return_type"], *args, **kwargs)
         
     def _extend_scope(self)->Callable:
         try:
@@ -76,6 +78,31 @@ class HostaInjector:
         call = f"{func.__name__}({args_str})"
         return call
     
+    def _inspect_returnType(self, func:Callable)->str:
+        sig = inspect.signature(func)
+
+        if sig.return_annotation != inspect.Signature.empty:
+            return sig.return_annotation
+        else:
+            return None
+
+    def _get_functionReturnType(self, func: Callable) -> Dict[str, Any]:
+        return_type = self._inspect_returnType(func)
+        return_json = None
+
+        if return_type is not None:
+            if issubclass(return_type, BaseModel):
+                return_json = return_type.model_json_schema()
+            else:
+                new_model = create_model('Hosta_return_specified', return_hosta_type=(return_type, ...))
+                return_json = new_model.model_json_schema()
+        else:
+            No_return_specified = create_model('Hosta_return_no_specified', return_hosta_type=(Any, ...))
+            return_json = No_return_specified.model_json_schema()
+        
+        return return_json
+    
     def _attach_attributs(self, func: Callable, prototype:str):
         func.__suggest__ = enhance
         func._prot = prototype
+        

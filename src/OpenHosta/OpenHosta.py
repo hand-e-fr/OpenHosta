@@ -6,4 +6,4 @@ from exec import HostaInjector
 
 emulate = HostaInjector(_exec_emulate)
 
-__all__ = emulate, thought, config, Model
+__all__ = "emulate", "thought", "config", "Model"
