@@ -3,13 +3,16 @@ import json
 import sys
 
 from prompt import PromptMananger
+from config import _default_model
 
 _x = PromptMananger()
 _enhancer_pre_prompt = _x.get_prompt("enhance")
 
 def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
-    api_key = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
-    url = "https://api.openai.com/v1/chat/completions"
+    global _default_model
+    
+    api_key = _default_model.api_key
+    url = _default_model.base_url
 
     headers = {
         "Content-Type": "application/json",
@@ -17,7 +20,7 @@ def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
     }
 
     data = {
-        "model": "gpt-4o",
+        "model": _default_model.model,
         "messages": [
             {"role": "system", "content": [{"type": "text", "text": sys_prompt}]},
             {
