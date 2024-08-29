@@ -5,66 +5,13 @@ import sys
 import requests
 import json
 
-from config import Model
+from config import Model, _default_model
+from prompt import PromptMananger
 
-_estimate_prompt = """
-You're a prompt engineering engineer tasked with estimating the number of output tokens an AI would return when executing a given function. The functions are written in Python, so function returns must use Python typing. 
+_x = PromptMananger()
 
-Each time, I'll give you the following elements:
-- The definition of the function.
-- Its call with arguments. 
-- The function's docstring.
+_estimate_prompt = _x.get_prompt("estimate")
 
-You need to take all these elements into account when formulating your answer. To estimate the output token, you need to use a tokenization algorithm: take the one in GPT-3.
-
-To make your estimate, you need to go through this chain of thought:
-
-1. Understand the Function.
-	- With the given definition, the function prototype and its docstring.
-2. Analyze the Function Call.
-	- With the function name and arguments provided.
-3. Guess the expected result without calculating it.
-	- You MUST NOT calculate the result of the function. - Simply make a prediction with all the elements you have at your disposal.
-	- Pay attention to the type of output. If it's not specified in the function prototype, then guess it based on the description and type of the input arguments.
-4. Estimate the number of tokens.
-	- Use the information you have available for this step.
-	- If the estimate is complex or impossible, make a realistic prediction using the context elements.
-5. Formulate your answer
-	- Synthesize your answer into a single number.
-	- Follow the answer format I'll give you below
-
-You should encode your response in valid JSON format, without comments, using the following format:
-{ “tokens”:...}
-Your answer in the “tokens” category must be a number only. Nothing should appear other than this JSON structure.
-
-Any assumptions made should be reasonable based on the provided function description and should take into account the error handling of the function.
-
-I'll give you a example:
-Function definition:
-```python
-def reverse_string(a:str)->str:
-	\"\"\"
-	This function reverse the string in parameter.
-	\"\"\"
-	return emulate()
-```
-
-Function call:
-```python
-reverse_string("Hello World!")
-```
-
-Excpected output:
-```
-{"tokens": 13}
-```
-
-Here's all the function documentation for you to estimate:
-"""
-
-_g_model = "gpt-4o"
-_g_apiKey = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
-    
 class ModelAnalizer(Model):
     
     _default_input_cost:int = 0.005
@@ -99,18 +46,18 @@ class ModelAnalizer(Model):
         return self.token_perSec
 
     def _estimate_output_token(self, function_doc:str, function_call:str):
-        global _estimate_prompt, _g_model, _g_apiKey
+        global _estimate_prompt, _default_model
             
         try:
-            if not _estimate_prompt or not _g_model or not _g_apiKey:
+            if not _estimate_prompt:
                 raise ValueError("ValueError -> emulate empty values")
         except ValueError as v:
             sys.stderr.write(f"[ESTIMATE_ERROR]: {v}")
             return None
         
-        api_key = _g_apiKey
+        api_key = _default_model.api_key
         l_body = {
-            "model": _g_model,
+            "model": _default_model.model,
             "messages": [
                 {
                     "role": "system",
@@ -140,7 +87,7 @@ class ModelAnalizer(Model):
         }
 
         response = requests.post(
-            "https://api.openai.com/v1/chat/completions", json=l_body, headers=headers
+            _default_model.base_url, json=l_body, headers=headers
         )
         
         if response.status_code == 200:
