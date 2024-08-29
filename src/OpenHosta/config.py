@@ -26,7 +26,7 @@ class Model():
         if any(var is None for var in (model, base_url)):
             sys.stderr.write(f"[CONFIG_ERROR] Empty values.")
             return
-        elif not is_valid_url(self.url):
+        elif not is_valid_url(self.base_url):
             sys.stderr.write(f"[CONFIG_ERROR Invalid URL.")
             return
             
@@ -79,24 +79,20 @@ class Model():
             sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful.")
         return response
     
-    def _request_handler(response):
+    def _request_handler(self, response):
         l_ret = ""
         
-        if response.status_code == 200:
-            data = response.json()
-            json_string = data["choices"][0]["message"]["content"]
-            try:
-                l_ret_data = json.loads(json_string)
+        data = response.json()
+        json_string = data["choices"][0]["message"]["content"]
+        try:
+            l_ret_data = json.loads(json_string)
 
-            except json.JSONDecodeError as e:
-                sys.stderr.write(f"JSONDecodeError: {e}")
-                l_cleand = "\n".join(json_string.split("\n")[1:-1])
-                l_ret_data = json.loads(l_cleand)
+        except json.JSONDecodeError as e:
+            sys.stderr.write(f"JSONDecodeError: {e}")
+            l_cleand = "\n".join(json_string.split("\n")[1:-1])
+            l_ret_data = json.loads(l_cleand)
 
-            l_ret = l_ret_data["tokens"]
-        else:
-            sys.stderr.write(f"Error {response.status_code}: {response.text}")
-            l_ret = None
+        l_ret = l_ret_data["return"]
 
         return l_ret
 
@@ -110,12 +106,6 @@ def set_default_model(new:Model):
     global _default_model
     
     _default_model = new
-
-# def set_id():
-#     pass
-
-# def set_parameter():
-#     pass
 
 def set_default_apiKey(api_key=None):
     global _default_model

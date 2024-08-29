@@ -5,6 +5,8 @@ import sys
 import requests
 import json
 
+from config import Model
+
 _estimate_prompt = """
 You're a prompt engineering engineer tasked with estimating the number of output tokens an AI would return when executing a given function. The functions are written in Python, so function returns must use Python typing. 
 
@@ -63,9 +65,8 @@ Here's all the function documentation for you to estimate:
 _g_model = "gpt-4o"
 _g_apiKey = "sk-proj-T7o4z8S4q9fnBNTdSq4iT3BlbkFJ82uVDLRaIAkx1sjwyE5C"
     
-class ModelAnalizer:
+class ModelAnalizer(Model):
     
-    _default_name:str = "Unknown"
     _default_input_cost:int = 0.005
     _default_output_cost:int = 0.015
     _default_token_perSec = 63.32
@@ -77,16 +78,13 @@ class ModelAnalizer:
                  output_cost:float, 
                  latency:float, 
                  token_perSec:float,
-                 ):
+        ):
         self.name = self._default_name if name is None else name
         self.input_cost = self._default_input_cost if input_cost is None else input_cost
         self.output_cost = self._default_output_cost if output_cost is None else output_cost
         self.latency = self._default_latency if latency is None else latency
         self.token_perSec = self._default_token_perSec if token_perSec is None else token_perSec
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
-           
-    def get_name(self):
-        return self.name
     
     def get_input_cost(self):
         return self.input_cost

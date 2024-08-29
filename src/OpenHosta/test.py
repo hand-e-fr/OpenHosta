@@ -3,7 +3,7 @@ import numpy as np
 import time as t
 import inspect
 
-from OpenHosta import config, Models, emulate, thought
+from OpenHosta import config, emulate, thought
 
 time_array = []
 score_array = []
