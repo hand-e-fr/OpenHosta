@@ -12,6 +12,7 @@ _emulator_pre_prompt = _x.get_prompt("emulate")
 def _exec_emulate(
     _function_doc=None,
     _function_call=None,
+    _function_return=None,
     model:Model = _default_model,
     warn: bool = False,
     l_creativity: float = None,
@@ -37,6 +38,8 @@ def _exec_emulate(
         + _function_doc 
         + "\nAnd This is the function call:\n" 
         + _function_call
+        +  "\nThis need to return the following JSON format\n"
+        + str(_function_return)
     )
     
     response = model._api_call(

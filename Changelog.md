@@ -4,7 +4,7 @@ All significant changes to this project will be documented in this file.
 
 ---
 
-## **v1.1**:
+## **v1.0**:
 
 - Added test campaign with three levels of completeness.
 - Added cost calculation algorithm available on emulate and enhance features.

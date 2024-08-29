@@ -75,3 +75,57 @@ The prompt is clear but lacks specificity in handling edge cases and punctuation
 - **Improvemed prompt suggestion:**
 This function takes two inputs: a word (string) and a text (string). It returns an integer representing the number of times the specified word appears in the given text. The function should be case-insensitive, meaning it should count occurrences of the word regardless of whether it is in uppercase or lowercase. It should handle punctuation properly, ensuring that words followed by punctuation marks are still counted correctly. The function should not count overlapping occurrences of the word. Additionally, the function should include error handling to manage cases where the inputs are not strings or are empty. It should also handle different forms of the word, such as plural or possessive forms, by considering only exact matches of the word.`
 ___
+
+## How to use OpenHosta ?
+
+This is a brief explanation, if you want more details, please refer to the complete [documentation](Documentation/Docs.md) and and [examples](Documentation/example.ipynb) available. 
+
+### Usage
+
+Make sure to import the library.
+
+```python
+import OpenHosta
+```
+
+Here is a simple usage example:
+
+```python
+llm = OpenHosta.emulator()    # You need to put your API key and the model as parameters
+
+@llm.emulate                  # or "@llm.enhance"
+def example(a:int, b:int)->int:  # Put your prompt in the docstrings
+   """
+   This is a very precise example prompt.  
+   """
+   pass                       # The function therefore contains no instructions
+
+example(4, 2)                 # Call the function to activate the decorator      
+```
+
+### Features
+
+```python
+llm = emulator()
+```
+
+- `llm` contains three main decorators. Decorators in Python are functions that modify the behavior of other functions or methods, allowing for additional functionalities in a modular way:
+  - `@llm.emulate`: Decorates a function to emulate its execution by an AI. You can choose the model using your API key.
+  - `@llm.enhance`: Decorates a function and generates a Mermaid diagram to visualize and understand the model's reasoning, as well as a markdown help file to improve the function's prompt. Everything is stored in the `.openhosta` directory at the root of the working directory.
+
+### Configuration
+
+The `emulator` class can have four parameters:
+   - `model`: LLM model to which the program will send its requests
+   - `creativity` & `diversity`: Correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/)
+   - `api_key`: Your own api-key to communicate with the llm
+
+Example:
+```python
+llm = OpenHosta.emulator(
+   model="gpt-4o", 
+   api_key="This_is_my_api_key",
+   creativity=0.7,
+   diversity=0.5
+)
+```
