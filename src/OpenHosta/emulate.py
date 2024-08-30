@@ -9,7 +9,6 @@ _x = PromptMananger()
 _emulator_pre_prompt = _x.get_prompt("emulate")
 
 
-@request_timer
 def _exec_emulate(
     _function_doc=None,
     _function_call=None,
@@ -37,9 +36,14 @@ def _exec_emulate(
         + _function_doc
         + "\nAnd this is the function call:\n"
         + _function_call
-        + "\nThis need to return the following JSON format\n"
-        + str(_function_return)
     )
+    
+    if not _function_return is None:
+        l_user_prompt = (
+            l_user_prompt 
+            + "\nTo fill the “return” value in the output JSON, build your response as defined in the following JSON schema. Do not change the key \"return\"\n"
+            + str(_function_return)
+        )
 
     response = model._api_call(
         sys_prompt=_emulator_pre_prompt,

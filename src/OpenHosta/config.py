@@ -83,6 +83,8 @@ class Model:
 
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
+        
+        
         try:
             l_ret_data = json.loads(json_string)
 
