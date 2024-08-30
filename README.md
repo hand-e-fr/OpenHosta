@@ -1,9 +1,9 @@
 # OpenHosta 
-v0.1.0 - Open-Source Project
+v1.0 - Open-Source Project
 
 **- The future of development is human -**
 
-Welcome to the OpenHosta documentation, a powerful tool that facilitates the integration of specific functions into a project while allowing beginners to clearly understand the project. OpenHosta is used to emulate functions using AI, compare their results with coded functions, and generate detailed logs for each function call.
+Welcome to the OpenHosta documentation, a powerful tool that facilitates the integration LLM in the development environnement. OpenHosta is used to emulate functions using AI, while respecting Python's native paradygma and syntax.
 
 For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
 
@@ -14,10 +14,9 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
   - [How to install OpenHosta ?](#how-to-install-openhosta-)
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
-  - [How to use OpenHosta ?](#how-to-use-openhosta-)
-    - [Usage](#usage)
-    - [Features](#features)
-    - [Configuration](#configuration)
+      - [Via pip](#via-pip)
+      - [Via git (Developper version)](#via-git-developper-version)
+    - [Example](#example)
   - [Further information](#further-information)
     - [Contributing](#contributing)
     - [License](#license)
@@ -53,9 +52,25 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
       ```
 
 5. **API Key**
-   - **API Key**: Log in to your OpenAI account from [openai.com](https://openai.com/), then create your API key.
+   - **API Key**: Log in to your OpenAI account from [openai.com](https://openai.com/), then create your API key. For further information, you can check this [tuto](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key).
 
 ### Installation
+
+#### Via pip
+
+1. Run the following command to install OpenHosta directly:
+ 
+```sh
+pip install openhosta
+```
+
+2. After the installation, you can verify that OpenHosta is installed correctly by running:
+
+```sh
+pip show openhosta
+```
+
+#### Via git (Developper version)
 
 1. Clone the **Git repository** to your local machine using the following command:
 
@@ -75,75 +90,27 @@ cd OpenHosta-dev
 pip install -r requirements.txt
 ```
 
-4. Or you can run the following command to install Oit directly:
- 
-```sh
-pip install openhosta
-```
+This way you have all de documentation and source code to understand our project
 
-5. After the installation, you can verify that OpenHosta is installed correctly by running:
-
-```sh
-pip show openhosta
-```
-
----
-
-## How to use OpenHosta ?
-
-This is a brief explanation, if you want more details, please refer to the complete [documentation](Documentation/Docs.md) and and [examples](Documentation/example.ipynb) available. 
-
-### Usage
-
-Make sure to import the library.
+### Example
 
 ```python
-import OpenHosta
-```
+from openhosta import *
 
-Here is a simple usage example:
+config.set_default_apiKey("example-apikey")
 
-```python
-llm = OpenHosta.emulator()    # You need to put your API key and the model as parameters
-
-@llm.emulate                  # or "@llm.enhance"
-def example(a:int, b:int)->int:  # Put your prompt in the docstrings
+def my_func(a:int, b:str)->dict:
    """
-   This is a very precise example prompt.  
+   This Function does something.
    """
-   pass                       # The function therefore contains no instructions
+   return emulate()
 
-example(4, 2)                 # Call the function to activate the decorator      
+my_func(5, "Hello World!")
+
+my_lambda = thought("Do something")
+my_lambda(5)
 ```
-
-### Features
-
-```python
-llm = emulator()
-```
-
-- `llm` contains three main decorators. Decorators in Python are functions that modify the behavior of other functions or methods, allowing for additional functionalities in a modular way:
-  - `@llm.emulate`: Decorates a function to emulate its execution by an AI. You can choose the model using your API key.
-  - `@llm.enhance`: Decorates a function and generates a Mermaid diagram to visualize and understand the model's reasoning, as well as a markdown help file to improve the function's prompt. Everything is stored in the `.openhosta` directory at the root of the working directory.
-
-### Configuration
-
-The `emulator` class can have four parameters:
-   - `model`: LLM model to which the program will send its requests
-   - `creativity` & `diversity`: Correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/)
-   - `api_key`: Your own api-key to communicate with the llm
-
-Example:
-```python
-llm = OpenHosta.emulator(
-   model="gpt-4o", 
-   api_key="This_is_my_api_key",
-   creativity=0.7,
-   diversity=0.5
-)
-```
-
----
+You check OpenHosta's [documentation](doc/Docs.md) for more detailled informations or exemple
 
 ## Further information
 
@@ -171,7 +138,7 @@ For further questions or assistance, please refer to partner hand-e or contact u
    - Emmanuel Batt: Manager and Coordinator, Founder of Hand-e
    - William Jolivet: DevOps, SysAdmin
    - Léandre Ramos: MLOps, IA developer
-   - Merlin Devillard: UX designer, Prompt Engineer
+   - Merlin Devillard: UX designer, Product Owner
 
 ---
 
