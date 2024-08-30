@@ -1,1 +1,1 @@
-from .OpenHosta import *
+from .openhosta import *

@@ -95,7 +95,7 @@ This way you have all de documentation and source code to understand our project
 ### Example
 
 ```python
-from OpenHosta import *
+from openhosta import *
 
 config.set_default_apiKey("example-apikey")
 
