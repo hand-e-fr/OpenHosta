@@ -27,7 +27,7 @@ Finally, if you like the project and are thinking of contributing, please refer 
 
 - **Beyond programming**
 
-OpenHosta allows you to code functions that are complex or were impossible **before**, by supporting some ambiguities of **human language**. The processing of language relating to social codes or other parameters that are **difficult** to implement in Python for example. It **simplifies** tasks that would otherwise require significant time and expertise, thus expanding **possibilities** in Python programming.
+OpenHosta enables you to create **complex functions**, including those that were previously **impossible**, by accommodating certain **ambiguities** in human language. It handles language processing related to **common sens** or other challenging parameters that are typically difficult to implement in Python. This tool **simplifies** tasks that would otherwise demand considerable time and expertise, thereby broadening the scope of **possibilities** in Python programming.
 
 - **Python Ecosystem**
 
