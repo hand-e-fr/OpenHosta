@@ -2,8 +2,8 @@ import requests
 import json
 import sys
 
-from prompt import PromptMananger
-from config import _default_model
+from .prompt import PromptMananger
+from .config import _default_model
 
 _x = PromptMananger()
 _enhancer_pre_prompt = _x.get_prompt("enhance")

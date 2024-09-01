@@ -90,7 +90,7 @@ cd OpenHosta-dev
 pip install -r requirements.txt
 ```
 
-This way you have all de documentation and source code to understand our project
+This way you have all the documentation and source code to understand our project
 
 ### Example
 
@@ -120,7 +120,7 @@ We warmly welcome contributions from the community. Whether you are an experienc
 
 If you wish to contribute to this project, please refer to our [Contribution Guide](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Browse the existing [issues](https://github.com/hand-e-fr/OpenHosta-dev/issues) to see if someone is already working on what you have in mind or to find contribution ideas.
+Browse the existing [issues](https://github.com/hand-e-fr/OpenHosta/issues) to see if someone is already working on what you have in mind or to find contribution ideas.
 
 ### License
 
@@ -139,6 +139,8 @@ For further questions or assistance, please refer to partner hand-e or contact u
    - William Jolivet: DevOps, SysAdmin
    - Léandre Ramos: MLOps, IA developer
    - Merlin Devillard: UX designer, Product Owner
+
+GitHub: https://github.com/hand-e-fr/OpenHosta
 
 ---
 
