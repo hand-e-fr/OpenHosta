@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OpenHosta"
-version = "1.0"
-description = "Open-Source programming project for natural language programming with AI"
+version = "1.0.2"
+description = "Open-Source programming project IA integretion in developement environnement"
 keywords = ["AI", "GPT", "Natural language", "Autommatic", "Easy"]
 authors = [
   { name="Léandre Ramos"},
-  { name="Merlin Devillardr"},
+  { name="Merlin Devillard"},
   { name="William Jolivet"},
   { name="Emmanuel Batt"},
 ]
@@ -25,13 +25,21 @@ classifiers = [
     "Natural Language :: French",
     "Topic :: Software Development :: Code Generators"
 ]
+dependencies = [
+  "requests>=2.32.3",
+  "pydantic>=2.8.2",
+  "tiktoken>=0.7.0"
+]
 
 [project.urls]
-Homepage = "https://github.com/hand-e-fr/OpenHosta-dev"
-Issues = "https://github.com/hand-e-fr/OpenHosta-dev/issues"
+Homepage = "https://github.com/hand-e-fr/OpenHosta"
+Issues = "https://github.com/hand-e-fr/OpenHosta/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"OpenHosta" = ["*.json"]
