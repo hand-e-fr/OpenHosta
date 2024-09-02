@@ -8,4 +8,3 @@ __pycache__/
 *.mmd
 .openhosta
 dist/*
-src/*.egg-info/*
