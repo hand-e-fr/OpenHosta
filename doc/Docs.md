@@ -71,7 +71,7 @@ For each part, you'll find functional examples to illustrate the features. If yo
 ### OpenHosta Example
 
 ```python
-from openhosta import emulate, config
+from OpenHosta import emulate, config
 
 config.set_default_apiKey("put-your-api-key-here")
 
@@ -92,7 +92,7 @@ Once you've installed the OpenHosta library, you're ready to get started. We'll 
 #### Librairie Import
 
 ```python
-from openhosta import *
+from OpenHosta import *
 ```
 
 We recommend this import method, as it gives you all the important and stable features:
@@ -104,7 +104,7 @@ We recommend this import method, as it gives you all the important and stable fe
 But you can also import modules one by one.
 
 ```python
-from openhosta import emulate, config
+from OpenHosta import emulate, config
 ```
 
 #### Basic Setup
@@ -124,7 +124,7 @@ If you wish to use another model, you'll need to create an instance of the *Mode
 ```python
 my_model = config.Model(
     model="gpt-4o", 
-    base_url="https://api.openai.com/v1/chat/completions"
+    base_url="https://api.openai.com/v1/chat/completions",
     api_key="put-your-api-key-here"
 )
 ```
@@ -151,7 +151,7 @@ def function(a:int, b:dict)->str:
 ```python
 my_model = config.Model(
     model="gpt-4o", 
-    base_url="https://api.openai.com/v1/chat/completions"
+    base_url="https://api.openai.com/v1/chat/completions",
     api_key="put-your-api-key-here"
 )
 
@@ -195,7 +195,7 @@ Let's take the same example, but using this feature:
 
 ```python
 from pydantic import BaseModel
-from openhosta import emulate, config
+from OpenHosta import emulate, config
 
 class Personn(BaseModel):
     name: str
@@ -283,7 +283,7 @@ In an aim to integrate with Python syntax, we've developed the `thought` functio
 Here's how it works:
 
 ```python
-from openhosta import thought
+from OpenHosta import thought
 
 x = thought("Is it a masculine name")
 print(c("John"))  # True
