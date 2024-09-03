@@ -3,7 +3,7 @@ import sys
 from typing import Callable, Any, Dict
 from pydantic import BaseModel, create_model
 
-from .enhancer import enhance
+from enhancer import enhance
 
 
 class HostaInjector:
@@ -17,6 +17,7 @@ class HostaInjector:
         infos = {"def": "", "call": "", "return_type": ""}
 
         func_obj, caller = self._extend_scope()
+        print(f"caller: {caller}")
         infos["def"], func_prot = self._get_functionDef(func_obj)
         infos["call"] = self._get_functionCall(func_obj, caller)
         infos["return_type"] = self._get_functionReturnType(func_obj)
@@ -27,19 +28,22 @@ class HostaInjector:
         )
 
     def _extend_scope(self) -> Callable:
+        func:Callable
+    
         try:
-            x = inspect.currentframe()
-            caller = x.f_back.f_back
-            name = caller.f_code.co_name
-            func = caller.f_globals.get(name)
-
-            if func is None:
-                raise Exception("Scope can't be extend.")
-            if not callable(func):
-                raise Exception("Larger scope isn't a callable.")
+            current = inspect.currentframe()
+            caller = current.f_back.f_back.f_back
+            code = current.f_back.f_back.f_code
+            for obj in caller.f_locals.values():
+                if hasattr(obj, "__code__"):
+                    if obj.__code__ == code:
+                        func = obj
+                        
+            if func is None or not callable(func):
+                raise Exception("Larger scope isn't a callable or scope can't be extended.")
         except Exception as e:
             sys.stderr.write(f"[FRAME_ERROR]: {e}")
-            return None
+            func = None
         return func, caller
 
     def _get_functionDef(self, func: Callable) -> str:
