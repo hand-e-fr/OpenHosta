@@ -3,7 +3,7 @@ import sys
 from typing import Callable, Any, Dict
 from pydantic import BaseModel, create_model
 
-from .enhancer import enhance
+from enhancer import enhance
 
 
 class HostaInjector:
