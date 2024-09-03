@@ -53,7 +53,7 @@ def _exec_emulate(
     )
 
     l_ret = ""
-
+    
     if response.status_code == 200:
         l_ret = model._request_handler(response)
     else:

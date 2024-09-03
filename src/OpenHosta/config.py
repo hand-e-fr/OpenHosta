@@ -26,12 +26,17 @@ class Model:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
+        
+        print("\ninit")
+        print(f"model: {self.model}")
+        print(f"arg: {api_key}")
+        print(f"api: {self.api_key}")
 
         if any(var is None for var in (model, base_url)):
             sys.stderr.write(f"[CONFIG_ERROR] Empty values.")
             return
         elif not is_valid_url(self.base_url):
-            sys.stderr.write(f"[CONFIG_ERROR Invalid URL.")
+            sys.stderr.write(f"[CONFIG_ERROR] Invalid URL.")
             return
 
     def __str__(self) -> str:
@@ -45,6 +50,10 @@ class Model:
     def _api_call(
         self, sys_prompt: str, user_prompt: str, creativity: float, diversity: float
     ):
+        print("\ncall")
+        print(f"model: {self.model}")
+        print(f"api: {self.api_key}")
+        
         if self.api_key is None or not self.api_key:
             sys.stderr.write(f"[CALL_ERROR] Unknown API key.")
             return
@@ -96,11 +105,15 @@ class Model:
         l_ret = l_ret_data["return"]
 
         return l_ret
+    
+    def set_model_key(self, api_key:str):
+        self.api_key = api_key
 
 
 _default_model = Model(
     model="gpt-4o",
     base_url="https://api.openai.com/v1/chat/completions",
+    api_key=""
 )
 
 
@@ -108,6 +121,7 @@ def set_default_model(new: Model):
     global _default_model
 
     _default_model = new
+    _default_model.set_model_key(new.api_key)
 
 
 def set_default_apiKey(api_key=None):
