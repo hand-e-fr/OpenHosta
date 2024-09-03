@@ -11,6 +11,7 @@ class HostaInjector:
     def __init__(self, exec):
         if not callable(exec):
             raise TypeError("Executive function must be a function.")
+        
         self.exec = exec
 
     def __call__(self, *args, **kwargs):
