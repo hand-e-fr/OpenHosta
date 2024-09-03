@@ -1,8 +1,8 @@
 import sys
 
-from .analytics import request_timer
-from .prompt import PromptMananger
-from .config import _default_model, Model, set_default_apiKey
+from analytics import request_timer
+from prompt import PromptMananger
+from config import _default_model, Model, set_default_apiKey
 
 _x = PromptMananger()
 
