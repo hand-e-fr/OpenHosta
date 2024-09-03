@@ -17,7 +17,6 @@ class HostaInjector:
         infos = {"def": "", "call": "", "return_type": ""}
 
         func_obj, caller = self._extend_scope()
-        print(f"caller: {caller}")
         infos["def"], func_prot = self._get_functionDef(func_obj)
         infos["call"] = self._get_functionCall(func_obj, caller)
         infos["return_type"] = self._get_functionReturnType(func_obj)
@@ -32,9 +31,9 @@ class HostaInjector:
     
         try:
             current = inspect.currentframe()
-            caller = current.f_back.f_back.f_back
+            caller = current.f_back.f_back
             code = current.f_back.f_back.f_code
-            for obj in caller.f_locals.values():
+            for obj in caller.f_back.f_locals.values():
                 if hasattr(obj, "__code__"):
                     if obj.__code__ == code:
                         func = obj
