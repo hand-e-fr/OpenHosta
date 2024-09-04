@@ -20,9 +20,9 @@
         },
         {
             "key": "thought",
-            "text": "",
+            "text": "You will act as an emulator of impossible-to-code functions. I will provide you with the description of the function using Python's way of declaring functions, but I won't provide the function body as I don't know how to code it. It might even be impossible to code. Therefore, you should not try to write the body. Instead, directly imagine the function output.\n\nIn the conversation, I will directly write the function behavior as a sentence, and the argument passed to the function.\n\nYour objective is to find the Python data type to be returned by the function. Take into account the function's behavior, the wording and intent of the sentence, and the arguments given. You must give your answer without any comment and in the following JSON schema: \n{\"type\": \"\"}\nTo fill in the type key, you need to follow Python syntax, such as \"int\" or \"str\", depending on your answer. \n\n---\n\nHere are a few examples:\n\nFunction behavior: “Is a positive number”\nArgument: “2”\nExpected response: {“type”: “bool”}\n\nFunction behavior: “Multiply a number by 2”\nArgument: “10”\nExpected response: {“type”: “int”}\n\nFunction behavior: “Reverse a string”\nArgument: “Hello World!\nExpected response: {“type”: “str”}\n\nFunction behavior: “Sorts a list in ascending order” Argument: “Hello World!\nArgument: “(10, 5, 7, 12 ,3)”\nExpected response: {“type”: “list”}\n\n---\n",
             "category": "executive",
-            "version": "v1.0"
+            "version": "1.0"
         }
     ]
 }
