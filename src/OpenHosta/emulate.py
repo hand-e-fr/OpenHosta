@@ -5,6 +5,7 @@ from prompt import PromptMananger
 
 from config import Model, DefaultManager
 
+
 _x = PromptMananger()
 
 _emulator_pre_prompt = _x.get_prompt("emulate")

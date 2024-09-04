@@ -6,6 +6,7 @@ import requests
 import json
 
 from config import Model, DefaultManager
+
 from prompt import PromptMananger
 
 _x = PromptMananger()
