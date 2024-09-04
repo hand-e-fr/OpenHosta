@@ -5,8 +5,8 @@ import sys
 import requests
 import json
 
-from .config import Model, _default_model
-from .prompt import PromptMananger
+from config import Model, _default_model
+from prompt import PromptMananger
 
 _x = PromptMananger()
 
