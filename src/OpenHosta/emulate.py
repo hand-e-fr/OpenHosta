@@ -35,8 +35,6 @@ def _exec_emulate(
         sys.stderr.write(f"[EMULATE_ERROR]: {v}")
         return None
 
-    print(model)
-
     l_user_prompt = (
         "Here's the function definition:\n"
         + _function_doc
