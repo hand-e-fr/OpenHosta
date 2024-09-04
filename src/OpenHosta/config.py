@@ -25,11 +25,6 @@ class Model:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
-        
-        print("\ninit")
-        print(f"model: {self.model}")
-        print(f"arg: {api_key}")
-        print(f"api: {self.api_key}")
 
         if any(var is None for var in (model, base_url)):
             sys.stderr.write(f"[CONFIG_ERROR] Empty values.")
@@ -48,11 +43,7 @@ class Model:
 
     def _api_call(
         self, sys_prompt: str, user_prompt: str, creativity: float, diversity: float
-    ):
-        print("\ncall")
-        print(f"model: {self.model}")
-        print(f"api: {self.api_key}")
-        
+    ):     
         if self.api_key is None or not self.api_key:
             sys.stderr.write(f"[CALL_ERROR] Unknown API key.")
             return
@@ -119,7 +110,6 @@ class DefaultModel:
 
     def set_default_model(self, new):
         if isinstance(new, Model):
-            print("Setting default model.")
             self.model = new
         else:
             sys.stderr.write("[CONFIG_ERROR] Invalid model instance.\n")

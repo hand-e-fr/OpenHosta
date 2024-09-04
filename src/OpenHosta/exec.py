@@ -23,7 +23,6 @@ class HostaInjector:
         infos["return_type"] = self._get_functionReturnType(func_obj)
 
         self._attach_attributs(func_obj, func_prot)
-        print(f"kwargs: {kwargs}")
         return self.exec(
             infos["def"], infos["call"], infos["return_type"], *args, **kwargs
         )
