@@ -3,17 +3,18 @@ import json
 import sys
 
 from prompt import PromptMananger
-from config import _default_model
+from config import DefaultManager
 
 _x = PromptMananger()
 _enhancer_pre_prompt = _x.get_prompt("enhance")
 
+l_default = DefaultManager.get_default_model()
 
 def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
-    global _default_model
+    global l_default
 
-    api_key = _default_model.api_key
-    url = _default_model.base_url
+    api_key = l_default.api_key
+    url = l_default.base_url
 
     headers = {
         "Content-Type": "application/json",
@@ -21,7 +22,7 @@ def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
     }
 
     data = {
-        "model": _default_model.model,
+        "model": l_default.model,
         "messages": [
             {"role": "system", "content": [{"type": "text", "text": sys_prompt}]},
             {

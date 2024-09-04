@@ -17,7 +17,6 @@ def is_valid_url(url):
     )
     return re.match(regex, url) is not None
 
-
 class Model:
 
     _SYS_PROMPT = ""
@@ -103,34 +102,43 @@ class Model:
             l_ret_data = json.loads(l_cleand)
 
         l_ret = l_ret_data["return"]
-
+        
         return l_ret
     
-    def set_model_key(self, api_key:str):
-        self.api_key = api_key
+class DefaultModel:
+    _instance = None
 
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(DefaultModel, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+    
+    def __init__(self):
+        if not hasattr(self, 'model'):
+            self.model = None
 
-_default_model = Model(
-    model="gpt-4o",
-    base_url="https://api.openai.com/v1/chat/completions",
-    api_key=""
-)
+    def set_default_model(self, new):
+        if isinstance(new, Model):
+            print("Setting default model.")
+            self.model = new
+        else:
+            sys.stderr.write("[CONFIG_ERROR] Invalid model instance.\n")
 
-
-def set_default_model(new: Model):
-    global _default_model
-
-    _default_model = new
-    _default_model.set_model_key(new.api_key)
-
+    def set_default_apiKey(self, api_key=None):
+        if api_key is not None or isinstance(api_key, str):
+           self.model.api_key = api_key
+        else:
+            sys.stderr.write("[CONFIG_ERROR] Invalid API key.")
+    
+    def get_default_model(self):
+        return self.model
+        
+DefaultManager = DefaultModel()
+        
+def set_default_model(new):
+    DefaultManager.set_default_model(new) 
 
 def set_default_apiKey(api_key=None):
-    global _default_model
+    DefaultManager.set_default_apiKey(api_key)
 
-    if api_key is not None or isinstance(api_key, str):
-        _default_model.api_key = api_key
-    else:
-        sys.stderr.write("[CONFIG_ERROR] Invalid API key.")
-
-
-__all__ = Model, _default_model, set_default_model, set_default_apiKey
+__all__ = Model, set_default_apiKey, set_default_model, DefaultManager
