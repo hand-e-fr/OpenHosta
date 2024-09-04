@@ -5,14 +5,15 @@ import sys
 import requests
 import json
 
-from .config import Model, _default_model
-from .prompt import PromptMananger
+from config import Model, DefaultManager
+
+from prompt import PromptMananger
 
 _x = PromptMananger()
 
 _estimate_prompt = _x.get_prompt("estimate")
 
-
+l_default = DefaultManager.get_default_model()
 class ModelAnalizer(Model):
 
     _default_input_cost: int = 0.005
@@ -52,7 +53,7 @@ class ModelAnalizer(Model):
         return self.token_perSec
 
     def _estimate_output_token(self, function_doc: str, function_call: str):
-        global _estimate_prompt, _default_model
+        global _estimate_prompt, l_default
 
         try:
             if not _estimate_prompt:
@@ -61,9 +62,9 @@ class ModelAnalizer(Model):
             sys.stderr.write(f"[ESTIMATE_ERROR]: {v}")
             return None
 
-        api_key = _default_model.api_key
+        api_key = l_default.api_key
         l_body = {
-            "model": _default_model.model,
+            "model": l_default.model,
             "messages": [
                 {
                     "role": "system",
@@ -92,7 +93,7 @@ class ModelAnalizer(Model):
             "Authorization": f"Bearer {api_key}",
         }
 
-        response = requests.post(_default_model.base_url, json=l_body, headers=headers)
+        response = requests.post(l_default.base_url, json=l_body, headers=headers)
 
         if response.status_code == 200:
             data = response.json()
