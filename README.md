@@ -95,20 +95,18 @@ This way you have all the documentation and source code to understand our projec
 ### Example
 
 ```python
-from openhosta import *
+from OpenHosta import emulate, config
 
-config.set_default_apiKey("example-apikey")
+config.set_default_apiKey("put-your-api-key-here")
 
-def my_func(a:int, b:str)->dict:
-   """
-   This Function does something.
-   """
-   return emulate()
+def translate(text:str, language:str)->str:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    return emulate()
 
-my_func(5, "Hello World!")
-
-my_lambda = thought("Do something")
-my_lambda(5)
+result = translate("Hello World!", "French")
+print(result)
 ```
 You check OpenHosta's [documentation](doc/Docs.md) for more detailled informations or exemple
 
