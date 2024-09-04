@@ -74,7 +74,7 @@ class Model:
         except Exception as e:
             pass
         if response.status_code != 200:
-            sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful.")
+            sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful.\n")
         return response
 
     def _request_handler(self, response):

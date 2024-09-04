@@ -14,56 +14,26 @@ l_default = DefaultManager.get_default_model()
 def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
     global l_default
 
-    api_key = l_default.api_key
-    url = l_default.base_url
+    l_user_prompt = (
+        "\nHere's my python function's prototype:\n---\n"
+        + func_prot
+        + "\n---\n"
+        + "\nHere's my python function's prompt:\n---\n"
+        + func_doc
+        + "\n---\n"
+    )
+    
+    response = l_default._api_call(
+        sys_prompt=sys_prompt, 
+        user_prompt=l_user_prompt, 
+        creativity=0.8, 
+        diversity=0.8
+    )
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-
-    data = {
-        "model": l_default.model,
-        "messages": [
-            {"role": "system", "content": [{"type": "text", "text": sys_prompt}]},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "\nHere's my python function's prototype:\n---\n"
-                        + func_prot
-                        + "\n---\n",
-                    }
-                ],
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "\nHere's my python function's prompt:\n---\n"
-                        + func_doc
-                        + "\n---\n",
-                    }
-                ],
-            },
-        ],
-        "temperature": 0.7,
-        "top_p": 0.7,
-    }
-
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-
-    if response.status_code == 200:
-        response_data = response.json()
-        return response_data["choices"][0]["message"]["content"]
-    else:
-        sys.stderr.write(
-            "[CALL_ERROR] The request was unsuccessful or one of the parameters is invalid"
-        )
-        sys.stderr.write(f"Status: {response.status_code}")
-        return None
+    response_data = response.json()
+    print(response_data["choices"][0]["message"]["content"])
+    return response_data["choices"][0]["message"]["content"]
+    
 
 
 def _parse_data(response: str, last_enh: dict) -> dict:
@@ -123,3 +93,4 @@ def enhance(func):
     last_enh = _parse_data(last_return, last_enh)
 
     _build_attributes(func, last_enh)
+    return last_enh
