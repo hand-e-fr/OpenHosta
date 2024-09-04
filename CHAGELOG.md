@@ -9,6 +9,7 @@ All significant changes to this project will be documented in this file.
 - **Fixes**
   - the `emulate` function is now decorator-resistant.
   - The function `config.set_default_model` works now w/ `config.set_default_apiKey`
+  - `thought` function now accept multiple arguments
   
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM

@@ -8,3 +8,4 @@ __pycache__/
 *.mmd
 .openhosta
 dist/*
+__hostacache__/
