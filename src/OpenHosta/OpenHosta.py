@@ -5,8 +5,9 @@ DefaultManager.set_default_model(Model(
     base_url="https://api.openai.com/v1/chat/completions"
 ))
 
-from emulate import _exec_emulate, thought
+from emulate import _exec_emulate
 import config
+from thought import thought
 
 from exec import HostaInjector
 
