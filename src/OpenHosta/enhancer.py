@@ -5,6 +5,7 @@ import sys
 from prompt import PromptMananger
 from config import DefaultManager
 
+
 _x = PromptMananger()
 _enhancer_pre_prompt = _x.get_prompt("enhance")
 
