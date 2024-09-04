@@ -21,9 +21,8 @@ def thought(key):
             "Here's the function behavior:\n"
             + f"{key}\n"
             + "Here's the arguments:\n"
-            + f"{args[0]}\n"
+            + f"{args}\n"
         )
-        
         
         response = l_default._api_call(
             sys_prompt=_thought_sys_prompt,
@@ -36,11 +35,14 @@ def thought(key):
         json_string = data["choices"][0]["message"]["content"]
         
         typed = (
-            str(args[0])
+            str(args)
+            + "\n"
             + "Here's the return type that must respect for your response. The python type is in the key \"type\" of this JSON schema:\n"
             + json_string
             + "\n"
         )
+        
+        print(typed)
         
         try:
             _function_infos["function_def"] = key
