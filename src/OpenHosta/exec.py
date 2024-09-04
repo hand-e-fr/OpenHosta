@@ -4,7 +4,6 @@ from typing import Callable, Any, Dict
 from pydantic import BaseModel, create_model
 
 from enhancer import enhance
-from config import _default_model
 
 
 class HostaInjector:
@@ -24,8 +23,9 @@ class HostaInjector:
         infos["return_type"] = self._get_functionReturnType(func_obj)
 
         self._attach_attributs(func_obj, func_prot)
+        print(f"kwargs: {kwargs}")
         return self.exec(
-            infos["def"], infos["call"], infos["return_type"], model=None, *args, **kwargs
+            infos["def"], infos["call"], infos["return_type"], *args, **kwargs
         )
 
     def _extend_scope(self) -> Callable:

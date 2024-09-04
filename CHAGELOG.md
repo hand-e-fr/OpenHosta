@@ -8,6 +8,7 @@ All significant changes to this project will be documented in this file.
 
 - **Fixes**
   - the `emulate` function is now decorator-resistant.
+  - The function `config.set_default_model` works now w/ `config.set_default_apiKey`
 
 ## **v1.0** 29/08/2024:
 
