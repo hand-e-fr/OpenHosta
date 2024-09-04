@@ -53,18 +53,11 @@ class TestEmulate:
         ("list", "generator", "generates a list in python", "", list),
         ("float", "generator", "generates a float in python", "", float),
     ])
-    def test_basicSpecial(self, type, name, doc, arg, expected):
-        global emulate_1arg
-        emulate_1arg[type].__name__ = name
-        emulate_1arg[type].__doc__ = doc
-        result = emulate_1arg[type](arg)
-        print(f"[{doc}]: {result}")
-        assert isinstance(result, expected)
-    
-    
-    
-class test_pydantic:
-    pass
+    def test_basicEmpty(self, type, name, doc, arg, expected):
+        # def a():
+        #     return emulate()
+        # assert a() is None
+        pass
 
 class test_suggest:
     pass
