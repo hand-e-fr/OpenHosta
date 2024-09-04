@@ -3,28 +3,71 @@ import sys
 from typing import Callable, Any, Dict
 from pydantic import BaseModel, create_model
 
-from .enhancer import enhance
+from enhancer import enhance
 
+import os
+import pickle
+import hashlib
+
+CACHE_DIR = '__hostacache__'
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 class HostaInjector:
-
     def __init__(self, exec):
         if not callable(exec):
             raise TypeError("Executive function must be a function.")
         self.exec = exec
+        self.infos_cache = {
+            "hash_function": "",
+            "function_def": "",
+            "return_type": "",
+            "function_call": "",
+            "ho_example": [],
+            "ho_example_id": 0,
+            "ho_cothougt": [],
+            "ho_cothougt_id": 0,
+        }
 
     def __call__(self, *args, **kwargs):
-        infos = {"def": "", "call": "", "return_type": ""}
-
         func_obj, caller = self._extend_scope()
-        infos["def"], func_prot = self._get_functionDef(func_obj)
-        infos["call"] = self._get_functionCall(func_obj, caller)
-        infos["return_type"] = self._get_functionReturnType(func_obj)
+        func_name = func_obj.__name__
+        path_name = os.path.join(CACHE_DIR, f"{func_name}.openhc")
 
+        if os.path.exists(path_name):
+            with open(path_name, "rb") as f:
+                cached_data = pickle.load(f)
+            
+            function_def, func_prot = self._get_functionDef(func_obj)
+            function_hash = self._get_hashFunction(function_def,
+                                                   cached_data["ho_example_id"],
+                                                   cached_data["ho_cothougt_id"])
+
+            if function_hash == cached_data["hash_function"]:
+                cached_data["function_call"] = self._get_functionCall(func_obj, caller)
+                self._attach_attributs(func_obj, func_prot)
+                return self.exec(cached_data, *args, **kwargs)
+
+        hosta_args = self._get_argsFunction(func_obj, caller, *args, **kwargs)
+        with open(path_name, "wb") as f:
+            pickle.dump(hosta_args, f)
+
+        hosta_args["function_call"] = self._get_functionCall(func_obj, caller)
+        return self.exec(hosta_args, *args, **kwargs)
+
+    def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:
+        combined = f"{func_def}{nb_example}{nb_thought}"
+        return hashlib.md5(combined.encode()).hexdigest()
+
+    def _get_argsFunction(self, func_obj, caller, *args, **kwargs):
+
+        self.infos_cache["function_def"], func_prot = self._get_functionDef(func_obj)
+        self.infos_cache["return_type"] = self._get_functionReturnType(func_obj)
+        self.infos_cache["hash_function"] = self._get_hashFunction(self.infos_cache["function_def"],
+                                                                   self.infos_cache["ho_example_id"],
+                                                                   self.infos_cache["ho_cothougt_id"])
         self._attach_attributs(func_obj, func_prot)
-        return self.exec(
-            infos["def"], infos["call"], infos["return_type"], *args, **kwargs
-        )
+
+        return self.infos_cache
 
     def _extend_scope(self) -> Callable:
         try:
