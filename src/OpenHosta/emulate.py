@@ -2,23 +2,27 @@ import sys
 
 from analytics import request_timer
 from prompt import PromptMananger
-from config import _default_model, Model, set_default_apiKey
+from config import Model, DefaultManager
 
 _x = PromptMananger()
 
 _emulator_pre_prompt = _x.get_prompt("emulate")
 
+l_default = DefaultManager.get_default_model()
 
 def _exec_emulate(
     _function_doc=None,
     _function_call=None,
     _function_return=None,
-    model: Model = _default_model,
+    model: Model = None,
     warn: bool = False,
     l_creativity: float = None,
     l_diversity: float = None,
 ):
     global _emulator_pre_prompt
+
+    if model is None:
+        model = DefaultManager.get_default_model()
 
     try:
         if not isinstance(_emulator_pre_prompt, str) or not _emulator_pre_prompt:
@@ -30,6 +34,8 @@ def _exec_emulate(
     except ValueError as v:
         sys.stderr.write(f"[EMULATE_ERROR]: {v}")
         return None
+
+    print(model)
 
     l_user_prompt = (
         "Here's the function definition:\n"
@@ -53,7 +59,7 @@ def _exec_emulate(
     )
 
     l_ret = ""
-
+    
     if response.status_code == 200:
         l_ret = model._request_handler(response)
     else:
