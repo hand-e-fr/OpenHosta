@@ -16,6 +16,7 @@ class HostaInjector:
     def __init__(self, exec):
         if not callable(exec):
             raise TypeError("Executive function must be a function.")
+        
         self.exec = exec
         self.infos_cache = {
             "hash_function": "",
@@ -70,19 +71,22 @@ class HostaInjector:
         return self.infos_cache
 
     def _extend_scope(self) -> Callable:
+        func:Callable
+    
         try:
-            x = inspect.currentframe()
-            caller = x.f_back.f_back
-            name = caller.f_code.co_name
-            func = caller.f_globals.get(name)
-
-            if func is None:
-                raise Exception("Scope can't be extend.")
-            if not callable(func):
-                raise Exception("Larger scope isn't a callable.")
+            current = inspect.currentframe()
+            caller = current.f_back.f_back
+            code = current.f_back.f_back.f_code
+            for obj in caller.f_back.f_locals.values():
+                if hasattr(obj, "__code__"):
+                    if obj.__code__ == code:
+                        func = obj
+                        
+            if func is None or not callable(func):
+                raise Exception("Larger scope isn't a callable or scope can't be extended.")
         except Exception as e:
             sys.stderr.write(f"[FRAME_ERROR]: {e}")
-            return None
+            func = None
         return func, caller
 
     def _get_functionDef(self, func: Callable) -> str:
