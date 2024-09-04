@@ -8,10 +8,10 @@ DefaultManager.set_default_model(Model(
 from emulate import _exec_emulate
 import config
 from thought import thought
-
+from example import example
 from exec import HostaInjector
 
 # TODO make the if else for data cache here !
 emulate = HostaInjector(_exec_emulate)
 
-__all__ = "emulate", "thought", "config", "Model", "DefaultManager"
+__all__ = "emulate", "thought", "example", "config", "Model", "DefaultManager"
