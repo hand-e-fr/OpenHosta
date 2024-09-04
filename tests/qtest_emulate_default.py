@@ -7,8 +7,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "s
 
 from OpenHosta import emulate, config
 
-from .benchmark_GPT4o import add_to_benchmark
-
 config.set_default_apiKey("")
 
 
