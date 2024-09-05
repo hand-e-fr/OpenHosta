@@ -1,10 +1,12 @@
-import sys
 import inspect
+import pickle
+
+from cache import Hostacache
 
 def example(
     *args,
-    hosta_func=None,
-    hosta_out=None,
+    hosta_func = None,
+    hosta_out = None,
     **kwargs
     ):
     input_dict = {}
@@ -17,9 +19,14 @@ def example(
             func = func_frame.f_globals[func_name]
         except:
             raise ValueError(f"Please provide hosta_func for specifying the function")
-
+  
     elif callable(hosta_func):
         func = hosta_func
+
+    cache_id = "ho_example"
+    value = [args, hosta_out]
+    cache = Hostacache(func, cache_id, value)
+    cache()
 
     try:
         sig = inspect.signature(func)
