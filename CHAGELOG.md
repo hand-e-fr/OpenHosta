@@ -10,9 +10,11 @@ All significant changes to this project will be documented in this file.
   - the `emulate` function is now decorator-resistant.
   - The function `config.set_default_model` works now w/ `config.set_default_apiKey`
   - `thought` function now accept multiple arguments
+  - `suggest` and `analytics` call now th LLM with `Model` class (`_ai_call`)
   
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM
+  - `suggest` return now his data returned by LLM in a dict
 
 ## **v1.0** 29/08/2024:
 
