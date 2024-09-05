@@ -71,10 +71,11 @@ class Model:
 
         try:
             response = requests.post(self.base_url, json=l_body, headers=headers)
-        except Exception as e:
-            pass
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            sys.stderr.write(f"[CALL_ERROR] Request failed: {e}\n")
         if response.status_code != 200:
-            sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful.\n")
+            sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful. Status code: {response.status_code}:\n{response.text}")
         return response
 
     def _request_handler(self, response):

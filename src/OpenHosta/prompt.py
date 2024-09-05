@@ -76,3 +76,11 @@ class PromptMananger:
                     sys.stderr.write(e)
                 else:
                     print(f"{name} prompt has been added to {json_filepath}")
+                    
+    def show_prompt(self, key):
+        prompt = self.prompts.get(key)
+        if prompt:
+            print(prompt["text"])
+            return prompt["text"]
+        sys.stderr.write(f"[JSON_ERROR] Prompt not found\n")
+        return None
