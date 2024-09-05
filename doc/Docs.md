@@ -3,7 +3,7 @@ ___
 
 Documentation for version: **1.0**
 
-Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the Jupyter Notebook **test files** to help you take your first steps in discovering OpenHosta.
+Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
 For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
 
@@ -155,7 +155,7 @@ my_model = config.Model(
     api_key="put-your-api-key-here"
 )
 
-def find_first_name(sentence:str, id:dict)->dict:
+def find_name_age(sentence:str, id:dict)->dict:
     """
     This function find in a text the name and the age of a personn.
 
@@ -286,9 +286,9 @@ Here's how it works:
 from OpenHosta import thought
 
 x = thought("Is it a masculine name")
-print(c("John"))  # True
+print(x("John"))  # True
 
-result = thought("Multiplie by two")(2)
+result = thought("Multiply by two")(2)
 print(result)   # 4
 ```
 
