@@ -16,6 +16,9 @@ All significant changes to this project will be documented in this file.
   - the `thought` function guess automatically his return type with LLM
   - `suggest` return now his data returned by LLM in a dict
 
+- **Doc**
+  - Documentation now integrates Google Cobal link
+
 ## **v1.0** 29/08/2024:
 
 - **Features**
