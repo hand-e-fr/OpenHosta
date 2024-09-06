@@ -9,3 +9,4 @@ __hostacache__/
 *.mmd
 .openhosta
 dist/*
+__hostacache__/
