@@ -1,7 +1,6 @@
 from config import Model, DefaultManager
 from emulate import _exec_emulate, thought
-import config
-from example import example
+from example import example, load_examples, save_examples
 from exec import HostaInjector
 
 DefaultManager.set_default_model(Model(
@@ -13,4 +12,6 @@ DefaultManager.set_default_model(Model(
 # TODO make the if else for data cache here !
 emulate = HostaInjector(_exec_emulate)
 
-__all__ = "emulate", "thought", "example", "config", "Model", "DefaultManager"
+__all__ = "emulate", "thought",
+"example", "load_examples", "save_examples",
+"config", "Model", "DefaultManager"

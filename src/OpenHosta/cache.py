@@ -26,10 +26,6 @@ class Hostacache:
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
         }
-        # assert self.cache_id is not None, "cache_id must be provided"
-        # assert self.value is not None, "value must be provided"
-        # assert self.infos_cache[str(self.cache_id)] is not None, "cache_id must be provided"
-
 
     def __call__(self):
         func_name = self.func.__name__
@@ -39,30 +35,36 @@ class Hostacache:
         if os.path.exists(path_name):
             with open(path_name, "rb") as f:
                 cached_data = pickle.load(f)
-                print("pathexists", flush=True)
-                print("cached_data fisrt", cached_data, flush=True)
-            assert str(self.cache_id) in cached_data, "Cache ID not found in cache file"
+            assert self.cache_id in cached_data, "Cache ID not found in cache file"
             
-            if [self.value] not in cached_data[str(self.cache_id)]:
-                print("value not in cache", flush=True)
-                cached_data[str(self.cache_id)].append([self.value])
+            if self._is_value_already_in_example(self.value, cached_data) == False:
+                cached_data[str(self.cache_id)].append(self.value)
                 cached_data[f'{str(self.cache_id)}'+'_id'] = self._get_hashFunction(str(cached_data[str(self.cache_id)]), 0, 0)
                 cached_data["hash_function"] = self._get_hashFunction(cached_data["function_def"],
                                                                       cached_data["ho_example_id"],
                                                                       cached_data["ho_cothougt_id"])
                 with open(path_name, "wb") as f:
                     pickle.dump(cached_data, f)
-                    print("value added to cache", flush=True)
-            print("value already in cache", flush=True)
             return
-        print("path not exists", flush=True)
         hosta_args = self._get_argsFunction(self.func)
         with open(path_name, "wb") as f:
             pickle.dump(hosta_args, f)
-            print("value added to cacheee", flush=True)
-        print("hosta_args", hosta_args, flush=True)
         return
         
+
+    def _is_value_already_in_example(self, value, cached_data):
+        for item in cached_data["ho_example"]:
+            if isinstance(item, dict):
+                if item == value:
+                    return True
+            elif isinstance(item, list):
+                for sub_item in item:
+                    if sub_item == value:
+                        return True
+        return False
+
+
+
     def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:
         combined = f"{func_def}{nb_example}{nb_thought}"
         return hashlib.md5(combined.encode()).hexdigest()
@@ -70,16 +72,13 @@ class Hostacache:
     def _get_argsFunction(self, func_obj):
         self.infos_cache["function_def"], func_prot = self._get_functionDef(func_obj)
         self.infos_cache["return_type"] = self._get_functionReturnType(func_obj)
-        self.infos_cache[self.cache_id].append([self.value])
+        self.infos_cache[self.cache_id].append(self.value)
         self.infos_cache[f'{str(self.cache_id)}'+'_id'] = self._get_hashFunction(str(self.infos_cache[str(self.cache_id)]), 0, 0)
         self.infos_cache["hash_function"] = self._get_hashFunction(self.infos_cache["function_def"],
                                                                    self.infos_cache["ho_example_id"],
                                                                    self.infos_cache["ho_cothougt_id"])
         return self.infos_cache
     
-    # def _get_functionDef(self, func_obj):
-    #     return inspect.getsource(func_obj), inspect.signature(func_obj)
-
     def _get_functionDef(self, func: Callable) -> str:
         sig = inspect.signature(func)
 
@@ -131,6 +130,3 @@ class Hostacache:
 
         return return_json
 
-    def researchfile(self, func):
-        func_name = func.__name__
-        path_name = os.path.join(CACHE_DIR, f"{func_name}.openhc")
