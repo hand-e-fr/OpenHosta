@@ -6,6 +6,7 @@ import requests
 import json
 
 from config import Model, DefaultManager
+
 from prompt import PromptMananger
 
 _x = PromptMananger()
@@ -61,38 +62,19 @@ class ModelAnalizer(Model):
             sys.stderr.write(f"[ESTIMATE_ERROR]: {v}")
             return None
 
-        api_key = l_default.api_key
-        l_body = {
-            "model": l_default.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": _estimate_prompt
-                            + "---\n"
-                            + str(function_doc)
-                            + "\n---",
-                        }
-                    ],
-                },
-                {
-                    "role": "user",
-                    "content": [{"type": "text", "text": str(function_call)}],
-                },
-            ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0.1,
-            "top_p": 0.1,
-        }
+        l_user_prompt = (
+            "\n Here's the fonction documentation:\n"
+            + f"{function_doc}\n"
+            + "Here's the function call:\n"
+            + f"{function_call}\n"
+        )
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        }
-
-        response = requests.post(l_default.base_url, json=l_body, headers=headers)
+        response = l_default._api_call(
+            sys_prompt=_estimate_prompt,
+            user_prompt=l_user_prompt,
+            creativity=0.2,
+            diversity=0.2
+        )
 
         if response.status_code == 200:
             data = response.json()

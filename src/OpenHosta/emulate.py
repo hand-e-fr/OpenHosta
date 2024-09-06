@@ -2,7 +2,9 @@ import sys
 
 from analytics import request_timer
 from prompt import PromptMananger
+
 from config import Model, DefaultManager
+
 
 _x = PromptMananger()
 
@@ -11,15 +13,20 @@ _emulator_pre_prompt = _x.get_prompt("emulate")
 l_default = DefaultManager.get_default_model()
 
 def _exec_emulate(
-    _function_doc=None,
-    _function_call=None,
-    _function_return=None,
+
+    _function_infos : dict = None,
     model: Model = None,
     warn: bool = False,
     l_creativity: float = None,
     l_diversity: float = None,
 ):
     global _emulator_pre_prompt
+
+    _function_doc = _function_infos["function_def"]
+    _function_call = _function_infos["function_call"]
+    _function_return = _function_infos["return_type"]
+    _function_example = _function_infos["ho_example"]
+    _function_locals = _function_infos["function_locals"]
 
     if model is None:
         model = DefaultManager.get_default_model()
@@ -41,14 +48,28 @@ def _exec_emulate(
         + "\nAnd this is the function call:\n"
         + _function_call
     )
-    
+
+    if _function_example != []:
+        l_user_prompt = (
+            l_user_prompt 
+            + "\nHere are some examples of expected input and output:\n"
+            + str(_function_example)
+        )
+        
     if not _function_return is None:
         l_user_prompt = (
             l_user_prompt 
             + "\nTo fill the “return” value in the output JSON, build your response as defined in the following JSON schema. Do not change the key \"return\"\n"
             + str(_function_return)
         )
-
+        
+    if _function_locals != {}:
+        l_user_prompt = (
+            l_user_prompt 
+            + "\nHere's the function's locals variables which you can use as additional information to give your answer:\n"
+            + str(_function_locals)
+        )
+    
     response = model._api_call(
         sys_prompt=_emulator_pre_prompt,
         user_prompt=l_user_prompt,
@@ -64,16 +85,3 @@ def _exec_emulate(
         sys.stderr.write(f"Error {response.status_code}: {response.text}")
         l_ret = None
     return l_ret
-
-
-def thought(key):
-    def inner_func(*args, **kwargs):
-        try:
-            result = _exec_emulate(_function_doc=key, _function_call=str(args[0]))
-        except Exception as e:
-            sys.stderr.write(Exception)
-            sys.stderr.write("[LMDA_ERROR]")
-            result = None
-        return result
-
-    return inner_func
