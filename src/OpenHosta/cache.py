@@ -50,7 +50,7 @@ class Hostacache:
         with open(path_name, "wb") as f:
             pickle.dump(hosta_args, f)
         return
-        
+
 
     def _is_value_already_in_example(self, value, cached_data):
         for item in cached_data["ho_example"]:

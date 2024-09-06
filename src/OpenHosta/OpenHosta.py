@@ -1,4 +1,5 @@
 from config import Model, DefaultManager
+import config
 from emulate import _exec_emulate, thought
 from example import example, load_examples, save_examples
 from exec import HostaInjector
