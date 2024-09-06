@@ -15,6 +15,8 @@ All significant changes to this project will be documented in this file.
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM
   - `suggest` return now his data returned by LLM in a dict
+  - `emulate` works now for class methods
+  - `emulate` now integrate locals variable of emulated function to the LLM prompt.
 
 ## **v1.0** 29/08/2024:
 
