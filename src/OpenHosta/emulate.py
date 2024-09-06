@@ -16,9 +16,8 @@ def _exec_emulate(
 
     _function_infos : dict = None,
     model: Model = None,
-    warn: bool = False,
     l_creativity: float = None,
-    l_diversity: float = None,
+    l_diversity: float = None
 ):
     global _emulator_pre_prompt
 

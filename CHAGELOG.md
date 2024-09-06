@@ -11,6 +11,7 @@ All significant changes to this project will be documented in this file.
   - The function `config.set_default_model` works now w/ `config.set_default_apiKey`
   - `thought` function now accept multiple arguments
   - `suggest` and `analytics` call now th LLM with `Model` class (`_ai_call`)
+  - `emulate` works now in a nested function.
   
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM
