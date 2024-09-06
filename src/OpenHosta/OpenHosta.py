@@ -5,13 +5,15 @@ DefaultManager.set_default_model(Model(
     base_url="https://api.openai.com/v1/chat/completions"
 ))
 
+
 from emulate import _exec_emulate
 import config
 from thought import thought
-from example import example
 from exec import HostaInjector
+from example import example, load_examples, save_examples
 
-# TODO make the if else for data cache here !
 emulate = HostaInjector(_exec_emulate)
 
-__all__ = "emulate", "thought", "example", "config", "Model", "DefaultManager"
+__all__ = "emulate", "thought",
+"example", "load_examples", "save_examples",
+"config", "Model", "DefaultManager"

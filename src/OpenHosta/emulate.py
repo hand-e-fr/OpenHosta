@@ -25,6 +25,7 @@ def _exec_emulate(
     _function_doc = _function_infos["function_def"]
     _function_call = _function_infos["function_call"]
     _function_return = _function_infos["return_type"]
+    _function_example = _function_infos["ho_example"]
     _function_locals = _function_infos["function_locals"]
 
     if model is None:
@@ -47,7 +48,14 @@ def _exec_emulate(
         + "\nAnd this is the function call:\n"
         + _function_call
     )
-    
+
+    if _function_example != []:
+        l_user_prompt = (
+            l_user_prompt 
+            + "\nHere are some examples of expected input and output:\n"
+            + str(_function_example)
+        )
+        
     if not _function_return is None:
         l_user_prompt = (
             l_user_prompt 

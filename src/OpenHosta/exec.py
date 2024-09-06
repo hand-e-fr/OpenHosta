@@ -50,7 +50,7 @@ class HostaInjector:
                 self._attach_attributs(func_obj, func_prot)
                 return self.exec(cached_data, *args, **kwargs)
 
-        hosta_args = self._get_argsFunction(func_obj, caller, *args, **kwargs)
+        hosta_args = self._get_argsFunction(func_obj)
         with open(path_name, "wb") as f:
             pickle.dump(hosta_args, f)
 
@@ -63,7 +63,7 @@ class HostaInjector:
         combined = f"{func_def}{nb_example}{nb_thought}"
         return hashlib.md5(combined.encode()).hexdigest()
 
-    def _get_argsFunction(self, func_obj, caller, *args, **kwargs):
+    def _get_argsFunction(self, func_obj):
 
         self.infos_cache["function_def"], func_prot = self._get_functionDef(func_obj)
         self.infos_cache["return_type"] = self._get_functionReturnType(func_obj)
