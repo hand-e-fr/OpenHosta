@@ -1,6 +1,10 @@
+import collections.abc
 import inspect
 import sys
-from typing import Callable, Any, Dict
+from typing import Callable, Any, Dict, get_origin, get_args
+import typing
+import collections
+
 from pydantic import BaseModel, create_model
 
 from enhancer import enhance
@@ -55,7 +59,6 @@ class HostaInjector:
             pickle.dump(hosta_args, f)
 
         hosta_args["function_call"], hosta_args["function_locals"] = self._get_functionCall(func_obj, caller)
-        print(f"HOSTA_ARGS: {hosta_args}")
         return self.exec(hosta_args, *args, **kwargs)
 
 
@@ -168,12 +171,38 @@ class HostaInjector:
         else:
             return None
 
+    def _get_typingOrigin(self, return_type) -> bool:
+        origin = get_origin(return_type)
+        return origin in {
+    list,
+    dict,
+    tuple,
+    set,
+    frozenset,
+    typing.Union,
+    typing.Annotated,
+    typing.Optional,
+    typing.Literal,
+    collections.deque,
+    collections.abc.Iterable,
+    collections.abc.Sequence,
+    collections.abc.Mapping,
+}
+    
     def _get_functionReturnType(self, func: Callable) -> Dict[str, Any]:
         return_type = self._inspect_returnType(func)
         return_json = None
 
         if return_type is not None:
-            if issubclass(return_type, BaseModel):
+            if self._get_typingOrigin(return_type):
+                return_type_origin = get_origin(return_type)
+                return_type_args = get_args(return_type)
+                combined = return_type_origin[return_type_args]
+                new_model = create_model(
+                    "Hosta_return_specified_typing", return_hosta_type=(combined, ...)
+                )
+                return_json = new_model.model_json_schema()
+            elif issubclass(return_type, BaseModel):
                 return_json = return_type.model_json_schema()
             else:
                 new_model = create_model(
