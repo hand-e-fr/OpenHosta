@@ -39,3 +39,48 @@ class PromptMananger:
             return prompt
         sys.stderr.write(f"[JSON_ERROR] Prompt not found\n")
         return None
+    
+    def set_prompt(self, name:str, category:str, version:str, filepath:str):
+        json_filepath = "prompt.json"
+        new = {"key": "", "text": "", "category": "", "version": ""}
+        
+        try:
+            with open(filepath, 'r', encoding="utf-8") as file:
+                prompt = file.read()
+        except FileNotFoundError:
+            sys.stderr.write(f"File {filepath} not found.")
+        except IOError as e:
+            sys.stderr.write(f"File error: {e}")
+        else:
+            try:
+                with open(json_filepath, 'r', encoding="utf-8") as json_file:
+                    data = json.load(json_file)
+            except FileNotFoundError:
+                sys.stderr.write(f"File {json_filepath} not found.")
+            except IOError as e:
+                sys.stderr.write(f"File error: {e}")
+            except Exception as e:
+                sys.stderr.write(e)
+            else:
+                new["key"], new["category"], new["version"] = name, category, version
+                new["text"] = prompt
+                data["prompts"].append(new)
+                try:
+                    with open(json_filepath, 'w', encoding='utf-8') as json_file:
+                        json.dump(data, json_file, ensure_ascii=False, indent=4)
+                except FileNotFoundError:
+                    sys.stderr.write(f"File {json_filepath} not found.")
+                except IOError as e:
+                    sys.stderr.write(f"File error: {e}")
+                except Exception as e:
+                    sys.stderr.write(e)
+                else:
+                    print(f"{name} prompt has been added to {json_filepath}")
+                    
+    def show_prompt(self, key):
+        prompt = self.prompts.get(key)
+        if prompt:
+            print(prompt["text"])
+            return prompt["text"]
+        sys.stderr.write(f"[JSON_ERROR] Prompt not found\n")
+        return None
