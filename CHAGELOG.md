@@ -11,18 +11,24 @@ All significant changes to this project will be documented in this file.
   - The function `config.set_default_model` works now w/ `config.set_default_apiKey`
   - `thought` function now accept multiple arguments
   - `suggest` and `analytics` call now th LLM with `Model` class (`_ai_call`)
+  - `emulate` works now in a nested function.
   
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM
   - `suggest` return now his data returned by LLM in a dict
   - `emulate` works now for class methods
   - `emulate` now integrate locals variable of emulated function to the LLM prompt.
-  - `_hostacache_` are now available for function infos storage 
+  - `_hostacache_` are now available for function infos storage
+  -  The return type predicted by `thought` is now attached as an attribute to the object created: `_return_type`.
 
 - **Features**
   - `example` function that can add some example for a specified hosta-injected function (inside or outside it) and add it to the cache
   - `save_examples` function that can save in a JSONL file all he example of an hosta-injected function
   - `load_examples` function that can load an example file an a cache for an hosta-injected function
+  - `set_prompt` in `PromptManager` enables to change automatically a prompt un "prompt.json"
+
+- **Optimization**
+  - `emulate` prompt changed: confidence level removed: (~20% speed gained)
 
 ## **v1.0** 29/08/2024:
 
