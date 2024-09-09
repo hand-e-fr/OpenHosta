@@ -10,3 +10,6 @@ __hostacache__/
 .openhosta
 dist/*
 __hostacache__/
+.coverage
+*.html
+.pytest_cache
