@@ -64,7 +64,18 @@ class PromptMananger:
             else:
                 new["key"], new["category"], new["version"] = name, category, version
                 new["text"] = prompt
-                data["prompts"].append(new)
+                
+                found = False
+                for elem in data['prompts']:
+                    if elem['key'] == new['key']:
+                        elem['text'] = new['text']
+                        elem['version'] = new['version']
+                        found = True
+                        break
+
+                if not found:
+                    data["prompts"].append(new)
+
                 try:
                     with open(json_filepath, 'w', encoding='utf-8') as json_file:
                         json.dump(data, json_file, ensure_ascii=False, indent=4)

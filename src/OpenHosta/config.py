@@ -53,7 +53,7 @@ class Model:
             "Infos:\n"
         )
 
-    def _api_call(
+    def api_call(
         self, sys_prompt: str, user_prompt: str, creativity: float, diversity: float
     ):     
         if self.api_key is None or not self.api_key:
@@ -89,7 +89,7 @@ class Model:
         if response.status_code != 200:
             sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful. Status code: {response.status_code}:\n{response.text}")
         return response
-    
+ 
     def _request_handler(self, response, return_type, return_caller):
         l_ret = ""
 
