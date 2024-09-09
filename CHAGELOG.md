@@ -17,7 +17,10 @@ All significant changes to this project will be documented in this file.
   - `suggest` return now his data returned by LLM in a dict
   - `emulate` works now for class methods
   - `emulate` now integrate locals variable of emulated function to the LLM prompt.
-  - `_hostacache_` are now available for function infos storage 
+  - `_hostacache_` are now available for function infos storage
+  - Added support for the **typing** module: You can now use specific return types from the typing module, including [List, Dict, Tuple, Set, FrozenSet, Deque, Iterable, Sequence, Mapping, Union, Optional, Literal].
+  - `emulate` now includes a verification output that checks and converts the output to the specified type if necessary. Supported types include **Pydantic** models, all types from the **typing** module mentioned above, as well as built-in types such as `dict`, `int`, `float`, `str`, `list`, `set`, `frozenset`, `tuple`, and `bool`.
+    - The `complex` type is not supported. If you need to use complex numbers, please pass them as a `tuple` and manually convert them after processing.
 
 - **Features**
   - `example` function that can add some example for a specified hosta-injected function (inside or outside it) and add it to the cache
