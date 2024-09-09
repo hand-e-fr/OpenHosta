@@ -18,6 +18,7 @@ def build_user_prompt(_function_infos : dict = None):
     function_return = _function_infos["return_type"]
     function_example = _function_infos["ho_example"]
     function_locals = _function_infos["function_locals"]
+ 
     
     user_prompt = (
         "Here's the function definition:\n"
@@ -58,7 +59,8 @@ def _exec_emulate(
     l_diversity: float = None
 ):
     global _emulator_pre_prompt
-
+    _function_return_caller = _function_infos["return_caller"]
+   
     if model is None:
         model = DefaultManager.get_default_model()
 
@@ -81,15 +83,15 @@ def _exec_emulate(
         creativity=l_creativity,
         diversity=l_diversity,
     )
-    
+
     if _function_obj is not None and "bound method" not in str(_function_obj):
         setattr(_function_obj, "_last_response", response.json())
 
-    l_ret = ""
-    
     if response.status_code == 200:
-        l_ret = model.request_handler(response)
+        l_ret = model._request_handler(response, _function_return, _function_return_caller)
+
     else:
         sys.stderr.write(f"Error {response.status_code}: {response.text}")
         l_ret = None
+    
     return l_ret

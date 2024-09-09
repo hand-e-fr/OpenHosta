@@ -2,7 +2,9 @@ import sys
 import requests
 import json
 import re
-
+from jsonschema import validate
+from pydantic import BaseModel
+from typing import get_origin, get_args
 
 def is_valid_url(url):
     regex = re.compile(
@@ -25,6 +27,16 @@ class Model:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
+        self.conversion_function = {
+            str: lambda x: str(x),
+            int: lambda x: int(x),
+            float: lambda x: float(x),
+            list: lambda x: list(x),
+            set: lambda x: set(x),
+            frozenset: lambda x: frozenset(x),
+            tuple: lambda x: tuple(x),
+            bool: lambda x: bool(x),
+            }
 
         if any(var is None for var in (model, base_url)):
             sys.stderr.write(f"[CONFIG_ERROR] Empty values.")
@@ -77,25 +89,55 @@ class Model:
         if response.status_code != 200:
             sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful. Status code: {response.status_code}:\n{response.text}")
         return response
-
-    def request_handler(self, response):
+ 
+    def _request_handler(self, response, return_type, return_caller):
         l_ret = ""
 
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
-        
-        
+
         try:
             l_ret_data = json.loads(json_string)
+            validate(instance=l_ret_data.get("return", {}), schema=return_type.get("properties", {}))
 
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
+            l_ret = l_ret_data["return"]
+            return l_ret
 
-        l_ret = l_ret_data["return"]
-        
+        if "return_hosta_type" in return_type["properties"]:
+            if return_caller in self.conversion_function:
+                convert_function = self.conversion_function[return_caller]
+                l_ret = convert_function(l_ret_data["return"])
+            else:
+                l_ret = l_ret_data["return"]
+
+        elif "return_hosta_type_typing"  in return_type["properties"]:
+                l_ret = self.convert_to_type(l_ret_data["return"], return_caller)
+
+        elif "return_hosta_type_any" in return_type["properties"]:
+            l_ret = l_ret_data["return"]
+
+        elif issubclass(return_caller, BaseModel):
+            l_ret = return_caller(**l_ret_data["return"])
+
+        else:
+            l_ret = l_ret_data["return"]
+
         return l_ret
+    
+    def convert_to_type(self, data, type):
+        origin = get_origin(type)
+        args = get_args(type)
+
+        if origin != None:
+            if origin in self.conversion_function:
+                convert_function = self.conversion_function[origin]
+                return convert_function(self.convert_to_type(d, args[0]) for d in data)
+
+        return data
     
 class DefaultModel:
     _instance = None
