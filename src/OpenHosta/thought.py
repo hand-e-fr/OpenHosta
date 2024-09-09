@@ -1,4 +1,6 @@
 import sys
+import json
+from pydoc import locate
 
 from emulate import _exec_emulate
 from config import DefaultManager
@@ -8,11 +10,15 @@ l_default = DefaultManager.get_default_model()
 _x = PromptMananger()
 _thought_sys_prompt = _x.get_prompt("thought")
 
+
 def thought(key):
     _function_infos = {
         "function_def": "",
         "function_call": "",
         "return_type": None,
+        "return_type": None,
+        "ho_example": None,
+        "function_locals": None
     }    
     def inner_func(*args, **kwargs):
         global l_default, _thought_sys_prompt
@@ -24,7 +30,7 @@ def thought(key):
             + f"{args}\n"
         )
         
-        response = l_default._api_call(
+        response = l_default.api_call(
             sys_prompt=_thought_sys_prompt,
             user_prompt=l_user_prompt,
             creativity=0.5,
@@ -32,24 +38,25 @@ def thought(key):
         )
         
         data = response.json()
-        json_string = data["choices"][0]["message"]["content"]
+        type_json = data["choices"][0]["message"]["content"]
+        type_dict = json.loads(type_json)
+        type_str = str(type_dict["type"])
+        setattr(inner_func, "_return_type", locate(type_str))
         
         typed = (
             str(args)
             + "\n"
             + "Here's the return type that must respect for your response. The python type is in the key \"type\" of this JSON schema:\n"
-            + json_string
+            + str(type_dict)
             + "\n"
         )
-        
-        print(typed)
         
         try:
             _function_infos["function_def"] = key
             _function_infos["function_call"] = typed
-            result = _exec_emulate(_function_infos)
+            result = _exec_emulate(_function_infos, inner_func)
         except Exception as e:
-            sys.stderr.write(Exception)
+            sys.stderr.write(f"{e}")
             sys.stderr.write("[LMDA_ERROR]")
             result = None
         return result

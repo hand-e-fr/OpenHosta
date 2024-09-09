@@ -48,15 +48,14 @@ class HostaInjector:
             if function_hash == cached_data["hash_function"]:
                 cached_data["function_call"], cached_data["function_locals"] = self._get_functionCall(func_obj, caller)
                 self._attach_attributs(func_obj, func_prot)
-                return self.exec(cached_data, *args, **kwargs)
+                return self.exec(cached_data, func_obj, *args, **kwargs)
 
         hosta_args = self._get_argsFunction(func_obj)
         with open(path_name, "wb") as f:
             pickle.dump(hosta_args, f)
 
         hosta_args["function_call"], hosta_args["function_locals"] = self._get_functionCall(func_obj, caller)
-        print(f"HOSTA_ARGS: {hosta_args}")
-        return self.exec(hosta_args, *args, **kwargs)
+        return self.exec(hosta_args, func_obj, *args, **kwargs)
 
 
     def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:
@@ -85,7 +84,7 @@ class HostaInjector:
             caller_2 = caller_1.f_back
             if caller_2 is None:
                 raise Exception("Caller[lvl2] frame is None")
-
+            
             caller_name = caller_2.f_code.co_name
             
             if 'self' in caller_2.f_locals:
@@ -98,12 +97,12 @@ class HostaInjector:
                         if obj.__code__ == code:
                             func = obj
                             break
-             
+                        
             if not callable(func):
                 raise Exception("Larger scope isn't a callable or scope can't be extended.\n")
         except Exception as e:
             sys.stderr.write(f"[FRAME_ERROR]: {e}")
-            func, caller = None, None
+            func, caller_2 = None, None
         return func, caller_2
 
     def _get_functionDef(self, func: Callable) -> str:

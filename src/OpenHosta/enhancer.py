@@ -23,7 +23,7 @@ def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
         + "\n---\n"
     )
     
-    response = l_default._api_call(
+    response = l_default.api_call(
         sys_prompt=sys_prompt, 
         user_prompt=l_user_prompt, 
         creativity=0.8, 
