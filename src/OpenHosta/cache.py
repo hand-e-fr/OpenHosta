@@ -75,7 +75,7 @@ class Hostacache:
 
     def _get_argsFunction(self, func_obj):
         self.infos_cache["function_def"], func_prot = self._get_functionDef(func_obj)
-        self.infos_cache["return_type"] = self._get_functionReturnType(func_obj)
+        self.infos_cache["return_type"], self.infos_cache["return_caller"] = self._get_functionReturnType(func_obj)
         self.infos_cache[self.cache_id].append(self.value)
         self.infos_cache[f'{str(self.cache_id)}'+'_id'] = self._get_hashFunction(str(self.infos_cache[str(self.cache_id)]), 0, 0)
         self.infos_cache["hash_function"] = self._get_hashFunction(self.infos_cache["function_def"],
@@ -134,28 +134,32 @@ class Hostacache:
     def _get_functionReturnType(self, func: Callable) -> Dict[str, Any]:
         return_type = self._inspect_returnType(func)
         return_json = None
+        return_caller = None
 
         if return_type is not None:
             if self._get_typingOrigin(return_type):
                 return_type_origin = get_origin(return_type)
                 return_type_args = get_args(return_type)
                 combined = return_type_origin[return_type_args]
+                return_caller = return_type
                 new_model = create_model(
-                    "Hosta_return_specified_typing", return_hosta_type=(combined, ...)
+                    "Hosta_return_shema", return_hosta_type_typing=(combined, ...)
                 )
                 return_json = new_model.model_json_schema()
             elif issubclass(return_type, BaseModel):
+                return_caller = return_type
                 return_json = return_type.model_json_schema()
             else:
+                return_caller = return_type
                 new_model = create_model(
-                    "Hosta_return_specified", return_hosta_type=(return_type, ...)
+                    "Hosta_return_shema", return_hosta_type=(return_type, ...)
                 )
                 return_json = new_model.model_json_schema()
         else:
             No_return_specified = create_model(
-                "Hosta_return_no_specified", return_hosta_type=(Any, ...)
+                "Hosta_return_shema", return_hosta_type_any=(Any, ...)
             )
             return_json = No_return_specified.model_json_schema()
 
-        return return_json
+        return return_json, return_caller
 
