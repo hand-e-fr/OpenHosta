@@ -28,7 +28,8 @@ All significant changes to this project will be documented in this file.
   - `set_prompt` in `PromptManager` enables to change automatically a prompt un "prompt.json"
 
 - **Optimization**
-  - `emulate` prompt changed: confidence level removed: (~20% speed gained)
+  - `emulate` prompt changed: confidence level removed: (~20% speed gained) (`emulate`: v1.1)
+  - All prompt enhanced: added code block, separator and reference to the name of the processed function (`emulate`: v1.2, `enhance` v1.2, `thought`: v1.1, `estimate`: v1.1)
 
 ## **v1.0** 29/08/2024:
 

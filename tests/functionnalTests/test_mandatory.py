@@ -221,7 +221,7 @@ class TestThought:
         ("Count the letter un a setence", "Hello World!", int),
         ("capitalize a setence", "hello world!", str),
         ("Give the number Pi to 3 decimal places", "", float),
-        ("Sort in ascending order", (2, 5, 1, 12, 6), list),
+        ("Sort in ascending order", [2, 5, 1, 12, 6], list),
         ("Is a positive number", 6, bool),
     ])
     def test_FeaturePredict(self, prompt, args, expected):
