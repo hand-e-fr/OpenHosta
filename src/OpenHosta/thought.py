@@ -1,4 +1,6 @@
 import sys
+import json
+from pydoc import locate
 
 from emulate import _exec_emulate
 from config import DefaultManager
@@ -8,10 +10,8 @@ l_default = DefaultManager.get_default_model()
 _x = PromptMananger()
 _thought_sys_prompt = _x.get_prompt("thought")
 
-g_return_type = ""
 
 def thought(key):
-    global g_return_type
     _function_infos = {
         "function_def": "",
         "function_call": "",
@@ -38,25 +38,27 @@ def thought(key):
         )
         
         data = response.json()
-        g_return_type = data["choices"][0]["message"]["content"]
+        type_json = data["choices"][0]["message"]["content"]
+        type_dict = json.loads(type_json)
+        type_str = str(type_dict["type"])
+        setattr(inner_func, "_return_type", locate(type_str))
         
         typed = (
             str(args)
             + "\n"
             + "Here's the return type that must respect for your response. The python type is in the key \"type\" of this JSON schema:\n"
-            + g_return_type
+            + str(type_dict)
             + "\n"
         )
         
         try:
             _function_infos["function_def"] = key
             _function_infos["function_call"] = typed
-            result = _exec_emulate(_function_infos)
+            result = _exec_emulate(_function_infos, inner_func)
         except Exception as e:
             sys.stderr.write(f"{e}")
             sys.stderr.write("[LMDA_ERROR]")
             result = None
         return result
 
-    setattr(inner_func, "_return_type", g_return_type)
     return inner_func

@@ -115,7 +115,7 @@ class TestEmulate:
         ret = showLocals()
         assert ret == ret_dict
         
-    def test_FeatureModelInParamter(self):
+    def test_FeatureModelInParameter(self):
         global g_apiKey
         
         my_model = config.Model(
@@ -167,7 +167,15 @@ class TestEmulate:
         ret = generateAccount("Max", "maxexample@gmail.com", 21)
         assert ret == User(name="Max", email="maxexample@gmail.com", age=18)
         
-    def test_FeatureSuggest(self):
+    def test_FeatureSuggestDefaultModel(self):
+        
+        my_model = config.Model(
+            model="gpt-4o-mini",
+            base_url="https://api.openai.com/v1/chat/completions",
+            api_key=g_apiKey
+        )
+        
+        config.set_default_model(my_model)
         
         def multiply(a:int, b:int)->int:
             """
@@ -177,14 +185,16 @@ class TestEmulate:
         
         ret = multiply(2, 3)
         ret_suggest = multiply.__suggest__(multiply)
+        ret_model = multiply._last_response["model"]
+        
         assert isinstance(ret_suggest, dict)
+        assert "gpt-4o-mini" in ret_model
         assert not multiply.advanced is None
         assert not multiply.enhanced_prompt is None
         assert not multiply.review is None
         assert not multiply.diagramm is None
 
-
-class TestBody:
+class TestThought:
     
     def test_BasicDirect(self):
         ret = thought("Multiply by 2")(8)
@@ -217,27 +227,38 @@ class TestBody:
     def test_FeaturePredict(self, prompt, args, expected):
         x = thought(prompt)
         ret = x(args)
-        assert isinstance(x._return_type, expected)
+        assert x._return_type is expected
 
     def test_FeatureMultiArgs(self):
-        pass
+        x = thought("Combine each word of a sentence in a string")
+        ret = x("Hello", ", how ary you ?", " Nice to meet you !")
+        assert ret == "Hello, how ary you ? Nice to meet you !"
     
     def test_FeatureChainOfThought(self):
         pass
     
     def test_FeatureDefaultModel(self):
-        pass
+        my_model = config.Model(
+            model="gpt-4o-mini",
+            base_url="https://api.openai.com/v1/chat/completions",
+            api_key=g_apiKey
+        )
+        
+        config.set_default_model(my_model)
+        
+        x = thought("Is a masculine name")
+        ret = x("Max")
+        print(x._last_response)
+        ret_model = x._last_response["model"]
+        assert ret == True
+        assert "gpt-4o-mini" in ret_model
     
     def test_FeatureCachedPrediction(self):
         pass
 
 
-class TestCache:
+class TestTypingPydantic:
     pass
-
-class test_config:
-    pass
-
 
 """
 typing (parametrize)
