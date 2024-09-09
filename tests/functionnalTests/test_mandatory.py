@@ -2,10 +2,12 @@ import pytest
 import time as t
 import sys
 import os
+from pydantic import BaseModel
+from typing import Optional, Callable
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "OpenHosta")))
 
-from OpenHosta import config, emulate
+from OpenHosta import config, emulate, thought
 
 g_apiKey = ""
 
@@ -113,23 +115,25 @@ class TestEmulate:
         ret = showLocals()
         assert ret == ret_dict
         
-    # def test_FeatureModelInParamter(self):
-    #     global g_apiKey
+    def test_FeatureModelInParamter(self):
+        global g_apiKey
         
-    #     my_model = config.Model(
-    #         model="gpt-4o-mini",
-    #         base_url="https://api.openai.com/v1/chat/completions",
-    #         api_key=g_apiKey
-    #     )
+        my_model = config.Model(
+            model="gpt-4o-mini",
+            base_url="https://api.openai.com/v1/chat/completions",
+            api_key=g_apiKey
+        )
         
-    #     def showModel()->str:
-    #         """
-    #         This function returns the LLm model (like "gpt-4o" or "llama-3-70b") with which it was emulated. It returns only the name used by its API.
-    #         """
-    #         return emulate(model=my_model)
+        def randomSentence()->str:
+            """
+            This function returns a random sentence.
+            """
+            return emulate(model=my_model)
         
-    #     ret = showModel()
-    #     assert ret == "gpt-4o-mini"
+        ret = randomSentence()
+        ret_model = randomSentence._last_response["model"]
+        print(ret_model)
+        assert "gpt-4o-mini" in ret_model
     
     def test_FeatureNestedFunction(self):
         
@@ -144,11 +148,91 @@ class TestEmulate:
         nested = grandFunction()
         ret = nested()
         assert ret == "Hello World!"
+        
+        
+    def test_FeaturePydantic(self):
+        
+        class User(BaseModel):
+            id: Optional[int] = None
+            name: str
+            email: str
+            age: int
+            
+        def generateAccount(name:str, email:str, age:int)->User:
+            """
+            This function generates a customer account with information based on the arguments passed, and returns it to the pydantic “User” model.
+            """
+            return emulate()
+        
+        ret = generateAccount("Max", "maxexample@gmail.com", 21)
+        assert ret == User(name="Max", email="maxexample@gmail.com", age=18)
+        
+    def test_FeatureSuggest(self):
+        
+        def multiply(a:int, b:int)->int:
+            """
+            This function multiplies two integers in parameter.
+            """
+            return emulate()
+        
+        ret = multiply(2, 3)
+        ret_suggest = multiply.__suggest__(multiply)
+        assert isinstance(ret_suggest, dict)
+        assert not multiply.advanced is None
+        assert not multiply.enhanced_prompt is None
+        assert not multiply.review is None
+        assert not multiply.diagramm is None
 
-class test_suggest:
-    pass
 
-class test_thought:
+class TestBody:
+    
+    def test_BasicDirect(self):
+        ret = thought("Multiply by 2")(8)
+        assert ret == 16
+    
+    def test_BasicIndirect(self):
+        x = thought("Translate in English")
+        ret = x("Bonjour Monde!")
+        assert isinstance(x, Callable)
+        assert ret == "Hello World!"
+
+    @pytest.mark.parametrize("prompt, args, expected", [
+        ("return a random integer", "", int),
+        ("return a random sentence", "", str),
+        ("return a random float", "", float),
+        ("return list with 5 random integers", "", list),
+        ("return a random bool in python", "", bool),
+    ])
+    def test_BasicTyped(self, prompt, args, expected):
+        ret = thought(prompt)(args)
+        assert isinstance(ret, expected)
+        
+    @pytest.mark.parametrize("prompt, args, expected", [
+        ("Count the letter un a setence", "Hello World!", int),
+        ("capitalize a setence", "hello world!", str),
+        ("Give the number Pi to 3 decimal places", "", float),
+        ("Sort in ascending order", (2, 5, 1, 12, 6), list),
+        ("Is a positive number", 6, bool),
+    ])
+    def test_FeaturePredict(self, prompt, args, expected):
+        x = thought(prompt)
+        ret = x(args)
+        assert isinstance(x._return_type, expected)
+
+    def test_FeatureMultiArgs(self):
+        pass
+    
+    def test_FeatureChainOfThought(self):
+        pass
+    
+    def test_FeatureDefaultModel(self):
+        pass
+    
+    def test_FeatureCachedPrediction(self):
+        pass
+
+
+class TestCache:
     pass
 
 class test_config:
@@ -156,17 +240,10 @@ class test_config:
 
 
 """
-pydantic
-typing
-model config
-function called in another file or global
+typing (parametrize)
+creativity, diversity
 example
-chain of thought 
 cache
----
-Test fonctionnel
-test unitaire
-test de performance
 ---
 test en trompant le LLM dans la def ou la doc
 Error:

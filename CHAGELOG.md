@@ -18,12 +18,17 @@ All significant changes to this project will be documented in this file.
   - `suggest` return now his data returned by LLM in a dict
   - `emulate` works now for class methods
   - `emulate` now integrate locals variable of emulated function to the LLM prompt.
-  - `_hostacache_` are now available for function infos storage 
+  - `_hostacache_` are now available for function infos storage
+  -  The return type predicted by `thought` is now attached as an attribute to the object created: `_return_type`.
 
 - **Features**
   - `example` function that can add some example for a specified hosta-injected function (inside or outside it) and add it to the cache
   - `save_examples` function that can save in a JSONL file all he example of an hosta-injected function
   - `load_examples` function that can load an example file an a cache for an hosta-injected function
+  - `set_prompt` in `PromptManager` enables to change automatically a prompt un "prompt.json"
+
+- **Optimization**
+  - `emulate` prompt changed: confidence level removed: (~20% speed gained)
 
 ## **v1.0** 29/08/2024:
 
