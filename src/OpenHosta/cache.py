@@ -3,7 +3,9 @@ import pickle
 import os
 import hashlib
 import inspect
-from typing import Callable, Dict, Any
+from typing import Callable, Dict, Any, get_origin, get_args
+import typing
+import collections
 from pydantic import BaseModel, create_model
 
 
@@ -20,11 +22,14 @@ class Hostacache:
             "hash_function": "",
             "function_def": "",
             "return_type": "",
+            "return_caller": "",
             "function_call": "",
+            "function_locals": {},
             "ho_example": [],
             "ho_example_id": 0,
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
+
         }
 
     def __call__(self):
@@ -62,7 +67,6 @@ class Hostacache:
                     if sub_item == value:
                         return True
         return False
-
 
 
     def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:
@@ -110,12 +114,37 @@ class Hostacache:
         else:
             return None
 
+    def _get_typingOrigin(self, return_type) -> bool:
+        origin = get_origin(return_type)
+        return origin in {
+    list,
+    dict,
+    tuple,
+    set,
+    frozenset,
+    typing.Union,
+    typing.Optional,
+    typing.Literal,
+    collections.deque,
+    collections.abc.Iterable,
+    collections.abc.Sequence,
+    collections.abc.Mapping,
+}
+
     def _get_functionReturnType(self, func: Callable) -> Dict[str, Any]:
         return_type = self._inspect_returnType(func)
         return_json = None
 
         if return_type is not None:
-            if issubclass(return_type, BaseModel):
+            if self._get_typingOrigin(return_type):
+                return_type_origin = get_origin(return_type)
+                return_type_args = get_args(return_type)
+                combined = return_type_origin[return_type_args]
+                new_model = create_model(
+                    "Hosta_return_specified_typing", return_hosta_type=(combined, ...)
+                )
+                return_json = new_model.model_json_schema()
+            elif issubclass(return_type, BaseModel):
                 return_json = return_type.model_json_schema()
             else:
                 new_model = create_model(

@@ -27,6 +27,7 @@ class HostaInjector:
             "hash_function": "",
             "function_def": "",
             "return_type": "",
+            "return_caller": "",
             "function_call": "",
             "function_locals": {},
             "ho_example": [],
@@ -57,7 +58,7 @@ class HostaInjector:
         hosta_args = self._get_argsFunction(func_obj)
         with open(path_name, "wb") as f:
             pickle.dump(hosta_args, f)
-
+# TODO : fix the function locals because he didn't load in the cache
         hosta_args["function_call"], hosta_args["function_locals"] = self._get_functionCall(func_obj, caller)
         return self.exec(hosta_args, *args, **kwargs)
 
@@ -69,7 +70,7 @@ class HostaInjector:
     def _get_argsFunction(self, func_obj):
 
         self.infos_cache["function_def"], func_prot = self._get_functionDef(func_obj)
-        self.infos_cache["return_type"] = self._get_functionReturnType(func_obj)
+        self.infos_cache["return_type"], self.infos_cache["return_caller"] = self._get_functionReturnType(func_obj)
         self.infos_cache["hash_function"] = self._get_hashFunction(self.infos_cache["function_def"],
                                                                    self.infos_cache["ho_example_id"],
                                                                    self.infos_cache["ho_cothougt_id"])
@@ -192,30 +193,34 @@ class HostaInjector:
     def _get_functionReturnType(self, func: Callable) -> Dict[str, Any]:
         return_type = self._inspect_returnType(func)
         return_json = None
+        return_caller = None
 
         if return_type is not None:
             if self._get_typingOrigin(return_type):
                 return_type_origin = get_origin(return_type)
                 return_type_args = get_args(return_type)
                 combined = return_type_origin[return_type_args]
+                return_caller = return_type
                 new_model = create_model(
-                    "Hosta_return_specified_typing", return_hosta_type=(combined, ...)
+                    "Hosta_return_shema", return_hosta_type_typing=(combined, ...)
                 )
                 return_json = new_model.model_json_schema()
             elif issubclass(return_type, BaseModel):
+                return_caller = return_type
                 return_json = return_type.model_json_schema()
             else:
+                return_caller = return_type
                 new_model = create_model(
-                    "Hosta_return_specified", return_hosta_type=(return_type, ...)
+                    "Hosta_return_shema", return_hosta_type=(return_type, ...)
                 )
                 return_json = new_model.model_json_schema()
         else:
             No_return_specified = create_model(
-                "Hosta_return_no_specified", return_hosta_type=(Any, ...)
+                "Hosta_return_shema", return_hosta_type_any=(Any, ...)
             )
             return_json = No_return_specified.model_json_schema()
 
-        return return_json
+        return return_json, return_caller
 
     def _attach_attributs(self, func: Callable, prototype: str):
         if "bound method" not in str(func):

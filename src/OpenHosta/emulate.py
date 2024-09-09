@@ -25,6 +25,7 @@ def _exec_emulate(
     _function_doc = _function_infos["function_def"]
     _function_call = _function_infos["function_call"]
     _function_return = _function_infos["return_type"]
+    _function_return_caller = _function_infos["return_caller"]
     _function_example = _function_infos["ho_example"]
     _function_locals = _function_infos["function_locals"]
 
@@ -75,12 +76,10 @@ def _exec_emulate(
         user_prompt=l_user_prompt,
         creativity=l_creativity,
         diversity=l_diversity,
-    )
-
-    l_ret = ""
-    
+    )    
     if response.status_code == 200:
-        l_ret = model._request_handler(response)
+        l_ret = model._request_handler(response, _function_return, _function_return_caller)
+
     else:
         sys.stderr.write(f"Error {response.status_code}: {response.text}")
         l_ret = None
