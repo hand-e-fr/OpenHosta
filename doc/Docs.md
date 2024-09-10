@@ -74,12 +74,18 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [Librairie Import](#librairie-import)
       - [Basic Setup](#basic-setup)
     - ["emulate" Function](#emulate-function)
-    - [Pydantic Return](#pydantic-return)
+    - [Supported types \& Pydantic](#supported-types--pydantic)
       - [Integration Details](#integration-details)
     - ["suggest" Attributs](#suggest-attributs)
       - [Usage](#usage)
       - [Output Examples](#output-examples)
     - ["thought"](#thought)
+    - [Advanced configuration](#advanced-configuration)
+      - [Introduction](#introduction-1)
+      - [Inheriting from the Model Class](#inheriting-from-the-model-class)
+      - [Custom LLM Call Function](#custom-llm-call-function)
+      - [Custom Response Handling Function](#custom-response-handling-function)
+      - [Create a new instance](#create-a-new-instance)
     - [References](#references)
 
 ---
@@ -196,11 +202,13 @@ Be careful, you can put regular instructions in your function and they will be e
 
 emulate also accepts two other arguments: `creativity` and `diversity`. It correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/).
 
-### Pydantic Return 
+### Supported types & Pydantic
 
 OpenHosta integrates with Pydantic, a library for data validation and settings management using Python type annotations. This integration allows you to use Pydantic models directly within `emulate`, ensuring data consistency and validation.
 
 Pydantic provides a way to define data models using Python types. It automatically validates and converts input data to match these types, ensuring that your application processes data safely and accurately. For more information, please read the official [Pydantic documentation](https://docs.pydantic.dev/latest/api/base_model/).
+
+(==CLASSSSSS==)
 
 #### Integration Details
 
@@ -313,6 +321,116 @@ print(result)   # 4
 ```
 
 Note that this feature uses the default model.
+
+### Advanced configuration
+
+
+#### Introduction
+
+This section explains how to customize the program to make its own LLM call and response handling functions. This can be useful if you need a specific functionality that is not provided by the standard library, or to enable compatibility with a specific LLM.
+
+#### Inheriting from the Model Class
+
+The first step is to inherit from the Model class to create your own configuration class. The Model class provides a base for the library's configuration, including connection settings to the LLM and response handling functions.
+
+```python
+from OpenHosta import Model
+
+class MyModel(Model):
+    # Your code here
+```
+
+In the example above, we have created a new class `MyModel` that inherits from the Model class. This means that `MyModel` has access to all the methods and attributes of the Model class. You can now add your own functions to this class to customize the OpenHosta's configuration.
+You can also override an existing function to modify its behavior. It is important to keep input/output components identical in order to avoid errors when interacting with calling functions.
+
+#### Custom LLM Call Function
+
+To create your own LLM call function, you need to override the `api_call` method of the Model class. This method is called every time the library needs to communicate with the LLM.
+
+```python
+from OpenHosta import Model
+
+class MyModel(Model):
+    def api_call(self, sys_prompt, user_prompt, creativity, diversity):
+        # Your code here
+        # Call the LLM and return the response
+        return response
+```
+
+In the example above, we have overridden the "api_call" method of the Model class to create our own LLM call function.
+The "api_call" method takes four arguments:
+
+- **sys_prompt**: a string that specifies the system prompt to be sent to the LLM. It's all the basic instructions to give context to the LLM. It is not function-dependent, but feature-dependent.. System prompts provided by OpenHosta are present in the “prompt.json” file.
+- **user_prompt**: a string that specifies the user prompt to be sent to the LLM. It contains all the information relating to the emulated function. They are placed side by side, with sentences to separate each piece of information. This section is therefore unique for each case. 
+- **creativity**: a float that specifies the creativity level of the LLM's response.
+- **diversity**: a float that specifies the diversity level of the LLM's response.
+
+The "api_call" method returns a response object that contains the LLM's response to the user prompt.
+
+#### Custom Response Handling Function
+
+To create your own response handling function, you need to override the "request_handler" method of the Model class. This method is called every time the library receives a response from the LLM.
+
+```python
+from OpenHosta import Model
+
+class MyModel(Model):
+    def request_handler(self, response, return_type, return_caller):
+        # Your code here
+        # Process the LLM response and return the result
+        return result
+```
+
+In the example above, we have overridden the `request_handler` method of the Model class to create our own response handling function. 
+The "request_handler" method takes three arguments:
+
+- **response**: the response object returned by the LLM.
+- **return_caller**: the type of the return value. For an “int” return type, it would be as follows
+  ```<class :'int'>```
+- **return_type**: a JSON describing the type of the return value. This JSON is mainly used for more complex return types such as Pydantic models or classes. For an “int” return type, the JSON would be as follows:
+  ```{'properties': {'return_hosta_type': {'title': 'Return Hosta Type', 'type': 'integer'}}, 'required': ['return_hosta_type'], 'title': 'Hosta_return_shema', 'type': 'object'}```
+
+The "request_handler" method returns the processed return value. This is the value returned by the emulated function.
+
+#### Create a new instance
+
+You can now create an instance of the class you've just created and use it in all OpenHosta's features.
+
+```python
+from OpenHosta import config, Model, emulate, thought
+
+class MyModel(Model):
+
+    def api_call(self, sys_prompt, user_prompt, creativity, diversity):
+        # Your code here
+        # Call the LLM and return the response
+        return response
+
+    def request_handler(self, response, return_type, return_caller):
+        # Your code here
+        # Process the LLM response and return the result
+        return l_ret
+
+new_model = MyModel(
+    model="model-name"
+    base_url="base-url"
+    api_key="put-your-api-key-here"
+)
+
+def capitalize(a:str)->str:
+    """
+    This function capitalize a sentence in parameter.
+    """
+    return emulate(model=new_model)
+
+print(capitalize("hello world!"))
+
+config.set_default_model(new_model)
+
+x = thought("Translate in german")
+ret = x("Hello World")
+print(ret)
+```
 
 ---
 
