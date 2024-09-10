@@ -90,9 +90,9 @@ class Model:
             sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful. Status code: {response.status_code}:\n{response.text}")
         return response
  
-    def _request_handler(self, response, return_type, return_caller):
+    def request_handler(self, response, return_type, return_caller):
         l_ret = ""
-
+        
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
 
