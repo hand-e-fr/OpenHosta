@@ -90,7 +90,7 @@ def _exec_emulate(
         setattr(_function_obj, "_last_response", response.json())
 
     if response.status_code == 200:
-        l_ret = model._request_handler(response, _function_return, _function_return_caller)
+        l_ret = model.request_handler(response, _function_return, _function_return_caller)
 
     else:
         sys.stderr.write(f"Error {response.status_code}: {response.text}")
