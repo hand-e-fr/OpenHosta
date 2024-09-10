@@ -59,7 +59,9 @@ def _exec_emulate(
     l_diversity: float = None
 ):
     global _emulator_pre_prompt
+    
     _function_return_caller = _function_infos["return_caller"]
+    _function_return = _function_infos["return_type"]
    
     if model is None:
         model = DefaultManager.get_default_model()

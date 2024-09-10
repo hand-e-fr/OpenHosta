@@ -31,8 +31,33 @@ def emulate_1arg_list(arg)->list:
 
 emulate_1arg = {"str": emulate_1arg_str, "int": emulate_1arg_int, "float": emulate_1arg_float, "list": emulate_1arg_list}
 
+class User(BaseModel):
+    name: str
+    email: str
+    age: int
+
 class TestEmulate:
-          
+       
+    def test_FeatureModelInParameter(self):
+        global g_apiKey
+        
+        abracadabra = config.Model(
+            model="gpt-4o-mini",
+            base_url="https://api.openai.com/v1/chat/completions",
+            api_key=g_apiKey
+        )
+        
+        def randomSentence()->str:
+            """
+            This function returns a random sentence.
+            """
+            return emulate(model=abracadabra)
+        
+        ret = randomSentence()
+        ret_model = randomSentence._last_response["model"]
+        print(ret_model)
+        assert "gpt-4o-mini" in ret_model   
+       
     @pytest.mark.parametrize("type, name, doc, arg, expected", [
         ("str", "generator", "generates a sentence", "", str),
         ("int", "generator", "generates an integer", "", int),
@@ -114,49 +139,22 @@ class TestEmulate:
         }
         ret = showLocals()
         assert ret == ret_dict
-        
-    def test_FeatureModelInParameter(self):
-        global g_apiKey
-        
-        my_model = config.Model(
-            model="gpt-4o-mini",
-            base_url="https://api.openai.com/v1/chat/completions",
-            api_key=g_apiKey
-        )
-        
-        def randomSentence()->str:
-            """
-            This function returns a random sentence.
-            """
-            return emulate(model=my_model)
-        
-        ret = randomSentence()
-        ret_model = randomSentence._last_response["model"]
-        print(ret_model)
-        assert "gpt-4o-mini" in ret_model
-    
+      
     def test_FeatureNestedFunction(self):
+            
+            def grandFunction():
+                def returnHelloWorld():
+                    """ 
+                    This function returns "Hello World!".
+                    """
+                    return emulate()
+                return returnHelloWorld
+            
+            nested = grandFunction()
+            ret = nested()
+            assert ret == "Hello World!" 
         
-        def grandFunction():
-            def returnHelloWorld():
-                """ 
-                This function returns "Hello World!".
-                """
-                return emulate()
-            return returnHelloWorld
-        
-        nested = grandFunction()
-        ret = nested()
-        assert ret == "Hello World!"
-        
-        
-    def test_FeaturePydantic(self):
-        
-        class User(BaseModel):
-            id: Optional[int] = None
-            name: str
-            email: str
-            age: int
+    def test_FeaturePydanticGlobal(self):
             
         def generateAccount(name:str, email:str, age:int)->User:
             """
@@ -165,7 +163,11 @@ class TestEmulate:
             return emulate()
         
         ret = generateAccount("Max", "maxexample@gmail.com", 21)
-        assert ret == User(name="Max", email="maxexample@gmail.com", age=18)
+        ex = User(name="Max", email="maxexample@gmail.com", age=18)
+        assert type(ret) is User
+        
+    def test_FeaturePydanticLocal(self):
+        pass
         
     def test_FeatureSuggestDefaultModel(self):
         

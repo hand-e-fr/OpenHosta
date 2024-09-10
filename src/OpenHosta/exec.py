@@ -22,6 +22,9 @@ class HostaInjector:
             raise TypeError("Executive function must be a function.")
         
         self.exec = exec
+        self.infos_cache = {}
+
+    def __call__(self, *args, **kwargs):
         self.infos_cache = {
             "hash_function": "",
             "function_def": "",
@@ -34,8 +37,6 @@ class HostaInjector:
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
         }
-
-    def __call__(self, *args, **kwargs):
         func_obj, caller = self._extend_scope()
         func_name = func_obj.__name__
         path_name = os.path.join(CACHE_DIR, f"{func_name}.openhc")
@@ -56,7 +57,7 @@ class HostaInjector:
 
         hosta_args = self._get_argsFunction(func_obj)
         with open(path_name, "wb") as f:
-            pickle.dump(hosta_args, f)
+            res = pickle.dump(hosta_args, f)
 # TODO : fix the function locals because he didn't load in the cache
         hosta_args["function_call"], hosta_args["function_locals"] = self._get_functionCall(func_obj, caller)
         return self.exec(hosta_args, func_obj, *args, **kwargs)
@@ -71,7 +72,8 @@ class HostaInjector:
         self.infos_cache["return_type"], self.infos_cache["return_caller"] = self._get_functionReturnType(func_obj)
         self.infos_cache["hash_function"] = self._get_hashFunction(self.infos_cache["function_def"],
                                                                    self.infos_cache["ho_example_id"],
-                                                                   self.infos_cache["ho_cothougt_id"])
+                                                                self.infos_cache["ho_cothougt_id"])
+        self._attach_attributs(func_obj, func_prot)
         return self.infos_cache
 
     def _extend_scope(self) -> Callable:
@@ -189,36 +191,32 @@ class HostaInjector:
 }
     
     def _get_functionReturnType(self, func: Callable) -> Dict[str, Any]:
-        return_type = self._inspect_returnType(func)
-        return_json = None
-        return_caller = None
+        return_caller = self._inspect_returnType(func)
+        return_type = None
 
-        if return_type is not None:
-            if self._get_typingOrigin(return_type):
-                return_type_origin = get_origin(return_type)
-                return_type_args = get_args(return_type)
-                combined = return_type_origin[return_type_args]
-                return_caller = return_type
+        if return_caller is not None:
+            if self._get_typingOrigin(return_caller):
+                return_caller_origin = get_origin(return_caller)
+                return_caller_args = get_args(return_caller)
+                combined = return_caller_origin[return_caller_args]
                 new_model = create_model(
                     "Hosta_return_shema", return_hosta_type_typing=(combined, ...)
                 )
-                return_json = new_model.model_json_schema()
-            elif issubclass(return_type, BaseModel):
-                return_caller = return_type
-                return_json = return_type.model_json_schema()
+                return_type = new_model.model_json_schema()
+            elif issubclass(return_caller, BaseModel):
+                return_type = return_caller.model_json_schema()
             else:
-                return_caller = return_type
                 new_model = create_model(
-                    "Hosta_return_shema", return_hosta_type=(return_type, ...)
+                    "Hosta_return_shema", return_hosta_type=(return_caller, ...)
                 )
-                return_json = new_model.model_json_schema()
+                return_type = new_model.model_json_schema()
         else:
             No_return_specified = create_model(
                 "Hosta_return_shema", return_hosta_type_any=(Any, ...)
             )
-            return_json = No_return_specified.model_json_schema()
+            return_type = No_return_specified.model_json_schema()
 
-        return return_json, return_caller
+        return return_type, return_caller
 
     def _attach_attributs(self, func: Callable, prototype: str):
         if "bound method" not in str(func):

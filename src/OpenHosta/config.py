@@ -98,7 +98,7 @@ class Model:
 
         try:
             l_ret_data = json.loads(json_string)
-            validate(instance=l_ret_data.get("return", {}), schema=return_type.get("properties", {}))
+            validate(instance=l_ret_data.get("return", {}), schema=return_type.get("properties", {})) # Here
 
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
@@ -115,7 +115,7 @@ class Model:
                 l_ret = l_ret_data["return"]
 
         elif "return_hosta_type_typing"  in return_type["properties"]:
-                l_ret = self.convert_to_type(l_ret_data["return"], return_caller)
+            l_ret = self.convert_to_type(l_ret_data["return"], return_caller)
 
         elif "return_hosta_type_any" in return_type["properties"]:
             l_ret = l_ret_data["return"]
