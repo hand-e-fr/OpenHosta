@@ -1,6 +1,7 @@
 import sys
 import json
 from pydoc import locate
+from pydantic import create_model
 
 from emulate import _exec_emulate
 from config import DefaultManager
@@ -18,7 +19,8 @@ def thought(key):
         "return_type": None,
         "return_type": None,
         "ho_example": None,
-        "function_locals": None
+        "function_locals": None,
+        "return_caller": None
     }    
     def inner_func(*args, **kwargs):
         global l_default, _thought_sys_prompt
@@ -41,7 +43,14 @@ def thought(key):
         type_json = data["choices"][0]["message"]["content"]
         type_dict = json.loads(type_json)
         type_str = str(type_dict["type"])
-        setattr(inner_func, "_return_type", locate(type_str))
+        
+        _function_infos["return_caller"] = locate(type_str)
+        setattr(inner_func, "_return_type", _function_infos["return_caller"])
+        
+        new_model = create_model(
+            "Hosta_return_shema", return_hosta_type=(_function_infos["return_caller"], ...)
+        )
+        _function_infos["return_type"] = new_model.model_json_schema()
         
         typed = (
             str(args)
