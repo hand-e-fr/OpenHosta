@@ -13,7 +13,7 @@ ___
 
 #### First Step
 
-OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the **PMAC** concept, reimagining the **compilation** process in “Just-In-Time” languages. All our functionalities respect the **syntax and paradigm** of this language. 
+OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the [**PMAC**](PMAC.md) concept, reimagining the **compilation** process in “Just-In-Time” languages. All our functionalities respect the **syntax and paradigm** of this language. 
 
 The choice of LLM is mostly up to you, depending on your configuration level, moreover the vast majority are compatible. By default, OpenAI's **GPT-4o** is chosen. This has been tested by our team during development and **provides** a satisfaying level of functionality. 
 
@@ -39,6 +39,25 @@ We are an Open-Source project. We believe this philosophy contributes to the **s
 
 ---
 
+##### *Legal Framework*
+
+The use of AI in a production context raises important **legal** issues. It is essential to take these issues into account to ensure the compliance of your **deployment**.
+
+- **Legal Compliance**
+For any deployment, it is recommended to verify with an **AI expert** the legal compliance of your use of AI. Indeed, AI is subject to specific **regulations**, particularly in terms of **data protection** and **privacy**. In Europe, the use of AI is governed by the **General Data Protection Regulation** (GDPR) and legislated by the **IA act**. Also, the use of AI in production is subject to specific legal obligations. It is important to take these obligations into account.
+
+- **Security**
+The use of AI can also present risks in terms of **cybersecurity**. It is important to take these risks into account to ensure the security of your deployment.
+For example **injection attacks** are a major risk when deploying an application using AI. It is important to take measures to protect your application against injection attacks, such as using data validation mechanisms and content filtering.
+
+For more information, please consult the following links:
+
+- [AI Act](https://artificialintelligenceact.eu)
+- [GDPR](https://gdpr-info.eu)
+- [Prompt Injection Attack](https://www.ibm.com/topics/prompt-injection)
+
+---
+
 Let's **get started**! First here's the **table of contents** to help you navigate through the various sections of the documentation.
 
 ### Table of Content
@@ -47,6 +66,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Introduction](#introduction)
       - [First Step](#first-step)
       - [Why use OpenHosta?](#why-use-openhosta)
+        - [*Legal Framework*](#legal-framework)
     - [Table of Content](#table-of-content)
   - [Features](#features)
     - [OpenHosta Example](#openhosta-example)
