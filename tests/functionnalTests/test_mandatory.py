@@ -233,8 +233,8 @@ class TestThought:
 
     def test_FeatureMultiArgs(self):
         x = thought("Combine each word of a sentence in a string")
-        ret = x("Hello", ", how ary you ?", " Nice to meet you !")
-        assert ret == "Hello, how ary you ? Nice to meet you !"
+        ret = x("Hello", ", how are you ?", " Nice to meet you !")
+        assert ret == "Hello, how are you ? Nice to meet you !"
     
     def test_FeatureChainOfThought(self):
         pass
@@ -269,6 +269,7 @@ example
 cache
 ---
 test en trompant le LLM dans la def ou la doc
+test faute d'rthographe
 Error:
 quand func n'est pas trouvé, Erreur expliquant la déclaration dans le frame parent
 def test():
