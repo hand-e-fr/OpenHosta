@@ -255,42 +255,5 @@ class TestThought:
     
     def test_FeatureCachedPrediction(self):
         pass
-
-
 class TestTypingPydantic:
     pass
-
-"""
-typing (parametrize)
-creativity, diversity
-example
-cache
----
-test en trompant le LLM dans la def ou la doc
-test faute d'rthographe
-Error:
-quand func n'est pas trouvé, Erreur expliquant la déclaration dans le frame parent
-def test():
-    def a():
-        \"\"\" Give me a ramdom word \"\""
-        return emulate()
-    return a
-
-#Erreur
-print(test()())
-#Valid
-b = test()
-print(b())
-
-CONTRIBUTING
-changelog
-doc
-test
----
-Makefile
-make benchmark
-make functests
-make unittests
-avec redirection de coverage et html dans TestData
-argument makefile apiKey
-"""
