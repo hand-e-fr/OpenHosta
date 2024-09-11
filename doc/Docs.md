@@ -13,7 +13,7 @@ ___
 
 #### First Step
 
-OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the [**PMAC**](PMAC.md) concept, reimagining the **compilation** process in “Just-In-Time” languages. All our functionalities respect the **syntax and paradigm** of this language. 
+OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the [**PMAC**](PMAC.md) concept, reimagining the **compilation** process in languages. All our functionalities respect the **syntax and paradigm** of this language. 
 
 The choice of LLM is mostly up to you, depending on your configuration level, moreover the vast majority are compatible. By default, OpenAI's **GPT-4o** is chosen. This has been tested by our team during development and **provides** a satisfaying level of functionality. 
 
@@ -31,7 +31,7 @@ OpenHosta enables you to create **complex functions**, including those that were
 
 - **Python Ecosystem**
 
-OpenHosta integrates **fully** into Python syntax. Our main goal is to push programming to a **higher level**. For example, we send *docstrings*, commonly used in Python, to the **LLMs** context. We also integrate **advanced methods** such as *lambdas* and the compatibility with *Pydantic* typing. 
+OpenHosta integrates **fully** into Python syntax. Our main goal is to push programming to a **higher level**. For example, we send *docstrings*, commonly used in Python, to the **LLMs** context. We also integrate **advanced methods** such as *lambdas* and the compatibility with *Pydantic* and *typing*. 
 
 - **Open-Source**
 
@@ -123,7 +123,8 @@ from OpenHosta import *
 
 We recommend this import method, as it gives you all the important and stable features:
   - Emulate function
-  - Thought function 
+  - Thought function
+  - Example function
   - \_\_suggest\_\_ attributes
   - Configuration tools
 
@@ -360,7 +361,68 @@ ret = thought("Adds all integers")(2 ,3 ,6)
 print(x._return_type) # int
 ```
 
-Note that this feature uses the default model.
+**Note** : ***this feature uses the default model.***
+
+### "example" Function
+
+The "example" function is designed to enhance the context of a function for a LLM by adding examples to it. This functionality is encapsulated in the `example` function.
+
+**Key Characteristics**
+
+- **Versatile**: The "example" function can be used both inside and outside a function to specify examples.
+- **Save**: The "example" function provides a tool called `save_examples` that can store all the examples added to a specified function in a ***JSONL*** file.
+- **Load**: The function also offers a tool called `load_examples` to load a ***JSONL*** file into the context of the function.
+
+Here's how it works: 
+
+```python
+from OpenHosta import emulate, example
+
+def translate(text:str, language:str)->str:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    example("Bonjour Monde !", "portuguese", hosta_out="ola mundo" )
+    return emulate()
+
+
+example(text="Hello World !", language="japanese", hosta_out="こんにちは世界!", hosta_func=translate)
+
+print(translate("Hello World !", "French"))
+```
+
+The "example" function will verify the correlation between the specified input and the parameters of the function. The output should be specified only in the *hosta_out* parameter. If the example are used outside a function, please use the *hosta_func* parameter to specify a function.
+
+Now here's how works `save_examples` and `load_examples`
+
+```python
+from OpenHosta import save_examples, load_examples
+
+save_examples(hosta_func=translate, hosta_path="translate_func_example")
+
+#######
+
+def another_translate(text:str, language:str)->str:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    return emulate()
+
+load_examples(hosta_path="translate_func_example.jsonl", hosta_func=another_translate)
+# add the jsonl at the end of the path !
+```
+
+output of the `translate_func_example.jsonl`
+
+```JsonL
+{"text": "Hello World !", "language": "japanese", "hosta_out": "こんにちは世界!"}
+{"text": "Bonjour Monde !", "language": "portuguese", "hosta_out": "ola mundo"}
+```
+
+
+**Notes**: *All examples provided for a function are stored in a directory at the root of your environment. You can see it as* ***\_\_hostacache__***.
+
+
 
 ### Advanced configuration
 
