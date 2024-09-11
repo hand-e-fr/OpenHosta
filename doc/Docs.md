@@ -3,7 +3,7 @@ ___
 
 Documentation for version: **1.0**
 
-Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the Jupyter Notebook **test files** to help you take your first steps in discovering OpenHosta.
+Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
 For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
 
@@ -13,7 +13,7 @@ ___
 
 #### First Step
 
-OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the **PMAC** concept, reimagining the **compilation** process in “Just-In-Time” languages. All our functionalities respect the **syntax and paradigm** of this language. 
+OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the [**PMAC**](PMAC.md) concept, reimagining the **compilation** process in languages. All our functionalities respect the **syntax and paradigm** of this language. 
 
 The choice of LLM is mostly up to you, depending on your configuration level, moreover the vast majority are compatible. By default, OpenAI's **GPT-4o** is chosen. This has been tested by our team during development and **provides** a satisfaying level of functionality. 
 
@@ -31,11 +31,30 @@ OpenHosta enables you to create **complex functions**, including those that were
 
 - **Python Ecosystem**
 
-OpenHosta integrates **fully** into Python syntax. Our main goal is to push programming to a **higher level**. For example, we send *docstrings*, commonly used in Python, to the **LLMs** context. We also integrate **advanced methods** such as *lambdas* and the compatibility with *Pydantic* typing. 
+OpenHosta integrates **fully** into Python syntax. Our main goal is to push programming to a **higher level**. For example, we send *docstrings*, commonly used in Python, to the **LLMs** context. We also integrate **advanced methods** such as *lambdas* and the compatibility with *Pydantic* and *typing*. 
 
 - **Open-Source**
 
 We are an Open-Source project. We believe this philosophy contributes to the **sustainability** and **independence** of the artificial intelligence sphere. AI is a great **revolution**, so let's bring it **forward** in the best possible way. We count on your **feedback** and **contributions** to keep OpenHosta evolving.
+
+---
+
+##### *Legal Framework*
+
+The use of AI in a production context raises important **legal** issues. It is essential to take these issues into account to ensure the compliance of your **deployment**.
+
+- **Legal Compliance**
+For any deployment, it is recommended to verify with an **AI expert** the legal compliance of your use of AI. Indeed, AI is subject to specific **regulations**, particularly in terms of **data protection** and **privacy**. In Europe, the use of AI is governed by the **General Data Protection Regulation** (GDPR) and legislated by the **IA act**. Also, the use of AI in production is subject to specific legal obligations. It is important to take these obligations into account.
+
+- **Security**
+The use of AI can also present risks in terms of **cybersecurity**. It is important to take these risks into account to ensure the security of your deployment.
+For example **injection attacks** are a major risk when deploying an application using AI. It is important to take measures to protect your application against injection attacks, such as using data validation mechanisms and content filtering.
+
+For more information, please consult the following links:
+
+- [AI Act](https://artificialintelligenceact.eu)
+- [GDPR](https://gdpr-info.eu)
+- [Prompt Injection Attack](https://www.ibm.com/topics/prompt-injection)
 
 ---
 
@@ -47,6 +66,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Introduction](#introduction)
       - [First Step](#first-step)
       - [Why use OpenHosta?](#why-use-openhosta)
+        - [*Legal Framework*](#legal-framework)
     - [Table of Content](#table-of-content)
   - [Features](#features)
     - [OpenHosta Example](#openhosta-example)
@@ -54,12 +74,18 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [Librairie Import](#librairie-import)
       - [Basic Setup](#basic-setup)
     - ["emulate" Function](#emulate-function)
-    - [Pydantic Return](#pydantic-return)
+      - [Supported types \& Pydantic](#supported-types--pydantic)
       - [Integration Details](#integration-details)
     - ["suggest" Attributs](#suggest-attributs)
       - [Usage](#usage)
       - [Output Examples](#output-examples)
-    - ["thought"](#thought)
+    - ["thought" Function](#thought-function)
+    - [Advanced configuration](#advanced-configuration)
+      - [Introduction](#introduction-1)
+      - [Inheriting from the Model Class](#inheriting-from-the-model-class)
+      - [Custom LLM Call Function](#custom-llm-call-function)
+      - [Custom Response Handling Function](#custom-response-handling-function)
+      - [Create a new instance](#create-a-new-instance)
     - [References](#references)
 
 ---
@@ -97,7 +123,8 @@ from OpenHosta import *
 
 We recommend this import method, as it gives you all the important and stable features:
   - Emulate function
-  - Thought function 
+  - Thought function
+  - Example function
   - \_\_suggest\_\_ attributes
   - Configuration tools
 
@@ -139,10 +166,11 @@ config.set_default_model(my_model)
 
 The *emulate* function is the main feature of OpenHosta. This is the function that allows you to emulate functions with AI, i.e. the instructions will be executed in an LLM and not directly in your computer. Here's how to use it.
 
-Emulate is used inside a function, after the “return”. What it does is take the function's documentation as a “prompt” to emulate it. The way in which you write the function is therefore crucial to ensure that “emulate” works properly.
+Emulate is used inside a function or a class method, after the “return”. What it does is take the function's documentation as a “prompt” to emulate it. The way in which you write the function is therefore crucial to ensure that “emulate” works properly.
 
 Here's what you need to know:
-  - **The function prototype** is one of the elements sent to LLM. Its different fields must therefore appear clearly. Give a meaningful and precise name to your function. It's also a good idea to specify the type of arguments and the type of return to reduce the uncertainty related to LLMs. 
+  - **The function prototype** is one of the elements sent to LLM. Its different fields must therefore appear clearly. Give a meaningful and precise name to your function. It's also a good idea to specify the type of arguments and the type of return to reduce the uncertainty related to LLM.
+  
 ```python
 def function(a:int, b:dict)->str:
 ```
@@ -155,7 +183,7 @@ my_model = config.Model(
     api_key="put-your-api-key-here"
 )
 
-def find_first_name(sentence:str, id:dict)->dict:
+def find_name_age(sentence:str, id:dict)->dict:
     """
     This function find in a text the name and the age of a personn.
 
@@ -172,15 +200,38 @@ def find_first_name(sentence:str, id:dict)->dict:
 
 Note that, as seen above, you can pass a previously configured model as an emulate parameter.
 
-Be careful, you can put regular instructions in your function and they will be executed. However, emulate doesn't take into account any changes to internal variables.
+Be careful, you can put regular instructions in your function and they will be executed. However, `emulate` retrieves all the variables local to the functions and gives them to the LLM as a context.
 
 emulate also accepts two other arguments: `creativity` and `diversity`. It correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/).
 
-### Pydantic Return 
+#### Supported types & Pydantic
+
+`emulate` support for the **typing** module: You can now use specific return types from the typing module, including [`List`, `Dict`, `Tuple`, `Set`, `FrozenSet`, `Deque`, `Iterable`, `Sequence`, `Mapping`, `Union`, `Optional`, `Literal`].
+
+```python
+from OpenHosta import emulate
+
+def analyze_text(text: str) -> Dict[str, List[Tuple[int, str]]]:
+    """Analyze text to map each word to a list of tuples containing word length and word."""
+    return emulate()
+
+# Example usage
+analysis = analyze_text("Hello, World!")
+
+print(analysis)
+print(type(analysis))
+```
+
+It also includes a verification output that checks and converts the output to the specified type if necessary. Supported types include **Pydantic** models, all types from the **typing** module mentioned above, as well as built-in types such as `dict`, `int`, `float`, `str`, `list`, `set`, `frozenset`, `tuple`, and `bool`.
+The `complex` type is not supported. If you need to use complex numbers, please pass them as a `tuple` and manually convert them after processing.
+
+For more information about Typing module, please check the official [Typing documentation](https://docs.python.org/3/library/typing.html)
 
 OpenHosta integrates with Pydantic, a library for data validation and settings management using Python type annotations. This integration allows you to use Pydantic models directly within `emulate`, ensuring data consistency and validation.
 
-Pydantic provides a way to define data models using Python types. It automatically validates and converts input data to match these types, ensuring that your application processes data safely and accurately. For more information, please read the official [Pydantic documentation](https://docs.pydantic.dev/latest/api/base_model/).
+Pydantic provides a way to define data models using Python types. It automatically validates and converts input data to match these types, ensuring that your application processes data safely and accurately.
+
+For more information, please read the official [Pydantic documentation](https://docs.pydantic.dev/latest/api/base_model/).
 
 #### Integration Details
 
@@ -217,6 +268,8 @@ def find_first_name(sentence:str)->Personn:
     return emulate()
 ```
 
+Note that the Pydantic model cannot be defined inside a function, as this will produce an error.
+
 ### "suggest" Attributs
 
 When you use the emulate function, an attribute is automatically attached. This attribute is a function giving you hints on how to improve your prompt, and a diagram visualization tool. This tool uses the default model to operate.
@@ -245,6 +298,10 @@ In this example, you can see that after calling the emulated function, we can ca
   - `advanced`: Similar to `enhanced prompt` but adds an iteration. The AI will then try to solve advanced problems according to context or other factors. Especially useful in the most complex cases.
   - `diagramm`: Gives a Mermaid diagram showing the stages of AI thinking. Useful if you want to try coding the function yourself.
 
+You can also retrieve the entire LLM response by storing the output of the `suggest` function.
+
+Note that this feature uses the default model.
+
 #### Output Examples
 
 - **Enhanced prompt:**
@@ -267,7 +324,7 @@ graph LR
     I --> J[End]
 ```
 
-### "thought"
+### "thought" Function
 
 **Lambda** functions in Python provide a way to create small, anonymous functions. These are defined using the lambda keyword and can have any number of input parameters but only a single expression.
 
@@ -286,13 +343,197 @@ Here's how it works:
 from OpenHosta import thought
 
 x = thought("Is it a masculine name")
-print(c("John"))  # True
+print(x("John"))  # True
 
-result = thought("Multiplie by two")(2)
+result = thought("Multiply by two")(2)
 print(result)   # 4
 ```
 
-Note that this feature uses the default model.
+In the example above, we can see two distinct ways of using `thought`. In the first example, you can store a lambda function in a variable and then use it. You can also call it directly by enclosing the arguments behind it in brackets. `thought` accepts multiple arguments and all types native to python. However, the content of the first bracket is always a string.
+
+The `thought` function has an initial pre-compilation stage where it predicts the type of the return value by making an initial call to an LLM. Execution time can therefore be increased.
+You can retrieve the predicted return type with the `_return_type` attribute attached to the object:
+
+```python
+from OpenHosta import thought
+
+x = thought("Adds all integers")
+ret = x(2 ,3 ,6)
+print(x._return_type) # int
+```
+
+**Note** : ***this feature uses the default model.***
+
+### "example" Function
+
+The "example" function is designed to enhance the context of a function for a LLM by adding examples to it. This functionality is encapsulated in the `example` function.
+
+**Key Characteristics**
+
+- **Versatile**: The "example" function can be used both inside and outside a function to specify examples.
+- **Save**: The "example" function provides a tool called `save_examples` that can store all the examples added to a specified function in a ***JSONL*** file.
+- **Load**: The function also offers a tool called `load_examples` to load a ***JSONL*** file into the context of the function.
+
+Here's how it works: 
+
+```python
+from OpenHosta import emulate, example
+
+def translate(text:str, language:str)->str:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    example("Bonjour Monde !", "portuguese", hosta_out="ola mundo" )
+    return emulate()
+
+
+example(text="Hello World !", language="japanese", hosta_out="こんにちは世界!", hosta_func=translate)
+
+print(translate("Hello World !", "French"))
+```
+
+The "example" function will verify the correlation between the specified input and the parameters of the function. The output should be specified only in the *hosta_out* parameter. If the example are used outside a function, please use the *hosta_func* parameter to specify a function.
+
+Now here's how works `save_examples` and `load_examples`
+
+```python
+from OpenHosta import save_examples, load_examples
+
+save_examples(hosta_func=translate, hosta_path="translate_func_example")
+
+#######
+
+def another_translate(text:str, language:str)->str:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    return emulate()
+
+load_examples(hosta_path="translate_func_example.jsonl", hosta_func=another_translate)
+# add the jsonl at the end of the path !
+```
+
+output of the `translate_func_example.jsonl`
+
+```JsonL
+{"text": "Hello World !", "language": "japanese", "hosta_out": "こんにちは世界!"}
+{"text": "Bonjour Monde !", "language": "portuguese", "hosta_out": "ola mundo"}
+```
+
+
+**Notes**: *All examples provided for a function are stored in a directory at the root of your environment. You can see it as* ***\_\_hostacache__***.
+
+
+
+### Advanced configuration
+
+
+#### Introduction
+
+This section explains how to customize the program to make its own LLM call and response handling functions. This can be useful if you need a specific functionality that is not provided by the standard library, or to enable compatibility with a specific LLM.
+
+#### Inheriting from the Model Class
+
+The first step is to inherit from the Model class to create your own configuration class. The Model class provides a base for the library's configuration, including connection settings to the LLM and response handling functions.
+
+```python
+from OpenHosta import Model
+
+class MyModel(Model):
+    # Your code here
+```
+
+In the example above, we have created a new class `MyModel` that inherits from the Model class. This means that `MyModel` has access to all the methods and attributes of the Model class. You can now add your own functions to this class to customize the OpenHosta's configuration.
+You can also override an existing function to modify its behavior. It is important to keep input/output components identical in order to avoid errors when interacting with calling functions.
+
+#### Custom LLM Call Function
+
+To create your own LLM call function, you need to override the `api_call` method of the Model class. This method is called every time the library needs to communicate with the LLM.
+
+```python
+from OpenHosta import Model
+
+class MyModel(Model):
+    def api_call(self, sys_prompt, user_prompt, creativity, diversity):
+        # Your code here
+        # Call the LLM and return the response
+        return response
+```
+
+In the example above, we have overridden the "api_call" method of the Model class to create our own LLM call function.
+The "api_call" method takes four arguments:
+
+- **sys_prompt**: a string that specifies the system prompt to be sent to the LLM. It's all the basic instructions to give context to the LLM. It is not function-dependent, but feature-dependent.. System prompts provided by OpenHosta are present in the “prompt.json” file.
+- **user_prompt**: a string that specifies the user prompt to be sent to the LLM. It contains all the information relating to the emulated function. They are placed side by side, with sentences to separate each piece of information. This section is therefore unique for each case. 
+- **creativity**: a float that specifies the creativity level of the LLM's response.
+- **diversity**: a float that specifies the diversity level of the LLM's response.
+
+The "api_call" method returns a response object that contains the LLM's response to the user prompt.
+
+#### Custom Response Handling Function
+
+To create your own response handling function, you need to override the "request_handler" method of the Model class. This method is called every time the library receives a response from the LLM.
+
+```python
+from OpenHosta import Model
+
+class MyModel(Model):
+    def request_handler(self, response, return_type, return_caller):
+        # Your code here
+        # Process the LLM response and return the result
+        return result
+```
+
+In the example above, we have overridden the `request_handler` method of the Model class to create our own response handling function. 
+The "request_handler" method takes three arguments:
+
+- **response**: the response object returned by the LLM.
+- **return_caller**: the type of the return value. For an “int” return type, it would be as follows
+  ```<class :'int'>```
+- **return_type**: a JSON describing the type of the return value. This JSON is mainly used for more complex return types such as Pydantic models or classes. For an “int” return type, the JSON would be as follows:
+  ```{'properties': {'return_hosta_type': {'title': 'Return Hosta Type', 'type': 'integer'}}, 'required': ['return_hosta_type'], 'title': 'Hosta_return_shema', 'type': 'object'}```
+
+The "request_handler" method returns the processed return value. This is the value returned by the emulated function.
+
+#### Create a new instance
+
+You can now create an instance of the class you've just created and use it in all OpenHosta's features.
+
+```python
+from OpenHosta import config, Model, emulate, thought
+
+class MyModel(Model):
+
+    def api_call(self, sys_prompt, user_prompt, creativity, diversity):
+        # Your code here
+        # Call the LLM and return the response
+        return response
+
+    def request_handler(self, response, return_type, return_caller):
+        # Your code here
+        # Process the LLM response and return the result
+        return l_ret
+
+new_model = MyModel(
+    model="model-name"
+    base_url="base-url"
+    api_key="put-your-api-key-here"
+)
+
+def capitalize(a:str)->str:
+    """
+    This function capitalize a sentence in parameter.
+    """
+    return emulate(model=new_model)
+
+print(capitalize("hello world!"))
+
+config.set_default_model(new_model)
+
+x = thought("Translate in german")
+ret = x("Hello World")
+print(ret)
+```
 
 ---
 
