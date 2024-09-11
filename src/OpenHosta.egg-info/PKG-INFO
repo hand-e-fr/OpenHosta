@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: OpenHosta
-Version: 1.0.2
+Version: 1.1.0rc1
 Summary: Open-Source programming project IA integretion in developement environnement
 Author: Léandre Ramos, Merlin Devillard, William Jolivet, Emmanuel Batt
 License: MIT License
@@ -41,6 +41,8 @@ License-File: LICENSE
 Requires-Dist: requests>=2.32.3
 Requires-Dist: pydantic>=2.8.2
 Requires-Dist: tiktoken>=0.7.0
+Requires-Dist: jsonschema>=4.23.0
+Requires-Dist: typing-extensions>=4.12.2
 
 # OpenHosta 
 v1.0 - Open-Source Project
@@ -139,20 +141,18 @@ This way you have all the documentation and source code to understand our projec
 ### Example
 
 ```python
-from openhosta import *
+from OpenHosta import emulate, config
 
-config.set_default_apiKey("example-apikey")
+config.set_default_apiKey("put-your-api-key-here")
 
-def my_func(a:int, b:str)->dict:
-   """
-   This Function does something.
-   """
-   return emulate()
+def translate(text:str, language:str)->str:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    return emulate()
 
-my_func(5, "Hello World!")
-
-my_lambda = thought("Do something")
-my_lambda(5)
+result = translate("Hello World!", "French")
+print(result)
 ```
 You check OpenHosta's [documentation](doc/Docs.md) for more detailled informations or exemple
 
