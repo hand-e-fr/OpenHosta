@@ -13,3 +13,4 @@ __hostacache__/
 .coverage
 *.html
 .pytest_cache
+src/OpenHosta.egg-info
