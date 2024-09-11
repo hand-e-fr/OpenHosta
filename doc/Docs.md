@@ -356,7 +356,8 @@ You can retrieve the predicted return type with the `_return_type` attribute att
 ```python
 from OpenHosta import thought
 
-ret = thought("Adds all integers")(2 ,3 ,6)
+x = thought("Adds all integers")
+ret = x(2 ,3 ,6)
 print(x._return_type) # int
 ```
 
