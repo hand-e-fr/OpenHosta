@@ -3,9 +3,7 @@ import time as t
 import sys
 import os
 from pydantic import BaseModel
-from typing import Optional, Callable
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "OpenHosta")))
+from typing import Callable
 
 from OpenHosta import config, emulate, thought
 
