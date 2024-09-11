@@ -1,4 +1,3 @@
-
 import pickle
 import os
 import hashlib
@@ -10,17 +9,18 @@ from pydantic import BaseModel, create_model
 import sys
 import copy
 
-from enhancer import enhance
+from .enhancer import enhance
 
 
-CACHE_DIR = '__hostacache__'
+CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
+
 
 class HostaInjector:
     def __init__(self, exec):
         if not callable(exec):
             raise TypeError("Executive function must be a function.")
-        
+
         self.exec = exec
         self.infos_cache = {}
 
@@ -44,22 +44,28 @@ class HostaInjector:
         if os.path.exists(path_name):
             with open(path_name, "rb") as f:
                 cached_data = pickle.load(f)
-            
+
             function_def, func_prot = self._get_functionDef(func_obj)
-            function_hash = self._get_hashFunction(function_def,
-                                                cached_data["ho_example_id"],
-                                                cached_data["ho_cothougt_id"])
+            function_hash = self._get_hashFunction(
+                function_def,
+                cached_data["ho_example_id"],
+                cached_data["ho_cothougt_id"],
+            )
 
             if function_hash == cached_data["hash_function"]:
-                cached_data["function_call"], cached_data["function_locals"] = self._get_functionCall(func_obj, caller)
+                cached_data["function_call"], cached_data["function_locals"] = (
+                    self._get_functionCall(func_obj, caller)
+                )
                 self._attach_attributs(func_obj, func_prot)
                 return self.exec(cached_data, func_obj, *args, **kwargs)
 
         hosta_args = self._get_argsFunction(func_obj)
         with open(path_name, "wb") as f:
             res = pickle.dump(hosta_args, f)
-# TODO : fix the function locals because he didn't load in the cache
-        hosta_args["function_call"], hosta_args["function_locals"] = self._get_functionCall(func_obj, caller)
+        # TODO : fix the function locals because he didn't load in the cache
+        hosta_args["function_call"], hosta_args["function_locals"] = (
+            self._get_functionCall(func_obj, caller)
+        )
         return self.exec(hosta_args, func_obj, *args, **kwargs)
 
     def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:
@@ -69,16 +75,20 @@ class HostaInjector:
     def _get_argsFunction(self, func_obj):
 
         self.infos_cache["function_def"], func_prot = self._get_functionDef(func_obj)
-        self.infos_cache["return_type"], self.infos_cache["return_caller"] = self._get_functionReturnType(func_obj)
-        self.infos_cache["hash_function"] = self._get_hashFunction(self.infos_cache["function_def"],
-                                                                   self.infos_cache["ho_example_id"],
-                                                                self.infos_cache["ho_cothougt_id"])
+        self.infos_cache["return_type"], self.infos_cache["return_caller"] = (
+            self._get_functionReturnType(func_obj)
+        )
+        self.infos_cache["hash_function"] = self._get_hashFunction(
+            self.infos_cache["function_def"],
+            self.infos_cache["ho_example_id"],
+            self.infos_cache["ho_cothougt_id"],
+        )
         self._attach_attributs(func_obj, func_prot)
         return self.infos_cache
 
     def _extend_scope(self) -> Callable:
-        func:Callable = None
-    
+        func: Callable = None
+
         try:
             current = inspect.currentframe()
             if current is None:
@@ -89,11 +99,11 @@ class HostaInjector:
             caller_2 = caller_1.f_back
             if caller_2 is None:
                 raise Exception("Caller[lvl2] frame is None")
-            
+
             caller_name = caller_2.f_code.co_name
-            
-            if 'self' in caller_2.f_locals:
-                obj = caller_2.f_locals['self']
+
+            if "self" in caller_2.f_locals:
+                obj = caller_2.f_locals["self"]
                 func = getattr(obj, caller_name, None)
             else:
                 code = caller_2.f_code
@@ -102,9 +112,11 @@ class HostaInjector:
                         if obj.__code__ == code:
                             func = obj
                             break
-                        
+
             if not callable(func):
-                raise Exception("Larger scope isn't a callable or scope can't be extended.\n")
+                raise Exception(
+                    "Larger scope isn't a callable or scope can't be extended.\n"
+                )
         except Exception as e:
             sys.stderr.write(f"[FRAME_ERROR]: {e}")
             func, caller_2 = None, None
@@ -138,7 +150,7 @@ class HostaInjector:
         _, _, _, values = inspect.getargvalues(caller)
 
         sig = inspect.signature(func)
-        
+
         values_args = copy.deepcopy(values)
         values_locals = copy.deepcopy(values)
         for values_name in values.keys():
@@ -146,13 +158,13 @@ class HostaInjector:
                 values_args.pop(values_name)
             else:
                 values_locals.pop(values_name)
-                
+
         if "self" in values_locals.keys():
             values_locals.pop("self")
-            
+
         if values_locals != {}:
             locals = copy.deepcopy(values_locals)
-        
+
         bound_args = sig.bind_partial(**values_args)
         bound_args.apply_defaults()
 
@@ -160,7 +172,7 @@ class HostaInjector:
             f"{name}={value!r}" if name in bound_args.kwargs else f"{value!r}"
             for name, value in bound_args.arguments.items()
         )
-        
+
         call = f"{func.__name__}({args_str})"
         return call, locals
 
@@ -175,21 +187,21 @@ class HostaInjector:
     def _get_typingOrigin(self, return_type) -> bool:
         origin = get_origin(return_type)
         return origin in {
-    list,
-    dict,
-    tuple,
-    set,
-    frozenset,
-    typing.Union,
-    typing.Annotated,
-    typing.Optional,
-    typing.Literal,
-    collections.deque,
-    collections.abc.Iterable,
-    collections.abc.Sequence,
-    collections.abc.Mapping,
-}
-    
+            list,
+            dict,
+            tuple,
+            set,
+            frozenset,
+            typing.Union,
+            typing.Annotated,
+            typing.Optional,
+            typing.Literal,
+            collections.deque,
+            collections.abc.Iterable,
+            collections.abc.Sequence,
+            collections.abc.Mapping,
+        }
+
     def _get_functionReturnType(self, func: Callable) -> Dict[str, Any]:
         return_caller = self._inspect_returnType(func)
         return_type = None

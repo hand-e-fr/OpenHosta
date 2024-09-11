@@ -1,15 +1,15 @@
-import requests
 import json
 import sys
 
-from prompt import PromptMananger
-from config import DefaultManager
+from .prompt import PromptMananger
+from .config import DefaultManager
 
 
 _x = PromptMananger()
 _enhancer_pre_prompt = _x.get_prompt("enhance")
 
 l_default = DefaultManager.get_default_model()
+
 
 def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
     global l_default
@@ -22,17 +22,13 @@ def _ai_call_enh(sys_prompt: str, func_prot: str, func_doc: str):
         + func_doc
         + "\n---\n"
     )
-    
+
     response = l_default.api_call(
-        sys_prompt=sys_prompt, 
-        user_prompt=l_user_prompt, 
-        creativity=0.8, 
-        diversity=0.8
+        sys_prompt=sys_prompt, user_prompt=l_user_prompt, creativity=0.8, diversity=0.8
     )
 
     response_data = response.json()
     return response_data["choices"][0]["message"]["content"]
-    
 
 
 def _parse_data(response: str, last_enh: dict) -> dict:
@@ -87,7 +83,7 @@ def enhance(func):
     func_name, func_doc = func.__name__, func.__doc__
 
     last_return = _ai_call_enh(_enhancer_pre_prompt, func._prot, func_doc)
-    
+
     last_enh = _parse_data(last_return, last_enh)
 
     _build_attributes(func, last_enh)
