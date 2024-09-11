@@ -74,12 +74,12 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [Librairie Import](#librairie-import)
       - [Basic Setup](#basic-setup)
     - ["emulate" Function](#emulate-function)
-    - [Supported types \& Pydantic](#supported-types--pydantic)
+      - [Supported types \& Pydantic](#supported-types--pydantic)
       - [Integration Details](#integration-details)
     - ["suggest" Attributs](#suggest-attributs)
       - [Usage](#usage)
       - [Output Examples](#output-examples)
-    - ["thought"](#thought)
+    - ["thought" Function](#thought-function)
     - [Advanced configuration](#advanced-configuration)
       - [Introduction](#introduction-1)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
@@ -165,10 +165,11 @@ config.set_default_model(my_model)
 
 The *emulate* function is the main feature of OpenHosta. This is the function that allows you to emulate functions with AI, i.e. the instructions will be executed in an LLM and not directly in your computer. Here's how to use it.
 
-Emulate is used inside a function, after the “return”. What it does is take the function's documentation as a “prompt” to emulate it. The way in which you write the function is therefore crucial to ensure that “emulate” works properly.
+Emulate is used inside a function or a class method, after the “return”. What it does is take the function's documentation as a “prompt” to emulate it. The way in which you write the function is therefore crucial to ensure that “emulate” works properly.
 
 Here's what you need to know:
-  - **The function prototype** is one of the elements sent to LLM. Its different fields must therefore appear clearly. Give a meaningful and precise name to your function. It's also a good idea to specify the type of arguments and the type of return to reduce the uncertainty related to LLMs. 
+  - **The function prototype** is one of the elements sent to LLM. Its different fields must therefore appear clearly. Give a meaningful and precise name to your function. It's also a good idea to specify the type of arguments and the type of return to reduce the uncertainty related to LLM.
+  
 ```python
 def function(a:int, b:dict)->str:
 ```
@@ -198,17 +199,38 @@ def find_name_age(sentence:str, id:dict)->dict:
 
 Note that, as seen above, you can pass a previously configured model as an emulate parameter.
 
-Be careful, you can put regular instructions in your function and they will be executed. However, emulate doesn't take into account any changes to internal variables.
+Be careful, you can put regular instructions in your function and they will be executed. However, `emulate` retrieves all the variables local to the functions and gives them to the LLM as a context.
 
 emulate also accepts two other arguments: `creativity` and `diversity`. It correspond to the "temperature" and "top_p" parameters of LLMs. These values range from 0 to 1 (inclusive). For more information, please refer to the official [OpenAI documentation](https://openai.com/).
 
-### Supported types & Pydantic
+#### Supported types & Pydantic
+
+`emulate` support for the **typing** module: You can now use specific return types from the typing module, including [`List`, `Dict`, `Tuple`, `Set`, `FrozenSet`, `Deque`, `Iterable`, `Sequence`, `Mapping`, `Union`, `Optional`, `Literal`].
+
+```python
+from OpenHosta import emulate
+
+def analyze_text(text: str) -> Dict[str, List[Tuple[int, str]]]:
+    """Analyze text to map each word to a list of tuples containing word length and word."""
+    return emulate()
+
+# Example usage
+analysis = analyze_text("Hello, World!")
+
+print(analysis)
+print(type(analysis))
+```
+
+It also includes a verification output that checks and converts the output to the specified type if necessary. Supported types include **Pydantic** models, all types from the **typing** module mentioned above, as well as built-in types such as `dict`, `int`, `float`, `str`, `list`, `set`, `frozenset`, `tuple`, and `bool`.
+The `complex` type is not supported. If you need to use complex numbers, please pass them as a `tuple` and manually convert them after processing.
+
+For more information about Typing module, please check the official [Typing documentation](https://docs.python.org/3/library/typing.html)
 
 OpenHosta integrates with Pydantic, a library for data validation and settings management using Python type annotations. This integration allows you to use Pydantic models directly within `emulate`, ensuring data consistency and validation.
 
-Pydantic provides a way to define data models using Python types. It automatically validates and converts input data to match these types, ensuring that your application processes data safely and accurately. For more information, please read the official [Pydantic documentation](https://docs.pydantic.dev/latest/api/base_model/).
+Pydantic provides a way to define data models using Python types. It automatically validates and converts input data to match these types, ensuring that your application processes data safely and accurately.
 
-(==CLASSSSSS==)
+For more information, please read the official [Pydantic documentation](https://docs.pydantic.dev/latest/api/base_model/).
 
 #### Integration Details
 
@@ -245,6 +267,8 @@ def find_first_name(sentence:str)->Personn:
     return emulate()
 ```
 
+Note that the Pydantic model cannot be defined inside a function, as this will produce an error.
+
 ### "suggest" Attributs
 
 When you use the emulate function, an attribute is automatically attached. This attribute is a function giving you hints on how to improve your prompt, and a diagram visualization tool. This tool uses the default model to operate.
@@ -273,6 +297,10 @@ In this example, you can see that after calling the emulated function, we can ca
   - `advanced`: Similar to `enhanced prompt` but adds an iteration. The AI will then try to solve advanced problems according to context or other factors. Especially useful in the most complex cases.
   - `diagramm`: Gives a Mermaid diagram showing the stages of AI thinking. Useful if you want to try coding the function yourself.
 
+You can also retrieve the entire LLM response by storing the output of the `suggest` function.
+
+Note that this feature uses the default model.
+
 #### Output Examples
 
 - **Enhanced prompt:**
@@ -295,7 +323,7 @@ graph LR
     I --> J[End]
 ```
 
-### "thought"
+### "thought" Function
 
 **Lambda** functions in Python provide a way to create small, anonymous functions. These are defined using the lambda keyword and can have any number of input parameters but only a single expression.
 
@@ -318,6 +346,18 @@ print(x("John"))  # True
 
 result = thought("Multiply by two")(2)
 print(result)   # 4
+```
+
+In the example above, we can see two distinct ways of using `thought`. In the first example, you can store a lambda function in a variable and then use it. You can also call it directly by enclosing the arguments behind it in brackets. `thought` accepts multiple arguments and all types native to python. However, the content of the first bracket is always a string.
+
+The `thought` function has an initial pre-compilation stage where it predicts the type of the return value by making an initial call to an LLM. Execution time can therefore be increased.
+You can retrieve the predicted return type with the `_return_type` attribute attached to the object:
+
+```python
+from OpenHosta import thought
+
+ret = thought("Adds all integers")(2 ,3 ,6)
+print(x._return_type) # int
 ```
 
 Note that this feature uses the default model.
