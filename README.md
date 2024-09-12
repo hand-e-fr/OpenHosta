@@ -75,7 +75,7 @@ pip show openhosta
 1. Clone the **Git repository** to your local machine using the following command:
 
 ```bash
-git clone git@github.com:hand-e-fr/OpenHosta-dev.git
+git clone git@github.com:hand-e-fr/OpenHosta.git
 ```
 
 2. Navigate to the **directory** of the cloned project:
@@ -87,7 +87,13 @@ cd OpenHosta-dev
 3. Ensure you have installed the necessary **dependencies** before starting.
 
 ```bash
-pip install -r requirements.txt
+pip install .
+```
+
+4. Check that you have the correct version. 
+
+```python
+OpenHosta.__version__
 ```
 
 This way you have all the documentation and source code to understand our project
