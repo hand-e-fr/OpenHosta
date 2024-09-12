@@ -1,0 +1,157 @@
+dashboards:
+- count: 2
+  description: The 'Evt Overview' dashboard provides a comprehensive view of fleet
+    events, allowing users to analyze event seriousness, IDs, and descriptions over
+    time. It facilitates detailed data exploration through interactive tables and
+    visual distinctions based on event frequency and timestamps.
+  filters:
+  - description: Filtering the severity of events
+    name: Seriousness
+  - description: Filtering all or part of the project's 'AOI' (Area Of Interest)
+    name: aoi
+  image_path: input/img/IOS_evt/Evt Overview.png
+  index: 1
+  name: Evt Overview
+  worksheets:
+  - description: This visualization displays the total count of events, categorized
+      by units. The color indicates the frequency level of records, with 'Level Color'
+      providing a visual distinction.
+    position: top
+    question: What is the distribution of event seriousness and areas of interest
+      in the fleet overview?
+    title: Overview- Fleet View
+    type: table with horizontal bar
+  - description: This plot visualizes the evt_gts against Units. The evt_gts is a
+      datetime variable, and Units is a string. This plot likely represents a table
+      with color and value for each cell.
+    position: bottom left
+    question: What is the overview of the event ID in terms of units and records over
+      time?
+    title: Overview - Evt Id
+    type: table
+  - description: This visualization displays the event descriptions over time. The
+      x-axis represents the event timestamps (evt_gts), and the y-axis represents
+      the event descriptions (evt_description). The number of records is indicated
+      for each event.
+    position: bottom right
+    question: What is the unit description and its relationship with the event description
+      and timestamps?
+    title: Overview - Veh Id
+    type: table
+- count: 2
+  description: The 'IOS per Train' dashboard provides an in-depth analysis of records,
+    events, and units over time, allowing users to explore data through various visualizations
+    such as vertical bar charts, tables, and GPS coordinate plots. It enables detailed
+    data exploration by offering interactive graphs and tables that highlight event
+    frequencies, distributions, and geographical locations.
+  filters:
+  - description: Filtering the severity of events
+    name: Seriousness
+  - description: Filtering maintenance-related depot areas
+    name: Maintenance Area
+  - description: Filtering applicable to workbooks. This filter applies to events
+      based on their datetime, providing a mechanism to filter events by their date
+      and time attributes.
+    name: evt_gts
+  image_path: input/img/IOS_evt/IOS per Train.png
+  index: 2
+  name: IOS per Train
+  worksheets:
+  - description: The plot visualizes the number of records over time, with evt_gts
+      on the x-axis and Number of Records on the y-axis. Each bar represents a count
+      of records for a specific time period.
+    position: top left
+    question: How many records are there over time?
+    title: IOS per Train - Day
+    type: vertical bar
+  - description: This plot visualizes the 'Number of Records' on the x-axis and 'evt_lv'
+      on the y-axis. Each cell is colored and valued by 'evt_id'.
+    position: bottom left
+    question: What is the most frequent event and its seriousness?
+    title: IOS per Train- Event
+    type: table
+  - description: This visualization shows the number of units per event ID. The data
+      is represented in a tabular format with each cell colored based on the event
+      ID.
+    position: bottom right
+    question: What is the distribution of events per unit in different maintenance
+      areas?
+    title: IOS per Train - Unit
+    type: table
+  - description: This plot visualizes GPS coordinates with longitude on the x-axis
+      and latitude on the y-axis. Each point represents an event identified by its
+      unique ID.
+    position: top right
+    question: What are the GPS coordinates and IDs of events over time?
+    title: GPS Coordinates Plot
+    type: circle
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: IOS_evt
+  domains_names: Event, Exploration
+  general_description: This report provides a comprehensive overview of fleet events,
+    allowing users to analyze event seriousness, IDs, and descriptions over time.
+    It includes various visualizations such as tables and bar charts to facilitate
+    detailed data exploration.
+  goals:
+  - Provide a comprehensive view of fleet events for detailed analysis.
+  - Enable users to explore event seriousness, IDs, and descriptions over time.
+  - Facilitate data exploration through interactive tables and visual distinctions
+    based on event frequency and timestamps.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: The variable 'Function' is used to categorize operational data in various
+    dashboards. It helps in identifying specific functions within the train's systems.
+  generic_name: Function
+- description: This variable represents the map used in various dashboards to visualize
+    location-based data. It is recorded as context data for events.
+  generic_name: Map
+- description: Unit is an identifier for parts of a train, used in various operational
+    and event contexts. It helps track and analyze the performance and issues of different
+    train sections.
+  generic_name: Unit
+- description: This variable is used to identify the area of interest in various contexts.
+    It is crucial for maintenance and operational data analysis.
+  generic_name: aoi
+- description: This variable describes events related to train operations. It is used
+    across multiple dashboards to provide context for various operational metrics.
+  generic_name: evt_description
+- description: This variable records the latitude of the train's GPS position during
+    events. It is used to map the location of various train events.
+  generic_name: evt_gps_lat
+- description: This variable represents the longitude coordinate of a GPS event. It
+    is used to track the location of the train during specific events.
+  generic_name: evt_gps_lon
+- description: This variable represents the timestamp of an event. It is recorded
+    as context data for various analyses.
+  generic_name: evt_gts
+- description: The variable is used to identify specific events in various operational
+    dashboards. It helps in tracking and analyzing event occurrences across different
+    time frames and locations.
+  generic_name: evt_id
+- description: The evt_lv variable indicates the seriousness of an event. It is used
+    in multiple dashboards to filter and plot event data.
+  generic_name: evt_lv
+- description: This variable represents the speed of an event recorded on the train.
+    It is used in various operational dashboards to monitor and analyze train performance.
+  generic_name: evt_spd
+- description: The event status is recorded as an integer and used in various dashboards
+    to track train operations. It is particularly useful in brake and event overview
+    analyses.
+  generic_name: evt_st
+variables_used_top_10:
+- evt_id
+- evt_gts
+- Number of Records
+- evt_lv
+- Units
+- Maintenance Area
+- evt_description
+- aoi
+- Function
+- Unit
+

@@ -1,0 +1,182 @@
+dashboards:
+- count: 3
+  description: The 'Event distribution' dashboard provides a comprehensive analysis
+    of event data by visualizing the distribution of duration_TON and categorizing
+    records by function. It allows for detailed exploration of TON distribution and
+    the number of records per function, facilitating a deeper understanding of event
+    characteristics and trends.
+  filters: []
+  image_path: input/img/Evt_7days/Event distribution.png
+  index: 1
+  name: Event distribution
+  worksheets:
+  - description: This plot visualizes the distribution of duration_TON (bin) against
+      duration_TON, categorized by evt_id.
+    position: bottom
+    question: What is the distribution of TON based on various parameters and conditions?
+    title: Duration Analysis
+    type: table
+  - description: This table displays the number of records categorized by function.
+      Each cell is filled based on the event ID, providing a clear view of the distribution
+      of records across different functions.
+    position: top
+    question: What is the function and number of records associated with each event
+      ID in the dataset?
+    title: Number of Records by Function
+    type: table
+- count: 3
+  description: The 'Events per Train' dashboard provides an overview of event records
+    per train, including their distribution over time, event types, and GPS locations.
+    It enables detailed data exploration through various plots, allowing users to
+    filter and interact with the data to identify trends and anomalies.
+  filters:
+  - description: Filtering by speed
+    name: Speed
+  - description: Filtering all or part of the project's 'AOI' (Area Of Interest)
+    name: AOI
+  - description: Filtering the severity of events
+    name: evt_lv
+  - description: Filtering maintenance-related depot areas
+    name: Maintenance Area
+  image_path: input/img/Evt_7days/Events per Train.png
+  index: 2
+  name: Events per Train
+  worksheets:
+  - description: This plot displays the number of records over time. The x-axis represents
+      the datetime of events (evt_gts), and the y-axis shows the number of records.
+    position: top left
+    question: What are the events per train for each day as represented by speed and
+      area of interest?
+    title: Events per Train - Day
+    type: vertical bar
+  - description: This visualization shows the Number of Records on the x-axis and
+      evt_lv on the y-axis. The cells are filled based on evt_id.
+    position: bottom left
+    question: What is the most frequent event in the dataset?
+    title: Events per Train- Event
+    type: table
+  - description: This visualization shows the distribution of events per train unit.
+      The x-axis represents the event IDs (evt_id), and the y-axis represents the
+      units (Unit). Each cell is colored and valued based on the event ID.
+    position: bottom right
+    question: What is the distribution of events per unit in the specified region?
+    title: Events per Train - Unit
+    type: table
+  - description: A visualization showing the GPS longitude and latitude of events,
+      with event IDs used for color and size.
+    position: top right
+    question: What are the GPS coordinates and IDs of events plotted on a Circle chart?
+    title: Events per Train - GPS
+    type: circle
+- count: 3
+  description: The 'Evt Overview' dashboard provides a comprehensive view of fleet
+    performance by displaying key metrics and frequent occurrences based on speed,
+    unit, and event data. It allows users to explore detailed data through color-coded
+    visualizations and interactions between graphs, facilitating an in-depth analysis
+    of event descriptions and timestamps.
+  filters:
+  - description: Filtering the severity of events
+    name: evt_lv
+  - description: Filtering all or part of the project's 'AOI' (Area Of Interest)
+    name: aoi
+  - description: Filtering by speed
+    name: Speed
+  image_path: input/img/Evt_7days/Evt Overview.png
+  index: 3
+  name: Evt Overview
+  worksheets:
+  - description: This visualization shows the total count of events by unit, with
+      color coding indicating the frequency of records. The y-axis represents the
+      total count, and the fill axis provides color coding based on frequency levels.
+    position: top
+    question: What are the key metrics and frequent occurrences in the fleet's performance
+      based on speed, unit, and event data?
+    title: Overview - Fleet View
+    type: table
+  - description: This plot displays the number of records over time categorized by
+      unit. Each cell is color-coded based on the unit.
+    position: bottom left
+    question: What is the speed of events over time?
+    title: Overview - Evt Id
+    type: table
+  - description: This plot visualizes the event descriptions over time, with the number
+      of records displayed as text. The x-axis represents the event timestamps (evt_gts),
+      and the y-axis represents the event descriptions (evt_description).
+    position: bottom right
+    question: What is the relationship between event descriptions and timestamps in
+      the dataset?
+    title: Overview - Veh Id
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Evt_7days
+  domains_names: Event,Exploration
+  general_description: The report provides a comprehensive overview of interesting
+    features related to train events and fleet performance. It includes visualizations
+    for event distribution, event records per train, and key metrics for fleet performance.
+    The data is categorized by various parameters such as function, speed, unit, and
+    GPS coordinates, allowing for detailed exploration and analysis.
+  goals:
+  - Provide a comprehensive analysis of event data by visualizing the distribution
+    of duration_TON and categorizing records by function.
+  - Enable detailed exploration of event records per train, including their distribution
+    over time, event types, and GPS locations.
+  - Facilitate an in-depth analysis of fleet performance by displaying key metrics
+    and frequent occurrences based on speed, unit, and event data.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable represents a function or operation related to train events.
+    It is used in various dashboards for monitoring and analysis.
+  generic_name: Function
+- description: This variable represents the map used to visualize train event locations.
+    It is used in various dashboards for operational insights.
+  generic_name: Map
+- description: This variable identifies specific parts of a train. It is used across
+    multiple dashboards for event and operational data analysis.
+  generic_name: Unit
+- description: AOI represents the area of interest and is used to identify technical
+    areas. It is recorded as context data for events.
+  generic_name: aoi
+- description: Duration TON measures the time a train spends in a specific operational
+    state. It is recorded as continuous operational data.
+  generic_name: duration_TON
+- description: This variable describes the type of event that occurred. It is used
+    in various dashboards for event tracking and analysis.
+  generic_name: evt_description
+- description: This variable records the latitude of the train's GPS position during
+    events. It helps in mapping the train's location.
+  generic_name: evt_gps_lat
+- description: Longitude data from the GPS recorded during events. Used for location
+    mapping in various dashboards.
+  generic_name: evt_gps_lon
+- description: This variable records the timestamp of an event occurrence. It is used
+    across multiple dashboards for tracking event timelines.
+  generic_name: evt_gts
+- description: This variable identifies specific events related to train operations.
+    It is used across multiple dashboards to filter and plot event data.
+  generic_name: evt_id
+- description: This variable measures the seriousness of an event. It is recorded
+    as context data.
+  generic_name: evt_lv
+- description: The variable represents the speed of the train at the time of an event.
+    It is recorded as context data.
+  generic_name: evt_spd
+- description: This variable is recorded as context data for an event. It helps identify
+    specific events in the system.
+  generic_name: evt_st
+variables_used_top_10:
+- evt_id
+- Number of Records
+- evt_lv
+- aoi
+- Speed
+- Maintenance Area
+- duration_TON
+- Function
+- evt_description
+- evt_spd
+

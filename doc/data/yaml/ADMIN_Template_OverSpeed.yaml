@@ -1,0 +1,116 @@
+dashboards:
+- count: 1
+  description: The 'Location' dashboard provides a comprehensive analysis of geographical
+    and categorical data, enabling detailed exploration through various plots such
+    as tables, heatmaps, and line charts. It facilitates understanding of distribution,
+    relationships, and trends in the dataset, with interactive features for in-depth
+    data analysis.
+  filters: []
+  image_path: input/img/OverSpeed/Location.png
+  index: 1
+  name: Location
+  worksheets:
+  - description: This plot visualizes the 'aoi' variable categorized by 'idx'. The
+      'aoi' variable is displayed using colors in each cell.
+    position: top left
+    question: What is the distribution of the area of interest (aoi) over the given
+      indices?
+    title: Location-aoi
+    type: table
+  - description: This plot displays the 'Unit' values categorized by 'idx'. Since
+      'Unit' is a string, the resulting plot is represented as a table. Each cell
+      is colored and valued based on the 'Unit' variable.
+    position: bottom left
+    question: What is the relationship between the Unit and the index (idx) in the
+      given dataset?
+    title: Location-Unit Plot
+    type: table
+  - description: This heatmap visualizes the distribution of events based on their
+      GPS coordinates. The x-axis represents the longitude (evt_gps_lon) and the y-axis
+      represents the latitude (evt_gps_lat).
+    position: top right
+    question: What is the geographical distribution of the event data based on GPS
+      coordinates?
+    title: Heatmap of GPS Coordinates
+    type: heatmap
+  - description: This plot visualizes the relationship between 'value' and 'value'
+      using real number data types. The x-axis represents 'value' and the y-axis represents
+      'value'.
+    position: bottom right
+    question: What is the relationship between the environment data values?
+    title: Location-Agent ID Plot
+    type: vertical bar
+  - description: This visualization shows the trend of events (evt_gts) over time,
+      categorized by index (idx) and colored by area of interest (aoi).
+    position: bottom
+    question: What are the trends and patterns observed in the environment data over
+      time, specifically focusing on the area of interest (aoi)?
+    title: Location-Trend Analysis
+    type: line
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: OverSpeed
+  domains_names: Event, Operational Data
+  general_description: The 'Location' dashboard provides a comprehensive analysis
+    of geographical and categorical data, enabling detailed exploration through various
+    plots such as tables, heatmaps, and line charts. It facilitates understanding
+    of distribution, relationships, and trends in the dataset, with interactive features
+    for in-depth data analysis.
+  goals:
+  - Provide a comprehensive analysis of geographical and categorical data.
+  - Enable detailed exploration through various plots such as tables, heatmaps, and
+    line charts.
+  - Facilitate understanding of distribution, relationships, and trends in the dataset.
+  - Offer interactive features for in-depth data analysis.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable represents environmental data relevant to train operations.
+    It is used in various plots to analyze trends and locations.
+  generic_name: Environment Data
+- description: The map variable is used to plot the location of events on a heatmap.
+    It helps in visualizing the geographical distribution of incidents.
+  generic_name: Map
+- description: This variable identifies a specific part of a train. It is recorded
+    as context data for events.
+  generic_name: Unit
+- description: The variable 'aoi' is recorded as operational data and used in various
+    dashboards for tracking train locations. It provides context data for events and
+    helps in visualizing trends and patterns.
+  generic_name: aoi
+- description: This variable records event descriptions. It is used in multiple dashboards
+    for event analysis.
+  generic_name: evt_description
+- description: This variable represents the latitude of a GPS event recorded for a
+    train. It is used in various dashboards to plot the train's location.
+  generic_name: evt_gps_lat
+- description: This variable represents the GPS longitude of an event. It is used
+    in various dashboards to map the location of events.
+  generic_name: evt_gps_lon
+- description: This variable records the timestamp of events. It is used in multiple
+    dashboards for event tracking and analysis.
+  generic_name: evt_gts
+- description: This variable is used to uniquely identify events in the system. It
+    is essential for tracking and analyzing event-related data.
+  generic_name: evt_id
+- description: This variable is used to track the location and events of train units.
+    It is recorded continuously as operational data.
+  generic_name: idx
+- description: This variable is used to represent real-time data points. It is utilized
+    in multiple dashboards for various analyses.
+  generic_name: value
+variables_used_top_10:
+- aoi
+- value
+- idx
+- Unit
+- evt_gts
+- evt_description
+- Environment Data
+- evt_id
+- evt_gps_lat
+- evt_gps_lon
+

@@ -1,0 +1,124 @@
+dashboards:
+- count: 2
+  description: The 'Details' dashboard provides an in-depth analysis of mileage and
+    unit usage over time, allowing users to explore trends, cumulative totals, and
+    distributions across various dates and units. It features interactive tables and
+    charts that enable detailed data exploration and comparison.
+  filters:
+  - description: Filtering applicable to workbooks. Filtering all or part of the Fleet
+      by identifier.
+    name: Fleet
+  - description: Filtering applicable to workbooks. Filtering by date and time.
+    name: LocalDate
+  image_path: input/img/KPI_Mileage/Details.png
+  index: 1
+  name: Details
+  worksheets:
+  - description: This plot visualizes the Mileage over time (LocalDate) with different
+      Units as the fill color.
+    position: bottom left
+    question: What are the details and trends of mileage and unit usage over different
+      days?
+    title: Details-Days
+    type: table
+  - description: This area chart visualizes the cumulative mileage over time, with
+      LocalDate on the x-axis and Mileage on the y-axis.
+    position: bottom right
+    question: What is the total mileage cumulated per day for each sub-fleet?
+    title: Cumulated Details
+    type: area
+  - description: This visualization shows the Mileage over time, categorized by Unit.
+      The x-axis represents LocalDate, and the y-axis represents Mileage. Each cell
+      is filled based on Unit.
+    position: center
+    question: What is the mileage cumulated per day?
+    title: Details-Cumulated unit
+    type: table
+  - description: This bar chart displays the mileage data against local dates. Each
+      bar represents the mileage recorded on specific dates, allowing for easy comparison
+      of mileage over time.
+    position: top
+    question: What is the mileage distribution on weekdays?
+    title: Mileage vs LocalDate
+    type: vertical bar
+  - description: 'Description of a worksheet in a report.
+
+      A worksheet contains charts (plots) and addresses a specific question.'
+    position: right
+    question: What is the distribution of units over time based on the given dataset?
+    title: Details-unit
+    type: table
+- count: 2
+  description: The Mileage dashboard provides an overview of the fleet's mileage over
+    time, allowing for detailed exploration of mileage data categorized by units and
+    sub-fleets. It features interactive tables that display relationships and trends
+    in mileage, helping users to analyze and compare performance across different
+    units.
+  filters:
+  - description: Filtering by datetime values, using the caption 'Date' as a reference
+      for the filter.
+    name: LocalDate
+  - description: Filtering applicable to workbooks.
+    name: Unit
+  - description: Filtering all or part of the Fleet by identifier.
+    name: Fleet
+  image_path: input/img/KPI_Mileage/Mileage.png
+  index: 2
+  name: Mileage
+  worksheets:
+  - description: A table displaying the Unit categorized by LocalDate, with color
+      and value for each cell based on Mileage.
+    position: bottom
+    question: What is the mileage in kilometers for the fleet over time?
+    title: Mileage-1
+    type: table
+  - description: This table visualizes the relationship between Mileage and Unit,
+      using color and value for each cell based on the Unit variable.
+    position: top
+    question: How does the mileage vary across different units and sub-fleets over
+      time?
+    title: Mileage vs Unit
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: KPI_Mileage
+  domains_names: Exploration
+  general_description: The 'KPI_Mileage' report provides comprehensive data visualization
+    and exploration of the fleet's mileage and unit usage over time. It includes interactive
+    dashboards with filters and worksheets that allow users to explore trends, cumulative
+    totals, and distributions across various dates and units. This report is designed
+    to help users analyze and compare performance across different units and sub-fleets,
+    making it a valuable tool for operational decision-making.
+  goals:
+  - Provide an in-depth analysis of mileage and unit usage over time.
+  - Enable detailed data exploration and comparison through interactive tables and
+    charts.
+  - Analyze and compare performance across different units and sub-fleets.
+  simple_description: Event Analysis
+  sub_category: Key Performance Indicator (KPI) - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: The local date of an event or operation is recorded in this variable.
+    It is used to analyze patterns over time.
+  generic_name: LocalDate
+- description: Mileage indicates the total distance traveled by a train. It is recorded
+    as operational data and used in various dashboards for analysis.
+  generic_name: Mileage
+- description: This variable represents a subset of the train fleet. It is used in
+    various analyses such as distribution, mileage, speed, and stabling.
+  generic_name: SubFleet
+- description: This variable identifies a specific part of a train. It is used in
+    various operational and event data dashboards.
+  generic_name: Unit
+variables_used_top_10:
+- Unit
+- LocalDate
+- Mileage
+- Fleet
+- SubFleet
+- Day
+- One
+- WeekDay
+

@@ -1,0 +1,200 @@
+dashboards:
+- count: 5
+  description: The 'Compare 2 Days' dashboard allows users to explore the relationship
+    between ALERT_CONDITION and Asset across two days. It provides detailed tables
+    that categorize alert conditions by asset and unit, facilitating easy comparison
+    and in-depth data analysis.
+  filters:
+  - description: Filtering applicable to workbooks by selecting a specific day.
+    name: Day Selected
+  - description: Filtering applicable to workbooks. Filtering by date selected. The
+      filter is used to select a specific day based on the input data. This is particularly
+      useful for time-based analyses and reports.
+    name: Day Selected
+  - description: Filtering by the selected day, using date datatype and specific formula
+      provided.
+    name: Day Selected
+  - description: Filtering applicable to workbooks.
+    name: Day Previous
+  image_path: input/img/Daily_Alert_Condition/Compare 2 Days.png
+  index: 1
+  name: Compare 2 Days
+  worksheets:
+  - description: This plot visualizes the relationship between ALERT_CONDITION and
+      Asset. ALERT_CONDITION is used to color and value each cell.
+    position: top right
+    question: What is the most frequent alert condition for the selected day, categorized
+      by asset?
+    title: Day vs Day Before - Unit Day 1
+    type: table
+  - description: This plot shows the relationship between ALERT_CONDITION and Asset.
+      Each cell is colored and valued based on ALERT_CONDITION.
+    position: bottom right
+    question: What is the alert condition per unit for the given timestamp and asset?
+    title: Day vs Day Before - Unit Day 2
+    type: table
+  - description: This table visualization shows the ALERT_CONDITION for Day vs Day
+      Before. The color and value of each cell represent the ALERT_CONDITION.
+    position: top left
+    question: What is the most frequent alert condition for the selected day?
+    title: Day vs Day Before - Alert C. Day 1
+    type: table
+  - description: This plot visualizes the ALERT_CONDITION data, comparing values from
+      one day to the day before. Each cell in the table is colored based on the ALERT_CONDITION
+      values.
+    position: bottom left
+    question: What is the alert condition per unit on Day 2 compared to the previous
+      day?
+    title: Day vs Day Before - Alert C. Day 2
+    type: table
+- count: 5
+  description: The 'Day Detail' dashboard provides an in-depth look at the distribution
+    of alerts per unit over the course of a day. It allows users to filter data by
+    asset and alert level, facilitating detailed exploration and interaction between
+    different graphs to identify patterns and anomalies.
+  filters: []
+  image_path: input/img/Daily_Alert_Condition/Day Detail.png
+  index: 2
+  name: Day Detail
+  worksheets:
+  - description: This plot shows the distribution of alerts per unit categorized by
+      asset. The y-axis represents the total number of alerts, and the fill color
+      indicates the alert level based on the percentage of records.
+    position: center
+    question: What is the distribution of alert conditions per unit over the day?
+    title: Day Detail - Alert Distribution per Unit_Numbers
+    type: table
+- count: 5
+  description: The 'Day Overview' dashboard provides a comprehensive analysis of alert
+    distributions. It allows users to explore alert conditions through a pie chart
+    and examine alert distributions per unit using a detailed table, facilitating
+    detailed data exploration and interaction between visualizations.
+  filters: []
+  image_path: input/img/Daily_Alert_Condition/Day Overview.png
+  index: 3
+  name: Day Overview
+  worksheets:
+  - description: This pie chart visualizes the distribution of alert conditions. Each
+      slice represents a different alert condition, categorized by the ALERT_CONDITION
+      variable.
+    position: top
+    question: What is the distribution of alerts per alert condition?
+    title: Day Overview - Alert Distribution per Alert Condition
+    type: pie
+  - description: This visualization shows the distribution of alerts per unit. The
+      x-axis represents the Asset, while the y-axis shows the id. The fill axis uses
+      ALERT_CONDITION to color and value each cell.
+    position: bottom
+    question: What is the distribution of alerts per unit for the day?
+    title: Day Overview - Alert Distribution per Unit
+    type: table
+- count: 5
+  description: The 'Fleet Overview' dashboard provides a comprehensive view of fleet
+    operations over the last 100 days. It includes a bar chart for ID distribution
+    over days, a table for alert conditions per asset, and a table for alert condition
+    statuses, allowing detailed data exploration and interaction between visualizations.
+  filters: []
+  image_path: input/img/Daily_Alert_Condition/Fleet Overview.png
+  index: 4
+  name: Fleet Overview
+  worksheets:
+  - description: This visualization displays a bar chart where the x-axis represents
+      the 'Timestamp Day' and the y-axis represents the 'id'. Since 'id' is an integer,
+      the plot is a bar chart.
+    position: top
+    question: What is the distribution of IDs over Timestamp Days for the last 100
+      days?
+    title: Fleet Overview - Day
+    type: vertical bar
+  - description: This visualization displays the Asset data from the dataset, categorized
+      by id. Each cell is filled based on the ALERT_CONDITION variable.
+    position: bottom left
+    question: What is the alert condition per asset over a specified period?
+    title: Fleet Overview - Unit
+    type: table
+  - description: This visualization displays the alert condition status for each fleet
+      unit. The x-axis represents the unique identifier for each unit, while the y-axis
+      shows the alert condition status.
+    position: bottom right
+    question: What is the most frequent Alert Condition in the fleet overview?
+    title: Fleet Overview - Alert Condition
+    type: table
+- count: 5
+  description: The 'List Alert' dashboard provides an overview of historical comments
+    related to assets, categorized by timestamp. It allows users to explore alert
+    conditions and descriptions, facilitating detailed data analysis through textual
+    representations.
+  filters: []
+  image_path: input/img/Daily_Alert_Condition/List Alert.png
+  index: 5
+  name: List Alert
+  worksheets:
+  - description: This plot displays historical comments over time. The x-axis represents
+      the timestamp of each comment, while the y-axis categorizes the comments. This
+      is a textual representation of the data.
+    position: center
+    question: What is the alert condition and description for the asset, and what
+      are the historical comments and timestamps related to it?
+    title: List Alert - Asset
+    type: text
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Daily_Alert_Condition
+  domains_names: Event,Operational Data
+  general_description: This report provides comprehensive data visualizations and
+    exploration capabilities for train equipment. It includes dashboards for comparing
+    alert conditions across two days, detailed analysis of alert distributions per
+    unit, fleet operations overview, and historical comments related to assets. The
+    report aims to facilitate in-depth data analysis and interaction between different
+    visualizations to identify patterns and anomalies.
+  goals:
+  - Provide a detailed comparison of alert conditions across two days.
+  - Facilitate exploration of alert distributions per unit over a day.
+  - Analyze fleet operations and alert conditions over the last 100 days.
+  - Offer a historical overview of comments related to assets.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable represents the condition that triggers an alert. It is
+    used frequently in various dashboards to analyze alert patterns.
+  generic_name: ALERT_CONDITION
+- description: This variable describes the type of alert condition occurring in the
+    train. It is used in various dashboards to track and analyze alert events.
+  generic_name: ALERT_DESCRIPTION
+- description: Asset represents a unique identifier for a part of a train. It is used
+    to track operational data and alert conditions.
+  generic_name: Asset
+- description: The timestamp records the exact moment an event occurs. It is used
+    in various dashboards to track and compare events over time.
+  generic_name: Timestamp
+- description: This variable contains comments related to historical events. It is
+    used for context in various dashboards.
+  generic_name: history.comments
+- description: This variable represents the timestamp of historical events recorded
+    in the system. It is used to track and analyze the timing of various alerts and
+    conditions.
+  generic_name: history.ts
+- description: This variable categorizes the type of history events recorded. It is
+    used in alert condition plots.
+  generic_name: history.type
+- description: The user associated with historical events. Recorded as context data
+    for operational analysis.
+  generic_name: history.user
+- description: The variable is an identifier for a part of a train and is recorded
+    as operational data.
+  generic_name: id
+variables_used_top_10:
+- ALERT_CONDITION
+- id
+- Asset
+- Timestamp
+- Timestamp Day
+- Day Selected
+- Occurence Date Period
+- Days History
+- Day Previous
+- Occurence
+

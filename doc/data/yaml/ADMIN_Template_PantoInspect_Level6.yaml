@@ -1,0 +1,128 @@
+dashboards:
+- count: 1
+  description: The dashboard 'Dash' provides a comprehensive visualization of fleet
+    performance and status over time. It allows detailed data exploration through
+    various plots, including tables, line charts, and histograms, facilitating the
+    analysis of key factors and variables influencing the fleet, as well as color
+    levels and event timelines.
+  filters:
+  - description: Filtering applicable to workbooks. This filter uses a formula in
+      Tableau to compare a variable to a parameter and return a value if they match.
+    name: Value
+  image_path: input/img/PantoInspect_Level6/Dash.png
+  index: 1
+  name: Dash
+  worksheets:
+  - description: This visualization displays the 'Value' over time. Each cell is colored
+      based on 'Colouring all'.
+    position: left
+    question: What are the key factors and variables influencing the performance and
+      status of the fleet as represented in the chart?
+    title: A-Fleet Visualization
+    type: table
+  - description: This visualization shows the values of 'Value' over time, colored
+      by 'Colouring'. The x-axis represents 'Value' and the y-axis represents 'evt_gts'.
+      The plot uses a bar chart to display the data.
+    position: center
+    question: What are the color levels and values over time for the given parameters?
+    title: A-Train
+    type: table
+  - description: This visualization plots 'evt_gts' over time with 'Value' as the
+      y-axis variable. Each cell is filled with '_Location_string' values.
+    position: right
+    question: What is the timeline of events based on various parameters and calculations?
+    title: A-Timeline
+    type: line
+  - description: This plot visualizes the variable 'GreeAbove' from the source '[Extract
+      (Extract.Extract)]'. The variable is of type 'real'.
+    position: top left
+    question: What is the color level based on the given parameters and calculations?
+    title: A-Green Above
+    type: histogram
+  - description: This visualization represents the data for RedBelow, displaying the
+      extracted values in a meaningful way.
+    position: top right
+    question: What is the relationship between the 'Red Below' parameter and the other
+      variables in the context of automatic color level determination?
+    title: A-Red Below Visualization
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: PantoInspect_Level6
+  domains_names: Event,Operational Data
+  general_description: The report provides a comprehensive overview of fleet performance
+    and status over time, facilitating detailed data exploration through various visualizations,
+    including tables, line charts, and histograms. It aims to analyze key factors
+    and variables influencing the fleet, as well as color levels and event timelines.
+  goals:
+  - Provide a comprehensive visualization of fleet performance and status over time.
+  - Facilitate detailed data exploration through various plots, including tables,
+    line charts, and histograms.
+  - Analyze key factors and variables influencing the fleet.
+  - Examine color levels and event timelines.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable is used to control color settings in various dashboards.
+    It helps in visual differentiation of operational data.
+  generic_name: ColorTypeCtrl
+- description: It indicates the maximum value recorded above a certain threshold.
+    This value is used to determine the operational status of train components.
+  generic_name: GreeAbove
+- description: This variable represents an image related to the train's operational
+    data. It is used in various dashboards for visual analysis.
+  generic_name: Image
+- description: This variable is used in multiple dashboards to monitor the operational
+    status of train components. It is essential for tracking and analyzing train performance
+    metrics.
+  generic_name: Level_0
+- description: Level 1 is a string data type used in various dashboards. It helps
+    in differentiating levels in the context of train operations.
+  generic_name: Level_1
+- description: This variable represents the second level of a hierarchical structure
+    in the train system. It is used in multiple dashboards to analyze operational
+    data.
+  generic_name: Level_2
+- description: This variable is used to categorize the operational levels of train
+    components. It is recorded as context data for events.
+  generic_name: Level_3
+- description: This variable represents the fourth level of a train unit. It is used
+    in various dashboards for fleet and operational analysis.
+  generic_name: Level_4
+- description: Level 5 is recorded as operational data and used in various dashboards
+    for monitoring train performance.
+  generic_name: Level_5
+- description: This variable represents a level measurement in a train component.
+    It is used for continuous operational data recording.
+  generic_name: Level_6
+- description: The RedBelow variable indicates the lower threshold for a red signal
+    in the train's operational data. It is used to determine if a value falls below
+    a critical level.
+  generic_name: RedBelow
+- description: This variable represents the location of a train unit. It is used in
+    various dashboards for tracking and analysis.
+  generic_name: _Location_string
+- description: This variable represents the timestamp of an event. It is used to track
+    when specific events occur in various dashboards.
+  generic_name: evt_gts
+- description: This variable represents a real-time operational data point used in
+    various analyses. It is primarily used in visualizations to monitor train performance.
+  generic_name: value
+- description: This variable is used for burst detection and distribution analysis.
+    It helps in understanding the operational data of train units.
+  generic_name: variable
+variables_used_top_10:
+- Value
+- evt_gts
+- Colouring
+- RedBelow
+- Colouring all
+- GreeAbove
+- Colouring Days since last
+- Green Above
+- value
+- Color Type
+

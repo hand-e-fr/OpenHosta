@@ -1,0 +1,130 @@
+dashboards:
+- count: 2
+  description: The 'Minio Nb' dashboard provides a comprehensive overview of the number
+    of files per project and bucket, categorized by various criteria such as backup,
+    datawarehouse, upload, download, production, and other. It allows for detailed
+    data exploration through interactive tables that highlight the size and distribution
+    of files across different projects and buckets.
+  filters: []
+  image_path: input/img/Minio/Minio Nb.png
+  index: 1
+  name: Minio Nb
+  worksheets:
+  - description: This plot displays the size against the project. Since the y-axis
+      variable is categorical, the plot is displayed as a table. Each cell is filled
+      with the project data.
+    position: top
+    question: What is the number of files per project based on different categories
+      such as backup, datawarehouse, upload, download, production, and other?
+    title: Minio Nb-project
+    type: table
+  - description: This visualization displays the size of buckets categorized by project.
+      The categories include 'backup/', 'datawarehouse/', 'upload/', 'download/',
+      'production/', and 'other'. Each cell in the table is colored based on the project
+      associated with the bucket.
+    position: bottom
+    question: What is the number of files per bucket based on different categories?
+    title: Minio Nb-Bucket 2
+    type: table
+- count: 2
+  description: The 'Minio Size' dashboard provides a comprehensive analysis of project
+    size distributions across various categories, buckets, and directories. It allows
+    for detailed data exploration through interactive tables and pie charts, facilitating
+    insights into the size ratios and distributions within the Minio system.
+  filters: []
+  image_path: input/img/Minio/Minio Size.png
+  index: 2
+  name: Minio Size
+  worksheets:
+  - description: This visualization represents the project distribution across different
+      sizes. The color and value of each cell correspond to the project categories.
+    position: top left
+    question: What is the size distribution per project based on different key categories?
+    title: Minio Size-project
+    type: table
+  - description: This pie chart visualizes the ratio of project sizes, calculated
+      as SUM(size) divided by a parameter.
+    position: bottom left
+    question: What is the ratio percentage of different categories in the total size?
+    title: Minio Size-ratio
+    type: pie
+  - description: This visualization displays the size distribution across different
+      buckets. The x-axis represents the size, while the y-axis categorizes the data
+      into buckets based on the provided formula. The fill axis variable 'project'
+      is used to color and value each cell.
+    position: top
+    question: What is the size distribution per bucket in the dataset?
+    title: Minio Size-Bucket 2
+    type: table
+  - description: This visualization displays the size of various buckets categorized
+      by project. The x-axis represents the size, while the y-axis categorizes the
+      buckets into 'backup/', 'datawarehouse/', 'upload/', 'download/', 'production/',
+      and 'other'. The fill axis uses the 'project' variable to color and value each
+      cell.
+    position: top right
+    question: What is the size distribution per project and per bucket?
+    title: Minio Size-Bucket 1
+    type: table
+  - description: A table showing the distribution of 'key' values categorized by 'size'
+      and colored by 'project'.
+    position: bottom right
+    question: What is the distribution of file sizes across different projects in
+      the dataset?
+    title: Minio Size-file
+    type: table
+  - description: This pie chart visualizes the distribution of different categories
+      within the 'Bucket' variable. Categories include 'backup/', 'datawarehouse/',
+      'upload/', 'download/', 'production/', and 'other'. The size of each segment
+      represents the 'size' variable.
+    position: bottom
+    question: What is the size distribution per bucket?
+    title: Minio Size-Bucket 2 (2)
+    type: pie
+  - description: This plot displays the size of different directories. The size is
+      shown on the x-axis, while the directory names are represented on the y-axis.
+      The data is visualized as a table where each cell's color and value represent
+      the corresponding directory size.
+    position: center
+    question: What is the size distribution of directories in the Minio system?
+    title: Minio Size-dir
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Minio
+  domains_names: Operational Data
+  general_description: This report provides a comprehensive overview of the number
+    of files per project and bucket, as well as the size distributions across various
+    categories, buckets, and directories. It includes interactive tables and visualizations
+    that facilitate detailed data exploration.
+  goals:
+  - Provide a comprehensive overview of the number of files per project and bucket.
+  - Facilitate detailed data exploration through interactive tables and visualizations.
+  - Analyze project size distributions across various categories, buckets, and directories.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable is recorded continuously as operational data. It is used
+    to categorize files into different buckets based on their path.
+  generic_name: key
+- description: The project variable categorizes data by project names, aiding in the
+    organization and analysis of project-specific information. It is used in multiple
+    dashboards to filter and plot data.
+  generic_name: project
+- description: The size variable represents the amount of space occupied by files.
+    It is measured in bytes.
+  generic_name: size
+variables_used_top_10:
+- project
+- size
+- Bucket
+- key
+- Total
+- Dir
+- Ratio
+- Dir level
+- Total size
+- Available in %
+
