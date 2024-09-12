@@ -39,7 +39,7 @@ def build_user_prompt(_function_infos: dict = None):
             + str(function_return)
         )
 
-    if function_locals != {}:
+    if function_locals is not None:
         user_prompt = (
             user_prompt
             + "\nHere's the function's locals variables which you can use as additional information to give your answer:\n"
@@ -86,7 +86,8 @@ def _exec_emulate(
 
     if _function_obj is not None and "bound method" not in str(_function_obj):
         setattr(_function_obj, "_last_response", response.json())
-
+        
+    
     if response.status_code == 200:
         l_ret = model.request_handler(
             response, _function_return, _function_return_caller
@@ -95,5 +96,8 @@ def _exec_emulate(
     else:
         sys.stderr.write(f"Error {response.status_code}: {response.text}")
         l_ret = None
+        
+    if _function_obj is not None and "bound method" not in str(_function_obj):
+        setattr(_function_obj, "_last_request", f"{_emulator_pre_prompt}\n{l_user_prompt}")
 
     return l_ret
