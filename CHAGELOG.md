@@ -12,6 +12,7 @@ All significant changes to this project will be documented in this file.
   - `thought` function now accept multiple arguments
   - `suggest` and `analytics` call now th LLM with `Model` class (`ai_call`)
   - `emulate` works now in a nested function.
+  - Added Flask compatibility
   
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM
@@ -23,6 +24,7 @@ All significant changes to this project will be documented in this file.
   - `emulate` now includes a verification output that checks and converts the output to the specified type if necessary. Supported types include **Pydantic** models, all types from the **typing** module mentioned above, as well as built-in types such as `dict`, `int`, `float`, `str`, `list`, `set`, `frozenset`, `tuple`, and `bool`.
     - The `complex` type is not supported. If you need to use complex numbers, please pass them as a `tuple` and manually convert them after processing.
   -  The return type predicted by `thought` is now attached as an attribute to the object created: `_return_type`.
+  -  Added a `_last_request` attribute to an emulated function giving access to the prompt sent to the LLM.
 
 - **Features**
   - `example` function that can add some example for a specified hosta-injected function (inside or outside it) and add it to the cache
