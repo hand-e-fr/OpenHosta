@@ -22,7 +22,9 @@ upload:
 	python -m twine upload dist/*
 
 tests:
-	pytest tests/test_mandatory.py -v
+	pip install . 
+	pytest .\tests\functionnalTests\test_mandatory.py -v
+	pip uninstall -y OpenHosta
 
 format:
 	black $(SRC_DIR)
@@ -38,4 +40,4 @@ clean:
 fclean: clean
 	rm -rf .pytest_cache .mypy_cache
 
-.PHONY: all help build test format lint clean fclean
+.PHONY: all help build tests format lint clean fclean
