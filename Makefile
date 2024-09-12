@@ -40,4 +40,8 @@ clean:
 fclean: clean
 	rm -rf .pytest_cache .mypy_cache
 
-.PHONY: all help build tests format lint clean fclean
+make re:
+	pip uninstall -y OpenHosta
+	pip install ..
+
+.PHONY: all help build tests format lint clean fclean re

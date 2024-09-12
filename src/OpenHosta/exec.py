@@ -108,18 +108,23 @@ class HostaInjector:
             else:
                 code = caller_2.f_code
                 for obj in caller_2.f_back.f_locals.values():
-                    if hasattr(obj, "__code__"):
-                        if obj.__code__ == code:
-                            func = obj
-                            break
-
-            if not callable(func):
-                raise Exception(
+                    found = False
+                    try:
+                        if hasattr(obj, "__code__"):
+                            found = True
+                    except:
+                        continue       
+                    if found and obj.__code__ == code:
+                        func = obj
+                        break
+        
+            if func is None or not callable(func):
+                Exception(
                     "Larger scope isn't a callable or scope can't be extended.\n"
                 )
+
         except Exception as e:
             sys.stderr.write(f"[FRAME_ERROR]: {e}")
-            func, caller_2 = None, None
         return func, caller_2
 
     def _get_functionDef(self, func: Callable) -> str:

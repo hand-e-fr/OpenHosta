@@ -1,7 +1,5 @@
 import pytest
 import time as t
-import sys
-import os
 from pydantic import BaseModel
 from typing import Callable
 

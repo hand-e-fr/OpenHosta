@@ -80,6 +80,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [Usage](#usage)
       - [Output Examples](#output-examples)
     - ["thought" Function](#thought-function)
+    - ["example" Function](#example-function)
     - [Advanced configuration](#advanced-configuration)
       - [Introduction](#introduction-1)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
