@@ -14,3 +14,4 @@ __hostacache__/
 *.html
 .pytest_cache
 src/OpenHosta.egg-info
+build/
