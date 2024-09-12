@@ -12,6 +12,7 @@ All significant changes to this project will be documented in this file.
   - `thought` function now accept multiple arguments
   - `suggest` and `analytics` call now th LLM with `Model` class (`ai_call`)
   - `emulate` works now in a nested function.
+  - Added Flask compatibility
   
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM

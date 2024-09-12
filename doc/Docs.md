@@ -169,8 +169,6 @@ The *emulate* function is the main feature of OpenHosta. This is the function th
 
 Emulate is used inside a function or a class method, after the “return”. What it does is take the function's documentation as a “prompt” to emulate it. The way in which you write the function is therefore crucial to ensure that “emulate” works properly.
 
-***Warning: OpenHosta can have compatibility issues with the Flask library at HTTP request level.***
-
 Here's what you need to know:
   - **The function prototype** is one of the elements sent to LLM. Its different fields must therefore appear clearly. Give a meaningful and precise name to your function. It's also a good idea to specify the type of arguments and the type of return to reduce the uncertainty related to LLM.
   

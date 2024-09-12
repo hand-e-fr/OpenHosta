@@ -88,7 +88,6 @@ class HostaInjector:
 
     def _extend_scope(self) -> Callable:
         func: Callable = None
-        scope:dict = None
 
         try:
             current = inspect.currentframe()
@@ -108,7 +107,6 @@ class HostaInjector:
                 func = getattr(obj, caller_name, None)
             else:
                 code = caller_2.f_code
-                scope = caller_2.f_back.f_locals.values()
                 for obj in caller_2.f_back.f_locals.values():
                     found = False
                     try:
