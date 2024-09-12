@@ -1,0 +1,244 @@
+dashboards:
+- count: 4
+  description: The 'Flow' dashboard provides a comprehensive view of service order
+    details, notification numbers, and task texts through interactive Polygon charts.
+    It allows users to explore order IDs, cause codes, and detailed tasks associated
+    with notifications, facilitating in-depth data analysis and understanding.
+  filters:
+  - description: Filtering applicable to workbooks by CAUSE Code.
+    name: cause.coding
+  - description: Filtering applicable to workbooks. This filter is used to identify
+      notifications by their unique notification number, which is of datatype string.
+    name: notificationId
+  - description: Filtering by T2 notification number
+    name: notificationId
+  image_path: input/img/MMS_Maintenance/Flow.png
+  index: 1
+  name: Flow
+  worksheets:
+  - description: This plot visualizes the orderId variable, which is a string data
+      type, using a Polygon chart type.
+    position: top
+    question: What is the order ID for the service order?
+    title: Flow - Order
+    type: other
+  - description: This plot visualizes the variable 'taskText' which is of type string.
+    position: bottom left
+    question: What are the cause codes and T1 notification numbers associated with
+      each task text in the Polygon chart?
+    title: Flow - Notif T1
+    type: other
+  - description: This plot visualizes the taskText variable using a Polygon chart.
+      The taskText variable is a string, and its caption is 'taskText'.
+    position: bottom right
+    question: What are the details and tasks related to the T2 notification number?
+    title: Flow - Notif T2
+    type: other
+- count: 4
+  description: The 'Main' dashboard provides a comprehensive overview of notification
+    data, enabling users to explore distributions and relationships between various
+    notification attributes such as TCMS codes, damage codes, equipment, trains, causes,
+    and functional locations. It facilitates detailed data exploration through interactive
+    tables and textual representations, allowing for in-depth analysis of the dataset.
+  filters:
+  - description: Filtering applicable to workbooks based on the notification type.
+    name: notificationType
+  - description: Filtering by state
+    name: state
+  - description: Filtering by cause coding
+    name: cause.coding
+  image_path: input/img/MMS_Maintenance/Main.png
+  index: 2
+  name: Main
+  worksheets:
+  - description: This plot visualizes the notification data with notificationId on
+      the x-axis and Evt_description on the y-axis. The color and value of each cell
+      are determined by the events variable.
+    position: bottom right
+    question: What is the distribution of notifications per TCMS code?
+    title: Main - Notification
+    type: table
+  - description: The plot visualizes the relationship between shortDesc and taskText.
+      Both axes contain string data, making this a textual representation.
+    position: top right
+    question: What are the different types of notifications and their associated states,
+      descriptions, and tasks?
+    title: Main - Id description
+    type: text
+  - description: This visualization displays the damage.label categorized by notificationId
+      with each cell filled by damage.group.
+    position: top left
+    question: What is the distribution of damage codes based on the notification IDs
+      and damage groups?
+    title: Main - DAMAGE Code
+    type: table
+  - description: This plot displays the notificationId on the x-axis and equipment
+      on the y-axis. Since the y-axis is a boolean, the plot likely represents a table
+      where the fill variable is used for color and value of each cell.
+    position: top right
+    question: How is the equipment distributed across different notifications?
+    title: Main - Equipment
+    type: table
+  - description: This visualization displays the data for 'Train' with 'notificationId'
+      used for color and value of each cell. The data is represented in a table format
+      due to the categorical nature of the y-axis variable.
+    position: bottom left
+    question: What is the distribution of trains in the given dataset?
+    title: Main - Train Visualization
+    type: table
+  - description: This plot visualizes the relationship between notificationId and
+      cause.label. Since both axes are categorical, the plot is represented as a table
+      where each cell is filled with corresponding values and colors.
+    position: top left
+    question: What is the distribution of cause codes in the dataset?
+    title: Main - Cause
+    type: table
+  - description: The plot displays the relationship between notificationId and affectation.train.
+      Both variables are categorical, and the resulting visualization is a table where
+      each cell's color and value represent the data points.
+    position: top right
+    question: What is the functional location and its associated details based on
+      the provided variables and context?
+    title: Main - Func Location
+    type: table
+- count: 4
+  description: The 'Trend - Equipment' dashboard provides a comprehensive overview
+    of equipment performance over time, utilizing moving average calculations and
+    detailed tables to explore relationships between equipment and notifications.
+    It allows for interactive data exploration and comparison through its line charts
+    and tabular data, facilitating in-depth analysis.
+  filters: []
+  image_path: input/img/MMS_Maintenance/Trend - Equipment.png
+  index: 3
+  name: Trend - Equipment
+  worksheets:
+  - description: This visualization displays the Moving AVG Equipment over time using
+      a line chart. The x-axis represents dates, while the y-axis shows the calculated
+      moving average of equipment notifications.
+    position: top
+    question: What is the trend of equipment performance over time based on moving
+      average calculations?
+    title: Trend Equipment - 1
+    type: line
+  - description: 'Description of a worksheet in a report.
+
+      A worksheet contains charts (plots) and addresses a specific question.'
+    position: bottom
+    question: What is the relationship between equipment and notificationId over the
+      given period?
+    title: Trend Equipment Analysis
+    type: table
+- count: 4
+  description: The 'Trend - Notification' dashboard provides a detailed analysis of
+    notification trends over time, categorized by notification type. It allows users
+    to filter data based on notification ID and type, facilitating in-depth exploration
+    and interaction between various graphs for comprehensive insights.
+  filters: []
+  image_path: input/img/MMS_Maintenance/Trend - Notification.png
+  index: 4
+  name: Trend - Notification
+  worksheets:
+  - description: This visualization shows the count of notificationId over time, categorized
+      by notificationType.
+    position: center
+    question: What is the trend in notifications over time based on notification ID
+      and type?
+    title: Trend - Notification - 1
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: MMS_Maintenance
+  domains_names: Event,Operational Data
+  general_description: This report provides data visualization and exploration about
+    Train equipments, focusing on service order details, notification numbers, task
+    texts, and equipment performance over time. It includes interactive charts and
+    tables that facilitate in-depth analysis and understanding of various notification
+    attributes and trends.
+  goals:
+  - Provide a comprehensive view of service order details and task texts.
+  - Facilitate in-depth data analysis and understanding.
+  - Enable users to explore distributions and relationships between various notification
+    attributes.
+  - Analyze equipment performance over time using moving average calculations.
+  - Detail the trends in notifications over time based on notification ID and type.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: Region represents the geographical area associated with a train's operation.
+    It is used in various dashboards for analyzing trends and notifications.
+  generic_name: REGION
+- description: This variable represents the train assigned to a specific task or event.
+    It is used in operational data for tracking purposes.
+  generic_name: affectation.train
+- description: This variable encodes the cause of an event in the maintenance system.
+    It is used to classify and analyze different types of issues that occur.
+  generic_name: cause.coding
+- description: This variable categorizes the cause of events for maintenance purposes.
+    It is used in various plots to analyze event distributions.
+  generic_name: cause.group
+- description: The variable 'cause.label' is used to categorize causes in the dashboard.
+    It helps in identifying the reasons for specific events.
+  generic_name: cause.label
+- description: This variable categorizes the type of damage for maintenance purposes.
+    It is used in various dashboards to analyze and filter damage-related notifications.
+  generic_name: damage.coding
+- description: This variable categorizes the type of damage reported. It is used for
+    maintenance and operational analysis.
+  generic_name: damage.group
+- description: This variable represents the label for a type of damage recorded in
+    the system. It is used in various dashboards to categorize and identify damage
+    events.
+  generic_name: damage.label
+- description: This variable represents the date when data was recorded. It is used
+    in various dashboards for event correlation and historical analysis.
+  generic_name: date
+- description: Indicates whether a specific piece of equipment is in use or not. Used
+    across various dashboards for maintenance and operational tracking.
+  generic_name: equipment
+- description: Events data is recorded as context data for various operational events.
+    It helps in identifying and tracking specific incidents or notifications.
+  generic_name: events
+- description: This variable represents the label of a material used in the train's
+    operational data. It is used in the main dashboard for functional location analysis.
+  generic_name: material.label
+- description: This variable is used in multiple dashboards to track various aspects
+    of train operations. It is primarily used for plotting data related to service
+    level agreements and notifications.
+  generic_name: name
+- description: The notificationId variable is used to identify notifications in the
+    system. It is recorded as context data for events.
+  generic_name: notificationId
+- description: This variable indicates the type of notification recorded. It is used
+    in various plots and filters to categorize notifications.
+  generic_name: notificationType
+- description: This variable represents the identifier for service orders in the system.
+    It is used to track and manage maintenance activities on trains.
+  generic_name: orderId
+- description: This variable provides a brief description of an event. It is used
+    in various dashboards for maintenance and notification purposes.
+  generic_name: shortDesc
+- description: The state variable indicates the current condition or status of a train
+    component. It is recorded as context data for events.
+  generic_name: state
+- description: It describes the text associated with tasks in various maintenance
+    and notification records. This variable is used to provide additional context
+    and details about specific tasks or events.
+  generic_name: taskText
+- description: This variable is used to identify the train involved in various events
+    and notifications. It is crucial for tracking and analyzing operational data.
+  generic_name: train
+variables_used_top_10:
+- notificationId
+- date
+- cause.coding
+- equipment
+- events
+- state
+- Train
+- Region
+- taskText
+- REGION
+

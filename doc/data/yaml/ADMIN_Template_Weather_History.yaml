@@ -1,0 +1,195 @@
+dashboards:
+- count: 3
+  description: The 'Date Source' dashboard provides a comprehensive visualization
+    of wind direction degrees using a polygon chart. It allows users to explore the
+    continuous representation of wind direction data in detail, enhancing the understanding
+    of wind patterns.
+  filters: []
+  image_path: input/img/Weather_History/Date Source.png
+  index: 1
+  name: Date Source
+  worksheets:
+  - description: This plot visualizes the wind direction degrees using a polygon chart.
+      The data type for wind direction is real, providing a continuous representation
+      of the values.
+    position: center
+    question: What is the direction of the wind in degrees as represented by the wind
+      direction degree variable?
+    title: Data Source - Table
+    type: other
+- count: 3
+  description: The 'Precipitation' dashboard provides a comprehensive overview of
+    precipitation data, enabling users to analyze daily and monthly precipitation
+    trends, as well as the distribution of precipitation values over time. It facilitates
+    detailed data exploration through interactive graphs and tables, allowing users
+    to identify maximum precipitation and humidity levels, and understand precipitation
+    distribution.
+  filters: []
+  image_path: input/img/Weather_History/Precipitation.png
+  index: 2
+  name: Precipitation
+  worksheets:
+  - description: This visualization displays the Date on the x-axis and humidity on
+      the y-axis. The fill axis variable is precipMM, representing the precipitation
+      in millimeters.
+    position: bottom left
+    question: What is the maximum precipitation (mm) and humidity (%) per day?
+    title: Precipitation - Precip Day
+    type: vertical bar
+  - description: This visualization displays the precipitation data over time. The
+      x-axis represents the Date & Time, while the y-axis also represents the Date
+      & Time. The fill axis variable is used to color the cells based on the precipitation
+      values (precipMM).
+    position: top
+    question: What is the maximum precipitation per month in the given dataset?
+    title: Precipitation - Precip Month
+    type: table
+  - description: This visualization shows the distribution of precipitation in millimeters
+      (binned) against the number of records. Each cell is colored based on the precipitation
+      value.
+    position: bottom right
+    question: What is the distribution of precipitation over time?
+    title: Precipitation - Repartition
+    type: table
+- count: 3
+  description: The 'Temperature' dashboard provides a comprehensive overview of temperature
+    data, allowing users to explore daily, monthly, and distribution trends across
+    various towns. Users can filter data by date and location, and interact with different
+    visualizations to gain detailed insights.
+  filters: []
+  image_path: input/img/Weather_History/Temperature.png
+  index: 3
+  name: Temperature
+  worksheets:
+  - description: This visualization shows the date on the x-axis and multiple values
+      on the y-axis. The data is represented in a table format.
+    position: bottom left
+    question: "What is the temperature per day (\xB0C) in the given town?"
+    title: Temperature - Precip Day
+    type: table
+  - description: This plot visualizes Date & Time against Date & Time with temperature
+      (tempC) used for the fill axis. The data is displayed in a square chart type.
+    position: top
+    question: "What is the average temperature per month (\xB0C) in various towns?"
+    title: Temperature - Precip Month
+    type: other
+  - description: This vertical bar chart displays the distribution of temperature
+      (tempC) with the number of records as the y-axis. The color and value of each
+      cell are filled based on tempC.
+    position: bottom right
+    question: What is the temperature distribution over time in different towns?
+    title: Temperature - Repartition
+    type: vertical bar
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Weather_History
+  domains_names: Exploration
+  general_description: The 'Weather_History' report provides a detailed overview of
+    weather data including wind direction, precipitation, and temperature. The report
+    includes interactive visualizations and tables that allow users to explore data
+    trends and distributions over time.
+  goals:
+  - Provide comprehensive visualization of wind direction degrees using a polygon
+    chart.
+  - Analyze daily and monthly precipitation trends, and distribution of precipitation
+    values over time.
+  - Explore daily, monthly, and distribution trends of temperature data across various
+    towns.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable measures the dew point temperature in Celsius. It is
+    used to indicate the temperature at which air becomes saturated with moisture.
+  generic_name: DewPointC
+- description: Dew point in Fahrenheit, used in weather history data. It is recorded
+    as operational data.
+  generic_name: DewPointF
+- description: This variable represents the perceived temperature, considering factors
+    like humidity and wind. It is recorded as operational data.
+  generic_name: FeelsLikeC
+- description: FeelsLikeF is the perceived temperature, taking into account wind chill
+    and humidity. It is recorded as operational data.
+  generic_name: FeelsLikeF
+- description: HeatIndexC represents the perceived temperature due to humidity. It
+    is recorded continuously as operational data.
+  generic_name: HeatIndexC
+- description: HeatIndexF measures the perceived temperature accounting for humidity.
+    It is continuously recorded as operational data.
+  generic_name: HeatIndexF
+- description: Town is a context data variable used in weather-related dashboards.
+    It represents the name of the town where the weather data is recorded.
+  generic_name: Town
+- description: WindChillC represents the perceived decrease in air temperature felt
+    by the body due to wind. It is used in weather history data to provide context
+    on the impact of wind on temperature readings.
+  generic_name: WindChillC
+- description: WindChillF is a measure of how cold it feels when wind is factored
+    in with the actual air temperature. It is recorded continuously as operational
+    data.
+  generic_name: WindChillF
+- description: WindGustKmph represents the maximum wind speed recorded in kilometers
+    per hour. It is used in the Weather_History dashboard to analyze historical weather
+    data.
+  generic_name: WindGustKmph
+- description: Wind gusts are recorded as part of the operational data for weather
+    history. They measure the maximum wind speed in miles per hour.
+  generic_name: WindGustMiles
+- description: Cloud cover data is recorded continuously as operational data. It is
+    used to understand weather conditions affecting train operations.
+  generic_name: cloudcover
+- description: This variable represents the date on which an event or data point was
+    recorded. It is used across multiple dashboards for tracking and analysis purposes.
+  generic_name: date
+- description: Humidity is the measure of water vapor in the air, expressed as a percentage.
+    It is crucial for monitoring weather conditions impacting train operations.
+  generic_name: humidity
+- description: Maximum temperature recorded in Celsius. Used in weather history plots.
+  generic_name: maxtempC
+- description: This variable represents the minimum temperature in Celsius. It is
+    recorded as operational data in weather history dashboards.
+  generic_name: mintempC
+- description: This variable measures the amount of precipitation in millimeters.
+    It is recorded continuously as operational data.
+  generic_name: precipMM
+- description: Pressure data is recorded as operational data. It is used to monitor
+    train performance and safety.
+  generic_name: pressure
+- description: The variable measures temperature in Celsius. It is used in multiple
+    dashboards to analyze weather patterns.
+  generic_name: tempC
+- description: The variable represents the temperature in Fahrenheit. It is used in
+    weather history data.
+  generic_name: tempF
+- description: This variable represents the time recorded for each event or operation.
+    It is used in various dashboards to track and analyze temporal data.
+  generic_name: time
+- description: The UV index measures the intensity of ultraviolet radiation. It is
+    used in weather history dashboards.
+  generic_name: uvIndex
+- description: This variable describes the weather conditions at a given time. It
+    is used in various weather-related dashboards.
+  generic_name: weatherDesc
+- description: The wind direction is recorded as a 16-point compass direction. It
+    is used to describe the direction from which the wind is blowing.
+  generic_name: winddir16Point
+- description: The wind direction is measured in degrees. It is used to track weather
+    conditions in operational data.
+  generic_name: winddirDegree
+- description: Wind speed is measured in kilometers per hour. It is recorded as operational
+    data in the system.
+  generic_name: windspeedKmph
+variables_used_top_10:
+- Date & Time
+- Date
+- tempC
+- date
+- precipMM
+- time
+- Town
+- Number of Records
+- humidity
+- winddirDegree
+

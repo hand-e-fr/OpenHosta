@@ -1,0 +1,156 @@
+dashboards:
+- count: 3
+  description: The 'Peformance Misc.' dashboard provides a comprehensive analysis
+    of performance data across various projects and versions. It allows users to filter
+    data by project and version, explore detailed performance metrics, and interact
+    with multiple tables to understand the impact of different versions on various
+    performance metrics.
+  filters: []
+  image_path: input/img/HDF_perf/Peformance Misc..png
+  index: 1
+  name: Peformance Misc.
+  worksheets:
+  - description: This table visualizes the performance data categorized by project
+      (prj) and version. The x-axis represents the time taken to copy a 21Mb file
+      locally, while the fill axis uses the version to color each cell.
+    position: top right
+    question: What is the average time to copy a 21Mb file locally?
+    title: Performance Data Analysis
+    type: table
+  - description: This table visualizes the performance data by project, with each
+      cell color-coded based on the version (V1, V2, V3). The x-axis represents the
+      time to create a data table with 10 million rows, while the y-axis categorizes
+      the projects.
+    position: top left
+    question: What is the version of the data based on the HDF_url and how is the
+      data table with 10 million lines created?
+    title: Performance Analysis
+    type: table
+  - description: This table displays the project versions categorized by 'prj' and
+      colored based on the version derived from the HDF_url.
+    position: bottom right
+    question: What is the version of the HDF file and how does it affect the reading
+      of the RDATA file locally?
+    title: Performance Analysis
+    type: table
+  - description: This table visualizes the performance data by project (prj) and version,
+      where the version is determined based on the HDF_url. The x-axis represents
+      the 'Save RDATA file locally 21Mb(s)' metric.
+    position: bottom left
+    question: What is the version of the HDF_url and how does it relate to saving
+      the RDATA file locally?
+    title: Performance Analysis
+    type: table
+  - description: This table visualizes the 'Source AlstomReport Lib 2500 lines' against
+      'prj' categorized by 'version'.
+    position: center
+    question: What are the different versions of the HDF_url and their distribution
+      in the Source AlstomReport Lib 2500 lines?
+    title: Performance Report
+    type: table
+- count: 3
+  description: The 'Performance GIT' dashboard provides a comprehensive overview of
+    Git pull activities categorized by project version. It allows for detailed data
+    exploration through a color-coded tabular format, enabling users to quickly identify
+    trends and patterns.
+  filters: []
+  image_path: input/img/HDF_perf/Performance GIT.png
+  index: 2
+  name: Performance GIT
+  worksheets:
+  - description: This plot visualizes the number of Git pulls categorized by project
+      version. The data is represented in a tabular format, with each cell color-coded
+      based on the version.
+    position: center
+    question: What is the average number of Git pulls?
+    title: Git pull(s) vs prj
+    type: table
+- count: 3
+  description: The 'Performance Minio' dashboard provides an in-depth analysis of
+    the performance data by project versions, specifically focusing on the time taken
+    to copy a 21MB file to MinIO. It allows users to explore detailed performance
+    metrics categorized by HDF URL versions and compare them interactively through
+    tables.
+  filters: []
+  image_path: input/img/HDF_perf/Performance Minio.png
+  index: 3
+  name: Performance Minio
+  worksheets:
+  - description: This table visualizes the performance data by project, with versions
+      indicated by color.
+    position: left
+    question: How does the version of HDF_url affect the performance of copying a
+      21Mb file from minio?
+    title: Performance Analysis
+    type: table
+  - description: This table shows the performance of different project versions based
+      on the time taken to copy a 21Mb file to Minio. The versions are categorized
+      into V1, V2, and V3 based on the HDF URL.
+    position: right
+    question: What is the average time taken to copy a 21MB file to MinIO?
+    title: Performance Analysis
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: HDF_perf
+  domains_names: Statistics
+  general_description: This report offers a detailed overview of performance data,
+    focusing on metrics such as the time taken to copy files and the number of Git
+    pulls. It includes various tables and visualizations categorized by project and
+    version, allowing for in-depth data exploration and trend identification.
+  goals:
+  - Provide a comprehensive analysis of performance data across various projects and
+    versions.
+  - Enable users to filter data by project and version.
+  - Facilitate interaction with multiple tables to understand the impact of different
+    versions on various performance metrics.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable measures the time taken to copy a 21MB file from Minio
+    storage. It is used to evaluate performance in various dashboards.
+  generic_name: Copy file from minio 21Mb(s)
+- description: This variable tracks the time taken to copy a 21MB file locally. It
+    is recorded as operational data.
+  generic_name: Copy file locally 21Mb(s)
+- description: This variable tracks the performance of copying files to a Minio server.
+    It is recorded as operational data.
+  generic_name: Copy file to minio 21Mb(s)
+- description: This variable is used to create a large data table with 10 million
+    rows. It is recorded as operational data.
+  generic_name: Create data Table 10millions lignes(s)
+- description: This variable measures the number of Git pull operations. It is recorded
+    as operational data.
+  generic_name: Git pull(s)
+- description: This variable is used to identify different versions of the HDF. It
+    is critical for distinguishing between versions in performance tests.
+  generic_name: HDF_url
+- description: This variable measures the time to read a local RDATA file of 21Mb.
+    It is used in performance analysis dashboards.
+  generic_name: Read RDATA file localy 21Mb(s)
+- description: This variable tracks the performance of saving a specific file size
+    locally. It is used in various performance dashboards to measure efficiency.
+  generic_name: Save RDATA file localy 21Mb(s)
+- description: This variable is used to track the performance of file operations in
+    the Alstom dashboards. It provides insights into the efficiency of data handling
+    processes.
+  generic_name: Source AlstomReport Lib 2500 lines
+- description: The variable 'prj' is used to identify specific projects within the
+    train data. It is a string type and is used in various performance and statistical
+    dashboards.
+  generic_name: prj
+variables_used_top_10:
+- prj
+- version
+- HDF_url
+- Copy file to minio 21Mb(s)
+- Git pull(s)
+- Create data Table 10millions lignes(s)
+- Copy file locally 21Mb(s)
+- Copy file from minio 21Mb(s)
+- Source AlstomReport Lib 2500 lines
+- Read RDATA file localy 21Mb(s)
+

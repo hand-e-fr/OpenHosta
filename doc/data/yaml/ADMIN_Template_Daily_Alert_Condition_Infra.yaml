@@ -1,0 +1,114 @@
+dashboards:
+- count: 2
+  description: The 'Alert Infra Train' dashboard provides a comprehensive overview
+    of train alert conditions by visualizing their geographical distribution and detailed
+    alert counts. Users can filter data based on latitude and longitude, explore detailed
+    alert conditions, and interact with graphs to identify top assets with alerts
+    over the past 60 days.
+  filters: []
+  image_path: input/img/Daily_Alert_Condition_Infra/Alert Infra Train.png
+  index: 1
+  name: Alert Infra Train
+  worksheets:
+  - description: This plot visualizes the relationship between Longitude and Latitude,
+      with color indicating different alert conditions. The size of the markers represents
+      the number of trains.
+    position: right
+    question: What are the latitude and longitude values based on the given conditions?
+    title: Longitude vs Latitude with Alert Conditions
+    type: gps map with circles
+  - description: This visualization displays the number of trains (nb_train) with
+      conditions (ALERT_CONDITION) based on the specified calculation for the x-axis
+      variable. The x-axis variable is determined by a formula that checks the 'latitude'
+      parameter.
+    position: left
+    question: What are the top assets in terms of number of alerts based on latitude
+      or longitude over the past 60 days?
+    title: Alert Infra Train - 2
+    type: table
+- count: 2
+  description: The 'Alert Intra Event' dashboard provides a comprehensive overview
+    of geographical locations and the number of events under alert conditions, enabling
+    detailed exploration and categorization of events based on latitude or longitude
+    over the past 60 days.
+  filters: []
+  image_path: input/img/Daily_Alert_Condition_Infra/Alert Intra Event.png
+  index: 2
+  name: Alert Intra Event
+  worksheets:
+  - description: 'Description of a worksheet in a report.
+
+      A worksheet contains charts (plots) and addresses a specific question.'
+    position: right
+    question: What are the geographical locations (latitude and longitude) of the
+      events and how many events (nb_evt) occurred under the alert condition?
+    title: Alert Infra Event - 1
+    type: gps map with circles
+  - description: This visualization shows the number of events (nb_evt) categorized
+      by ALERT_CONDITION. The x-axis represents Variable, which is calculated based
+      on the selected parameter (latitude).
+    position: left
+    question: What is the top number of events for Alert Infra based on latitude or
+      longitude over the past 60 days?
+    title: Alert Infra Event - 2
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Daily_Alert_Condition_Infra
+  domains_names: Statistics, Exploration
+  general_description: The 'Daily_Alert_Condition_Infra' report provides a comprehensive
+    overview of train alert conditions by visualizing their geographical distribution
+    and detailed alert counts. Users can filter data based on latitude and longitude,
+    explore detailed alert conditions, and interact with graphs to identify top assets
+    with alerts over the past 60 days.
+  goals:
+  - Provide a comprehensive overview of train alert conditions.
+  - Visualize geographical distribution and detailed alert counts.
+  - Enable users to filter data based on latitude and longitude.
+  - Allow exploration of detailed alert conditions.
+  - Identify top assets with alerts over the past 60 days.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: Indicates the condition that triggers an alert in the system. Used
+    in various dashboards to monitor and plot alert-related events.
+  generic_name: ALERT_CONDITION
+- description: This variable provides a description of alerts. It is used in various
+    dashboards to display alert details.
+  generic_name: ALERT_DESCRIPTION
+- description: The map shows the geographical location of events on the train. It
+    helps in visualizing where specific alerts or conditions occur.
+  generic_name: Map
+- description: This variable records the date and time of events. It is used across
+    multiple dashboards to timestamp various operational data.
+  generic_name: Timestamp
+- description: This variable records the timestamp when an event is closed. It is
+    used for tracking the closure times of various alerts.
+  generic_name: closedTs
+- description: Latitude represents the geographical location of a train. It is recorded
+    as operational data.
+  generic_name: latitude
+- description: This variable represents the geographical longitude of a train. It
+    is recorded continuously as operational data.
+  generic_name: longitude
+- description: Number of events recorded for a specific condition in the train's operational
+    data.
+  generic_name: nb_evt
+- description: This variable represents the number of trains. It is used to monitor
+    train operations in the dashboard.
+  generic_name: nb_train
+variables_used_top_10:
+- ALERT_CONDITION
+- Variable
+- Longitude
+- Latitude
+- t1
+- History days
+- Round
+- nb_evt
+- closedTs
+- longitude
+

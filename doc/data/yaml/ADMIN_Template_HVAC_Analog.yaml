@@ -1,0 +1,159 @@
+dashboards:
+- count: 2
+  description: The 'DashBoard' provides an interactive and comprehensive view of vehicle
+    motion and speed data, allowing users to explore the relationship between different
+    variables over time and across categories. It includes various plots such as line
+    charts, area plots, and tables that enable detailed data exploration and interactive
+    analysis.
+  filters:
+  - description: Filtering by speed, determining if the speed is greater than 5 to
+      indicate motion.
+    name: In Motion
+  - description: Filtering applicable to workbooks based on relative dates in the
+      datetime format.
+    name: timestamp
+  - description: Filtering applicable to workbooks.
+    name: Variable
+  - description: Filtering by timestamp, a datetime field.
+    name: timestamp
+  - description: Filtering applicable to workbooks based on the real datatype and
+      the context of temperature measurements.
+    name: Temperature
+  - description: Filtering by day for datetime values.
+    name: timestamp
+  image_path: input/img/HVAC_Analog/DashBoard.png
+  index: 1
+  name: DashBoard
+  worksheets:
+  - description: This visualization displays the Gap (calculated using [Ecart]) on
+      the x-axis and Units on the y-axis. The size of the elements is determined by
+      the Gap value. Given that the y-axis variable is categorical, this plot is most
+      likely a table with color and value for each cell.
+    position: bottom left
+    question: What is the gap from the median in the context of vehicle motion and
+      speed?
+    title: FleetView Plot
+    type: table
+  - description: This line plot visualizes the 'value' over time using the 'timestamp'
+      as the x-axis. The 'Variable' is used for color coding each data point.
+    position: top right
+    question: What is the relationship between timestamp and value in the context
+      of speed and motion?
+    title: TimeView Line Plot
+    type: line
+  - description: This area plot visualizes the relationship between Delta (x-axis)
+      and Delta (y-axis) with Variable used for color coding.
+    position: bottom right
+    question: What is the distribution of Delta values and how do they vary with different
+      Variables?
+    title: Area Plot of Delta vs Delta
+    type: area
+  - description: This line chart displays the speed measured over time. The x-axis
+      represents the timestamp, while the y-axis represents the speed in real numbers.
+    position: top
+    question: What is the average speed in km/h when the speed is greater than 5?
+    title: Speed Over Time
+    type: line
+  - description: This plot visualizes the data using the variable 'Name' from the
+      dataset. The variable 'Name' is a string, and it is used as the text axis in
+      the visualization.
+    position: top left
+    question: What is the relationship between Name and other variables in the dataset?
+    title: Name
+    type: table
+- count: 2
+  description: The 'Heatmap' dashboard is designed to analyze and visualize 'Unit'
+    values over time. It includes a table to sum 'Over hysteresis' values and a heatmap
+    to explore relationships between calculated values and units, facilitating detailed
+    data exploration and interaction between visualizations.
+  filters: []
+  image_path: input/img/HVAC_Analog/Heatmap.png
+  index: 2
+  name: Heatmap
+  worksheets:
+  - description: This table displays the 'Unit' values over different timestamps,
+      with cells colored based on the 'Over hysteresis' calculation.
+    position: top
+    question: What is the sum of 'Over hysteresis' values based on the 'Unit' and
+      'timestamp'?
+    title: Unit over Time
+    type: table
+  - description: This heatmap visualizes the data where the y-axis represents the
+      Calculation_589127144345911297 and the text axis shows unit. The color and value
+      of each cell correspond to the data calculations.
+    position: bottom
+    question: What is the relationship between the calculated values and the unit
+      over time?
+    title: Heatmap Visualization
+    type: heatmap
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: HVAC_Analog
+  domains_names: Exploration,Operational Data
+  general_description: This report provides a comprehensive overview of vehicle motion
+    and speed data, including interactive visualizations such as line charts, area
+    plots, and tables. It also includes a heatmap for analyzing 'Unit' values over
+    time, facilitating detailed data exploration and interaction between visualizations.
+  goals:
+  - Provide an interactive and comprehensive view of vehicle motion and speed data.
+  - Enable detailed data exploration and interactive analysis.
+  - Analyze and visualize 'Unit' values over time.
+  - Explore relationships between calculated values and units.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: Delta represents the difference from a reference value. It is used
+    to analyze variations in train performance.
+  generic_name: Delta
+- description: DeltaRef is used to record operational data related to train performance.
+    It is visualized in histograms to analyze deviations from the median.
+  generic_name: DeltaRef
+- description: Ecart measures the deviation from the median value in train operations.
+    It is used to monitor and analyze gaps in performance metrics.
+  generic_name: Ecart
+- description: This variable represents the name of a specific part of a train. It
+    is used in multiple dashboards to filter and plot data.
+  generic_name: Name
+- description: This variable represents the order in which events are recorded. It
+    is used in various plots and dashboards to sequence data points.
+  generic_name: Ordering
+- description: Range measures the span of values, often related to train speed or
+    distance. It is used in various dashboards to track and analyze performance metrics.
+  generic_name: Range
+- description: Speed is recorded continuously as operational data. It measures how
+    fast the train is moving.
+  generic_name: Speed
+- description: This variable identifies parts of a train. It is used in various dashboards
+    to track and analyze operational data.
+  generic_name: Unit
+- description: This variable is used in various dashboards to provide context for
+    events. It is recorded as operational data.
+  generic_name: Variable
+- description: This variable represents the median value recorded for operational
+    data. It is used in various dashboards to analyze the gap from the median and
+    other related metrics.
+  generic_name: median_value
+- description: This variable records the date and time of events. It is used in multiple
+    dashboards for tracking and analysis.
+  generic_name: timestamp
+- description: The unit is an identifier for a part of a train. It is used in various
+    dashboards to track operational data.
+  generic_name: unit
+- description: This variable is recorded as operational data. It is used in various
+    dashboards to track train performance metrics.
+  generic_name: value
+variables_used_top_10:
+- timestamp
+- Variable
+- Speed
+- Unit
+- In Motion
+- value
+- Delta
+- Gap
+- Over hysteresis
+- Name
+

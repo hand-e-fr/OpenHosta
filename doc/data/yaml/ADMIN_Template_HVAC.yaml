@@ -1,0 +1,106 @@
+dashboards:
+- count: 1
+  description: The 'DashBoard' dashboard provides a comprehensive overview of vehicle
+    performance and trends over time. It includes tables and plots that allow for
+    detailed data exploration and interaction between graphs to identify gaps, trends,
+    and distributions in the data.
+  filters:
+  - description: Filtering events where speed is above 0, indicating the object is
+      in motion.
+    name: SpeedAbove0
+  - description: Filtering applicable to workbooks.
+    name: timestamp
+  - description: Filtering applicable to workbooks.
+    name: timestamp
+  - description: Filtering applicable to workbooks.
+    name: Temperature
+  image_path: input/img/HVAC/DashBoard.png
+  index: 1
+  name: DashBoard
+  worksheets:
+  - description: This plot displays the gap ('Gap') on the x-axis and the unit ('Unit')
+      on the y-axis. Since 'Unit' is a string, this plot is most likely a table. Each
+      cell's color and value are determined by the 'Gap' variable.
+    position: bottom right
+    question: What is the gap from the median speed for vehicles in motion?
+    title: FleetView Plot
+    type: table
+  - description: This line plot displays the relationship between timestamp and value.
+      The fill axis variable temp is used for additional context.
+    position: top
+    question: What trends or patterns can be observed over time using the variables
+      such as timestamp, value, and temperature in a line chart?
+    title: TimeView Plot
+    type: line
+  - description: This area plot visualizes the relationship between Delta and Delta,
+      with the fill variable 'temp' used to color the values of each cell.
+    position: bottom
+    question: "What is the distribution of the median temperature per car (\xB0C)\
+      \ visualized using a centered histogram?"
+    title: Delta vs Delta Area Plot
+    type: area
+  - description: This line chart displays the speed over time, where the x-axis represents
+      timestamps and the y-axis represents speed values.
+    position: top left
+    question: What is the average speed (km/h) over time based on the given data?
+    title: Speed over Time
+    type: line
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: HVAC
+  domains_names: Exploration,Operational Data
+  general_description: The 'DashBoard' dashboard provides a comprehensive overview
+    of vehicle performance and trends over time. It includes tables and plots that
+    allow for detailed data exploration and interaction between graphs to identify
+    gaps, trends, and distributions in the data.
+  goals:
+  - Provide a comprehensive overview of vehicle performance and trends over time.
+  - Enable detailed data exploration and interaction between graphs to identify gaps,
+    trends, and distributions in the data.
+  - Visualize the relationship between different variables such as speed, timestamp,
+    and temperature.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: Delta represents the difference from the median temperature per car.
+    It is used in various dashboards to track temperature variations.
+  generic_name: Delta
+- description: This variable represents the deviation from the median value. It is
+    used in several dashboards to analyze train performance.
+  generic_name: Ecart
+- description: Speed is the rate at which a train travels. It is continuously recorded
+    as operational data.
+  generic_name: Speed
+- description: This variable indicates if the train's speed is above zero. It is used
+    in various dashboards to filter and plot data related to train movement.
+  generic_name: SpeedAbove0
+- description: The median value is used to calculate gaps and monitor temperature.
+    It is recorded as operational data.
+  generic_name: median_value
+- description: Temperature data is used to monitor HVAC performance. It is recorded
+    continuously in various dashboards.
+  generic_name: temp
+- description: This variable represents the time at which data is recorded. It is
+    used extensively across various dashboards to track events and operational data.
+  generic_name: timestamp
+- description: This variable is recorded continuously as operational data. It represents
+    a real-time measurement relevant to train operations.
+  generic_name: value
+- description: This variable represents the vehicle identifier. It is used across
+    various dashboards to track train performance.
+  generic_name: veh
+variables_used_top_10:
+- timestamp
+- value
+- Gap
+- SpeedAbove0
+- Unit
+- temp
+- Ecart
+- veh
+- Delta
+- Speed
+

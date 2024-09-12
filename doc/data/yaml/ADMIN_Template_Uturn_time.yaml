@@ -1,0 +1,106 @@
+dashboards:
+- count: 2
+  description: The dashboard 'Note' provides a comprehensive overview of the data
+    with detailed exploration capabilities. It allows for interactive filtering and
+    analysis through various graphs and charts, enabling users to gain insights and
+    make data-driven decisions.
+  filters: []
+  image_path: input/img/Uturn_time/Note.png
+  index: 1
+  name: Note
+  worksheets: []
+- count: 2
+  description: The 'Uturn' dashboard provides a comprehensive analysis of delay distributions
+    and their relationship with various factors such as AOI and Train Mission. It
+    allows for detailed data exploration through interactive visualizations, facilitating
+    insights into median delays and distribution patterns.
+  filters:
+  - description: Filtering all or part of the project's 'AOI' (Area Of Interest)
+    name: AOI
+  image_path: input/img/Uturn_time/Uturn.png
+  index: 2
+  name: Uturn
+  worksheets:
+  - description: This plot visualizes the delay distribution (binned) against the
+      delay values, with AOI used for coloring each cell. The x-axis represents the
+      delay in bins, while the y-axis shows the actual delay values.
+    position: bottom left
+    question: What is the distribution of U-turn times at the station?
+    title: Uturn-diff Visualization
+    type: table
+  - description: This plot visualizes the relationship between arriving times, with
+      delays represented by color intensity.
+    position: top right
+    question: What is the median delay based on the Uturn threshold limit?
+    title: Arriving vs Arriving
+    type: table
+  - description: This visualization shows the distribution of Train Mission values
+      across different Delay intervals. Each cell in the table is colored based on
+      the Train Mission value.
+    position: bottom right
+    question: What is the median delay for missions given the Uturn threshold limit?
+    title: Uturn-diff all Mission
+    type: table
+  - description: This visualization displays the relationship between AOI and Delay
+      using a circle plot. AOI is represented on the x-axis, and Delay is represented
+      on the y-axis. The fill color is based on the AOI values.
+    position: top left
+    question: What is the distribution of Uturn times represented in a whisker plot
+      for different Areas of Interest (AOI)?
+    title: AOI vs Delay Circle Plot
+    type: circle
+  - description: This table visualizes the Train Mission categorized by the Delay
+      values. Each cell is color-coded based on the Delay.
+    position: bottom
+    question: What is the relationship between Train Mission and Delay at the station?
+    title: Train Mission Analysis
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Uturn_time
+  domains_names: Exploration
+  general_description: The report provides a comprehensive overview of delay distributions
+    and their relationship with various factors such as AOI and Train Mission. It
+    allows for detailed data exploration through interactive visualizations, facilitating
+    insights into median delays and distribution patterns.
+  goals:
+  - Provide a comprehensive overview of delay distributions and their relationship
+    with various factors.
+  - Enable detailed data exploration through interactive visualizations.
+  - Facilitate insights into median delays and distribution patterns.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: The Area Of Interest (AOI) indicates specific sections of the train.
+    It is used in various analyses to determine operational metrics.
+  generic_name: AOI
+- description: This variable records the time a train arrives at a station. It is
+    used to calculate Uturn times and delays.
+  generic_name: Arriving
+- description: Delay represents the time difference between scheduled and actual events.
+    It is a key operational metric for train performance.
+  generic_name: Delay
+- description: This variable records the time when a train leaves a station. It is
+    used to calculate U-turn time.
+  generic_name: Leaving
+- description: This variable records the mission that the train completed previously.
+    It is used in various plots to analyze U-turn times and delays.
+  generic_name: Previous_Mission
+- description: This variable represents a specific part of the train. It is used across
+    multiple operational and event dashboards.
+  generic_name: Unit
+variables_used_top_10:
+- Delay
+- AOI
+- Train Mission
+- Arriving
+- Date
+- Previous_Mission
+- One
+- Uturn threshold limit
+- Over Limit
+- Delay (bin)
+

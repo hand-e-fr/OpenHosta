@@ -1,0 +1,98 @@
+dashboards:
+- count: 2
+  description: The 'Fleet Health' dashboard provides a comprehensive overview of the
+    availability status of different functions and units within the fleet. It allows
+    users to explore detailed relationships between functions and availability, as
+    well as unit-specific availability data, through interactive and color-coded tables.
+  filters: []
+  image_path: input/img/Daily_Health_Card/Fleet Health.png
+  index: 1
+  name: Fleet Health
+  worksheets:
+  - description: This table displays the availability of different functions across
+      various units. Each cell is color-coded based on the availability values.
+    position: top
+    question: What is the availability status of the fleet based on various functions
+      and units?
+    title: Availability by Function and Unit
+    type: table
+  - description: This plot visualizes the Function data against Availibility. The
+      x-axis represents the Availibility (real values) and the y-axis represents the
+      Function (categorical data). Each cell is colored and valued based on the Availibility
+      data.
+    position: bottom right
+    question: What is the relationship between Function and Availibility as depicted
+      in the chart?
+    title: Function Analysis
+    type: table
+  - description: This visualization displays the availability of units. The x-axis
+      represents the availability in real numbers, while the y-axis categorizes the
+      units. Each cell in the table is colored and valued based on the availability
+      data.
+    position: bottom left
+    question: What is the relationship between Unit and Availibility in the context
+      of the given data?
+    title: Unit Availability Analysis
+    type: table
+- count: 2
+  description: The 'Trend' dashboard primarily aims to visualize the availability
+    trend over time. It includes an area plot that filters data by date and availability
+    percentage, allowing for detailed exploration of how availability changes over
+    time.
+  filters: []
+  image_path: input/img/Daily_Health_Card/Trend.png
+  index: 2
+  name: Trend
+  worksheets:
+  - description: This area plot shows the availability data over a period of time.
+      The x-axis represents the dates, while the y-axis indicates the availability
+      percentage.
+    position: center
+    question: What is the availability trend over time?
+    title: Availability Over Time
+    type: area
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Daily_Health_Card
+  domains_names: Operational Data
+  general_description: The 'Daily Health Card' report offers an in-depth look at the
+    availability status and trends of various functions and units within the fleet.
+    It includes detailed visualizations such as tables and area plots that allow for
+    interactive exploration of the data, highlighting key relationships and trends
+    over time.
+  goals:
+  - Provide a comprehensive overview of the availability status of different functions
+    and units within the fleet.
+  - Visualize the availability trend over time.
+  - Allow users to explore detailed relationships between functions and availability.
+  - Present unit-specific availability data through interactive and color-coded tables.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: Availability measures the operational uptime of train units. It is
+    recorded as continuous operational data.
+  generic_name: Availibility
+- description: This variable records the date and time of an event. It is used across
+    multiple dashboards for temporal analysis.
+  generic_name: Date
+- description: This variable represents a specific function or operation within the
+    train system. It is used across various dashboards to track and analyze train
+    functionalities.
+  generic_name: Function
+- description: This variable records the date when the status was last updated. It
+    is used in fleet health dashboards to track availability over time.
+  generic_name: Status Date
+- description: This variable identifies parts of a train. It is used in various contexts
+    such as availability and function analysis.
+  generic_name: Unit
+variables_used_top_10:
+- Availibility
+- Function
+- Unit
+- one
+- Date
+- Status Date
+

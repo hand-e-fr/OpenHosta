@@ -1,0 +1,88 @@
+dashboards:
+- count: 1
+  description: The 'Location' dashboard provides an overview of data distribution
+    per unit, spatial patterns on a map, daily trends, and detailed data distribution.
+    It allows for comprehensive data exploration through interactive tables and heatmaps,
+    enabling users to identify trends and patterns effectively.
+  filters: []
+  image_path: input/img/Opdat_HeatMap/Location.png
+  index: 1
+  name: Location
+  worksheets:
+  - description: This visualization shows data (Extract.data)_5E2A4E7065DE4CF89DED893D1476C0B5
+      on the x-axis and Unit on the y-axis. Each cell is filled with variable values.
+    position: top left
+    question: What is the distribution per unit?
+    title: Location-Unit
+    type: table
+  - description: This heatmap visualization displays the longitude (lon) and latitude
+      (lat) data points on a map. The colors represent the density or intensity of
+      the data points.
+    position: top right
+    question: What patterns can be observed in the spatial distribution of the data
+      points based on latitude and longitude in the heatmap?
+    title: Location-map
+    type: heatmap
+  - description: This visualization shows the trend of data (Extract.data)_5E2A4E7065DE4CF89DED893D1476C0B5
+      over time, using the variable for color and value of each cell.
+    position: bottom right
+    question: What are the daily trends shown in the bar chart based on the variable
+      data?
+    title: Location-Trend
+    type: table
+  - description: This table displays the value categorized by variable, providing
+      a detailed view of the data distribution.
+    position: bottom left
+    question: What is the distribution of data per environment?
+    title: Location-details
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Opdat_HeatMap
+  domains_names: Exploration,Operational Data
+  general_description: The 'Location' dashboard provides an overview of data distribution
+    per unit, spatial patterns on a map, daily trends, and detailed data distribution.
+    It allows for comprehensive data exploration through interactive tables and heatmaps,
+    enabling users to identify trends and patterns effectively.
+  goals:
+  - Provide an overview of data distribution per unit.
+  - Identify spatial patterns on a map.
+  - Analyze daily trends.
+  - Enable comprehensive data exploration through interactive tables and heatmaps.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: The variable indicates the type of data being recorded, which can be
+    either duration in hours or occurrence. It is used in various KPIs and operational
+    data plots.
+  generic_name: Type
+- description: This variable identifies parts of a train. It is used across various
+    dashboards for both context and operational data.
+  generic_name: Unit
+- description: Latitude is used to map the location of train units. It is recorded
+    as operational data.
+  generic_name: lat
+- description: Longitude is recorded continuously as operational data and is used
+    in location heatmaps.
+  generic_name: lon
+- description: Timestamp is recorded as context data for events and operational data.
+    It is used to track when events occur and to monitor train operations.
+  generic_name: timestamp
+- description: This variable is continuously recorded operational data. It is used
+    in multiple dashboards for analysis.
+  generic_name: value
+- description: This variable is recorded as context data for events and is used in
+    multiple dashboards. It helps in analyzing train performance and operational conditions.
+  generic_name: variable
+variables_used_top_10:
+- variable
+- Unit
+- timestamp
+- Type
+- lat
+- lon
+- value
+

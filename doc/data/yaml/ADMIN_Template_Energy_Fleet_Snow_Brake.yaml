@@ -1,0 +1,129 @@
+dashboards:
+- count: 2
+  description: The Load dashboard provides insights into energy consumption (Energy
+    PCE) and load distribution, allowing for detailed exploration of how these variables
+    interact with snow brake activation and load binning.
+  filters: []
+  image_path: input/img/Energy_Fleet_Snow_Brake/Load.png
+  index: 1
+  name: Load
+  worksheets:
+  - description: This plot visualizes the relationship between Energy PCE and Load,
+      with the fill color representing SnowBrakeActivated. The data is plotted in
+      a circular format, providing a clear view of the distribution and correlation
+      between these variables.
+    position: bottom
+    question: How does the energy consumption (Energy PCE) vary with the load and
+      snow brake activation?
+    title: Energy PCE vs Load with SnowBrakeActivated
+    type: circle
+  - description: This plot visualizes the relationship between Load (bin) and Load.
+      Load (bin) is binned from the Load variable.
+    position: top
+    question: What is the distribution of load based on the given variables and conditions?
+    title: Load (bin) vs Load
+    type: vertical bar
+- count: 2
+  description: The 'Snow Brake' dashboard provides a comprehensive analysis of energy
+    consumption and Snow Brake activation over time. It allows for detailed data exploration
+    through various visualizations, including circle plots, bar charts, and tables,
+    enabling users to understand the relationship between energy usage and Snow Brake
+    activation, and to identify patterns and trends.
+  filters: []
+  image_path: input/img/Energy_Fleet_Snow_Brake/Snow Brake.png
+  index: 2
+  name: Snow Brake
+  worksheets:
+  - description: This plot visualizes the energy consumption (Energy PCE) over time,
+      with each point representing the energy consumed at a specific timestamp. The
+      color of each point indicates whether the Snow Brake was activated.
+    position: bottom
+    question: How does the energy consumption of PCE1 and PCE2 vary over time, and
+      what is the state of the Snow Brake activation?
+    title: Energy PCE over Time
+    type: circle
+  - description: This plot visualizes the SnowBrakeActivated data using a bar chart.
+      The x-axis represents qk, and the y-axis shows the SnowBrakeActivated values.
+    position: top left
+    question: What is the frequency of snow brake activation in different sections?
+    title: SnowBrakeActivated Analysis
+    type: vertical bar
+  - description: This Circle plot visualizes the relationship between SnowBrakeActivated
+      and Energy PCE. The x-axis represents the SnowBrakeActivated variable, while
+      the y-axis represents the Energy PCE, calculated using the formula [PCE1_IEnergyCons]+[PCE2_IEnergyCons].
+    position: bottom right
+    question: What is the distribution of snow brake activation per unit?
+    title: SnowBrakeActivated vs Energy PCE
+    type: circle
+  - description: This visualization displays the relationship between Energy PCE and
+      SnowBrakeActivated. The plot uses color to fill each cell based on the value
+      of SnowBrakeActivated.
+    position: top right
+    question: What is the total energy consumed (kWh) by PCE devices?
+    title: Energy PCE vs SnowBrakeActivated
+    type: table
+  - description: This Circle plot visualizes the relationship between SnowBrakeActivated
+      and Energy PCE. The x-axis represents SnowBrakeActivated, while the y-axis shows
+      the calculated Energy PCE based on the formula [PCE1_IEnergyCons]+[PCE2_IEnergyCons].
+    position: bottom left
+    question: What is the distribution of snow brake activation based on energy consumption
+      and other relevant factors?
+    title: SnowBrakeActivated vs Energy PCE
+    type: circle
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Energy_Fleet_Snow_Brake
+  domains_names: Exploration,Statistics
+  general_description: This report provides a comprehensive analysis of energy consumption
+    and Snow Brake activation over time. It includes various visualizations such as
+    circle plots, bar charts, and tables, enabling users to understand the relationship
+    between energy usage and Snow Brake activation, and to identify patterns and trends.
+    The report is designed for detailed data exploration and offers insights into
+    how these variables interact with snow brake activation and load binning.
+  goals:
+  - Provide insights into energy consumption and load distribution.
+  - Analyze the relationship between energy usage and Snow Brake activation.
+  - Identify patterns and trends in energy consumption over time.
+  - Visualize the distribution of load based on various conditions.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: Load is the measure of the weight or force exerted by the train. It
+    is recorded continuously as operational data.
+  generic_name: Load
+- description: This variable represents the energy consumption of a train part. It
+    is used in various energy and snow brake related analyses.
+  generic_name: PCE1_IEnergyCons
+- description: This variable measures the energy consumption of a specific part of
+    the train. It is used to monitor and analyze energy efficiency.
+  generic_name: PCE2_IEnergyCons
+- description: This variable indicates whether the snow brake is fully activated in
+    a section. It is used in various dashboards to analyze snow brake performance.
+  generic_name: SBfullyActivatedInSection
+- description: This variable indicates whether the snow brake was activated. It is
+    used in various energy and operational dashboards.
+  generic_name: SnowBrakeActivated
+- description: The timestamp records the exact time an event occurs or data is captured.
+    It is crucial for synchronizing and analyzing operational data in train systems.
+  generic_name: Timestamp
+- description: This variable identifies parts of a train. It is used extensively in
+    various operational and event-based dashboards.
+  generic_name: Unit
+- description: Index variable used to uniquely identify each event or data point in
+    the dashboards. It is an integer value recorded continuously.
+  generic_name: idx
+variables_used_top_10:
+- SnowBrakeActivated
+- Energy PCE
+- Timestamp
+- Unit
+- SBfullyActivatedInSection
+- Full Snow Brake Activated in the Section
+- PCE2_IEnergyCons
+- Section
+- PCE1_IEnergyCons
+- idx
+

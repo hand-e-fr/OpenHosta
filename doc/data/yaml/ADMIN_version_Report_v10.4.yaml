@@ -1,0 +1,119 @@
+dashboards:
+- count: 3
+  description: The 'Version' dashboard provides a comprehensive overview of software
+    and hardware versions, allowing users to filter data based on specific conditions
+    and explore detailed version statuses through interactive tables.
+  filters: []
+  image_path: input/img/ADMIN_version_Report_v10.4/Version.png
+  index: 1
+  name: Version
+  worksheets:
+  - description: 'Description of a worksheet in a report.
+
+      A worksheet contains charts (plots) and addresses a specific question.'
+    position: top
+    question: What are the different versions of software and hardware based on the
+      given data?
+    title: Version-Sw Plot
+    type: table
+  - description: This table visualizes the version_val data, categorizing it into
+      a tabular format. Each cell is color-coded and displays the corresponding value.
+    position: bottom
+    question: What is the version status of the items based on the given conditions?
+    title: Version-Hw Analysis
+    type: table
+- count: 3
+  description: The 'Version Hw' dashboard provides a comprehensive overview of the
+    different hardware and software versions and their respective statuses. It allows
+    users to filter and explore data in detail through a table format, with cell colors
+    indicating specific values.
+  filters: []
+  image_path: input/img/ADMIN_version_Report_v10.4/Version Hw.png
+  index: 2
+  name: Version Hw
+  worksheets:
+  - description: This plot visualizes the 'version_val' in a table format, with the
+      'One' variable used for cell color and value.
+    position: center
+    question: What are the different versions of the hardware and software and their
+      respective statuses?
+    title: Version-Hw
+    type: table
+- count: 3
+  description: The 'Version Sw' dashboard is designed to analyze and visualize the
+    distribution of version types and their values in the software version data. It
+    allows for detailed data exploration through interactive tables and charts, enabling
+    users to filter and drill down into specific version-related questions.
+  filters: []
+  image_path: input/img/ADMIN_version_Report_v10.4/Version Sw.png
+  index: 3
+  name: Version Sw
+  worksheets:
+  - description: 'Description of a worksheet in a report.
+
+      A worksheet contains charts (plots) and addresses a specific question.'
+    position: center
+    question: What is the distribution of version types and their values in the software
+      version data?
+    title: Version-Sw Analysis
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: ADMIN_version_Report_v10.4
+  domains_names: Statistics,Operational Data
+  general_description: The 'Version' report provides a comprehensive overview of software
+    and hardware versions, allowing users to filter data based on specific conditions
+    and explore detailed version statuses through interactive tables. It includes
+    multiple worksheets that visualize the data in a tabular format, with cell colors
+    indicating specific values.
+  goals:
+  - Provide a comprehensive overview of software and hardware versions.
+  - Allow users to filter data based on specific conditions.
+  - Enable detailed exploration of version statuses through interactive tables.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable represents an identifier for a part of a train. It is
+    used extensively in both context data for events and operational data.
+  generic_name: Unit
+- description: The variable indicates the last recorded value for a specific train
+    component. It is used to determine the most recent operational status.
+  generic_name: last
+- description: This variable identifies different versions of software or hardware
+    used in the trains. It is used in various dashboards to distinguish between software
+    and hardware versions.
+  generic_name: version_id
+- description: This variable represents the location version of a train component.
+    It is used in both software and hardware version reports.
+  generic_name: version_loc
+- description: This variable indicates the sub-location version of a train unit. It
+    is used in various operational dashboards to distinguish between different hardware
+    and software versions.
+  generic_name: version_subLoc
+- description: This variable distinguishes between software and hardware versions
+    of train components. It is crucial for tracking updates and maintenance.
+  generic_name: version_tp
+- description: The variable represents the timestamp of the version recorded. It is
+    crucial for tracking changes over time.
+  generic_name: version_uTs
+- description: The version value is used to identify software and hardware versions.
+    It helps distinguish between the upper and lower versions.
+  generic_name: version_val
+- description: This variable represents the maximum version value for a software or
+    hardware component. It helps in identifying the highest version recorded.
+  generic_name: version_val_max
+variables_used_top_10:
+- One
+- version_val
+- Unit
+- Version Id Sw
+- Upper version
+- Type
+- version_id
+- version_tp
+- version_val_max
+- version_uTs
+

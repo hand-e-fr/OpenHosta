@@ -1,0 +1,74 @@
+dashboards:
+- count: 1
+  description: The 'Main' dashboard provides a comprehensive analysis of ratios related
+    to mileage and unit counts. It allows for detailed exploration of data where mileage
+    exceeds 50, featuring interactive tables that visualize these ratios and facilitate
+    in-depth analysis.
+  filters:
+  - description: Filtering by datetime, specifically for the 'Last' caption.
+    name: LocalDate
+  - description: Filtering applicable to workbooks by date.
+    name: LocalDate
+  - description: Filtering by event description
+    name: evt_description
+  image_path: input/img/KPI_IOS/Main.png
+  index: 1
+  name: Main
+  worksheets:
+  - description: This plot displays the ratio calculated based on the LocalDate. The
+      fill variable 'Unit' is used for color and value of each cell.
+    position: bottom
+    question: What is the ratio of SUM(IOS) to Mileage per kilometer, considering
+      only cases where Mileage exceeds 50?
+    title: Main-ratio Visualization
+    type: table
+  - description: 'This visualization represents the ratio of units, calculated using
+      the formula: ''IF MAX([Mileage]) > 50 THEN SUM([N])*100/MAX([Mileage]) ELSE
+      0 END''. The x-axis shows the ratio, and the y-axis categorizes the data by
+      Unit.'
+    position: top
+    question: What is the ratio of SUM(IOS) * 100 per km based on the provided variables
+      and context?
+    title: Main-Last
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: KPI_IOS
+  domains_names: Event,Exploration
+  general_description: The 'Main' dashboard provides a comprehensive analysis of ratios
+    related to mileage and unit counts. It allows for detailed exploration of data
+    where mileage exceeds 50, featuring interactive tables that visualize these ratios
+    and facilitate in-depth analysis.
+  goals:
+  - Provide a comprehensive analysis of ratios related to mileage and unit counts.
+  - Facilitate detailed exploration of data where mileage exceeds 50.
+  - Visualize ratios using interactive tables.
+  simple_description: Event Analysis
+  sub_category: Key Performance Indicator (KPI) - Operational Time Series (OPDAT)
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: This variable represents the local date in the context of train events.
+    It is used for filtering and plotting in various dashboards.
+  generic_name: LocalDate
+- description: Mileage measures the distance traveled by a train. It is used in various
+    dashboards to calculate performance metrics.
+  generic_name: Mileage
+- description: This variable is used to calculate the ratio of IOS events per kilometer.
+    It is a real number recorded continuously as operational data.
+  generic_name: N
+- description: This variable identifies different parts of a train. It is used in
+    various dashboards to track operational data.
+  generic_name: Unit
+- description: Describes the type of event occurring on the train, such as braking
+    or overspeed incidents.
+  generic_name: evt_description
+variables_used_top_10:
+- Unit
+- LocalDate
+- ratio
+- evt_description
+- N
+- Mileage
+

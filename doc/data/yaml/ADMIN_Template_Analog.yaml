@@ -1,0 +1,124 @@
+dashboards:
+- count: 1
+  description: The DashBoard provides a comprehensive analysis of fleet performance
+    and behavior through various visualizations. Users can explore data trends, relationships,
+    and gaps using interactive plots, enabling detailed data exploration and informed
+    decision-making.
+  filters:
+  - description: Filtering events based on whether the speed exceeds 5 units, resulting
+      in a boolean output indicating if the entity is 'In Motion'.
+    name: In Motion
+  - description: Filtering by relative dates in datetime format, applicable to workbooks.
+    name: timestamp
+  - description: Filtering applicable to workbooks.
+    name: Variable
+  - description: Filtering applicable to workbooks.
+    name: timestamp
+  - description: Filtering applicable to workbooks based on the temperature data.
+    name: Temperature
+  - description: Filtering by day based on datetime values
+    name: timestamp
+  image_path: input/img/Analog/DashBoard.png
+  index: 1
+  name: DashBoard
+  worksheets:
+  - description: This visualization displays the gap analysis using the 'Gap' variable
+      on the x-axis and 'Unit' variable on the y-axis. The size of the points is also
+      determined by the 'Gap' variable.
+    position: bottom left
+    question: What is the gap from the median for units in motion?
+    title: FleetView Gap Analysis
+    type: vertical bar
+  - description: This line plot visualizes the timestamp against the value. The x-axis
+      represents the timestamp, and the y-axis represents the value. The data is filled
+      with the Variable.
+    position: top right
+    question: What is the relationship between timestamp and value in the Time View
+      plot?
+    title: TimeView Plot
+    type: line
+  - description: This area plot visualizes the relationship between Delta (x-axis)
+      and Delta (y-axis). The fill axis represents Variable, which categorizes the
+      data points.
+    position: bottom right
+    question: What is the behavior of the Delta variable in the dataset?
+    title: Delta vs Delta Area Plot
+    type: area
+  - description: This visualization represents the Speed over time. The x-axis displays
+      the timestamp, while the y-axis shows the Speed in real values.
+    position: top
+    question: What is the average speed (km/h) of the object in motion over time?
+    title: Filter Plot
+    type: line
+  - description: This plot visualizes the 'Name' variable from the data source '[data]'.
+    position: top left
+    question: What is the relationship between Name and the conditions defined by
+      the variables, particularly the 'In Motion' condition based on Speed?
+    title: Name Plot
+    type: table
+overview:
+  category: DATA VISUALIZATION REPORT SHEET
+  code: Analog
+  domains_names: Statistics, Operational Data
+  general_description: The DashBoard provides a comprehensive analysis of fleet performance
+    and behavior through various visualizations. Users can explore data trends, relationships,
+    and gaps using interactive plots, enabling detailed data exploration and informed
+    decision-making.
+  goals:
+  - To provide a comprehensive analysis of fleet performance and behavior through
+    various visualizations.
+  - To enable detailed data exploration and informed decision-making.
+  - To explore data trends, relationships, and gaps using interactive plots.
+  simple_description: Event Analysis
+  sub_category: Data Exploration - Train Event Data with Contextual Variables
+project:
+  code: Standard
+  name: Any project
+variables:
+- description: Delta measures the deviation from a reference value. It is recorded
+    continuously as operational data.
+  generic_name: Delta
+- description: DeltaRef measures the difference from a reference point in train operations.
+    It is used in various dashboards for performance analysis.
+  generic_name: DeltaRef
+- description: Ecart represents the deviation from the median value of a dataset.
+    It is used in various dashboards to analyze train performance data.
+  generic_name: Ecart
+- description: This variable represents the name of a component or event in the train's
+    operational data. It is used in various dashboards to filter and plot relevant
+    data.
+  generic_name: Name
+- description: Ordering is an integer variable used in the Histogram dashboard to
+    track order-related data. It is recorded as context data for an event.
+  generic_name: Ordering
+- description: Speed indicates how fast the train is moving. It is recorded continuously
+    as operational data.
+  generic_name: Speed
+- description: This variable identifies different parts of a train. It is used in
+    various operational and event-related dashboards.
+  generic_name: Unit
+- description: This variable is used to track operational data for various train components.
+    It is primarily used in dashboards to monitor performance metrics.
+  generic_name: Variable
+- description: This variable represents the median value of a dataset. It is used
+    in various dashboards to show central tendency.
+  generic_name: median_value
+- description: This variable records the date and time of events or operational data.
+    It is crucial for time-based analysis and tracking in dashboards.
+  generic_name: timestamp
+- description: This variable is recorded continuously as operational data. It is used
+    in various dashboards for different analyses, including speed and temperature
+    monitoring.
+  generic_name: value
+variables_used_top_10:
+- timestamp
+- Variable
+- In Motion
+- Speed
+- Unit
+- Name
+- Gap
+- value
+- Delta
+- median_value
+
