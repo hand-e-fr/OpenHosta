@@ -4,7 +4,7 @@ All significant changes to this project will be documented in this file.
 
 ---
 
-## **v1.1**
+## **v1.1** 13/09/2024
 
 - **Fixes**
   - the `emulate` function is now decorator-resistant.
