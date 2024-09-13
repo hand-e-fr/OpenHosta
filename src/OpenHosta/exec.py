@@ -89,23 +89,24 @@ class HostaInjector:
     def _extend_scope(self) -> Callable:
         func: Callable = None
 
-        try:
-            current = inspect.currentframe()
-            if current is None:
-                raise Exception("Current frame is None")
-            caller_1 = current.f_back
-            if caller_1 is None:
-                raise Exception("Caller[lvl1] frame is None")
-            caller_2 = caller_1.f_back
-            if caller_2 is None:
-                raise Exception("Caller[lvl2] frame is None")
+        current = inspect.currentframe()
+        if current is None:
+            raise Exception("Current frame is None")
+        caller_1 = current.f_back
+        if caller_1 is None:
+            raise Exception("Caller[lvl1] frame is None")
+        caller_2 = caller_1.f_back
+        if caller_2 is None:
+            raise Exception("Caller[lvl2] frame is None")
 
-            caller_name = caller_2.f_code.co_name
+        caller_name = caller_2.f_code.co_name
 
-            if "self" in caller_2.f_locals:
-                obj = caller_2.f_locals["self"]
-                func = getattr(obj, caller_name, None)
-            else:
+        if "self" in caller_2.f_locals:
+            obj = caller_2.f_locals["self"]
+            func = getattr(obj, caller_name, None)
+        else:
+            
+            while func is None and caller_2 is not None:
                 code = caller_2.f_code
                 for obj in caller_2.f_back.f_locals.values():
                     found = False
@@ -117,14 +118,14 @@ class HostaInjector:
                     if found and obj.__code__ == code:
                         func = obj
                         break
+                if func is None:
+                    caller_2 = caller_2.f_back
         
-            if func is None or not callable(func):
-                Exception(
-                    "Larger scope isn't a callable or scope can't be extended.\n"
-                )
+        if func is None or not callable(func):
+            raise Exception(
+                "Larger scope isn't a callable or scope can't be extended.\n"
+            )
 
-        except Exception as e:
-            sys.stderr.write(f"[FRAME_ERROR]: {e}")
         return func, caller_2
 
     def _get_functionDef(self, func: Callable) -> str:
