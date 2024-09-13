@@ -191,6 +191,20 @@ class TestEmulate:
         assert not multiply.enhanced_prompt is None
         assert not multiply.review is None
         assert not multiply.diagramm is None
+        
+    def test_rc2(self):
+        
+        def multiply(a:int, b:int)->int:
+            """
+            This function multiplies two integers in parameter.
+            """
+            return emulate()
+        
+        def main():
+            return multiply(2 ,3)
+            
+        res = main()
+        assert res == 6
 
 class TestThought:
     
