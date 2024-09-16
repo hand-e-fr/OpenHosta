@@ -4,6 +4,12 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v1.2**
+
+- **Internal**
+  - Added custom Exception classes for request and frame errors.
+---
+
 ## **v1.1** 13/09/2024
 
 - **Fixes**
@@ -38,6 +44,11 @@ All significant changes to this project will be documented in this file.
 
 - **Internal**
   - Functional tests have been added for each of the library's features
+
+- **Doc**
+  - Documentation now integrates Google Cobal link
+
+---
 
 ## **v1.0** 29/08/2024:
 
