@@ -1,17 +1,26 @@
-from config import Model, DefaultManager
+from .config import Model, DefaultManager
 
-DefaultManager.set_default_model(Model(
-    model="gpt-4o",
-    base_url="https://api.openai.com/v1/chat/completions"
-))
+DefaultManager.set_default_model(
+    Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions")
+)
 
-from emulate import _exec_emulate
-import config
-from thought import thought
-from example import example
-from exec import HostaInjector
 
-# TODO make the if else for data cache here !
+from .emulate import _exec_emulate
+from . import config
+from .thought import thought
+from .exec import HostaInjector
+from .example import example, load_examples, save_examples
+
 emulate = HostaInjector(_exec_emulate)
 
-__all__ = "emulate", "thought", "example", "config", "Model", "DefaultManager"
+__all__ = (
+    "emulate",
+    "thought",
+    "example", 
+    "load_examples", 
+    "save_examples",
+    "config", 
+    "Model", 
+    "DefaultManager"
+)
+

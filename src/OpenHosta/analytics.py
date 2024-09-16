@@ -2,18 +2,18 @@ import tiktoken
 from enum import Enum
 import time as t
 import sys
-import requests
 import json
 
-from config import Model, DefaultManager
-
-from prompt import PromptMananger
+from .config import Model, DefaultManager
+from .prompt import PromptMananger
 
 _x = PromptMananger()
 
 _estimate_prompt = _x.get_prompt("estimate")
 
 l_default = DefaultManager.get_default_model()
+
+
 class ModelAnalizer(Model):
 
     _default_input_cost: int = 0.005
@@ -73,7 +73,7 @@ class ModelAnalizer(Model):
             sys_prompt=_estimate_prompt,
             user_prompt=l_user_prompt,
             creativity=0.2,
-            diversity=0.2
+            diversity=0.2,
         )
 
         if response.status_code == 200:

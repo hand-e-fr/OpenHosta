@@ -2,6 +2,9 @@ import sys
 import requests
 import json
 import re
+from jsonschema import validate
+from pydantic import BaseModel
+from typing import get_origin, get_args
 
 
 def is_valid_url(url):
@@ -17,6 +20,7 @@ def is_valid_url(url):
     )
     return re.match(regex, url) is not None
 
+
 class Model:
 
     _SYS_PROMPT = ""
@@ -25,6 +29,16 @@ class Model:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
+        self.conversion_function = {
+            str: lambda x: str(x),
+            int: lambda x: int(x),
+            float: lambda x: float(x),
+            list: lambda x: list(x),
+            set: lambda x: set(x),
+            frozenset: lambda x: frozenset(x),
+            tuple: lambda x: tuple(x),
+            bool: lambda x: bool(x),
+        }
 
         if any(var is None for var in (model, base_url)):
             sys.stderr.write(f"[CONFIG_ERROR] Empty values.")
@@ -41,12 +55,11 @@ class Model:
             "Infos:\n"
         )
 
-    def _api_call(
+    def api_call(
         self, sys_prompt: str, user_prompt: str, creativity: float, diversity: float
-    ):     
+    ):
         if self.api_key is None or not self.api_key:
-            sys.stderr.write(f"[CALL_ERROR] Unknown API key.")
-            return
+            raise AttributeError("Empty API key.")
 
         l_body = {
             "model": self.model,
@@ -75,28 +88,64 @@ class Model:
         except requests.exceptions.RequestException as e:
             sys.stderr.write(f"[CALL_ERROR] Request failed: {e}\n")
         if response.status_code != 200:
-            sys.stderr.write(f"[CALL_ERROR] API call the request was unsuccessful. Status code: {response.status_code}:\n{response.text}")
+            sys.stderr.write(
+                f"[CALL_ERROR] API call the request was unsuccessful. Status code: {response.status_code}:\n{response.text}"
+            )
         return response
 
-    def _request_handler(self, response):
+    def request_handler(self, response, return_type, return_caller):
         l_ret = ""
 
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
-        
-        
+
         try:
             l_ret_data = json.loads(json_string)
+            validate(
+                instance=l_ret_data.get("return", {}),
+                schema=return_type.get("properties", {}),
+            )  # Here
 
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
+            l_ret = l_ret_data["return"]
+            return l_ret
 
-        l_ret = l_ret_data["return"]
-        
+        if "return_hosta_type" in return_type["properties"]:
+            if return_caller in self.conversion_function:
+                convert_function = self.conversion_function[return_caller]
+                l_ret = convert_function(l_ret_data["return"])
+            else:
+                l_ret = l_ret_data["return"]
+
+        elif "return_hosta_type_typing" in return_type["properties"]:
+            l_ret = self.convert_to_type(l_ret_data["return"], return_caller)
+
+        elif "return_hosta_type_any" in return_type["properties"]:
+            l_ret = l_ret_data["return"]
+
+        elif issubclass(return_caller, BaseModel):
+            l_ret = return_caller(**l_ret_data["return"])
+
+        else:
+            l_ret = l_ret_data["return"]
+
         return l_ret
-    
+
+    def convert_to_type(self, data, type):
+        origin = get_origin(type)
+        args = get_args(type)
+
+        if origin != None:
+            if origin in self.conversion_function:
+                convert_function = self.conversion_function[origin]
+                return convert_function(self.convert_to_type(d, args[0]) for d in data)
+
+        return data
+
+
 class DefaultModel:
     _instance = None
 
@@ -104,9 +153,9 @@ class DefaultModel:
         if cls._instance is None:
             cls._instance = super(DefaultModel, cls).__new__(cls, *args, **kwargs)
         return cls._instance
-    
+
     def __init__(self):
-        if not hasattr(self, 'model'):
+        if not hasattr(self, "model"):
             self.model = None
 
     def set_default_model(self, new):
@@ -117,19 +166,23 @@ class DefaultModel:
 
     def set_default_apiKey(self, api_key=None):
         if api_key is not None or isinstance(api_key, str):
-           self.model.api_key = api_key
+            self.model.api_key = api_key
         else:
             sys.stderr.write("[CONFIG_ERROR] Invalid API key.")
-    
+
     def get_default_model(self):
         return self.model
-        
+
+
 DefaultManager = DefaultModel()
-        
+
+
 def set_default_model(new):
-    DefaultManager.set_default_model(new) 
+    DefaultManager.set_default_model(new)
+
 
 def set_default_apiKey(api_key=None):
     DefaultManager.set_default_apiKey(api_key)
+
 
 __all__ = Model, set_default_apiKey, set_default_model, DefaultManager
