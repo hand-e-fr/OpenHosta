@@ -1,4 +1,5 @@
 __pycache__/
+__hostacache__/
 *.pyc
 *.pyo
 .env/
@@ -9,3 +10,8 @@ __pycache__/
 .openhosta
 dist/*
 __hostacache__/
+.coverage
+*.html
+.pytest_cache
+src/OpenHosta.egg-info
+build/

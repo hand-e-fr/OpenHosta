@@ -1,7 +1,7 @@
 PACKAGE_NAME = OpenHosta
 SRC_DIR = src/OpenHosta
 TEST_DIR = tests
-DOC_DIR = Documentation
+DOC_DIR = doc
 
 all: help
 
@@ -9,25 +9,25 @@ help:
 	@echo Usage:
 	@echo 	make help             Show this help message
 	@echo  	make package          Package the project for pip installation
-	@echo  	make test             Run the tests
+	@echo  	make tests            Run the tests
 	@echo  	make format           Format the code using black
 	@echo  	make lint             Check code quality using flake8
+	@echo  	make clean            Clean not necessary files
 
-package:
-	python setup.py sdist bdist_wheel
+build:
+	python -m build
+	python -m twine check dist/*
 
-test_light:
-	python -m unittest discover $(TEST_DIR)
+upload:
+	python -m twine upload dist/*
 
-test_medium:
-	python -m unittest discover $(TEST_DIR)
-
-test_complete:
-	python -m unittest discover $(TEST_DIR)
-
+tests:
+	pip install . 
+	pytest .\tests\functionnalTests\test_mandatory.py -v
+	pip uninstall -y OpenHosta
 
 format:
-	black $(SRC_DIR) $(TEST_DIR)
+	black $(SRC_DIR)
 
 lint:
 	flake8 $(SRC_DIR) $(TEST_DIR)
@@ -35,9 +35,13 @@ lint:
 clean:
 	rm -rf build dist *.egg-info
 	find . -name "__pycache__" -exec rm -rf {} +
-	find . -name ".openhosta" -exec rm -rf {} +
+	find . -name "__hostacache__" -exec rm -rf {} +
 
 fclean: clean
 	rm -rf .pytest_cache .mypy_cache
 
-.PHONY: all help package test format lint clean fclean
+make re:
+	pip uninstall -y OpenHosta
+	pip install ..
+
+.PHONY: all help build tests format lint clean fclean re

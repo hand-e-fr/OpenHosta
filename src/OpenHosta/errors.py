@@ -6,6 +6,7 @@ OhErrorCodes = Literal[
 
 class OhErrorMixin(Exception):
     """Base class for other customs exceptions"""
+
     pass
     
 class RequestError(OhErrorMixin):
@@ -14,4 +15,3 @@ class RequestError(OhErrorMixin):
 
 class ApiKeyError():
     pass
-    
