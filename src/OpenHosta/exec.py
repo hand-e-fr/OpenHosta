@@ -10,6 +10,7 @@ import sys
 import copy
 
 from .enhancer import enhance
+from .errors import FrameError
 
 
 CACHE_DIR = "__hostacache__"
@@ -91,13 +92,13 @@ class HostaInjector:
 
         current = inspect.currentframe()
         if current is None:
-            raise Exception("Current frame is None")
+            raise FrameError("Current frame is None")
         caller_1 = current.f_back
         if caller_1 is None:
-            raise Exception("Caller[lvl1] frame is None")
+            raise FrameError("Caller[lvl1] frame is None")
         caller_2 = caller_1.f_back
         if caller_2 is None:
-            raise Exception("Caller[lvl2] frame is None")
+            raise FrameError("Caller[lvl2] frame is None")
 
         caller_name = caller_2.f_code.co_name
 
@@ -122,9 +123,7 @@ class HostaInjector:
                     caller_2 = caller_2.f_back
         
         if func is None or not callable(func):
-            raise Exception(
-                "Larger scope isn't a callable or scope can't be extended.\n"
-            )
+            raise FrameError("The emulated function cannot be found.\n")
 
         return func, caller_2
 
