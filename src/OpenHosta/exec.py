@@ -106,18 +106,22 @@ class HostaInjector:
             obj = caller_2.f_locals["self"]
             func = getattr(obj, caller_name, None)
         else:
-            code = caller_2.f_code
-            for obj in caller_2.f_back.f_locals.values():
-                found = False
-                try:
-                    if hasattr(obj, "__code__"):
-                        found = True
-                except:
-                    continue       
-                if found and obj.__code__ == code:
-                    func = obj
-                    break
-    
+            
+            while func is None and caller_2 is not None:
+                code = caller_2.f_code
+                for obj in caller_2.f_back.f_locals.values():
+                    found = False
+                    try:
+                        if hasattr(obj, "__code__"):
+                            found = True
+                    except:
+                        continue       
+                    if found and obj.__code__ == code:
+                        func = obj
+                        break
+                if func is None:
+                    caller_2 = caller_2.f_back
+        
         if func is None or not callable(func):
             raise FrameError("The emulated function cannot be found.\n")
 
