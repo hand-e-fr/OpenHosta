@@ -59,10 +59,8 @@ class TestExtendScope:
             return y.test()
 
         current = inspect.currentframe()
-        print(f"INTERNAL: {current.f_locals}")
         current.f_locals["caller"] = "hello"
         current.f_locals.pop("caller")
-        print(f"INTERNAL: {current.f_locals}")
 
         with patch("exec.hasattr", return_value=False):
             res = caller()
