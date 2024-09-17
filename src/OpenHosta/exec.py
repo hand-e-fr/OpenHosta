@@ -89,26 +89,29 @@ class HostaInjector:
 
     def _extend_scope(self) -> Callable:
         func: Callable = None
+        current = None
+        step = None
+        caller = None
 
         current = inspect.currentframe()
         if current is None:
             raise FrameError("Current frame is None")
-        caller_1 = current.f_back
-        if caller_1 is None:
+        step = current.f_back
+        if step is None:
             raise FrameError("Caller[lvl1] frame is None")
-        caller_2 = caller_1.f_back
-        if caller_2 is None:
+        caller = step.f_back
+        if caller is None:
             raise FrameError("Caller[lvl2] frame is None")
 
-        caller_name = caller_2.f_code.co_name
-
-        if "self" in caller_2.f_locals:
-            obj = caller_2.f_locals["self"]
+        caller_name = caller.f_code.co_name
+        caller_code = caller.f_code
+        caller_2 = caller
+        
+        if "self" in caller.f_locals:
+            obj = caller.f_locals["self"]
             func = getattr(obj, caller_name, None)
         else:
-            
             while func is None and caller_2 is not None:
-                code = caller_2.f_code
                 for obj in caller_2.f_back.f_locals.values():
                     found = False
                     try:
@@ -116,7 +119,7 @@ class HostaInjector:
                             found = True
                     except:
                         continue       
-                    if found and obj.__code__ == code:
+                    if found and obj.__code__ == caller_code:
                         func = obj
                         break
                 if func is None:
@@ -125,7 +128,7 @@ class HostaInjector:
         if func is None or not callable(func):
             raise FrameError("The emulated function cannot be found.\n")
 
-        return func, caller_2
+        return func, caller
 
     def _get_functionDef(self, func: Callable) -> str:
         sig = inspect.signature(func)
