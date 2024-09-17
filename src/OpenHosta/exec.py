@@ -105,14 +105,14 @@ class HostaInjector:
 
         caller_name = caller.f_code.co_name
         caller_code = caller.f_code
-        caller_2 = caller
+        l_caller = caller
         
         if "self" in caller.f_locals:
             obj = caller.f_locals["self"]
             func = getattr(obj, caller_name, None)
         else:
-            while func is None and caller_2 is not None:
-                for obj in caller_2.f_back.f_locals.values():
+            while func is None and l_caller.f_back is not None:
+                for obj in l_caller.f_back.f_locals.values():
                     found = False
                     try:
                         if hasattr(obj, "__code__"):
@@ -123,10 +123,15 @@ class HostaInjector:
                         func = obj
                         break
                 if func is None:
-                    caller_2 = caller_2.f_back
+                    l_caller = l_caller.f_back
+            if func is None:
+                print("hello")
+                func = caller.f_globals.get(caller_name)
+                if func:
+                    func = inspect.unwrap(func)
         
         if func is None or not callable(func):
-            raise FrameError("The emulated function cannot be found.\n")
+            raise FrameError("The emulated function cannot be found.")
 
         return func, caller
 
