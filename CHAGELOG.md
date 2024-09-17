@@ -6,8 +6,12 @@ All significant changes to this project will be documented in this file.
 
 ## **v1.2**
 
+- **Fixes**
+  - `emulate` now works when emulated function is called inside another one
+
 - **Internal**
   - Added custom Exception classes for request and frame errors.
+  - Added a loop to find the frame in `_extend_scope`
 ---
 
 ## **v1.1** 13/09/2024
