@@ -23,7 +23,7 @@ upload:
 
 tests:
 	pip install . 
-	pytest .\tests\functionnalTests\test_mandatory.py -v
+	C:\Users\Merlin\AppData\Roaming\Python\Python312\Scripts\pytest.exe .\tests\functionnalTests\test_mandatory.py -v
 	pip uninstall -y OpenHosta
 
 format:
