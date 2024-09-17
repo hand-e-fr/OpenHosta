@@ -125,7 +125,6 @@ class HostaInjector:
                 if func is None:
                     l_caller = l_caller.f_back
             if func is None:
-                print("hello")
                 func = caller.f_globals.get(caller_name)
                 if func:
                     func = inspect.unwrap(func)
