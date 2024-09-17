@@ -8,6 +8,7 @@ All significant changes to this project will be documented in this file.
 
 - **Fixes**
   - `emulate` now works when emulated function is called inside another one
+  - `emulate` works now with `lru_cache` decorator from `functools` module 
 
 - **Internal**
   - Added custom Exception classes for request and frame errors.
