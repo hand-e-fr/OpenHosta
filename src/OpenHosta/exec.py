@@ -93,23 +93,34 @@ class HostaInjector:
         step = None
         caller = None
 
+        print("[EXTEND SCOPE]")
         current = inspect.currentframe()
+        print(current)
         if current is None:
             raise FrameError("Current frame is None")
         step = current.f_back
+        print(step)
         if step is None:
             raise FrameError("Caller[lvl1] frame is None")
         caller = step.f_back
+        print(caller)
         if caller is None:
             raise FrameError("Caller[lvl2] frame is None")
 
         caller_name = caller.f_code.co_name
+        print(caller_name)
         caller_code = caller.f_code
+        print(caller_code)
         l_caller = caller
         
         if "self" in caller.f_locals:
+            print("\nHELLO WORLD!\n")
             obj = caller.f_locals["self"]
+            print(obj)
             func = getattr(obj, caller_name, None)
+            print(func)
+            if func:
+                func = inspect.unwrap(func)
         else:
             while func is None and l_caller.f_back is not None:
                 for obj in l_caller.f_back.f_locals.values():
