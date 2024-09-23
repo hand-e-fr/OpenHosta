@@ -2,8 +2,9 @@ import inspect
 import pickle
 import os
 import json
+import csv
 
-from .cache import Hostacache
+from cache import Hostacache
 
 CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -133,18 +134,35 @@ def load_examples(hosta_func=None, hosta_path=None):
 
     if hosta_path is None:
         raise ValueError(
-            f"Please provide hosta_path for specifying the path to load the cache"
-        )
+            f"Please provide hosta_path for specifying the path to load the cache")
 
     list_of_examples = []
 
+    _, file_extension = os.path.splitext(hosta_path)
+
     try:
-        with open(hosta_path, "r") as file:
-            for line in file:
-                hosta_example = json.loads(line.strip())
-                list_of_examples.append(hosta_example)
-    except Exception:
-            raise IOError("Please provide a Json or a JsonL file only.")
+        if file_extension == '.jsonl':
+            with open(hosta_path, "r") as file:
+                for line in file:
+                    example = json.loads(line.strip())
+                    list_of_examples.append(example)
+
+        elif file_extension == '.csv':
+            with open(hosta_path, "r", newline='') as file:
+                csv_reader = csv.DictReader(file)
+                for row in csv_reader:
+                    list_of_examples.append(row)
+
+        elif file_extension == '.txt':
+            with open(hosta_path, "r") as file:
+                for line in file:
+                    list_of_examples.append(line.strip())
+        
+        else:
+            raise ValueError("Unsupported file type. Please provide a JSONL, CSV, or TXT file.")
+
+    except Exception as e:
+        raise IOError(f"An error occurred while processing the file: {e}")
 
     cache_id = "ho_example"
     value = list_of_examples
