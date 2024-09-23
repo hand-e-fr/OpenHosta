@@ -104,14 +104,15 @@ class Model:
             validate(
                 instance=l_ret_data.get("return", {}),
                 schema=return_type.get("properties", {}),
-            )  # Here
-
+            )
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
             l_ret = l_ret_data["return"]
             return l_ret
+        print("l_ret", l_ret_data, flush=True)
+        print("return_type", return_type, flush=True)
 
         if "return_hosta_type" in return_type["properties"]:
             if return_caller in self.conversion_function:

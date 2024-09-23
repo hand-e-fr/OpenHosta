@@ -3,9 +3,9 @@ import json
 from pydoc import locate
 from pydantic import create_model
 
-from .emulate import _exec_emulate
-from .config import DefaultManager
-from .prompt import PromptMananger
+from emulate import _exec_emulate
+from config import DefaultManager
+from prompt import PromptMananger
 
 l_default = DefaultManager.get_default_model()
 _x = PromptMananger()
