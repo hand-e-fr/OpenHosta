@@ -1,5 +1,6 @@
 import json
 import os
+import torch
 # from config import Model, DefaultManager
 from encoder import HostaEncoder, FloatEncoder, BoolEncoder, StringEncoder
 from decoder import HostaDecoder, IntDecoder, FloatDecoder, BoolDecoder, StringDecoder
@@ -17,11 +18,13 @@ class Builder():
         assert len_output > 0, "Output size must be greater than 0"
 
         if complexity == None:
-            complexity = 1
-        if optimizer == None:
-            optimizer = "Adam"
-        if loss == None:
-            loss = "mse"
+            complexity = 5
+        if optimizer != None:
+            print("\033[93mWarning: The change of optimizer is not available for now, AdamW is actually used.\033[0m")
+            optimizer = "AdamW"
+        if loss != None:
+            print("\033[93mWarning: The change of loss are not available for now, Smooth1Loss is actually used.\033[0m")
+            loss = "SmoothL1Loss"
 
         if config == None:
             config = {
@@ -42,10 +45,17 @@ class Builder():
             f.write(config_json)
         return config["architecture"]
 
+    def load_inference(self, config_path, weight_path, inference):
+        with open(config_path, "r") as file:
+            config = json.load(file)
+  
+        model = CustomLinearModel(config, self.hidden_dir)
+        model.load_state_dict(torch.load(weight_path))
+        output = model.forward(inference)
+        return output
 
-    def train(self, config, architecture, train, val, epochs):
+    def trains(self, config, train, val, epochs):
         
         # TODO: polimorphic call
-        model = CustomLinearModel(architecture, config)
-        print(type(model))
+        model = CustomLinearModel(config, self.hidden_dir)
         model.train(train, val, epochs, self.hidden_dir)

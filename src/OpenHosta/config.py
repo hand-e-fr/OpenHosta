@@ -111,8 +111,6 @@ class Model:
             l_ret_data = json.loads(l_cleand)
             l_ret = l_ret_data["return"]
             return l_ret
-        print("l_ret", l_ret_data, flush=True)
-        print("return_type", return_type, flush=True)
 
         if "return_hosta_type" in return_type["properties"]:
             if return_caller in self.conversion_function:
