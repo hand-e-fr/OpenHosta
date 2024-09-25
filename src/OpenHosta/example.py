@@ -2,7 +2,6 @@ import inspect
 import pickle
 import os
 import json
-import csv
 
 from cache import Hostacache
 
@@ -77,7 +76,7 @@ def example(*args, hosta_func=None, hosta_out=None, **kwargs):
 
     cache_id = "ho_example"
     cache = Hostacache(func, cache_id, example_dict)
-    cache()
+    cache.create_hosta_cache()
 
 
 def save_examples(hosta_func=None, hosta_path=None):
@@ -104,6 +103,7 @@ def save_examples(hosta_func=None, hosta_path=None):
 
     func_name = func.__name__
     path_name = os.path.join(CACHE_DIR, f"{func_name}.openhc")
+
 
     try:
         if os.path.exists(path_name):
@@ -135,36 +135,17 @@ def load_examples(hosta_func=None, hosta_path=None):
     if hosta_path is None:
         raise ValueError(
             f"Please provide hosta_path for specifying the path to load the cache")
+    
 
-    list_of_examples = []
+    path = str(hosta_path)
 
-    _, file_extension = os.path.splitext(hosta_path)
 
-    try:
-        if file_extension == '.jsonl':
-            with open(hosta_path, "r") as file:
-                for line in file:
-                    example = json.loads(line.strip())
-                    list_of_examples.append(example)
-
-        elif file_extension == '.csv':
-            with open(hosta_path, "r", newline='') as file:
-                csv_reader = csv.DictReader(file)
-                for row in csv_reader:
-                    list_of_examples.append(row)
-
-        elif file_extension == '.txt':
-            with open(hosta_path, "r") as file:
-                for line in file:
-                    list_of_examples.append(line.strip())
-        
-        else:
-            raise ValueError("Unsupported file type. Please provide a JSONL, CSV, or TXT file.")
-
-    except Exception as e:
-        raise IOError(f"An error occurred while processing the file: {e}")
-
-    cache_id = "ho_example"
-    value = list_of_examples
+    _, file_extension = os.path.splitext(path)
+    if file_extension != '.jsonl' and file_extension != '.csv':
+        raise ValueError("Unsupported file type. Please provide a JSON or CSV file.")
+    
+    cache_id = "ho_example_links"
+    value = path
     cache = Hostacache(func, cache_id, value)
-    cache()
+    cache.create_hosta_cache()
+

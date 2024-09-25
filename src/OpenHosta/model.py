@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import time
+import json
 
 class CustomModel(nn.Module):
     def __init__(self, architecture):
@@ -15,25 +17,22 @@ class CustomModel(nn.Module):
 
 class CustomLinearModel(nn.Module):
 
-    def __init__(self, architecture, config):
+    def __init__(self, config, hidden_dir):
         super().__init__()
-        self.architecture = architecture
-        len_input = 18
-        self.config = {
-                "architecture": "LinearRegression",
-                "optimizer": "adam",
-                "loss": "mse",
-                "input_size": len_input,
-                "hidden_size_1": len_input * (2 * 1),
-                "hidden_size_2": len_input * (4 * 1),
-                "hidden_size_3": len_input * (2 * 1),
-                "output_size": 1
-            }
-
+        self.hidden_dir = hidden_dir
+        self.path = hidden_dir+"/config.json"
+        if config == None:
+            try:
+                with open(self.path, 'r') as f:
+                    self.config = json.load(f)
+            except Exception as e:
+                raise Exception("Config file not found please check the path : ", self.path)
+        else:
+            self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.loss = nn.MSELoss()
         self.model = self.create_model(self.config)
 
+        self.loss = nn.SmoothL1Loss()
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=0.001)
 
     def create_model(self, config):
@@ -70,10 +69,11 @@ class CustomLinearModel(nn.Module):
         return x
     
     def train(self, train, val,  epochs, path):
-        if epochs == None:
-            epochs = 50 * len(train)
+        
+        total_start = time.time()
 
         for epoch in range(epochs):
+            epoch_start = time.time()
             for X_train, y_train in train:
                 
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
@@ -83,8 +83,12 @@ class CustomLinearModel(nn.Module):
                 loss = self.loss(output, y_train)
                 loss.backward()
                 self.optimizer.step()
-            print(f"{epoch}/{epochs} -> Loss: {loss.item()}", flush=True)
+            epoch_end = time.time()
+            epoch_time = epoch_end - epoch_start
+            print(f"\033[94m{epoch}/{epochs} -> Loss: {loss.item()} in {epoch_time} sec\033[0m", flush=True)
             
-        print("*" *50)
-        print(f"Training complete : Loss: {loss.item()}", flush=True)
-        torch.save(self.state_dict(), path)
+        total_end = time.time()
+        total_time = total_end - total_start
+        print(f"\033[92mTraining complete : Loss: {loss.item()} in a total of {total_time} sec\033[0m", flush=True)
+
+        torch.save(self.state_dict(), path+"/model.pth")

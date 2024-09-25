@@ -35,10 +35,9 @@ class HostaInjector:
             "function_locals": {},
             "ho_example": [],
             "ho_example_id": 0,
+            "ho_example_links": [],
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
-            "encoder" : None,
-            "decoder" : None,
         }
         func_obj, caller = self._extend_scope()
         func_name = func_obj.__name__
@@ -66,7 +65,7 @@ class HostaInjector:
         with open(path_name, "wb") as f:
             res = pickle.dump(hosta_args, f)
         # TODO : fix the function locals because he didn't load in the cache
-        hosta_args["function_call"], hosta_args["function_locals"], cached_data["function_args"] = (
+        hosta_args["function_call"], hosta_args["function_locals"], hosta_args["function_args"] = (
             self._get_functionCall(func_obj, caller)
         )
         return self.exec(hosta_args, func_obj, *args, **kwargs)
