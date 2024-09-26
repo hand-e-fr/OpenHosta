@@ -10,6 +10,7 @@ import sys
 import copy
 
 from .enhancer import enhance
+from .errors import FrameError
 
 
 CACHE_DIR = "__hostacache__"
@@ -88,44 +89,52 @@ class HostaInjector:
 
     def _extend_scope(self) -> Callable:
         func: Callable = None
+        current = None
+        step = None
+        caller = None
 
-        try:
-            current = inspect.currentframe()
-            if current is None:
-                raise Exception("Current frame is None")
-            caller_1 = current.f_back
-            if caller_1 is None:
-                raise Exception("Caller[lvl1] frame is None")
-            caller_2 = caller_1.f_back
-            if caller_2 is None:
-                raise Exception("Caller[lvl2] frame is None")
+        current = inspect.currentframe()
+        if current is None:
+            raise FrameError("Current frame is None")
+        step = current.f_back
+        if step is None:
+            raise FrameError("Caller[lvl1] frame is None")
+        caller = step.f_back
+        if caller is None:
+            raise FrameError("Caller[lvl2] frame is None")
 
-            caller_name = caller_2.f_code.co_name
-
-            if "self" in caller_2.f_locals:
-                obj = caller_2.f_locals["self"]
-                func = getattr(obj, caller_name, None)
-            else:
-                code = caller_2.f_code
-                for obj in caller_2.f_back.f_locals.values():
+        caller_name = caller.f_code.co_name
+        caller_code = caller.f_code
+        l_caller = caller
+        
+        if "self" in caller.f_locals:
+            obj = caller.f_locals["self"]
+            func = getattr(obj, caller_name, None)
+            if func:
+                func = inspect.unwrap(func)
+        else:
+            while func is None and l_caller.f_back is not None:
+                for obj in l_caller.f_back.f_locals.values():
                     found = False
                     try:
                         if hasattr(obj, "__code__"):
                             found = True
                     except:
                         continue       
-                    if found and obj.__code__ == code:
+                    if found and obj.__code__ == caller_code:
                         func = obj
                         break
+                if func is None:
+                    l_caller = l_caller.f_back
+            if func is None:
+                func = caller.f_globals.get(caller_name)
+                if func:
+                    func = inspect.unwrap(func)
         
-            if func is None or not callable(func):
-                Exception(
-                    "Larger scope isn't a callable or scope can't be extended.\n"
-                )
+        if func is None or not callable(func):
+            raise FrameError("The emulated function cannot be found.")
 
-        except Exception as e:
-            sys.stderr.write(f"[FRAME_ERROR]: {e}")
-        return func, caller_2
+        return func, caller
 
     def _get_functionDef(self, func: Callable) -> str:
         sig = inspect.signature(func)
