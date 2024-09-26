@@ -1,4 +1,5 @@
 import sys
+import inspect
 
 from .prompt import PromptMananger
 from .config import Model, DefaultManager
@@ -11,12 +12,12 @@ _emulator_pre_prompt = _x.get_prompt("emulate")
 l_default = DefaultManager.get_default_model()
 
 
-def build_user_prompt(_function_infos: dict = None):
-    function_doc = _function_infos["function_def"]
-    function_call = _function_infos["function_call"]
-    function_return = _function_infos["return_type"]
-    function_example = _function_infos["ho_example"]
-    function_locals = _function_infos["function_locals"]
+def build_user_prompt(_infos: dict = None):
+    function_doc = _infos["function_def"]
+    function_call = _infos["function_call"]
+    function_return = _infos["return_type"]
+    function_example = _infos["ho_example"]
+    function_locals = _infos["function_locals"]
 
     user_prompt = (
         "Here's the function definition:\n"
@@ -39,7 +40,7 @@ def build_user_prompt(_function_infos: dict = None):
             + str(function_return)
         )
 
-    if function_locals != {}:
+    if function_locals is not None:
         user_prompt = (
             user_prompt
             + "\nHere's the function's locals variables which you can use as additional information to give your answer:\n"
@@ -50,16 +51,16 @@ def build_user_prompt(_function_infos: dict = None):
 
 
 def _exec_emulate(
-    _function_infos: dict = None,
-    _function_obj: object = None,
+    _infos: dict = None,
+    _obj: object = None,
     model: Model = None,
     l_creativity: float = None,
     l_diversity: float = None,
 ):
     global _emulator_pre_prompt
 
-    _function_return_caller = _function_infos["return_caller"]
-    _function_return = _function_infos["return_type"]
+    _function_return_caller = _infos["return_caller"]
+    _function_return = _infos["return_type"]
 
     if model is None:
         model = DefaultManager.get_default_model()
@@ -75,7 +76,7 @@ def _exec_emulate(
         sys.stderr.write(f"[EMULATE_ERROR]: {v}")
         return None
 
-    l_user_prompt = build_user_prompt(_function_infos)
+    l_user_prompt = build_user_prompt(_infos)
 
     response = model.api_call(
         sys_prompt=_emulator_pre_prompt,
@@ -84,9 +85,10 @@ def _exec_emulate(
         diversity=l_diversity,
     )
 
-    if _function_obj is not None and "bound method" not in str(_function_obj):
-        setattr(_function_obj, "_last_response", response.json())
-
+    if _obj is not None and inspect.isfunction(_obj):
+        setattr(_obj, "_last_response", response.json())
+        
+    
     if response.status_code == 200:
         l_ret = model.request_handler(
             response, _function_return, _function_return_caller
@@ -95,5 +97,8 @@ def _exec_emulate(
     else:
         sys.stderr.write(f"Error {response.status_code}: {response.text}")
         l_ret = None
+        
+    if _obj is not None and inspect.isfunction(_obj):
+        setattr(_obj, "_last_request", f"{_emulator_pre_prompt}\n{l_user_prompt}")
 
     return l_ret

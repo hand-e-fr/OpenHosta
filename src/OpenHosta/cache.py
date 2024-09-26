@@ -36,10 +36,12 @@ class Hostacache:
         func_name = self.func.__name__
         path_name = os.path.join(CACHE_DIR, f"{func_name}.openhc")
 
+
         if os.path.exists(path_name):
             with open(path_name, "rb") as f:
                 cached_data = pickle.load(f)
             assert self.cache_id in cached_data, "Cache ID not found in cache file"
+
 
             if self._is_value_already_in_example(self.value, cached_data) == False:
                 cached_data[str(self.cache_id)].append(self.value)

@@ -6,6 +6,8 @@ from jsonschema import validate
 from pydantic import BaseModel
 from typing import get_origin, get_args
 
+from .errors import ApiKeyError
+
 
 def is_valid_url(url):
     regex = re.compile(
@@ -57,9 +59,9 @@ class Model:
 
     def api_call(
         self, sys_prompt: str, user_prompt: str, creativity: float, diversity: float
-    ):
+    )->requests.models.Response:
         if self.api_key is None or not self.api_key:
-            raise AttributeError("Empty API key.")
+            raise ApiKeyError("Empty API key.")
 
         l_body = {
             "model": self.model,
@@ -86,11 +88,12 @@ class Model:
             response = requests.post(self.base_url, json=l_body, headers=headers)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            sys.stderr.write(f"[CALL_ERROR] Request failed: {e}\n")
+            sys.stderr.write(f"\n[CALL_ERROR] Request failed:\n{e}\n\n")
         if response.status_code != 200:
-            sys.stderr.write(
-                f"[CALL_ERROR] API call the request was unsuccessful. Status code: {response.status_code}:\n{response.text}"
-            )
+            if "invalid_api_key" in str(response.text):
+                raise ApiKeyError("Incorrect API key.")
+            else:    
+                sys.stderr.write(f"[CALL_ERROR] API call was unsuccessful.\nStatus code: {response.status_code}:\n{response.text}")
         return response
 
     def request_handler(self, response, return_type, return_caller):
@@ -104,7 +107,8 @@ class Model:
             validate(
                 instance=l_ret_data.get("return", {}),
                 schema=return_type.get("properties", {}),
-            )
+            )  # Here
+
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])

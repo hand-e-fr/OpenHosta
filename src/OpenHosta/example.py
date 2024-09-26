@@ -72,11 +72,15 @@ def example(*args, hosta_func=None, hosta_out=None, **kwargs):
             raise ValueError(
                 f"Output {hosta_out} does NOT match the expected type {expected_type}. For function {func.__name__}"
             )
+            raise ValueError(
+                f"Output {hosta_out} does NOT match the expected type {expected_type}. For function {func.__name__}"
+            )
         example_dict["hosta_out"] = hosta_out
 
     cache_id = "ho_example"
     cache = Hostacache(func, cache_id, example_dict)
     cache.create_hosta_cache()
+
 
 
 def save_examples(hosta_func=None, hosta_path=None):
@@ -90,12 +94,16 @@ def save_examples(hosta_func=None, hosta_path=None):
         except:
             raise ValueError(f"Please provide hosta_func for specifying the function")
 
+
     elif callable(hosta_func):
         func = hosta_func
     else:
         raise ValueError(f"Please provide hosta_func for specifying the function")
 
     if hosta_path is None:
+        raise ValueError(
+            f"Please provide hosta_path for specifying the path to save the cache"
+        )
         raise ValueError(
             f"Please provide hosta_path for specifying the path to save the cache"
         )
@@ -112,10 +120,13 @@ def save_examples(hosta_func=None, hosta_path=None):
                 with open(total_path, "a") as t:
                     for dict in cached_data["ho_example"]:
                         t.write(json.dumps(dict) + "\n")
+                        t.write(json.dumps(dict) + "\n")
         else:
             raise ValueError(f"Could not found the cache at {path_name}")
     except Exception as e:
         raise ValueError(f"Could not found the cache at {path_name}") from e
+
+
 
 
 def load_examples(hosta_func=None, hosta_path=None):
@@ -127,10 +138,12 @@ def load_examples(hosta_func=None, hosta_path=None):
         except:
             raise ValueError(f"Please provide hosta_func for specifying the function")
 
+
     elif callable(hosta_func):
         func = hosta_func
     else:
         raise ValueError(f"Please provide hosta_func for specifying the function")
+
 
     if hosta_path is None:
         raise ValueError(

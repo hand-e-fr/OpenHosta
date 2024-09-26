@@ -80,6 +80,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [Usage](#usage)
       - [Output Examples](#output-examples)
     - ["thought" Function](#thought-function)
+    - ["example" Function](#example-function)
     - [Advanced configuration](#advanced-configuration)
       - [Introduction](#introduction-1)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
@@ -297,6 +298,10 @@ In this example, you can see that after calling the emulated function, we can ca
   - `review`: This is the analysis provided by the AI for its prompt improvement. Can be useful to understand its reasoning.
   - `advanced`: Similar to `enhanced prompt` but adds an iteration. The AI will then try to solve advanced problems according to context or other factors. Especially useful in the most complex cases.
   - `diagramm`: Gives a Mermaid diagram showing the stages of AI thinking. Useful if you want to try coding the function yourself.
+
+You can also retrieve the entire LLM response by storing the output of the `suggest` function.
+
+Note that this feature uses the default model.
 
 You can also retrieve the entire LLM response by storing the output of the `suggest` function.
 

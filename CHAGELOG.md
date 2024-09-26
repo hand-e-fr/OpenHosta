@@ -14,7 +14,19 @@ All significant changes to this project will be documented in this file.
   - `__hostacache__` now include links for datasets   
 
 
-## **v1.1**
+## **v1.1rc3**
+
+- **Fixes**
+  - `emulate` now works when emulated function is called inside another one
+  - `emulate` works now with `lru_cache` decorator from `functools` module 
+
+- **Internal**
+  - Added custom Exception classes for request and frame errors.
+  - Added a loop to find the frame in `_extend_scope`
+  - Added a Makefile for cleaning and packaging and tests
+---
+
+## **v1.1** 13/09/2024
 
 - **Fixes**
   - the `emulate` function is now decorator-resistant.
@@ -22,6 +34,7 @@ All significant changes to this project will be documented in this file.
   - `thought` function now accept multiple arguments
   - `suggest` and `analytics` call now th LLM with `Model` class (`ai_call`)
   - `emulate` works now in a nested function.
+  - Added Flask compatibility
   
 - **Enhancement**
   - the `thought` function guess automatically his return type with LLM
@@ -33,6 +46,7 @@ All significant changes to this project will be documented in this file.
   - `emulate` now includes a verification output that checks and converts the output to the specified type if necessary. Supported types include **Pydantic** models, all types from the **typing** module mentioned above, as well as built-in types such as `dict`, `int`, `float`, `str`, `list`, `set`, `frozenset`, `tuple`, and `bool`.
     - The `complex` type is not supported. If you need to use complex numbers, please pass them as a `tuple` and manually convert them after processing.
   -  The return type predicted by `thought` is now attached as an attribute to the object created: `_return_type`.
+  -  Added a `_last_request` attribute to an emulated function giving access to the prompt sent to the LLM.
 
 - **Features**
   - `example` function that can add some example for a specified hosta-injected function (inside or outside it) and add it to the cache
@@ -46,6 +60,11 @@ All significant changes to this project will be documented in this file.
 
 - **Internal**
   - Functional tests have been added for each of the library's features
+
+- **Doc**
+  - Documentation now integrates Google Cobal link
+
+---
 
 ## **v1.0** 29/08/2024:
 
