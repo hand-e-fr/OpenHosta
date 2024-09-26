@@ -4,6 +4,18 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v1.1rc3**
+
+- **Fixes**
+  - `emulate` now works when emulated function is called inside another one
+  - `emulate` works now with `lru_cache` decorator from `functools` module 
+
+- **Internal**
+  - Added custom Exception classes for request and frame errors.
+  - Added a loop to find the frame in `_extend_scope`
+  - Added a Makefile for cleaning and packaging and tests
+---
+
 ## **v1.1** 13/09/2024
 
 - **Fixes**
@@ -38,6 +50,11 @@ All significant changes to this project will be documented in this file.
 
 - **Internal**
   - Functional tests have been added for each of the library's features
+
+- **Doc**
+  - Documentation now integrates Google Cobal link
+
+---
 
 ## **v1.0** 29/08/2024:
 
