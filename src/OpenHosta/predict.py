@@ -24,7 +24,9 @@ def _exec_predict(
         loss: str = None,
         epochs: int = None,
         batch_size: int = None,
-        force_train: bool = False
+        force_train: bool = False,
+        norm_max: float = None,
+        norm_min: float = None
 ):
     hidden_dir = os.path.join(CACHE_DIR, f".model_{_function_obj.__name__}_{_function_infos['hash_function']}")
     os.makedirs(hidden_dir, exist_ok=True)
@@ -33,7 +35,7 @@ def _exec_predict(
     weight_path = os.path.join(hidden_dir, "model.pth")
     normalisation_path = os.path.join(hidden_dir, "normalisation.json")
 
-    preparator = Datapreparator(encoder, decoder)
+    preparator = Datapreparator(norm_max, norm_min, encoder, decoder)
     builder = Builder(hidden_dir)
 
     if not os.path.exists(config_path) or not os.path.exists(weight_path) or not os.path.exists(normalisation_path) or force_train==True:

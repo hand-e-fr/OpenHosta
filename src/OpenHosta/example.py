@@ -109,7 +109,7 @@ def save_examples(hosta_func=None, hosta_path=None):
         if os.path.exists(path_name):
             with open(path_name, "rb") as f:
                 cached_data = pickle.load(f)
-                with open(total_path, "w") as t:
+                with open(total_path, "a") as t:
                     for dict in cached_data["ho_example"]:
                         t.write(json.dumps(dict) + "\n")
         else:
