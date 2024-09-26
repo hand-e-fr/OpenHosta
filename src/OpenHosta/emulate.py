@@ -84,11 +84,10 @@ def _exec_emulate(
         creativity=l_creativity,
         diversity=l_diversity,
     )
-
+    
     if _obj is not None and inspect.isfunction(_obj):
         setattr(_obj, "_last_response", response.json())
         
-    
     if response.status_code == 200:
         l_ret = model.request_handler(
             response, _function_return, _function_return_caller
