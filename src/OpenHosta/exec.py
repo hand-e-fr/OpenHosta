@@ -9,7 +9,7 @@ from pydantic import BaseModel, create_model
 import sys
 import copy
 
-from enhancer import enhance
+from .enhancer import enhance
 
 
 CACHE_DIR = "__hostacache__"

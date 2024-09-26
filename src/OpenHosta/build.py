@@ -1,4 +1,4 @@
-from config import Model, DefaultManager
+from .config import Model, DefaultManager
 
 def _exec_build(
         _function_infos : dict = None,

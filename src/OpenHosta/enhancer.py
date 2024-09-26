@@ -1,8 +1,8 @@
 import json
 import sys
 
-from prompt import PromptMananger
-from config import DefaultManager
+from .prompt import PromptMananger
+from .config import DefaultManager
 
 
 _x = PromptMananger()

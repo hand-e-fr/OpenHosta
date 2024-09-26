@@ -1,11 +1,11 @@
 import json
 import os
 import torch
-# from config import Model, DefaultManager
-from encoder import HostaEncoder, FloatEncoder, BoolEncoder, StringEncoder
-from decoder import HostaDecoder, IntDecoder, FloatDecoder, BoolDecoder, StringDecoder
 
-from model import CustomModel, CustomLinearModel
+from .encoder import HostaEncoder, FloatEncoder, BoolEncoder, StringEncoder
+from .decoder import HostaDecoder, IntDecoder, FloatDecoder, BoolDecoder, StringDecoder
+
+from .model import CustomModel, CustomLinearModel
 
 class Builder():
     def __init__(self, hidden_dir):

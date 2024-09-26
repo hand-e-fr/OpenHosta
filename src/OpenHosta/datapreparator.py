@@ -5,8 +5,8 @@ import json
 import csv
 import numpy as np
 
-from encoder import HostaEncoder
-from decoder import HostaDecoder
+from .encoder import HostaEncoder
+from .decoder import HostaDecoder
 
 class Datapreparator():
     def __init__(self, norm_max, norm_min, encoder=None, decoder=None):

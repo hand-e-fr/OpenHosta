@@ -1,4 +1,3 @@
-import torch
 from typing import Any
 
 class HostaEncoder():
