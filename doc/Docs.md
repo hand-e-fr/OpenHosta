@@ -186,7 +186,7 @@ my_model = config.Model(
 
 def find_name_age(sentence:str, id:dict)->dict:
     """
-    This function find in a text the name and the age of a personn.
+    This function find in a text the name and the age of a person.
 
     Args:
         sentence: The text in which to search for information
@@ -249,15 +249,15 @@ Let's take the same example, but using this feature:
 from pydantic import BaseModel
 from OpenHosta import emulate, config
 
-class Personn(BaseModel):
+class Person(BaseModel):
     name: str
     age: int
 
 config.set_default_api_key("put-your-api-key-here")
 
-def find_first_name(sentence:str)->Personn:
+def find_first_name(sentence:str)->Person:
     """
-    This function find in a text the name and the age of a personn.
+    This function find in a text the name and the age of a person.
 
     Args:
         sentence: The text in which to search for information
