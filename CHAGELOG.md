@@ -3,7 +3,7 @@
 All significant changes to this project will be documented in this file.
 
 ---
-## **v1.2beta1**
+## **v1.2beta**
 - **Features**
   - `predict` function that create a linear regression model based on provided examples
 
@@ -11,7 +11,8 @@ All significant changes to this project will be documented in this file.
   - `load_examples` support now jsonl and csv
 
 - **Enhancements**
-  - `__hostacache__` now include links for datasets   
+  - `__hostacache__` now include links for datasets  
+  - `merge`now merge with 1.1-rc3 
 
 
 ## **v1.1rc3**
