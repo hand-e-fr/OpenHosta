@@ -1,11 +1,7 @@
 import os
-import json
-import torch
 
-from config import Model, DefaultManager
-from builder import Builder
-from model import CustomModel
-from datapreparator import Datapreparator
+from .builder import Builder
+from .datapreparator import Datapreparator
 
 CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -53,7 +49,6 @@ def _exec_predict(
             batch_size = int(0.05 * len(dataset_normalize)) if 0.05 * len(dataset_normalize) > 1 else 1 # 5% of the dataset or one 
         else:
             batch_size = batch_size
-        # print(f"Batch size: {batch_size}")
         train, eval = preparator.split(dataset_normalize, batch_size)
 
         epochs = int(2*len(dataset_normalize) / batch_size) if epochs is None else epochs

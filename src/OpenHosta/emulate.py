@@ -1,7 +1,7 @@
 import sys
 
-from prompt import PromptMananger
-from config import Model, DefaultManager
+from .prompt import PromptMananger
+from .config import Model, DefaultManager
 
 
 _x = PromptMananger()

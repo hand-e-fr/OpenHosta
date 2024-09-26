@@ -3,7 +3,7 @@ import pickle
 import os
 import json
 
-from cache import Hostacache
+from .cache import Hostacache
 
 CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
