@@ -81,7 +81,7 @@ git clone git@github.com:hand-e-fr/OpenHosta.git
 2. Navigate to the **directory** of the cloned project:
 
 ```bash
-cd OpenHosta-dev
+cd OpenHosta
 ```
 
 3. Ensure you have installed the necessary **dependencies** before starting.
@@ -90,7 +90,7 @@ cd OpenHosta-dev
 pip install .
 ```
 
-4. Check that you have the correct version. 
+4. Check that you have the correct version from Python. 
 
 ```python
 OpenHosta.__version__
