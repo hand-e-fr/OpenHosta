@@ -50,5 +50,28 @@ where = ["src"]
 testpaths = [
     'tests/functionnalTests',
     'tests/unitTests',
-    'tests/performanceTests'
 ]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.venv
+  | _build
+  | build
+  | dist
+  | .*.json$
+)/
+'''
+
+[tool.pylint]
+disable = [
+    "C0114",
+    "C0116",
+]
+max-line-length = 100
+variable-naming-style = "snake_case"
