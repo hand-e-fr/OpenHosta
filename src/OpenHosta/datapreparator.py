@@ -9,13 +9,19 @@ from encoder import HostaEncoder
 from decoder import HostaDecoder
 
 class Datapreparator():
-    def __init__(self, encoder=None, decoder=None):
+    def __init__(self, norm_max, norm_min, encoder=None, decoder=None):
         self.encoder = encoder if encoder else HostaEncoder()
         self.decoder = decoder if decoder else HostaDecoder()
 
-        self.norm_min = 0.1
-        self.norm_max = 100.0
-
+        if norm_min:
+            self.norm_min = norm_min
+        else:
+            self.norm_min = 0.1
+        if norm_max:
+            self.norm_max = norm_max
+        else:
+            self.norm_max = 1.0
+    
         self.data_min_nonzero = None
         self.data_max = None
         self.data_min = None
@@ -197,7 +203,6 @@ def open_file(ho_examples):
     list_of_examples = []
     for path in ho_examples:
         _, file_extension = os.path.splitext(path)
-
         try:
             if file_extension == '.jsonl':
                 with open(path, "r") as file:
