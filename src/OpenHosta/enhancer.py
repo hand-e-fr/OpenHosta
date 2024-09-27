@@ -1,5 +1,6 @@
 import json
 import sys
+from typing import Callable
 
 from .prompt import PromptMananger
 from .config import DefaultManager
@@ -66,7 +67,7 @@ def _build_attributes(func: object, last_enh) -> int:
         func.enhanced_prompt = last_enh["enhanced"]
         func.review = last_enh["review"]
         func.advanced = last_enh["advanced"]
-        func.diagramm = last_enh["mermaid"]
+        func.diagram = last_enh["mermaid"]
     return 0
 
 
@@ -88,3 +89,12 @@ def enhance(func):
 
     _build_attributes(func, last_enh)
     return last_enh
+
+def suggest(func:Callable):
+    if not callable(func):
+        raise ValueError("Suggest arguments must be a callable.")
+    try:
+        full = func.__suggest__(func)
+    except AttributeError:
+        raise AttributeError(f"The “__suggest__” attribute is not defined. The function {func.__name__} might not have been called.")
+    return full

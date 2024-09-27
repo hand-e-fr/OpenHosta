@@ -4,7 +4,21 @@ All significant changes to this project will be documented in this file.
 
 ---
 
-## **v1.1rc3**
+## **v1.1-rc4**
+
+- **Feature**
+  - Added `suggest` function. Works the same as the `__suggest__` attributs but in a function
+
+- **Doc**
+  - Many inconsistencies and errors corrected.
+
+- **Internal**
+  - Added Github workflows for linting, formating and testing when pushing to dev and main
+
+- **Fixes**
+  - `suggest` attribute `diagramm` is now `diagram`
+  
+## **v1.1-rc3**
 
 - **Fixes**
   - `emulate` now works when emulated function is called inside another one

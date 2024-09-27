@@ -27,4 +27,3 @@ class ApiKeyError(RequestError):
 
 class FrameError(OhErrorMixin):
     """ Raised when the frame inspection fail """
-    
