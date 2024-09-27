@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OpenHosta"
-version = "1.1.0rc4"
+version = "1.1.0"
 description = "Open-Source programming project IA integretion in developement environnement"
 keywords = ["AI", "GPT", "Natural language", "Autommatic", "Easy"]
 authors = [
