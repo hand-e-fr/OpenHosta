@@ -76,7 +76,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - ["emulate" Function](#emulate-function)
       - [Supported types \& Pydantic](#supported-types--pydantic)
       - [Integration Details](#integration-details)
-    - ["suggest" Attributs](#suggest-attributs)
+    - ["suggest" Function](#suggest-function)
       - [Usage](#usage)
       - [Output Examples](#output-examples)
     - ["thought" Function](#thought-function)
@@ -186,7 +186,7 @@ my_model = config.Model(
 
 def find_name_age(sentence:str, id:dict)->dict:
     """
-    This function find in a text the name and the age of a personn.
+    This function find in a text the name and the age of a person.
 
     Args:
         sentence: The text in which to search for information
@@ -249,15 +249,15 @@ Let's take the same example, but using this feature:
 from pydantic import BaseModel
 from OpenHosta import emulate, config
 
-class Personn(BaseModel):
+class Person(BaseModel):
     name: str
     age: int
 
 config.set_default_api_key("put-your-api-key-here")
 
-def find_first_name(sentence:str)->Personn:
+def find_first_name(sentence:str)->Person:
     """
-    This function find in a text the name and the age of a personn.
+    This function find in a text the name and the age of a person.
 
     Args:
         sentence: The text in which to search for information
@@ -271,7 +271,7 @@ def find_first_name(sentence:str)->Personn:
 
 Note that the Pydantic model cannot be defined inside a function, as this will produce an error.
 
-### "suggest" Attributs
+### "suggest" Function
 
 When you use the emulate function, an attribute is automatically attached. This attribute is a function giving you hints on how to improve your prompt, and a diagram visualization tool. This tool uses the default model to operate.
 
@@ -289,7 +289,10 @@ def find_occurence_of_a_word(word :str, text: str) -> int:
 
 find_occurence_of_a_word("Hello", "Hello World Hello!")
 
-find_occurence_of_a_word.__suggest__(find_occurence_of_a_word)
+print(suggest(multpily)) # to have the raw message
+print(multiply.diagram) # to have just the diagram
+
+find_occurence_of_a_word.__suggest__(find_occurence_of_a_word) # same
 print(find_occurence_of_a_word.advanced)
 ```
 
@@ -297,7 +300,7 @@ In this example, you can see that after calling the emulated function, we can ca
   - `enhanced prompt`: It's a proposal to improve the function's prompt. 
   - `review`: This is the analysis provided by the AI for its prompt improvement. Can be useful to understand its reasoning.
   - `advanced`: Similar to `enhanced prompt` but adds an iteration. The AI will then try to solve advanced problems according to context or other factors. Especially useful in the most complex cases.
-  - `diagramm`: Gives a Mermaid diagram showing the stages of AI thinking. Useful if you want to try coding the function yourself.
+  - `diagram`: Gives a Mermaid diagram showing the stages of AI thinking. Useful if you want to try coding the function yourself.
 
 You can also retrieve the entire LLM response by storing the output of the `suggest` function.
 
