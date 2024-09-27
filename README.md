@@ -93,6 +93,8 @@ pip install .
 4. Check that you have the correct version from Python. 
 
 ```python
+import OpenHosta
+
 OpenHosta.__version__
 ```
 
