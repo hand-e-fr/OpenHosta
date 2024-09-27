@@ -4,7 +4,7 @@ All significant changes to this project will be documented in this file.
 
 ---
 
-## **v1.1-rc4**
+## **v1.1-rc4** 27/09/24
 
 - **Feature**
   - Added `suggest` function. Works the same as the `__suggest__` attributs but in a function
@@ -18,7 +18,7 @@ All significant changes to this project will be documented in this file.
 - **Fixes**
   - `suggest` attribute `diagramm` is now `diagram`
   
-## **v1.1-rc3**
+## **v1.1-rc3** 26/09/23
 
 - **Fixes**
   - `emulate` now works when emulated function is called inside another one
