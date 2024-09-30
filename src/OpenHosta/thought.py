@@ -73,3 +73,4 @@ def thought(key):
         return result
 
     return inner_func
+ 
