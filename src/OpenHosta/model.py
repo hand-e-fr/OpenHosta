@@ -29,11 +29,13 @@ class CustomLinearModel(nn.Module):
                 raise Exception("Config file not found please check the path : ", self.path)
         else:
             self.config = config
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = self.create_model(self.config)
+        self.create_model(self.config)
 
         self.loss = nn.SmoothL1Loss()
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=0.001)
+        self.to(self.device)
 
     def create_model(self, config):
 
@@ -59,6 +61,7 @@ class CustomLinearModel(nn.Module):
         return 
 
     def forward(self, x):
+        x = x.to(self.device)
         num_layers = len(self.config) - 4
         for idx in range(1, num_layers):
             layer = getattr(self, f"fc{idx}")
