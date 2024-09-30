@@ -121,7 +121,7 @@ class Datapreparator():
         return normalized_inference.tolist()
     
     def denormalize_prediction(self, prediction):
-        prediction = prediction.detach().numpy()
+        prediction = prediction.detach().cpu().numpy()
 
         denormalized_prediction = np.zeros_like(prediction)
         for i in range(len(prediction)):
