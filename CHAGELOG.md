@@ -3,17 +3,13 @@
 All significant changes to this project will be documented in this file.
 
 ---
-## **v1.2beta**
-- **Features**
-  - `predict` function that create a linear regression model based on provided examples
+## **v1.2beta-3**
 
 - **Fixes**
-  - `load_examples` support now jsonl and csv
+  - `predict` is now CUDA compatible (currently, CUDA(id) cannot be chosen).
 
 - **Enhancements**
-  - `__hostacache__` now include links for datasets  
-  - `merge`now merge with 1.1-rc3 
-
+  - `merge`now merge with 1.1
 
 ## **v1.1-rc4** 27/09/24
 
