@@ -50,7 +50,7 @@ class Builder():
             config = json.load(file)
   
         model = CustomLinearModel(config, self.hidden_dir)
-        model.load_state_dict(torch.load(weight_path))
+        model.load_state_dict(torch.load(weight_path, weights_only=True))
         output = model.forward(inference)
         return output
 
