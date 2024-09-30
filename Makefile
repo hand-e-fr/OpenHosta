@@ -57,12 +57,12 @@ install: all
 	@$(PIP) install . > $(NULL_DEVICE)
 	@$(L_SHELL) $(WRITE) '$(TAG) Succesfully installed $(PACKAGE_NAME) !' $(COLOR)
 
-build:
+build: clean
 	$(PYTHON) -m build
 	$(PYTHON) -m twine check dist/*
 
 upload: build
-	$(PYTHON) -m twine upload dist/*
+	$(PYTHON) -m twine upload dist/* --verbose
 
 ftests: clean
 	@$(L_SHELL) $(WRITE) '$(TAG) Installing package: $(PACKAGE_NAME)...' $(COLOR) 
