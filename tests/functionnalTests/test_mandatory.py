@@ -2,6 +2,7 @@ import pytest
 import time as t
 from pydantic import BaseModel
 from typing import Callable
+from typing import Callable
 
 from OpenHosta import config, emulate, thought
 
