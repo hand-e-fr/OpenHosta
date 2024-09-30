@@ -23,21 +23,25 @@ class Hostacache:
             "return_type": "",
             "return_caller": "",
             "function_call": "",
+            "function_args": {},
             "function_locals": {},
             "ho_example": [],
             "ho_example_id": 0,
+            "ho_example_links": [],
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
         }
 
-    def __call__(self):
+    def create_hosta_cache(self):
         func_name = self.func.__name__
         path_name = os.path.join(CACHE_DIR, f"{func_name}.openhc")
+
 
         if os.path.exists(path_name):
             with open(path_name, "rb") as f:
                 cached_data = pickle.load(f)
             assert self.cache_id in cached_data, "Cache ID not found in cache file"
+
 
             if self._is_value_already_in_example(self.value, cached_data) == False:
                 cached_data[str(self.cache_id)].append(self.value)
@@ -58,14 +62,26 @@ class Hostacache:
         return
 
     def _is_value_already_in_example(self, value, cached_data):
-        for item in cached_data["ho_example"]:
+        if self.cache_id not in cached_data:
+            print("Cache ID not found in cache file")
+            return False
+
+        def recursive_check(item, value):
             if isinstance(item, dict):
-                if item == value:
+                # Check if the dict itself matches the value or if any key-value pair does
+                if item == value or any(recursive_check(v, value) for v in item.values()):
                     return True
             elif isinstance(item, list):
-                for sub_item in item:
-                    if sub_item == value:
-                        return True
+                # Iterate through all items in the list (can be nested lists or dicts)
+                return any(recursive_check(sub_item, value) for sub_item in item)
+            else:
+                # For non-list/dict items, check direct equality
+                return item == value
+
+        # Iterate through cached data for the cache_id
+        for item in cached_data[self.cache_id]:
+            if recursive_check(item, value):
+                return True
         return False
 
     def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:

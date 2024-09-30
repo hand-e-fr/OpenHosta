@@ -32,9 +32,11 @@ class HostaInjector:
             "return_type": "",
             "return_caller": "",
             "function_call": "",
+            "function_args": {},
             "function_locals": {},
             "ho_example": [],
             "ho_example_id": 0,
+            "ho_example_links": [],
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
         }
@@ -54,7 +56,7 @@ class HostaInjector:
             )
 
             if function_hash == cached_data["hash_function"]:
-                cached_data["function_call"], cached_data["function_locals"] = (
+                cached_data["function_call"], cached_data["function_locals"], cached_data["function_args"] = (
                     self._get_functionCall(func_obj, caller)
                 )
                 self._attach_attributs(func_obj, func_prot)
@@ -64,7 +66,7 @@ class HostaInjector:
         with open(path_name, "wb") as f:
             res = pickle.dump(hosta_args, f)
         # TODO : fix the function locals because he didn't load in the cache
-        hosta_args["function_call"], hosta_args["function_locals"] = (
+        hosta_args["function_call"], hosta_args["function_locals"], hosta_args["function_args"] = (
             self._get_functionCall(func_obj, caller)
         )
         return self.exec(hosta_args, func_obj, *args, **kwargs)
@@ -188,7 +190,7 @@ class HostaInjector:
         )
 
         call = f"{func.__name__}({args_str})"
-        return call, locals
+        return call, locals, values_args
 
     def _inspect_returnType(self, func: Callable) -> str:
         sig = inspect.signature(func)

@@ -163,7 +163,7 @@ Note that some features like `thought` or `__suggest__` specifically use the def
 config.set_default_model(my_model)
 ```
 
-### "emulate" Function
+## `emulate` Function
 
 The *emulate* function is the main feature of OpenHosta. This is the function that allows you to emulate functions with AI, i.e. the instructions will be executed in an LLM and not directly in your computer. Here's how to use it.
 
@@ -306,6 +306,10 @@ You can also retrieve the entire LLM response by storing the output of the `sugg
 
 Note that this feature uses the default model.
 
+You can also retrieve the entire LLM response by storing the output of the `suggest` function.
+
+Note that this feature uses the default model.
+
 #### Output Examples
 
 - **Enhanced prompt:**
@@ -328,7 +332,76 @@ graph LR
     I --> J[End]
 ```
 
-### "thought" Function
+## `predict` Function
+
+The *predict* function is the second major feature of OpenHosta. This function enables you to create models dynamically for specific functions. It works similarly to the *emulate* function, but instead of making API calls to an LLM, it creates its own internal model (currently only linear regression).
+
+#### How `predict` Works
+
+The `predict` function takes a set of training examples, provided by the user, and generates a regression model behind the scenes automatically. The goal here is to simplify the process of training a model based on data, directly within a Python function.
+
+For now, please note that *predict* comes with some **limitations**:
+- **Input types supported**: Currently, `predict` supports only `int` and `float` as input types.
+- **Return type**: It returns only `float` output.
+- **Model architecture**: It builds a simple linear regression model with a single output.
+- **Examples Required**: You need to provide several examples to train the model correctly.
+
+Furthermore, since the function is in its beta phase, bugs and instability might occur.
+
+### Examples and Training
+To train the model, you need to define examples using the `example()` function, save them with `save_examples()`, and load them using `load_examples()`, which is required for training. Additionally, you can load pre-existing datasets using `load_examples()`.
+
+
+### Example of `predict` function in use
+
+Below is a practical example demonstrating how to use `predict` to build a model that estimates a person's chance of dying based on their age:
+
+```python
+from OpenHosta import predict, example, load_examples, save_examples
+
+def find_chance_of_die(age: float) -> float:
+    """
+    This function predicts the chance of dying in a percentage value from 0 to 1, 
+    based on the age (with the baseline year starting at 1900).
+    """
+    # We forced some interpolation not real data
+    example(age=124.0, hosta_out=0.99)
+    example(age=100.5, hosta_out=0.20)
+    example(age=55.0,  hosta_out=0.60)
+    example(age=45.0,  hosta_out=0.10)
+    example(age=24.8,  hosta_out=0.20)
+    example(age=8.0,   hosta_out=0.01)
+  
+    # Comment out the following lines to avoid recreating the dataset every time.
+    save_examples(hosta_path="chance_of_die")
+    load_examples(hosta_path="chance_of_die.jsonl")
+
+    return predict(epochs=1000, complexity=15)
+```
+
+#### Parameters for `predict`
+
+- **`epochs` (int)**: Defines how many times the model will iterate over the training examples. Increasing this number may lead to better convergence, at the cost of longer training time. By default, it is set to 2 times the dataset size based on the batch size (which is fixed at 5% of the dataset size or 1 if the dataset size is lower).
+  
+- **`complexity` (int)**: Sets the level of complexity for the model, affecting the number of weight for the model based on the len of the input. By default is 4
+
+- **`force_train` (bool)**: If `True`, it forces the model to retrain, even if a trained model already exists in cache.
+- **`skip_data` (list)**: Specify data points in a **dict** to skip during the model's data preparation or training process.
+- **`out_data` (list)**: Specify which parts of the output you'd like the model to predict if there is no obvious.
+- **`norm_min` (float)**: Specifies the minimum value for data normalization. This value is used to scale the input data to a normalized range. By default 0.1
+- **`norm_max` (float)**: Specifies the maximum value for data normalization. This value defines the upper bound of the normalized range. By default 1.0
+
+
+#### Training Output
+
+When training the model using `predict`, a corresponding folder will be created under `__hostachache__`. This folder will contain:
+- `config.json`: Configuration file describing model parameters like structure, training data, etc.
+- `model.pth`: The serialized weights of the trained model.
+- `normalization.json`: Values for data normalization to ensure consistent input/output scaling.
+
+These files are used to manage the model, its saved state, and how incoming data is normalized before being processed.
+
+## `thought` Function
 
 **Lambda** functions in Python provide a way to create small, anonymous functions. These are defined using the lambda keyword and can have any number of input parameters but only a single expression.
 
@@ -368,7 +441,7 @@ print(x._return_type) # int
 
 **Note** : ***this feature uses the default model.***
 
-### "example" Function
+## `example` Function
 
 The "example" function is designed to enhance the context of a function for a LLM by adding examples to it. This functionality is encapsulated in the `example` function.
 
@@ -376,7 +449,9 @@ The "example" function is designed to enhance the context of a function for a LL
 
 - **Versatile**: The "example" function can be used both inside and outside a function to specify examples.
 - **Save**: The "example" function provides a tool called `save_examples` that can store all the examples added to a specified function in a ***JSONL*** file.
-- **Load**: The function also offers a tool called `load_examples` to load a ***JSONL*** file into the context of the function.
+- **Load**: The function also offers a tool called `load_examples` to load a file into the context of the function.
+
+***Notes : `load_examples` can load `csv` or `jsonl` file for he moment so you need to specifiy the file extension*** 
 
 Here's how it works: 
 
