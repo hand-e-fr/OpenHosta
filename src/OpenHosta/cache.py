@@ -30,6 +30,8 @@ class Hostacache:
             "ho_example_links": [],
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
+            "ho_data": [],
+            "ho_data_id": 0,
         }
 
     def create_hosta_cache(self):
@@ -40,6 +42,7 @@ class Hostacache:
         if os.path.exists(path_name):
             with open(path_name, "rb") as f:
                 cached_data = pickle.load(f)
+                print(cached_data, flush=True)
             assert self.cache_id in cached_data, "Cache ID not found in cache file"
 
 
@@ -55,6 +58,8 @@ class Hostacache:
                 )
                 with open(path_name, "wb") as f:
                     pickle.dump(cached_data, f)
+                    print(cached_data, flush=True)
+
             return
         hosta_args = self._get_argsFunction(self.func)
         with open(path_name, "wb") as f:
@@ -93,6 +98,10 @@ class Hostacache:
         self.infos_cache["return_type"], self.infos_cache["return_caller"] = (
             self._get_functionReturnType(func_obj)
         )
+        print(self.infos_cache, flush=True)
+        print("*"*50)
+        print(self.infos_cache[self.cache_id], flush=True)
+        print(self.value, flush=True)
         self.infos_cache[self.cache_id].append(self.value)
         self.infos_cache[f"{str(self.cache_id)}" + "_id"] = self._get_hashFunction(
             str(self.infos_cache[str(self.cache_id)]), 0, 0
