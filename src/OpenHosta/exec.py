@@ -11,6 +11,7 @@ import copy
 
 from .enhancer import enhance
 from .errors import FrameError
+from .predict import continue_train, to_emulate, retrain, save, architecture
 
 
 CACHE_DIR = "__hostacache__"
@@ -39,6 +40,8 @@ class HostaInjector:
             "ho_example_links": [],
             "ho_cothougt": [],
             "ho_cothougt_id": 0,
+            "ho_data": [],
+            "ho_data_id" : 0
         }
         func_obj, caller = self._extend_scope()
         func_name = func_obj.__name__
@@ -250,3 +253,9 @@ class HostaInjector:
         if "bound method" not in str(func):
             setattr(func, "__suggest__", enhance)
             setattr(func, "_prot", prototype)
+            setattr(func, "continue_train", continue_train)
+            setattr(func, "to_emulate", to_emulate)
+            setattr(func, "retrain", retrain)
+            setattr(func, "save", save)
+            setattr(func, "architecture", architecture)
+
