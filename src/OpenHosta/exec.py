@@ -9,6 +9,8 @@ from pydantic import BaseModel, create_model
 import sys
 import copy
 
+import functools
+
 from .enhancer import enhance
 from .errors import FrameError
 from .predict import continue_train, to_emulate, retrain, save, architecture
@@ -58,11 +60,11 @@ class HostaInjector:
                 cached_data["ho_cothougt_id"],
             )
 
+            self._attach_attributs(func_obj, func_prot)
             if function_hash == cached_data["hash_function"]:
                 cached_data["function_call"], cached_data["function_locals"], cached_data["function_args"] = (
                     self._get_functionCall(func_obj, caller)
                 )
-                self._attach_attributs(func_obj, func_prot)
                 return self.exec(cached_data, func_obj, *args, **kwargs)
 
         hosta_args = self._get_argsFunction(func_obj)
@@ -72,6 +74,7 @@ class HostaInjector:
         hosta_args["function_call"], hosta_args["function_locals"], hosta_args["function_args"] = (
             self._get_functionCall(func_obj, caller)
         )
+        self._attach_attributs(func_obj, func_prot)
         return self.exec(hosta_args, func_obj, *args, **kwargs)
 
     def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:
@@ -89,7 +92,6 @@ class HostaInjector:
             self.infos_cache["ho_example_id"],
             self.infos_cache["ho_cothougt_id"],
         )
-        self._attach_attributs(func_obj, func_prot)
         return self.infos_cache
 
     def _extend_scope(self) -> Callable:
@@ -249,13 +251,22 @@ class HostaInjector:
 
         return return_type, return_caller
 
-    def _attach_attributs(self, func: Callable, prototype: str):
-        if "bound method" not in str(func):
-            setattr(func, "__suggest__", enhance)
-            setattr(func, "_prot", prototype)
-            setattr(func, "continue_train", continue_train)
-            setattr(func, "to_emulate", to_emulate)
-            setattr(func, "retrain", retrain)
-            setattr(func, "save", save)
-            setattr(func, "architecture", architecture)
+    def _attach_attributs(self, func: Callable, prototype: str) -> Callable:
+        """
+        Attach additional attributes to a function.
+
+        Args:
+            func (Callable): The target function to which the attributes are attached.
+            prototype (str): A string representing the prototype (used as an example).
+
+        Returns:
+            Callable: The target function wrapped with the attached attributes.
+        """ 
+        setattr(func, "__suggest__", enhance)
+        setattr(func, "_prot", prototype) 
+        setattr(func, "continue_train", functools.partial(continue_train, func_obj=func))
+        setattr(func, "retrain", functools.partial(retrain, func_obj=func))
+        setattr(func, "emulate", functools.partial(to_emulate, func_obj=func))
+        setattr(func, "architecture", architecture) # not yet implemented         
+        setattr(func, "save", save) # not yet implemented
 

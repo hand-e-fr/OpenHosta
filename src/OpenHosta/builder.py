@@ -54,8 +54,8 @@ class Builder():
         output = model.forward(inference)
         return output
 
-    def trains(self, config, train, val, epochs):
+    def trains(self, config, train, val, epochs, verbose, get_loss, continue_training):
         
         # TODO: polimorphic call
         model = CustomLinearModel(config, self.hidden_dir)
-        model.train(train, val, epochs, self.hidden_dir)
+        model.train(train, val, epochs, self.hidden_dir, verbose, get_loss, continue_training)
