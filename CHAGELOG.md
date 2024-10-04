@@ -22,7 +22,7 @@ All significant changes to this project will be documented in this file.
 ### **Enhancements**
 
 - `load_examples` has been renamed to `load_training_example` and now supports datasets in JSON, JSONL, and CSV formats for storage in `hosta_cache`.
-- The `Predict` function now supports a **verbose** mode for clearer model operations and includes a **get_loss** attribute to specify a .
+- The `Predict` function now supports a **verbose** mode for clearer model operations and includes a **get_loss** attribute to specify a loss to obtain.
 
 ## **v1.2beta-3**
 
