@@ -19,12 +19,7 @@ def build_user_prompt(_infos: dict = None):
     function_example = _infos["ho_example"]
     function_locals = _infos["function_locals"]
 
-    user_prompt = (
-        "Here's the function definition:\n"
-        + function_doc
-        + "\nAnd this is the function call:\n"
-        + function_call
-    )
+    user_prompt = ""
 
     if function_example != []:
         user_prompt = (
@@ -36,7 +31,7 @@ def build_user_prompt(_infos: dict = None):
     if not function_return is None:
         user_prompt = (
             user_prompt
-            + '\nTo fill the “return” value in the output JSON, build your response as defined in the following JSON schema. Do not change the key "return"\n'
+            + '\nTTo fill in the "return" value in the output JSON, create your response according to the specified JSON Schema. Make sure not to change the key "return."\n\n# JSON Schema to be used for "return" structure\n\n'
             + str(function_return)
         )
 
@@ -46,6 +41,14 @@ def build_user_prompt(_infos: dict = None):
             + "\nHere's the function's locals variables which you can use as additional information to give your answer:\n"
             + str(function_locals)
         )
+
+    user_prompt = (
+        user_prompt 
+        + "\n# Here's the function definition:\n"
+        + function_doc
+        # + "\n# And this is the function call:\n"
+        # + function_call
+    )
 
     return user_prompt
 
@@ -79,8 +82,8 @@ def _exec_emulate(
     l_user_prompt = build_user_prompt(_infos)
 
     response = model.api_call(
-        sys_prompt=_emulator_pre_prompt,
-        user_prompt=l_user_prompt,
+        sys_prompt=_emulator_pre_prompt + "\n" + l_user_prompt,
+        user_prompt=_infos["function_call"],
         creativity=l_creativity,
         diversity=l_diversity,
     )
