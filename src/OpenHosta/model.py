@@ -71,14 +71,23 @@ class CustomLinearModel(nn.Module):
         x = layer(x)
         return x
     
-    def train(self, train, val,  epochs, path):
+
+    def train(self, train, val,  epochs, path, verbose=False, get_loss=None, continue_training=False):
+        get_loss=0.0 if get_loss is None else get_loss
         
+        if continue_training:
+            try:
+                self.load_state_dict(torch.load(path+"/model.pth", weights_only=True))
+                if verbose:
+                    print(f"\033[93mModel loaded from {path}/model.pth\033[0m")
+            except Exception as e:
+                raise Exception(f"Model weight not found at {path}/model.pth")
+
         total_start = time.time()
 
         for epoch in range(epochs):
             epoch_start = time.time()
             for X_train, y_train in train:
-                
                 X_train, y_train = X_train.to(self.device), y_train.to(self.device)
                 self.optimizer.zero_grad()
                 output = self.forward(X_train)
@@ -88,10 +97,17 @@ class CustomLinearModel(nn.Module):
                 self.optimizer.step()
             epoch_end = time.time()
             epoch_time = epoch_end - epoch_start
-            print(f"\033[94m{epoch}/{epochs} -> Loss: {loss.item()} in {epoch_time} sec\033[0m", flush=True)
+            if verbose:
+                print(f"\033[94m{epoch}/{epochs} -> Loss: {loss.item()} in {epoch_time} sec\033[0m", flush=True)
+
+            if loss.item() < get_loss:
+                if verbose:
+                    print(f"\033[93mLoss target achieved at epoch {epoch} with loss {loss.item()} in {epoch_time} sec\033[0m", flush=True)
+                break
             
         total_end = time.time()
         total_time = total_end - total_start
-        print(f"\033[92mTraining complete : Loss: {loss.item()} in a total of {total_time} sec\033[0m", flush=True)
+        if verbose:
+            print(f"\033[92mTraining complete : Loss: {loss.item()} in a total of {total_time} sec\033[0m", flush=True)
 
         torch.save(self.state_dict(), path+"/model.pth")

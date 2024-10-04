@@ -3,10 +3,31 @@
 All significant changes to this project will be documented in this file.
 
 ---
+## **v1.2beta-4**
+
+### **Features**
+
+- **TrainingSet**  
+  The `TrainingSet` feature is now available! It allows you to manage datasets for `hosta_injected` functions with the following tools:
+  - **`.visualize`**: Visualize the dataset (examples and data) for a specific function and get the list of them.
+  - **`.add`**: Add new data into `ho_data`.
+  - **`.generate`**: Create data by calling an LLM.
+
+- **New Attributes in Predict Functions**  
+  The `Predict` function now includes these new attributes:
+  - **`.retrain`**: Retrain the model.
+  - **`.continue_train`**: Continue training using the previous weights.
+  - **`.emulate`**: Run the prediction function in emulation mode with a model.
+
+### **Enhancements**
+
+- `load_examples` has been renamed to `load_training_example` and now supports datasets in JSON, JSONL, and CSV formats for storage in `hosta_cache`.
+- The `Predict` function now supports a **verbose** mode for clearer model operations and includes a **get_loss** attribute to specify a .
+
 ## **v1.2beta-3**
 
 - **Fixes**
-  - `predict` is now CUDA compatible (currently, CUDA(id) cannot be chosen).
+  - `predict` is now CUDA compatible (currently, CUDA(id) cannot be chosen yet).
 
 - **Enhancements**
   - `merge`now merge with 1.1

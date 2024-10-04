@@ -32,41 +32,45 @@ class Datapreparator():
         self.prediction_min = None
         self.prediction_range = None
 
-
-
-
-    def prepare_input(self, in_value, skip_data):
+    def prepare_input(self, in_value):
         input_data = []
         for key, value in in_value.items():
-            if key not in skip_data:
-                if isinstance(value, dict):
-                    for sub_key, sub_value in value.items():
-                        parsed_value = self.encoder.encode(sub_value)
-                        input_data.extend(parsed_value)
-                elif isinstance(value, list):
-                    for item in value:
-                        parsed_value = self.encoder.encode(item)
-                        input_data.extend(parsed_value)
-                else:
-                    parsed_value = self.encoder.encode(value)
+            if isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    parsed_value = self.encoder.encode(sub_value)
                     input_data.extend(parsed_value)
+            elif isinstance(value, list):
+                for item in value:
+                    parsed_value = self.encoder.encode(item)
+                    input_data.extend(parsed_value)
+            else:
+                parsed_value = self.encoder.encode(value)
+                input_data.extend(parsed_value)
         return input_data
 
-    def prepare(self, ho_examples, skip_data, out_data):
-        self.dataset = []
-        list_examples = open_file(ho_examples)
+    def prepare(self, function_infos, prediction):
+        train = []
+        val = []
     
-        for examples in list_examples:
-            if isinstance(examples, list):
-                for example in examples:
-                    self.parse_dict(example, skip_data, out_data)
-            else:
-                self.parse_dict(examples, skip_data, out_data)
+        if function_infos["ho_example"] == [] and function_infos["ho_data"] == []:
+            raise ValueError("No example provided please provide at least one example for the model")
 
-        return self.dataset
+        if function_infos["ho_data"] != []:
+            for example in function_infos["ho_data"]:
+                value = self.parse_dict(example, prediction)
+                train.extend(value)
+            if function_infos["ho_example"] != []:
+                for example in function_infos["ho_example"]:
+                    value = self.parse_dict(example, prediction)
+                    val.extend(value)
+        else:
+            for example in function_infos["ho_example"]:
+                value = self.parse_dict(example, prediction)
+                train.extend(value)
+        return train, val
 
-
-    def normalize_dataset(self, dataset):
+    def normalize_dataset(self, train, val):
+        dataset = train + val if val != [] else train
         data_values = [example[0] for example in dataset]
         prediction_values = [example[1] for example in dataset]
 
@@ -104,10 +108,12 @@ class Datapreparator():
             zero_mask = prediction_array[:, i] == 0
             normalized_prediction[:, i] = np.where(zero_mask, 0.0, self.norm_min + ((prediction_array[:, i] - self.prediction_min_nonzero[i]) / self.prediction_range[i]) * (self.norm_max - self.norm_min))
 
-        # Maybe unwrap the tolist, stayfor now because only work after with list 
+        # Maybe unwrap the tolist, stay for now because only work after with list 
         normalized_dataset = list(zip(normalized_data.tolist(), normalized_prediction.tolist()))
-        return normalized_dataset
-    
+        train = normalized_dataset[:len(train)]
+        val = normalized_dataset[len(train):] if val else None
+        return train, val
+
     def normalize_inference(self, inference_data):
         inference_data = np.array(inference_data)
 
@@ -168,36 +174,47 @@ class Datapreparator():
     def convert(self, inference):
         return torch.tensor(inference, dtype=torch.float32)
     
-    def split(self, dataset, batch_size):
+    def split(self, train_normalization, val_normalization, batch_size):
         datatensor = []
 
-        for examples in dataset:
+        for examples in train_normalization:
             feature_tensor = torch.tensor(examples[0], dtype=torch.float32)
             label_tensor = torch.tensor(examples[1], dtype=torch.float32)
 
             tensor = [feature_tensor, label_tensor]
             datatensor.append(tensor)
 
-        train_size = int(0.8 * len(datatensor))
-        train_data = datatensor[:train_size]
-        val_data = datatensor[train_size:]
-        
-        train = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-        val = DataLoader(val_data, batch_size=batch_size, shuffle=False)
+        # train_size = int(0.8 * len(datatensor))
+        # train_data = datatensor[:train_size]
+        # val_data = datatensor[train_size:]
 
+        train = DataLoader(datatensor, batch_size=batch_size, shuffle=True)
+
+        if val_normalization:
+            valtensor = []
+            for examples in val_normalization:
+                feature_tensor = torch.tensor(examples[0], dtype=torch.float32)
+                label_tensor = torch.tensor(examples[1], dtype=torch.float32)
+
+                tensor = [feature_tensor, label_tensor]
+                valtensor.append(tensor)
+            val = DataLoader(valtensor, batch_size=batch_size, shuffle=False)
+        else : val = None
         return train, val
 
-    def parse_dict(self, example, skip_data, out_data):
+    def parse_dict(self, example, prediction):
+        dataset = []
         input_data = []
         output_data = []
         for key, value in example.items():
-            if key in out_data or key == "hosta_out":
+            if key in prediction or key == "hosta_out":
                 parsed_value = self.encoder.encode(value)
                 output_data.extend(parsed_value)
-            elif key not in skip_data:
+            else:
                 parsed_value = self.encoder.encode(value)
                 input_data.extend(parsed_value)
-        self.dataset.append([input_data, output_data])
+        dataset.append([input_data, output_data])
+        return dataset
 
 def open_file(ho_examples):
     list_of_examples = []

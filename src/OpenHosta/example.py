@@ -2,14 +2,13 @@ import inspect
 import pickle
 import os
 import json
+import csv
 
 from .cache import Hostacache
 
 CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-
-import inspect
 
 def example(*args, hosta_func=None, hosta_out=None, **kwargs):
     input_type = {}
@@ -116,9 +115,6 @@ def save_examples(hosta_func=None, hosta_path=None):
         raise ValueError(
             f"Please provide hosta_path for specifying the path to save the cache"
         )
-        raise ValueError(
-            f"Please provide hosta_path for specifying the path to save the cache"
-        )
     total_path = f"{hosta_path}" + ".jsonl"
 
     func_name = func.__name__
@@ -139,42 +135,57 @@ def save_examples(hosta_func=None, hosta_path=None):
         raise ValueError(f"Could not found the cache at {path_name}") from e
 
 
+def load_training_example(hosta_path: str, hosta_func: callable) -> dict:
+    """
+    Load the training example from the cache.
+    """
+    func_name = hosta_func.__name__
+    path_name = os.path.join(CACHE_DIR, f"{func_name}.openhc")
 
+    cached_data = None
 
-# def load_examples(hosta_func=None, hosta_path=None):
-#     if hosta_func is None:
-#         try:
-#             func_frame = inspect.currentframe().f_back
-#             func_name = func_frame.f_code.co_name
-#             func = func_frame.f_globals[func_name]
-#         except:
-#             raise ValueError(f"Please provide hosta_func for specifying the function")
+    if os.path.exists(path_name):
+        try:
+            with open(path_name, "rb") as f:
+                cached_data = pickle.load(f)
+        except (pickle.PickleError, IOError) as e:
+            raise ValueError(f"Error loading cache from {path_name}") from e
+    else:
+        cache = Hostacache(hosta_func, None)
+        cache.create_hosta_cache()
+        with open(path_name, "rb") as f:
+            cached_data = pickle.load(f)
 
+    _, file_extension = os.path.splitext(hosta_path)
+    if file_extension not in ['.json', '.jsonl', '.csv']:
+        raise ValueError("Unsupported file type. Please provide a JSON or JSONL or CSV file.")
 
-#     elif callable(hosta_func):
-#         func = hosta_func
-#     else:
-#         raise ValueError(f"Please provide hosta_func for specifying the function")
-
-
-#     if hosta_path is None:
-#         raise ValueError(
-#             f"Please provide hosta_path for specifying the path to load the cache")
-    
-
-#     path = str(hosta_path)
-
-
-#     _, file_extension = os.path.splitext(path)
-#     if file_extension != '.jsonl' and file_extension != '.csv':
-#         raise ValueError("Unsupported file type. Please provide a JSON or CSV file.")
-    
-#     cache_id = "ho_example_links"
-#     value = path
-#     cache = Hostacache(func, cache_id, value)
-#     cache.create_hosta_cache()
-
-
+    try:
+        with open(hosta_path, 'r') as file:
+            if file_extension == '.json':
+                data = json.load(file)
+                if isinstance(data, list):
+                    for item in data:
+                        if item not in cached_data['ho_data']:
+                            cached_data['ho_data'].append(item)
+                else:
+                    if data not in cached_data['ho_data']:
+                        cached_data['ho_data'].append(data)
+            elif file_extension == '.jsonl':
+                for line in file:
+                    item = json.loads(line)
+                    if item not in cached_data['ho_data']:
+                        cached_data['ho_data'].append(item)
+            elif file_extension == '.csv':
+                reader = csv.DictReader(file)
+                for row in reader:
+                    if row not in cached_data['ho_data']:
+                        cached_data['ho_data'].append(row)
+        with open(path_name, "wb") as f:
+            pickle.dump(cached_data, f)
+    except (IOError, json.JSONDecodeError) as e:
+        raise ValueError(f"Error loading data from {hosta_path}") from e
+    return cached_data
 
 EXAMPLE_DOC = """
 A utility function that performs runtime type validation on a given function's arguments and output.
@@ -194,7 +205,4 @@ Raises:
         If the number of arguments provided does not match the expected number as per the function's signature.
     TypeError: 
         If the type of any argument or output does not match the expected type.
-    
-Usage Example:
-
 """
