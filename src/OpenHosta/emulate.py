@@ -13,19 +13,18 @@ l_default = DefaultManager.get_default_model()
 
 
 def build_user_prompt(_infos: dict = None):
-    filler = lambda pre, value: f"**{pre}**\n{value}\n\n" if value is not None else ""
+    filler = lambda pre, value: f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
     
     user_prompt = (
         "---\n\n## Function infos\n\n"
-        + filler("Here's the function definition:", str(_infos["function_def"]))
-        + filler("Here's the function's locals variables which you can use as additional information to give your answer:", str(_infos["function_locals"]))
+        + filler("Here's the function definition:", _infos["function_def"])
+        + filler("Here's the function's locals variables which you can use as additional information to give your answer:", _infos["function_locals"])
         + "To fill in the \"return\" value in the output JSON, create your response according to the specified JSON Schema. Make sure not to change the key \"return.\"\n\n"
-        + filler("JSON Schema to be used for \"return\" structure", str(_infos["return_type"]))
-        + filler("Here are some examples of expected input and output:", str(_infos["ho_example"]))
+        + filler("JSON Schema to be used for \"return\" structure", _infos["return_type"])
+        + filler("Here are some examples of expected input and output:", _infos["ho_example"])
+        + "---\n"
     )
     
-    print(_infos['ho_example'])
-        
     return user_prompt
 
 
@@ -80,7 +79,7 @@ def _exec_emulate(
         setattr(
             _obj, 
             "_last_request", 
-            f"{_emulator_pre_prompt}\n{function_infos}\n---\n{_infos['function_call']}"
+            f"{_emulator_pre_prompt}\n{function_infos}\n{_infos['function_call']}"
         )
 
     return l_ret

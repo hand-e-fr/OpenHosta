@@ -12,7 +12,10 @@ All significant changes to this project will be documented in this file.
   - Remove unecessary setence like confidence level and transition
 
 - **Internal**
-  - Refacto the prompt building function in `emulate`  
+  - Refacto the prompt building function in `emulate`
+
+- **Fixes**
+  - Added code block syntax for the function definition
 
 ## **v1.1-rc4** 27/09/24
 
