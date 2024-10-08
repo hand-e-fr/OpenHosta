@@ -13,43 +13,19 @@ l_default = DefaultManager.get_default_model()
 
 
 def build_user_prompt(_infos: dict = None):
-    function_doc = _infos["function_def"]
-    function_call = _infos["function_call"]
-    function_return = _infos["return_type"]
-    function_example = _infos["ho_example"]
-    function_locals = _infos["function_locals"]
-
-    user_prompt = ""
-
-    if function_example != []:
-        user_prompt = (
-            user_prompt
-            + "\nHere are some examples of expected input and output:\n"
-            + str(function_example)
-        )
-
-    if not function_return is None:
-        user_prompt = (
-            user_prompt
-            + '\nTTo fill in the "return" value in the output JSON, create your response according to the specified JSON Schema. Make sure not to change the key "return."\n\n# JSON Schema to be used for "return" structure\n\n'
-            + str(function_return)
-        )
-
-    if function_locals is not None:
-        user_prompt = (
-            user_prompt
-            + "\nHere's the function's locals variables which you can use as additional information to give your answer:\n"
-            + str(function_locals)
-        )
-
+    filler = lambda pre, value: f"**{pre}**\n{value}\n\n" if value is not None else ""
+    
     user_prompt = (
-        user_prompt 
-        + "\n# Here's the function definition:\n"
-        + function_doc
-        # + "\n# And this is the function call:\n"
-        # + function_call
+        "---\n\n## Function infos\n\n"
+        + filler("Here's the function definition:", str(_infos["function_def"]))
+        + filler("Here's the function's locals variables which you can use as additional information to give your answer:", str(_infos["function_locals"]))
+        + "To fill in the \"return\" value in the output JSON, create your response according to the specified JSON Schema. Make sure not to change the key \"return.\"\n\n"
+        + filler("JSON Schema to be used for \"return\" structure", str(_infos["return_type"]))
+        + filler("Here are some examples of expected input and output:", str(_infos["ho_example"]))
     )
-
+    
+    print(_infos['ho_example'])
+        
     return user_prompt
 
 
@@ -79,10 +55,10 @@ def _exec_emulate(
         sys.stderr.write(f"[EMULATE_ERROR]: {v}")
         return None
 
-    l_user_prompt = build_user_prompt(_infos)
+    function_infos = build_user_prompt(_infos)
 
     response = model.api_call(
-        sys_prompt=_emulator_pre_prompt + "\n" + l_user_prompt,
+        sys_prompt=f"{_emulator_pre_prompt}\n{function_infos}\n",
         user_prompt=_infos["function_call"],
         creativity=l_creativity,
         diversity=l_diversity,
@@ -101,6 +77,10 @@ def _exec_emulate(
         l_ret = None
         
     if _obj is not None and inspect.isfunction(_obj):
-        setattr(_obj, "_last_request", f"{_emulator_pre_prompt}\n{l_user_prompt}")
+        setattr(
+            _obj, 
+            "_last_request", 
+            f"{_emulator_pre_prompt}\n{function_infos}\n---\n{_infos['function_call']}"
+        )
 
     return l_ret

@@ -4,6 +4,16 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v1.1.1** 10/07/24
+
+- **Optimization**
+  - Reduce the `emulate`'s user prompt to only the function call string and move the rest in the system prompt.
+  - Added markdow header in `emulate` prompt and enhance strucure 
+  - Remove unecessary setence like confidence level and transition
+
+- **Internal**
+  - Refacto the prompt building function in `emulate`  
+
 ## **v1.1-rc4** 27/09/24
 
 - **Feature**
