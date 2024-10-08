@@ -6,7 +6,6 @@ from typing import Callable, Dict, Any, get_origin, get_args
 import typing
 import collections
 from pydantic import BaseModel, create_model
-import sys
 import copy
 
 from .enhancer import enhance
@@ -15,7 +14,6 @@ from .errors import FrameError
 
 CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
-
 
 class HostaInjector:
     def __init__(self, exec):

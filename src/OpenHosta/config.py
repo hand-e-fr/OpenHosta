@@ -70,11 +70,11 @@ class Model:
             "messages": [
                 {
                     "role": "system",
-                    "content": [{"type": "text", "text": str(sys_prompt)}],
+                    "content": [{"type": "text", "text": sys_prompt}],
                 },
                 {
                     "role": "user",
-                    "content": [{"type": "text", "text": str(user_prompt)}],
+                    "content": [{"type": "text", "text": user_prompt}],
                 },
             ],
             "response_format": {"type": "json_object"},
