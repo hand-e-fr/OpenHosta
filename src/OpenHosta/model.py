@@ -4,17 +4,6 @@ import torch.nn.functional as F
 import time
 import json
 
-class CustomModel(nn.Module):
-    def __init__(self, architecture):
-        super(CustomModel, self).__init__()
-        self.architecture = architecture
-
-    def __call__(self):
-        if self.architecture == "LinearRegression":
-            return CustomLinearModel()
-
-
-
 class CustomLinearModel(nn.Module):
 
     def __init__(self, config, hidden_dir):

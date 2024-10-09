@@ -18,42 +18,6 @@ class TrainingSet():
         self.func = func
         self.infos_cache = None
 
-    def get_func_info(self):
-        """
-        function for get the information of the function
-        """
-        print("Get func info")
-        pass
-    
-    def generate(self, size: int):
-        """
-        function that call an llm for generate a list of example
-        based on the context of the function
-        """
-        cache = Hostacache(self.func)
-        self.infos_cache = cache.create_hosta_cache()
-        l_user_prompt = (
-            "Here is your job :\n\nGenerate "+ f"{size}" " examples for the function:\n"
-            +" Here is the function definition : " + f"{self.infos_cache['function_def']}\n")
-
-        response = l_default.api_call(
-            sys_prompt=_generate_sys_prompt,
-            user_prompt=l_user_prompt,
-            creativity=0.5,
-            diversity=0.5,
-        )
-
-        data = response.json()
-        type_json = data["choices"][0]["message"]["content"]
-        examples = json.loads(type_json)
-        # print('#'*100)
-        # print(examples, "#")
-        # print('#'*100)
-        cache_end = Hostacache(self.func, "ho_data", value=examples)
-        cache_end.create_hosta_cache()
-        return examples
-
-
     def visualize(self):
         """
         function for visualize the training set idk how for now
@@ -98,56 +62,3 @@ class TrainingSet():
         cache_id = "ho_data"
         cache = Hostacache(func, cache_id, data_dict)
         cache.create_hosta_cache()
-
-
-    def validate(self):
-        """
-        function for validate the training set with a llm
-        and with parameters of validation maybe
-        """
-        print("Validate not implemented yet")
-        pass
-
-
-    def same_as(self, func: callable):
-        """
-        function fo copy the training set of another function
-        """
-        print("Same as not implemented yet")
-        pass
-
-
-    def remove(self, *args, **kwargs):
-        """
-        function for remove an example to the training set
-        """
-        print("Remove not implemented yet")
-        pass 
-
-    def encode(self):
-        """
-        function for encode an input
-        """
-        print("Encode not implemented yet")
-        pass
-
-    def decode(self):
-        """
-        function for decode an input
-        """
-        print("Decode not implemented yet")
-        pass
-
-    def normalize(self):
-        """
-        function for normalize an input
-        """
-        print("Normalize not implemented yet")
-        pass
-
-    def denormalize(self):
-        """
-        function for denormalize an input
-        """
-        print("Denormalize not implemented yet")
-        pass
