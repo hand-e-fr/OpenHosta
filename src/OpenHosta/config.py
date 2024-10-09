@@ -31,6 +31,8 @@ class Model:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
+        self._last_request = None
+        
         self.conversion_function = {
             str: lambda x: str(x),
             int: lambda x: int(x),
@@ -68,11 +70,11 @@ class Model:
             "messages": [
                 {
                     "role": "system",
-                    "content": [{"type": "text", "text": str(sys_prompt)}],
+                    "content": [{"type": "text", "text": sys_prompt}],
                 },
                 {
                     "role": "user",
-                    "content": [{"type": "text", "text": str(user_prompt)}],
+                    "content": [{"type": "text", "text": user_prompt}],
                 },
             ],
             "response_format": {"type": "json_object"},
@@ -83,6 +85,8 @@ class Model:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
+
+        self._last_request = l_body        
 
         try:
             response = requests.post(self.base_url, json=l_body, headers=headers)
@@ -104,11 +108,11 @@ class Model:
 
         try:
             l_ret_data = json.loads(json_string)
-            validate(
-                instance=l_ret_data.get("return", {}),
-                schema=return_type.get("properties", {}),
-            )  # Here
-
+            print(f"RET/ {l_ret_data}")
+            # validate(
+            #     instance=l_ret_data.get("return", {}),
+            #     schema=return_type.get("properties", {}),
+            # )                                                 # REFACTO
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
@@ -130,7 +134,14 @@ class Model:
             l_ret = l_ret_data["return"]
 
         elif issubclass(return_caller, BaseModel):
-            l_ret = return_caller(**l_ret_data["return"])
+            try:
+                l_ret = return_caller(**l_ret_data["return"])
+            except:
+                sys.stderr.write("Unable t parse answer: ", l_ret_data["return"])
+                for m in self.__last_request["messages"]:
+                    sys.stderr.write(" "+m["role"]+">\n=======\n", m["content"][0]["text"])
+                sys.stderr.write("Answer>\n=======\n",  l_ret_data["return"])
+                lret = None
 
         else:
             l_ret = l_ret_data["return"]
