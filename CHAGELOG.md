@@ -13,9 +13,11 @@ All significant changes to this project will be documented in this file.
 
 - **Internal**
   - Refacto the prompt building function in `emulate`
+  - Remove the validate function in LLM call response handler
 
 - **Fixes**
-  - Added code block syntax for the function definition
+  - Added code block syntax for the function definition.
+  - Re-added `diagramm` attributs but decrepated
 
 ## **v1.1-rc4** 27/09/24
 
