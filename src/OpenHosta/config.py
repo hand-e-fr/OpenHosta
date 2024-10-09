@@ -111,8 +111,7 @@ class Model:
             # validate(
             #     instance=l_ret_data.get("return", {}),
             #     schema=return_type.get("properties", {}),
-            # )  # Here
-
+            # )                                                 # REFACTO
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])

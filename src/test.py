@@ -9,4 +9,4 @@ def multiply(a:int, b:int)->int:
     return emulate()
 
 print(multiply(5, 6))
-print(multiply._last_request)
+# print(multiply._last_request)
