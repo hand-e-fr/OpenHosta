@@ -3,7 +3,9 @@ import pickle
 import os
 import json
 import csv
+from typing import Callable
 
+from .errors import FrameError
 from .cache import Hostacache
 
 CACHE_DIR = "__hostacache__"
@@ -17,9 +19,7 @@ def example(*args, hosta_func=None, hosta_out=None, **kwargs):
 
     if hosta_func is None:
         try:
-            func_frame = inspect.currentframe().f_back
-            func_name = func_frame.f_code.co_name
-            func = func_frame.f_globals[func_name]
+            func, _ = _extend_scope()
         except:
             raise ValueError("Please provide hosta_func for specifying the function")
     elif callable(hosta_func):
@@ -99,12 +99,9 @@ def save_examples(hosta_func=None, hosta_path=None):
 
     if hosta_func is None:
         try:
-            func_frame = inspect.currentframe().f_back
-            func_name = func_frame.f_code.co_name
-            func = func_frame.f_globals[func_name]
+            func, _ = _extend_scope()
         except:
             raise ValueError(f"Please provide hosta_func for specifying the function")
-
 
     elif callable(hosta_func):
         func = hosta_func
@@ -186,6 +183,57 @@ def load_training_example(hosta_path: str, hosta_func: callable) -> dict:
     except (IOError, json.JSONDecodeError) as e:
         raise ValueError(f"Error loading data from {hosta_path}") from e
     return cached_data
+
+
+def _extend_scope() -> Callable:
+    func: Callable = None
+    current = None
+    step = None
+    caller = None
+
+    current = inspect.currentframe()
+    if current is None:
+        raise FrameError("Current frame is None")
+    step = current.f_back
+    if step is None:
+        raise FrameError("Caller[lvl1] frame is None")
+    caller = step.f_back
+    if caller is None:
+        raise FrameError("Caller[lvl2] frame is None")
+
+    caller_name = caller.f_code.co_name
+    caller_code = caller.f_code
+    l_caller = caller
+    
+    if "self" in caller.f_locals:
+        obj = caller.f_locals["self"]
+        func = getattr(obj, caller_name, None)
+        if func:
+            func = inspect.unwrap(func)
+    else:
+        while func is None and l_caller.f_back is not None:
+            for obj in l_caller.f_back.f_locals.values():
+                found = False
+                try:
+                    if hasattr(obj, "__code__"):
+                        found = True
+                except:
+                    continue       
+                if found and obj.__code__ == caller_code:
+                    func = obj
+                    break
+            if func is None:
+                l_caller = l_caller.f_back
+        if func is None:
+            func = caller.f_globals.get(caller_name)
+            if func:
+                func = inspect.unwrap(func)
+    
+    if func is None or not callable(func):
+        raise FrameError("The emulated function cannot be found.")
+
+    return func, caller
+
 
 EXAMPLE_DOC = """
 A utility function that performs runtime type validation on a given function's arguments and output.
