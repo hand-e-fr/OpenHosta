@@ -6,6 +6,9 @@ All significant changes to this project will be documented in this file.
 
 ## **v1.1.1** 10/07/24
 
+- **Features**
+  - Added `_last_request` attributs to the `Model` object
+
 - **Optimization**
   - Reduce the `emulate`'s user prompt to only the function call string and move the rest in the system prompt.
   - Added markdow header in `emulate` prompt and enhance strucure 
@@ -18,6 +21,7 @@ All significant changes to this project will be documented in this file.
 - **Fixes**
   - Added code block syntax for the function definition.
   - Re-added `diagramm` attributs but decrepated
+  - Added explicitly a neutral response in the `emulate` prompt (None)
 
 ## **v1.1-rc4** 27/09/24
 

@@ -39,6 +39,8 @@ def _exec_emulate(
 
     _function_return_caller = _infos["return_caller"]
     _function_return = _infos["return_type"]
+    
+    print(f"TYPE/ {_function_return}")
 
     if model is None:
         model = DefaultManager.get_default_model()
