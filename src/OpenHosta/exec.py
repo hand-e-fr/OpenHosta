@@ -6,14 +6,13 @@ from typing import Callable, Dict, Any, get_origin, get_args
 import typing
 import collections
 from pydantic import BaseModel, create_model
-import sys
 import copy
 
 import functools
 
 from .enhancer import enhance
 from .errors import FrameError
-from .predict import continue_train, to_emulate, retrain, save, architecture
+from .predict import continue_train, to_emulate, retrain
 
 
 CACHE_DIR = "__hostacache__"
@@ -267,6 +266,5 @@ class HostaInjector:
         setattr(func, "continue_train", functools.partial(continue_train, func_obj=func))
         setattr(func, "retrain", functools.partial(retrain, func_obj=func))
         setattr(func, "emulate", functools.partial(to_emulate, func_obj=func))
-        setattr(func, "architecture", architecture) # not yet implemented         
-        setattr(func, "save", save) # not yet implemented
+        return
 

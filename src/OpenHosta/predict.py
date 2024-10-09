@@ -34,7 +34,6 @@ def _exec_predict(
         continue_training: bool = False,
         normalization: bool = False
 ):
-    # print("Predict", flush=True)
     hidden_dir = os.path.join(CACHE_DIR, f".model_{_function_obj.__name__}_{_function_infos['hash_function']}")
     os.makedirs(hidden_dir, exist_ok=True)
 
@@ -55,8 +54,7 @@ def _exec_predict(
 
         len_input = len(train[0][0])
         len_output = len(train[0][1])
-        #TODO : we will need to add architecture choice after for other type of model
-        architecture = builder.build(len_input, len_output, complexity, config, optimizer, loss)
+        builder.build(len_input, len_output, complexity, config, optimizer, loss)
         if batch_size is None:
             batch_size = int(0.05 * len(train)) if 0.05 * len(train) > 1 else 1 # 5% of the dataset or one 
         else:
@@ -183,25 +181,6 @@ def retrain(func_obj=None, force_train=True, epochs=None, get_loss=None, verbose
 
     infos_cache = load_cache(func_obj)
     return _exec_predict(_function_infos=infos_cache, _function_obj=func_obj, force_train=force_train, epochs=epochs, get_loss=get_loss, verbose=verbose)
-
-
-def save():
-    """
-    Save the model in a specified path and a specified name or not
-    """
-    print("Save")
-    pass
-
-
-def architecture():
-    """
-    This function is used to change the architecture
-    of the model manually or with the help of a llm
-    """
-    print("Architecture")
-    pass
-
-
 
 
 

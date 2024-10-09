@@ -2,10 +2,7 @@ import json
 import os
 import torch
 
-from .encoder import HostaEncoder, FloatEncoder, BoolEncoder, StringEncoder
-from .decoder import HostaDecoder, IntDecoder, FloatDecoder, BoolDecoder, StringDecoder
-
-from .model import CustomModel, CustomLinearModel
+from .model import CustomLinearModel
 
 class Builder():
     def __init__(self, hidden_dir):
@@ -56,6 +53,5 @@ class Builder():
 
     def trains(self, config, train, val, epochs, verbose, get_loss, continue_training):
         
-        # TODO: polimorphic call
         model = CustomLinearModel(config, self.hidden_dir)
         model.train(train, val, epochs, self.hidden_dir, verbose, get_loss, continue_training)

@@ -183,10 +183,6 @@ class Datapreparator():
             tensor = [feature_tensor, label_tensor]
             datatensor.append(tensor)
 
-        # train_size = int(0.8 * len(datatensor))
-        # train_data = datatensor[:train_size]
-        # val_data = datatensor[train_size:]
-
         train = DataLoader(datatensor, batch_size=batch_size, shuffle=True)
 
         if val_normalization:

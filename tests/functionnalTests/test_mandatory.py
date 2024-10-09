@@ -97,13 +97,6 @@ class TestTrainingset:
         for expected in expected_values:
             assert expected in dataset[0] or expected in dataset[1], f"{expected} n'est pas présent dans le dataset"
 
-        # training_test.generate(5)
-
-        # dataset = training_test.visualize()
-        # for sublist in dataset:
-        #     len_sublist += len(sublist)
-        # assert len_sublist == 7
-
 class TestEmulate:
        
     def test_FeatureModelInParameter(self):
