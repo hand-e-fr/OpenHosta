@@ -51,7 +51,6 @@ class Datapreparator():
     def prepare(self, function_infos, prediction):
         train = []
         val = []
-    
         if function_infos["ho_example"] == [] and function_infos["ho_data"] == []:
             raise ValueError("No example provided please provide at least one example for the model")
 

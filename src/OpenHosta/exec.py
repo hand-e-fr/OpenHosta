@@ -74,7 +74,7 @@ class HostaInjector:
         hosta_args["function_call"], hosta_args["function_locals"], hosta_args["function_args"] = (
             self._get_functionCall(func_obj, caller)
         )
-        self._attach_attributs(func_obj, func_prot)
+        self._attach_attributs(func_obj, hosta_args["function_def"])
         return self.exec(hosta_args, func_obj, *args, **kwargs)
 
     def _get_hashFunction(self, func_def: str, nb_example: int, nb_thought: int) -> str:
