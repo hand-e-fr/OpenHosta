@@ -31,7 +31,7 @@ class Model:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
-        self.__last_request = None
+        self._last_request = None
         
         self.conversion_function = {
             str: lambda x: str(x),
@@ -86,7 +86,7 @@ class Model:
             "Authorization": f"Bearer {self.api_key}",
         }
 
-        self.__last_request = l_body        
+        self._last_request = l_body        
 
         try:
             response = requests.post(self.base_url, json=l_body, headers=headers)
@@ -108,6 +108,7 @@ class Model:
 
         try:
             l_ret_data = json.loads(json_string)
+            print(f"RET/ {l_ret_data}")
             # validate(
             #     instance=l_ret_data.get("return", {}),
             #     schema=return_type.get("properties", {}),
