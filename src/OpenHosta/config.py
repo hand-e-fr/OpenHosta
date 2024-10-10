@@ -86,10 +86,6 @@ class Model:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
-        print(sys_prompt)
-        print("*"*50)
-        print(user_prompt)
-        print("*"*50)
         self._last_request = l_body        
 
         try:

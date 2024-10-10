@@ -51,17 +51,17 @@ def _exec_predict(
         if normalization:  
             train, val = preparator.normalize_dataset(train,val)
             preparator.save_normalization_params(normalisation_path)
-
         len_input = len(train[0][0])
         len_output = len(train[0][1])
         builder.build(len_input, len_output, complexity, config, optimizer, loss)
         if batch_size is None:
-            batch_size = int(0.05 * len(train)) if 0.05 * len(train) > 1 else 1 # 5% of the dataset or one 
+            batch_size = int(0.05 * len(train)) if 0.05 * len(train) > 1 else len(train) # 5% of the dataset or len(train) if len(train)
         else:
             batch_size = batch_size
+        save_len = len(train)
         train, eval = preparator.split(train, val, batch_size)
-
-        epochs = int(2*len(train) / batch_size) if epochs is None else epochs
+        epochs = int(2*save_len / batch_size if batch_size != save_len else 2*save_len) if epochs is None else epochs
+        assert epochs > 0, "epochs must be greater than 0 now it's {epochs}"
         builder.trains(config, train, eval, epochs=epochs, verbose=verbose, get_loss=get_loss, continue_training=continue_training)
     else:
         if verbose:
@@ -77,9 +77,9 @@ def _exec_predict(
         prediction = builder.load_inference(config_path, weight_path, torch_inference)
         if normalization:
             prediction_denormalize = preparator.denormalize_prediction(prediction)
-            result = prediction_denormalize[0]
+            result = float(prediction_denormalize[0])
         else:
-            result = prediction.detach().cpu().numpy()[0]
+            result = float(prediction.detach().cpu().numpy()[0])
         return result
 
 

@@ -2,35 +2,33 @@
 
 All significant changes to this project will be documented in this file.
 
----
-## **v1.2beta-4**
+## **v1.2rc-1  10/10/2024**
 
-### **Features**
+### **New Features**
 
-- **TrainingSet**  
-  The `TrainingSet` feature is now available! It allows you to manage datasets for `hosta_injected` functions with the following tools:
-  - **`.visualize`**: Visualize the dataset (examples and data) for a specific function and get the list of them.
-  - **`.add`**: Add new data into `ho_data`.
-  - **`.generate`**: Create data by calling an LLM.
+1. **TrainingSet Management**
+   Manage training datasets effortlessly with new tools:
+   - **`.visualize`**: Inspect current data visually.
+   - **`.add`**: Add new examples.
 
-- **New Attributes in Predict Functions**  
-  The `Predict` function now includes these new attributes:
-  - **`.retrain`**: Retrain the model.
-  - **`.continue_train`**: Continue training using the previous weights.
-  - **`.emulate`**: Run the prediction function in emulation mode with a model.
+2. **Enhanced `predict` Attributes**
+   New functionalities for `predict`:
+   - **`.retrain`**: Retrain models with specified parameters.
+   - **`.continue_train`**: Continue training with existing weights.
+   - **`.emulate`**: Run predictions through an LLM.
 
 ### **Enhancements**
 
-- `load_examples` has been renamed to `load_training_example` and now supports datasets in JSON, JSONL, and CSV formats for storage in `hosta_cache`.
-- The `Predict` function now supports a **verbose** mode for clearer model operations and includes a **get_loss** attribute to specify a loss to obtain.
+- **Expanded Dataset Support**: `load_training_example` (*previously `load_examples`*) supports JSON, JSONL, and CSV formats for easier integration.
+  
+- **Verbose Mode in `predict`**: Track detailed model training and set target losses with **get_loss**.
 
-## **v1.2beta-3**
+### **Fixes**
 
-- **Fixes**
-  - `predict` is now CUDA compatible (currently, CUDA(id) cannot be chosen yet).
+- **CUDA Compatibility**: `predict` now works with CUDA-enabled GPUs (device ID selection pending).
 
-- **Enhancements**
-  - `merge`now merge with 1.1
+---
+
 
 ## **v1.1.1** 10/07/24
 
@@ -51,7 +49,7 @@ All significant changes to this project will be documented in this file.
   - Re-added `diagramm` attributs but decrepated
   - Added explicitly a neutral response in the `emulate` prompt (None)
 
-## **v1.1-rc4** 27/09/24
+## **v1.1-rc4** 09/27/24
 
 - **Feature**
   - Added `suggest` function. Works the same as the `__suggest__` attributs but in a function
@@ -65,7 +63,7 @@ All significant changes to this project will be documented in this file.
 - **Fixes**
   - `suggest` attribute `diagramm` is now `diagram`
   
-## **v1.1-rc3** 26/09/23
+## **v1.1-rc3** 09/26/23
 
 - **Fixes**
   - `emulate` now works when emulated function is called inside another one
@@ -77,7 +75,7 @@ All significant changes to this project will be documented in this file.
   - Added a Makefile for cleaning and packaging and tests
 ---
 
-## **v1.1** 13/09/2024
+## **v1.1** 09/13/2024
 
 - **Fixes**
   - the `emulate` function is now decorator-resistant.
@@ -117,7 +115,7 @@ All significant changes to this project will be documented in this file.
 
 ---
 
-## **v1.0** 29/08/2024:
+## **v1.0** 08/29/2024:
 
 - **Features**
   - Function *emulate* to emulate a function by LLM.
