@@ -108,7 +108,6 @@ class Model:
 
         try:
             l_ret_data = json.loads(json_string)
-            print(f"RET/ {l_ret_data}")
             # validate(
             #     instance=l_ret_data.get("return", {}),
             #     schema=return_type.get("properties", {}),
