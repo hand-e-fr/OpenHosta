@@ -18,7 +18,6 @@ from .predict import continue_train, to_emulate, retrain
 CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-
 class HostaInjector:
     def __init__(self, exec):
         if not callable(exec):
@@ -161,7 +160,10 @@ class HostaInjector:
             if sig.return_annotation != inspect.Signature.empty
             else ""
         )
-        definition = f"def {func_name}({func_params}):{func_return}\n    '''\n    {func.__doc__}\n    '''"
+        definition = (
+            f"```python\ndef {func_name}({func_params}):{func_return}\n"
+            f"    \"\"\"\n\t{func.__doc__}\n    \"\"\"\n```"
+        )
         prototype = f"def {func_name}({func_params}):{func_return}"
         return definition, prototype
 
@@ -250,7 +252,7 @@ class HostaInjector:
 
         return return_type, return_caller
 
-    def _attach_attributs(self, func: Callable, prototype: str) -> Callable:
+    def _attach_attributs(self, func: Callable, prototype: str)->None:
         """
         Attach additional attributes to a function.
 
@@ -260,11 +262,11 @@ class HostaInjector:
 
         Returns:
             Callable: The target function wrapped with the attached attributes.
-        """ 
-        setattr(func, "__suggest__", enhance)
-        setattr(func, "_prot", prototype) 
-        setattr(func, "continue_train", functools.partial(continue_train, func_obj=func))
-        setattr(func, "retrain", functools.partial(retrain, func_obj=func))
-        setattr(func, "emulate", functools.partial(to_emulate, func_obj=func))
-        return
+        """
+        if "bound method" not in str(func):
+            setattr(func, "__suggest__", enhance)
+            setattr(func, "_prot", prototype) 
+            setattr(func, "continue_train", functools.partial(continue_train, func_obj=func))
+            setattr(func, "retrain", functools.partial(retrain, func_obj=func))
+            setattr(func, "emulate", functools.partial(to_emulate, func_obj=func))
 
