@@ -96,7 +96,6 @@ class Hostacache:
             self.infos_cache["ho_example_id"],
             self.infos_cache["ho_cothougt_id"],
         )
-        
         return self.infos_cache
 
     def _is_value_already_in_example(self, value, cached_data):
@@ -141,7 +140,10 @@ class Hostacache:
             if sig.return_annotation != inspect.Signature.empty
             else ""
         )
-        definition = f"def {func_name}({func_params}):{func_return}\n    '''\n    {func.__doc__}\n    '''"
+        definition = (
+            f"```python\ndef {func_name}({func_params}):{func_return}\n"
+            f"    \"\"\"\n\t{func.__doc__}\n    \"\"\"\n```"
+        )
         prototype = f"def {func_name}({func_params}):{func_return}"
         return definition, prototype
 
