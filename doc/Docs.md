@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **1.1.1**
+Documentation for version: **1.2-rc1**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -393,7 +393,7 @@ The `predict` function includes several parameters that allow you to fine-tune t
    Defines how many times the model iterates over the training set. Increasing the number of epochs may lead to better model convergence at the cost of longer training times. The default value is 2 times the dataset size, calculated based on the batch size.
    
 - **`complexity` (int)**: 
-   Sets the level of complexity for the model, which influences the number of weights based on the length of the input. The default value is `4`.
+   Sets the level of complexity for the model, which influences the number of weights based on the length of the input. The default value is `5`.
    
 - **`normalization` (bool)**: 
    Enables or disables data normalization. When set to `True`, the input data will be normalized based on the `norm_min` and `norm_max` values. The default is `False`.
