@@ -161,7 +161,7 @@ def to_emulate(*args, func_obj, model=None, l_creativity=None, l_diversity=None,
 
     emulate_verificator(args=args, kwargs=kwargs, input_type=input_type, func=func_obj, example_dict=example_dict)
     infos_cache["function_args"] = example_dict
-    
+    infos_cache["function_call"] = f"{func_obj.__name__}({', '.join([f'{k}={v}' for k, v in example_dict.items()])})"
     return _exec_emulate(_infos=infos_cache, _obj=func_obj, model=model, l_creativity=l_creativity, l_diversity=l_diversity)
 
 

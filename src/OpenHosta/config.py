@@ -31,6 +31,8 @@ class Model:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
+        self._last_request = None
+        
         self.conversion_function = {
             str: lambda x: str(x),
             int: lambda x: int(x),
@@ -40,6 +42,7 @@ class Model:
             frozenset: lambda x: frozenset(x),
             tuple: lambda x: tuple(x),
             bool: lambda x: bool(x),
+            type(None): lambda x: None,
         }
 
         if any(var is None for var in (model, base_url)):
@@ -68,11 +71,11 @@ class Model:
             "messages": [
                 {
                     "role": "system",
-                    "content": [{"type": "text", "text": str(sys_prompt)}],
+                    "content": [{"type": "text", "text": sys_prompt}],
                 },
                 {
                     "role": "user",
-                    "content": [{"type": "text", "text": str(user_prompt)}],
+                    "content": [{"type": "text", "text": user_prompt}],
                 },
             ],
             "response_format": {"type": "json_object"},
@@ -83,6 +86,11 @@ class Model:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
+        print(sys_prompt)
+        print("*"*50)
+        print(user_prompt)
+        print("*"*50)
+        self._last_request = l_body        
 
         try:
             response = requests.post(self.base_url, json=l_body, headers=headers)
@@ -97,18 +105,17 @@ class Model:
         return response
 
     def request_handler(self, response, return_type, return_caller):
-        l_ret = ""
+        l_ret = None
 
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
 
         try:
             l_ret_data = json.loads(json_string)
-            validate(
-                instance=l_ret_data.get("return", {}),
-                schema=return_type.get("properties", {}),
-            )  # Here
-
+            # validate(
+            #     instance=l_ret_data.get("return", {}),
+            #     schema=return_type.get("properties", {}),
+            # )                                                 # REFACTO
         except json.JSONDecodeError as e:
             sys.stderr.write(f"JSONDecodeError: {e}")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
@@ -119,7 +126,8 @@ class Model:
         if "return_hosta_type" in return_type["properties"]:
             if return_caller in self.conversion_function:
                 convert_function = self.conversion_function[return_caller]
-                l_ret = convert_function(l_ret_data["return"])
+                if l_ret_data["return"] is not None:
+                    l_ret = convert_function(l_ret_data["return"])
             else:
                 l_ret = l_ret_data["return"]
 
@@ -130,7 +138,14 @@ class Model:
             l_ret = l_ret_data["return"]
 
         elif issubclass(return_caller, BaseModel):
-            l_ret = return_caller(**l_ret_data["return"])
+            try:
+                l_ret = return_caller(**l_ret_data["return"])
+            except:
+                sys.stderr.write("Unable t parse answer: ", l_ret_data["return"])
+                for m in self.__last_request["messages"]:
+                    sys.stderr.write(" "+m["role"]+">\n=======\n", m["content"][0]["text"])
+                sys.stderr.write("Answer>\n=======\n",  l_ret_data["return"])
+                l_ret = None
 
         else:
             l_ret = l_ret_data["return"]
