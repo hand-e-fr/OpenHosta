@@ -79,6 +79,10 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - ["suggest" Function](#suggest-function)
       - [Usage](#usage)
       - [Output Examples](#output-examples)
+    - ["predict" Function](#predict-function)
+      - [Parameters](#predict-function-parameters)
+      - [Additional fonctionalities](#additional-predict-functionalities)
+      - [Output setting](#training-output)
     - ["thought" Function](#thought-function)
     - ["example" Function](#example-function)
     - [Advanced configuration](#advanced-configuration)
@@ -332,32 +336,35 @@ graph LR
     I --> J[End]
 ```
 
+
+---
+
 ## `predict` Function
 
-The *predict* function is the second major feature of OpenHosta. This function enables you to create models dynamically for specific functions. It works similarly to the *emulate* function, but instead of making API calls to an LLM, it creates its own internal model (currently only linear regression).
+The `predict` function is the second major feature of OpenHosta, designed to enable the dynamic creation of models for specific functions. While it shares similarities with the `emulate` function, instead of making API calls to a large language model (LLM), `predict` generates an internal model—currently supporting only linear regression.
 
-#### How `predict` Works
+### How `predict` Works
 
-The `predict` function takes a set of training examples, provided by the user, and generates a regression model behind the scenes automatically. The goal here is to simplify the process of training a model based on data, directly within a Python function.
+The `predict` function allows users to train a model automatically by providing a set of training examples. It simplifies model-building by handling the training process directly within a Python function. 
 
-For now, please note that *predict* comes with some **limitations**:
-- **Input types supported**: Currently, `predict` supports only `int` and `float` as input types.
-- **Return type**: It returns only `float` output.
-- **Model architecture**: It builds a simple linear regression model with a single output.
-- **Examples Required**: You need to provide several examples to train the model correctly.
+At this time, `predict` has a few **limitations** to be aware of:
 
-Furthermore, since the function is in its beta phase, bugs and instability might occur.
+- **Supported Input Types**: Only `int` and `float` types are allowed as inputs.
+- **Return Type**: The function returns output as a `float`.
+- **Model Type**: Currently, the function builds a simple linear regression model with a single output.
+- **Training Examples**: You must provide at least one example for the model to be trained correctly.
 
-### Examples and Training
-To train the model, you need to define examples using the `example()` function, save them with `save_examples()`, and load them using `load_examples()`, which is required for training. Additionally, you can load pre-existing datasets using `load_examples()`.
+### Limitations and Known Issues
+
+- Since `predict` is still in its Release Candidate (RC) phase, some instability and bugs might occur. 
+- If you encounter any issues, please help improve the functionality by reporting them :)
+---
 
 
-### Example of `predict` function in use
-
-Below is a practical example demonstrating how to use `predict` to build a model that estimates a person's chance of dying based on their age:
+- *Below is a practical example demonstrating how to use `predict` to build a model that estimates a person's chance of dying based on their age*:
 
 ```python
-from OpenHosta import predict, example, load_examples, save_examples
+from OpenHosta import predict, example
 
 def find_chance_of_die(age: float) -> float:
     """
@@ -371,35 +378,119 @@ def find_chance_of_die(age: float) -> float:
     example(age=45.0,  hosta_out=0.10)
     example(age=24.8,  hosta_out=0.20)
     example(age=8.0,   hosta_out=0.01)
-  
-    # Comment out the following lines to avoid recreating the dataset every time.
-    save_examples(hosta_path="chance_of_die")
-    load_examples(hosta_path="chance_of_die.jsonl")
+    return predict()
 
-    return predict(epochs=1000, complexity=15)
+x = find_chance_of_die(124.0)
+print(x)
+```
+For `example` documentation, please go to this link []
+
+### `predict` Function Parameters
+
+The `predict` function includes several parameters that allow you to fine-tune the model's behavior. Below is a list of these parameters:
+
+- **`epochs` (int)**: 
+   Defines how many times the model iterates over the training set. Increasing the number of epochs may lead to better model convergence at the cost of longer training times. The default value is 2 times the dataset size, calculated based on the batch size.
+   
+- **`complexity` (int)**: 
+   Sets the level of complexity for the model, which influences the number of weights based on the length of the input. The default value is `4`.
+   
+- **`normalization` (bool)**: 
+   Enables or disables data normalization. When set to `True`, the input data will be normalized based on the `norm_min` and `norm_max` values. The default is `False`.
+   
+- **`norm_min` (float)**: 
+   Defines the minimum value for data normalization. This value helps scale input data to a normalized range. The default is `0.1` for value that are different than 0.
+   
+- **`norm_max` (float)**: 
+   Specifies the maximum value for data normalization. This value sets the upper bound for the normalized range. The default is `1.0`.
+   
+- **`verbose` (bool)**: 
+   Enables or disables verbose output during training. When set to `True`, detailed progress information, including loss values, will be displayed. The default is `False`.
+   
+- **`batch_size` (int)**: 
+   Defines the number of training examples to be used in one iteration. By default, it is set to `5%` of the dataset size or `len(dataset)` if the dataset size is too small for 5%.
+
+---
+
+### Additional `predict` Functionalities
+
+The `predict` function also comes with several methods designed to enhance the user experience when building and refining an *Hosta model*. Below are the key methods you can use to interact with and further train your models:
+
+#### 1. `retrain`
+
+The `retrain` method allows you to retrain the model from scratch. It takes several directive parameters:
+
+- **`epochs`**: Specifies the number of training epochs.
+- **`get_loss`**: Defines a target loss for the model to reach during training.
+- **`verbose`**: Displays detailed training information (if set to `True`).
+
+#### Example:
+```python 
+find_chance_of_die.retrain(epochs=150, get_loss=0.001, verbose=True)
 ```
 
-#### Parameters for `predict`
+#### 2. `continue_train`
 
-- **`epochs` (int)**: Defines how many times the model will iterate over the training examples. Increasing this number may lead to better convergence, at the cost of longer training time. By default, it is set to 2 times the dataset size based on the batch size (which is fixed at 5% of the dataset size or 1 if the dataset size is lower).
-  
-- **`complexity` (int)**: Sets the level of complexity for the model, affecting the number of weight for the model based on the len of the input. By default is 4
+The `continue_train` method allows you to continue training the model using the current weights, rather than starting from scratch. It also accepts directive parameters:
 
-- **`force_train` (bool)**: If `True`, it forces the model to retrain, even if a trained model already exists in cache.
-- **`skip_data` (list)**: Specify data points in a **dict** to skip during the model's data preparation or training process.
-- **`out_data` (list)**: Specify which parts of the output you'd like the model to predict if there is no obvious.
-- **`norm_min` (float)**: Specifies the minimum value for data normalization. This value is used to scale the input data to a normalized range. By default 0.1
-- **`norm_max` (float)**: Specifies the maximum value for data normalization. This value defines the upper bound of the normalized range. By default 1.0
+- **`epochs`**: Specifies how many additional epochs you want to train the model for.
+- **`get_loss`**: Defines a target loss value for the model to reach during continued training.
+- **`verbose`**: Displays training progress information (if set to `True`).
+
+#### Example:
+```python 
+find_chance_of_die.continue_train(epochs=150, get_loss=0.001, verbose=True)
+```
+
+#### 3. `emulate`
+
+The `emulate` function makes an API call to a Large Language Model (LLM) to assist in answering predictions made by the `predict` function. For more details, check the documentation of `predict`. 
+
+#### Example:
+```python
+find_chance_of_die.emulate(124.0)
+```
+
+--- 
 
 
-#### Training Output
+### TrainingSet Management
+
+The `TrainingSet` feature offers easy tools for managing training datasets in `hosta_injected` functions:
+
+- **`.visualize`**: View the current dataset and its examples.
+- **`.add`**: Add new examples to the dataset.
+
+#### Example:
+
+You can generate and add data to your training set like so:
+
+```python
+
+def cos_plus_sin_generator():
+    for i in range(0, 10):
+        for j in range(0, 10):
+            cos_value = math.cos(i) ** i
+            sin_value = math.sin(j) ** j
+            training_maths.add(cos=i, sin=j, hosta_out=cos_value + sin_value)
+            # Add data to the training set
+
+cos_plus_sin_generator()
+training_maths.visualize()  # Visualize the dataset
+```
+
+This allows you to both populate and inspect your training data with ease.
+
+---
+
+### Training Output of predict
 
 When training the model using `predict`, a corresponding folder will be created under `__hostachache__`. This folder will contain:
 - `config.json`: Configuration file describing model parameters like structure, training data, etc.
 - `model.pth`: The serialized weights of the trained model.
 - `normalization.json`: Values for data normalization to ensure consistent input/output scaling.
 
-These files are used to manage the model, its saved state, and how incoming data is normalized before being processed.
+These files are used to manage the model, its saved state, and how incoming data will be normalized before being processed.
 
 ## `thought` Function
 
@@ -449,9 +540,9 @@ The "example" function is designed to enhance the context of a function for a LL
 
 - **Versatile**: The "example" function can be used both inside and outside a function to specify examples.
 - **Save**: The "example" function provides a tool called `save_examples` that can store all the examples added to a specified function in a ***JSONL*** file.
-- **Load**: The function also offers a tool called `load_examples` to load a file into the context of the function.
+- **Load**: The function also offers a tool called `load_training_example` to load a file into the context of the function especially for `predict function`. 
 
-***Notes : `load_examples` can load `csv` or `jsonl` file for he moment so you need to specifiy the file extension*** 
+***Notes : `load_examples` can load `csv`, `json` or `jsonl` file for the moment*** 
 
 Here's how it works: 
 
@@ -471,12 +562,12 @@ example(text="Hello World !", language="japanese", hosta_out="こんにちは世
 print(translate("Hello World !", "French"))
 ```
 
-The "example" function will verify the correlation between the specified input and the parameters of the function. The output should be specified only in the *hosta_out* parameter. If the example are used outside a function, please use the *hosta_func* parameter to specify a function.
+The `example` function will verify the correlation between the specified input and the parameters of the function. The output should be specified only in the *hosta_out* parameter. If the example are used outside a function, please use the *hosta_func* parameter to specify a function.
 
-Now here's how works `save_examples` and `load_examples`
+Now here's how works `save_examples` and `load_training_example`
 
 ```python
-from OpenHosta import save_examples, load_examples
+from OpenHosta import save_examples, load_training_example
 
 save_examples(hosta_func=translate, hosta_path="translate_func_example")
 
@@ -488,8 +579,7 @@ def another_translate(text:str, language:str)->str:
     """
     return emulate()
 
-load_examples(hosta_path="translate_func_example.jsonl", hosta_func=another_translate)
-# add the jsonl at the end of the path !
+load_training_example(hosta_path="translate_func_example.jsonl", hosta_func=another_translate)
 ```
 
 output of the `translate_func_example.jsonl`

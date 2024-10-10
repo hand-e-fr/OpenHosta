@@ -45,7 +45,7 @@ class TestPredict:
             return predict()
         
         ret_1 = predict_1(1)
-        assert type(ret_1) == np.float32
+        assert type(ret_1) == float
 
 
     def test_mutiple_input_predict(self):
@@ -56,7 +56,7 @@ class TestPredict:
             example(a=1, b=2, hosta_out=3.0, hosta_func=predict_2)
             return predict()
         ret_2 = predict_2(1, 2)
-        assert type(ret_2) == np.float32
+        assert type(ret_2) == float
 
     def test_attributs_predict(self, capsys):
         def predict_3(a:int) -> float:
@@ -72,6 +72,7 @@ class TestPredict:
         assert ret != ret_after
 
         ret_emulate = predict_3.emulate(1)
+        print(ret_emulate)
         assert type(ret_emulate) == float
 
         predict_3.continue_train(epochs=1500, get_loss=0.01, verbose=True)
@@ -81,15 +82,15 @@ class TestPredict:
 class TestTrainingset:
     def test_training_function(self):
         len_sublist = 0
-        def function_to_test(a: int, b: int) -> int:
+        def function_to_test(a: int, b: int) -> float:
             """
             This function returns the sum of two integers.
             """
             return predict()
-        example(a=1, b=2, hosta_out=3, hosta_func=function_to_test)
+        example(a=1, b=2, hosta_out=3.0, hosta_func=function_to_test)
 
         training_test = TrainingSet(function_to_test)
-        training_test.add(a=2, b=3, hosta_out=5)
+        training_test.add(a=2, b=3, hosta_out=5.0)
         dataset = training_test.visualize()
 
         expected_values = [{'a': 1, 'b': 2, 'hosta_out': 3}, {'a': 2, 'b': 3, 'hosta_out': 5}]

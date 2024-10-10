@@ -1,16 +1,11 @@
 import inspect
 
-import json
-
 from .cache import Hostacache
 from .example import type_verificator
-from .prompt import PromptMananger
 from .config import DefaultManager
 from .predict import load_cache
 
 l_default = DefaultManager.get_default_model()
-_x = PromptMananger()
-_generate_sys_prompt = _x.get_prompt("generate")
 
 class TrainingSet():
     def __init__(self, func : callable):
