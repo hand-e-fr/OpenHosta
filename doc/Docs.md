@@ -383,7 +383,7 @@ def find_chance_of_die(age: float) -> float:
 x = find_chance_of_die(124.0)
 print(x)
 ```
-For `example` documentation, please go to this link []
+For `example` documentation, please go to this [link](#example-function)
 
 ### `predict` Function Parameters
 
@@ -444,7 +444,7 @@ find_chance_of_die.continue_train(epochs=150, get_loss=0.001, verbose=True)
 
 #### 3. `emulate`
 
-The `emulate` function makes an API call to a Large Language Model (LLM) to assist in answering predictions made by the `predict` function. For more details, check the documentation of `predict`. 
+The `emulate` function makes an API call to a Large Language Model (LLM) to assist in answering predictions made by the `predict` function. For more details, check the documentation of [predict](#predict-function). 
 
 #### Example:
 ```python
