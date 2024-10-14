@@ -2,34 +2,32 @@
 
 All significant changes to this project will be documented in this file.
 
-## **v1.2rc-1  10/10/2024**
+---
+
+## **v1.2.0** - 10/14/2024
 
 ### **New Features**
 
-1. **TrainingSet Management**
-   Manage training datasets effortlessly with new tools:
-   - **`.visualize`**: Inspect current data visually.
-   - **`.add`**: Add new examples.
+- **`predict` Function**  
+  The `predict` function is now available, allowing you to create internal models—currently supporting linear regression—based on user-provided training data. This simplifies model generation without relying on external APIs. Key functionalities include:
+  - **`.retrain`**: Retrain models with specified parameters.
+  - **`.continue_train`**: Continue training with existing model weights.
+  - **`.emulate`**: Run predictions through an LLM or create a model directly using internal linear regression based on training data.
 
-2. **Enhanced `predict` Attributes**
-   New functionalities for `predict`:
-   - **`.retrain`**: Retrain models with specified parameters.
-   - **`.continue_train`**: Continue training with existing weights.
-   - **`.emulate`**: Run predictions through an LLM.
+- **TrainingSet Management**  
+  Manage training datasets effortlessly with new tools:
+  - **`.visualize`**: Inspect current data visually.
+  - **`.add`**: Add new examples.
 
 ### **Enhancements**
 
-- **Expanded Dataset Support**: `load_training_example` (*previously `load_examples`*) supports JSON, JSONL, and CSV formats for easier integration.
-  
-- **Verbose Mode in `predict`**: Track detailed model training and set target losses with **get_loss**.
+- **Expanded Dataset Support**:  
+  `load_training_example` (previously `load_examples`) supports JSON, JSONL, and CSV formats for easier integration.
 
-### **Fixes**
-
-- **CUDA Compatibility**: `predict` now works with CUDA-enabled GPUs (device ID selection pending).
+- **Verbose Mode in `predict`**:  
+  Track detailed model training and define target losses with `get_loss`.
 
 ---
-
-
 ## **v1.1.1** 10/07/24
 
 - **Features**
