@@ -1,11 +1,9 @@
+from __future__ import annotations
+
 from typing import Callable, Tuple, Any, Optional, List, Union, Literal
 from pydantic import BaseModel
-
-from inspect import currentframe, unwrap
-import inspect
-from __future__ import annotations
 from types import FrameType, CodeType
-from copy import deepcopy
+import inspect
 
 from OpenHosta.utils.errors import FrameError
 
@@ -39,7 +37,8 @@ class HostaInspector:
         """ Initialize the HostaInspector instance """
         pass
     
-    def _extend(self, *, back_level:int=2)->Tuple[Callable, FrameType]:
+    @staticmethod
+    def _extend(*, back_level:int=2)->Tuple[Callable, FrameType]:
         """
         Retrieves the callable object and the frame from which this method is called.
 
@@ -58,10 +57,10 @@ class HostaInspector:
                 - The callable object (function or method) that called this method.
                 - The frame object of the caller.
         """
-        assert back_level > 0 and isinstance(back_level, int),\
-            f"ValueError: back_level param in _extend ({back_level})"
+        if back_level <= 0 or not isinstance(back_level, int):
+            raise ValueError(f"[HostaInspector._extend] back_lever must a non-zero positive integers.")
             
-        def _get_obj_from_class(caller:FrameType)->Callable:
+        def _get_obj_from_class(caller:FrameType)->Optional[Callable]:
             """
             Search for the callable object when it is called within a class method.
             
@@ -79,11 +78,13 @@ class HostaInspector:
             
             obj = caller.f_locals["self"]
             func = getattr(obj, caller_name, None)
-            if func:
-                func = unwrap(func)
-            return func
+            return inspect.unwrap(func) if func else None
         
-        def _get_obj_from_func(caller:FrameType, code:CodeType, name:str)->Callable:
+        def _get_obj_from_func(
+            caller:FrameType, 
+            code:CodeType, 
+            name:str
+        )->Optional[Callable]:
             """
             Search for the callable object when it is called within a function.
             
@@ -100,46 +101,44 @@ class HostaInspector:
                 Callable: The unwrapped function object if found, otherwise None.
             """
             func: Callable = None
-            l_caller:FrameType = deepcopy(caller)
+            l_caller:FrameType = caller
             
-            while func is None and l_caller.f_back is not None:
+            while not l_caller.f_back is None:
                 for obj in l_caller.f_back.f_locals.values():
-                    found = False
                     try:
                         if hasattr(obj, "__code__"):
-                            found = True
+                            if obj.__code__ == code:
+                                return obj
                     except:
                         continue
-                    if found and obj.__code__ == caller_code:
-                        func = obj
-                        break
-                if func is None:
-                    l_caller = l_caller.f_back
-            if func is None:
-                func = caller.f_globals.get(caller_name)
-                if func:
-                    func = unwrap(func)
+                l_caller = l_caller.f_back
+            func = caller.f_globals.get(name)
+            return inspect.unwrap(func) if func else None
                     
         func: Callable = None
         current:FrameType = None
         
-        current = currentframe()
+        current = inspect.currentframe()
         for k in range(back_level):
             current = current.f_back
             if current is None:
-                raise FrameError(f"Frame can't be found (level: {k})")
+                raise FrameError(f"[HostaInspector._extend] Frame can't be found (level: {k})")
             
         caller = current
         caller_name = caller.f_code.co_name
         caller_code = caller.f_code
+        caller_args = inspect.getargvalues(caller)
         
-        if "self" in caller.f_locals:
-            _get_obj_from_class(caller)
+        is_likely_method = "self" in caller.f_locals or\
+            'cls' in caller.f_locals or\
+            (caller_args.args and caller_args.args[0] in ['self', 'cls'])
+        if is_likely_method:
+            func = _get_obj_from_class(caller)
         else:
-            _get_obj_from_func(caller, caller_code, caller_name)
+            func = _get_obj_from_func(caller, caller_code, caller_name)
         
         if func is None or not callable(func):
-            raise FrameError("The emulated function cannot be found.")
+            raise FrameError("[HostaInspector._extend] The callable object can't be found.")
 
         return (func, caller)
     
@@ -273,8 +272,12 @@ class HostaMemory(HostaInspector):
         """
         pass
     
-    @_data.setter
-    def _data(self, value):
+    @property
+    def data(self)->List[MemoryNode]:
+        return self.data
+    
+    @data.setter
+    def data(self, value):
         """ Check for inconsistencies in the data order. """
         pass
         
@@ -295,3 +298,10 @@ def save_example(func:Callable):
     Extends the life of function examples by saving them in a file external to the program.
     """
     pass
+
+
+def multiply(a:int)->int:
+    return HostaInspector._extend(back_level=1)
+
+print(multiply(2))
+print(multiply)
