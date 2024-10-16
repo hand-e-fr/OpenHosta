@@ -4,6 +4,12 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v1.3.0**
+
+- **Internal**
+  - Added `py.typed` file for linter
+  - Refacto the project's structure
+
 ## **v1.2.0** - 10/14/2024
 
 ### **New Features**

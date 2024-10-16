@@ -5,12 +5,11 @@ import json
 import csv
 from typing import Callable
 
-from .errors import FrameError
-from .cache import Hostacache
+from ..utils.errors import FrameError
+from ..utils.cache import Hostacache
 
 CACHE_DIR = "__hostacache__"
 os.makedirs(CACHE_DIR, exist_ok=True)
-
 
 def example(*args, hosta_func=None, hosta_out=None, **kwargs):
     input_type = {}

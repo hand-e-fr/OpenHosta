@@ -8,8 +8,7 @@ import collections
 from pydantic import BaseModel, create_model
 
 
-CACHE_DIR = "__hostacache__"
-os.makedirs(CACHE_DIR, exist_ok=True)
+
 
 
 class Hostacache:

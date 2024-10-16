@@ -1,11 +1,11 @@
 import os
 
 import pickle
-from .cache import Hostacache
+from ..utils.cache import Hostacache
 from .builder import Builder
 from .datapreparator import Datapreparator
-from .example import type_verificator
-from .emulate import _exec_emulate
+from ..body.example import type_verificator
+from ..core.emulate import _exec_emulate
 
 from typing import Any
 import inspect

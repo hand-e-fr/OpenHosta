@@ -10,9 +10,9 @@ import copy
 
 import functools
 
-from .enhancer import enhance
-from .errors import FrameError
-from .predict import continue_train, to_emulate, retrain
+from ..body.enhancer import enhance
+from ..utils.errors import FrameError
+from ..predict.predict import continue_train, to_emulate, retrain
 
 
 CACHE_DIR = "__hostacache__"

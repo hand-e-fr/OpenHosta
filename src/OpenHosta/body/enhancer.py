@@ -2,8 +2,8 @@ import json
 import sys
 from typing import Callable
 
-from .prompt import PromptMananger
-from .config import DefaultManager
+from ..utils.prompt import PromptMananger
+from ..core.config import DefaultManager
 
 
 _x = PromptMananger()
