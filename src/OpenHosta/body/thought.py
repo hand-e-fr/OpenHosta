@@ -3,9 +3,9 @@ import json
 from pydoc import locate
 from pydantic import create_model
 
-from .emulate import _exec_emulate
-from .config import DefaultManager
-from .prompt import PromptMananger
+from ..core.emulate import _exec_emulate
+from ..core.config import DefaultManager
+from ..utils.prompt import PromptMananger
 
 l_default = DefaultManager.get_default_model()
 _x = PromptMananger()
@@ -73,4 +73,13 @@ def thought(key):
         return result
 
     return inner_func
+
+def tmp():
+    x = thought("add two")
+    x(4)
+    x(4)
+    x(7)
+    x = thought("Salut je suis un fermier ! Raconte moi une histoire")
+    y = thought("add two")
+ 
  

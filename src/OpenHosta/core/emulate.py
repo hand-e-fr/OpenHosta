@@ -1,7 +1,7 @@
 import sys
 import inspect
 
-from .prompt import PromptMananger
+from ..utils.prompt import PromptMananger
 from .config import Model, DefaultManager
 
 
@@ -41,7 +41,7 @@ def _exec_emulate(
     _function_return = _infos["return_type"]
     
     if model is None:
-        model = DefaultManager.get_default_model()
+        model = DefaultManager.get_default_model() # doublons
 
     try:
         if not isinstance(_emulator_pre_prompt, str) or not _emulator_pre_prompt:

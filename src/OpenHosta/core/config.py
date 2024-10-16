@@ -6,7 +6,7 @@ from jsonschema import validate
 from pydantic import BaseModel
 from typing import get_origin, get_args
 
-from .errors import ApiKeyError
+from ..utils.errors import ApiKeyError
 
 
 def is_valid_url(url):
@@ -197,6 +197,3 @@ def set_default_model(new):
 
 def set_default_apiKey(api_key=None):
     DefaultManager.set_default_apiKey(api_key)
-
-
-__all__ = Model, set_default_apiKey, set_default_model, DefaultManager

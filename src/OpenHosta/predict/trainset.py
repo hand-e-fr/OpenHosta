@@ -1,8 +1,8 @@
 import inspect
 
-from .cache import Hostacache
-from .example import type_verificator
-from .config import DefaultManager
+from ..utils.cache import Hostacache
+from ..body.example import type_verificator
+from ..core.config import DefaultManager
 from .predict import load_cache
 
 l_default = DefaultManager.get_default_model()

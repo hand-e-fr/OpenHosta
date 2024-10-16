@@ -4,7 +4,7 @@ import time as t
 import sys
 import json
 
-from .config import Model, DefaultManager
+from ..core.config import Model, DefaultManager
 from .prompt import PromptMananger
 
 _x = PromptMananger()
