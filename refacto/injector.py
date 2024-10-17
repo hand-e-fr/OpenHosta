@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import Tuple, List, Callable
+from typing import Tuple, List, Callable, Dict, Any
+from types import FrameType
 from pydantic import BaseModel
 import inspect
 
 from .inspector import HostaInspector
+from .analize import FuncAnalizer
 
 class Func(BaseModel):
     """
@@ -17,22 +19,14 @@ class Func(BaseModel):
         f_call (str): Actual call of the function, e.g., 'func(1, 'salut')'
         f_args (dict): Arguments of the function, e.g., {'a': 1, 'b': 'salut'}
         f_type (object): desired type of the input and output of the function
+        f_locals (dict): Local variables within the function's scope
     """
-    f_def: str
-    f_name: str
-    f_call: str
-    f_args: dict
-    f_type: Tuple[List[object], object]
-    f_locals:dict
-
-
-
-# module abc avec un héritage abstrait
-class FuncAnalizer:
-    
-    def __init__(self, func: Callable):
-        pass
-    
+    f_def: str = ""
+    f_name: str = ""
+    f_call: str = ""
+    f_args: Dict[str, Any] = {}
+    f_type: Tuple[List[Any], Any] = ([], None)
+    f_locals: Dict[str, Any] = {}
       
 class HostaInjector(HostaInspector):
     """
@@ -44,15 +38,18 @@ class HostaInjector(HostaInspector):
     def __init__(self, exec:Callable):
         """ Initialize the HostaInjector instance """
         super().__init__()
-        self.exec = exec
+        self.exec:Callable = exec
+        self.func:Callable = None
+        self.caller_frame:FrameType = None
+
         self.infos = Func()
-        self.func = self._extend()
 
     def __call__(self, *args, **kwargs)->Func:
         """ 
         Make the instance callable. 
         Executes “self.exec”, providing the necessary information in a pydantic 'Func'.
         """
+
         self.infos = self._get_infos_func()
         return self.exec(self.infos, args, kwargs)
     
@@ -60,53 +57,10 @@ class HostaInjector(HostaInspector):
         """
         parse a function to handle some infos
         """
-        self.infos.f_def, _    = self.func_def() # car defintion + proto !
-        self.infos.f_name   = self.func.__name__ # un truc comme ca a verifier meme enlever peut etre
-        self.infos.f_call   = self.func_call()
-        self.infos.f_args   = self.func_args()
-        self.infos.f_type   = self.func_type()
-        self.infos.f_locals = self.func_locals()
-    
-
-    # maybe put all of this func in another file for hosta injector clarity ?
-    
-    def func_def(self):
-        """
-        function that get the definition of his own func blablabal
-        """
-        if self.func == None or type(self.func) != Callable :
-            raise ValueError("blablabla faire sa propre erreur")
-        
-        sig = inspect.signature(self.func)
-
-        func_name = self.func.__name__
-        func_params = ", ".join(
-            [
-                (
-                    f"{param_name}: {param.annotation.__name__}"
-                    if param.annotation != inspect.Parameter.empty
-                    else param_name
-                )
-                for param_name, param in sig.parameters.items()
-            ]
-        )
-        func_return = (
-            f" -> {sig.return_annotation.__name__}"
-            if sig.return_annotation != inspect.Signature.empty
-            else ""
-        )
-        definition = (
-            f"```python\ndef {func_name}({func_params}):{func_return}\n"
-            f"    \"\"\"\n\t{self.func.__doc__}\n    \"\"\"\n```"
-        )
-        prototype = f"def {func_name}({func_params}):{func_return}"
-        return definition, prototype # on fait def + proto mais est ce que on en ferait pas qu'un sur les deux (juste à rajouter func.doc pour la def c'est pour ça stp merlin dit oui !!!! (et jovilait aussi)) 
-    def func_call(self):
-        pass
-    def func_args(self):
-        pass
-    def func_type(self):
-        pass
-    
-    def func_locals(self):
-        pass
+        analizer = FuncAnalizer(self.func, self.caller_frame)
+        self.infos.f_name   = self.func.__name__
+        self.infos.f_def, _ = analizer.func_def # car defintion + proto !
+        self.infos.f_call   = analizer.func_call
+        self.infos.f_args   = analizer.func_args
+        self.infos.f_type   = analizer.func_type
+        self.infos.f_locals = analizer.func_locals
