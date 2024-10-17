@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Tuple, Any, Optional, List, Union, Literal
+from typing import Callable, Tuple, Any, Optional, List, Union, Literal, Dict
 from pydantic import BaseModel
 from types import FrameType, CodeType
 import inspect
@@ -142,11 +142,37 @@ class HostaInspector:
 
         return (func, caller)
     
-    def _attach(self)->Optional[bool]:
+    def _attach(self, obj:Callable, attr: Dict[str, Any])->Optional[bool]:
         """
-        Attach an attribute to a function or method .
+        Attaches attributes to a function or method.
+        
+        This method attempts to add new attributes to a callable object (function or method).
+        For methods, it attaches the attributes to the underlying function object.
+        Only supports attaching to functions and methods. Other callable types will raise an AttributeError.
+        
+        Args:
+            - obj (Callable): The function or method to which the attribute will be attached.
+            - attr (Dict[str, Any]): The dictionary of the attributes to attach.
+            
+        Return:
+            Optional[bool]: Returns True if the attribute was successfully attached, raise an Exception otherwise. 
         """
-        pass
+        if not callable(obj):
+            raise ValueError("[HostaInspector._attach] Invalid arguments: obj must a callable")
+
+        def attr_parser(obj:Callable, attr: Dict[str, Any])->bool:
+            for key, value in attr.items():
+                setattr(obj, key, value)
+        
+        if inspect.ismethod(obj):
+            if hasattr(obj, "__func__"):
+                attr_parser(obj.__func__, attr)
+                return True
+            raise AttributeError(f"[HostaInspector._attach] Failed to attach attributs. \"__func__\" attribut is missing.")
+        elif inspect.isfunction(obj):
+            attr_parser(obj.__func__, attr)
+            return True
+        raise AttributeError(f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(obj)}.")
 
 # module abc avec un héritage abstrait
 class FuncAnalizer:
@@ -298,10 +324,3 @@ def save_example(func:Callable):
     Extends the life of function examples by saving them in a file external to the program.
     """
     pass
-
-
-def multiply(a:int)->int:
-    return HostaInspector._extend(back_level=1)
-
-print(multiply(2))
-print(multiply)
