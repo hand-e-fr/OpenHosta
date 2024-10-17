@@ -6,6 +6,9 @@ All significant changes to this project will be documented in this file.
 
 ## **v1.3.0**
 
+- **Features**
+  - All the attributs are now attach to methods
+
 - **Internal**
   - Added `py.typed` file for linter
   - Refacto the project's structure
