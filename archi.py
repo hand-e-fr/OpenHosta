@@ -142,6 +142,7 @@ class HostaInspector:
 
         return (func, caller)
     
+    @staticmethod
     def _attach(self, obj:Callable, attr: Dict[str, Any])->Optional[bool]:
         """
         Attaches attributes to a function or method.
