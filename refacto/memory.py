@@ -32,6 +32,14 @@ class HostaMemory(HostaInspector):
         """
         pass
     
+    @staticmethod
+    def serialize(self):
+        pass
+   
+    @staticmethod
+    def deserialize(self):
+        pass
+     
     @property
     def data(self)->List[MemoryNode]:
         return self.data
