@@ -98,7 +98,7 @@ class Hosta(HostaInspector):
         cls._obj = cls._extend()
         if cls._obj[0] is None:
             raise InvalidStructureError(
-                "The function {} must be called in a function/method."
+                "[Hosta.__new__] The function {} must be called in a function/method."
                 .format(cls._extend(back_level=2)[0].__name__)
             )
         if (hasattr(cls._obj[0], "Hosta")):
@@ -155,6 +155,9 @@ class Hosta(HostaInspector):
             key (MemKey): The type of memory node ('ex', 'cot', or 'use').
             value (MemValue): The value to be stored in the memory node.
         """
+        seen:List[MemKey] = []
+        previous:MemKey = None
+        
         if self._infos.f_mem is None:
             self._infos.f_mem = []
             id = 0
@@ -165,7 +168,16 @@ class Hosta(HostaInspector):
                     id += 1
         new = MemoryNode(key=key, id=id, value=value)
         self._infos.f_mem.append(new)
-        
+        previous = new
+        for node in self._infos.f_mem:
+            if node.key not in seen:
+                seen.append(node.key)
+                previous = node
+            elif node.key in seen and node.key == previous.key:
+                previous = node
+            else:
+                raise InvalidStructureError("[Hosta._bdy_add] Inconsistent function structure. Place your OpenHosta functions per block.")
+
     def _bdy_get(self, key:MemKey)->List[MemoryNode]:
         """
         Retrieve memory nodes of a specific type from the function's memory.
