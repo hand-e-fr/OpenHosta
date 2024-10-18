@@ -1,7 +1,8 @@
-from src.hosta import Hosta
+from src.hosta import Hosta, ExampleType
 
-def example():
+def example(in_, out):
     x = Hosta()
+    x._bdy_add("ex", ExampleType(in_=in_, out= out))
     return 0
 
 def emulate():
@@ -10,12 +11,9 @@ def emulate():
     return 0
         
 def test(a:int)->int:
-    example()
-    return emulate()
-
-def test2(a:int)->int:
+    example(2, 4)
+    example(9, 18)
     return emulate()
 
 test(2)
-test2(3)
-
+print(test.Hosta.example)

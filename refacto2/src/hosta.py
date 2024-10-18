@@ -1,14 +1,43 @@
 from __future__ import annotations
 
-from typing import Dict, Any, Tuple, List, Optional
+from typing import Dict, Any, Tuple, List, Optional, Literal, Union, TypedDict
 from pydantic import BaseModel
+from functools import wraps
+
 
 from .inspector import HostaInspector
 from .analizer import FuncAnalizer
+from .errors import InvalidStructureError
 
 all = (
-    "Hosta"
+    "Hosta",
+    "Func",
+    "ExampleType",
+    "CotType",
+    "UseType",
+    "MemKey",
+    "MemValue",
+    "MemGet",
+    "MemoryNode"
 )
+
+class ExampleType(TypedDict):
+    in_: Any
+    out: Any
+    
+class CotType(TypedDict):
+    pass
+
+class UseType(TypedDict):
+    pass
+
+MemKey = Literal["ex", "cot", "use"]
+MemValue = Union[CotType, ExampleType, UseType]
+    
+class MemoryNode(BaseModel):
+    key:MemKey
+    id:int
+    value:MemValue
 
 class Func(BaseModel):
     """
@@ -29,6 +58,8 @@ class Func(BaseModel):
     f_args: Dict[str, Any] = {}
     f_type: Tuple[List[Any], Any] = ([], None)
     f_locals: Optional[Dict[str, Any]] = None
+    f_mem: Optional[List[MemoryNode]] = None
+    
 
 class Hosta(HostaInspector):
     """
@@ -64,7 +95,12 @@ class Hosta(HostaInspector):
         Returns:
             Hosta: The single instance of the Hosta class.
         """
-        cls._obj = cls._extend(back_level=3)
+        cls._obj = cls._extend()
+        if cls._obj[0] is None:
+            raise InvalidStructureError(
+                "The function {} must be called in a function/method."
+                .format(cls._extend(back_level=2)[0].__name__)
+            )
         if (hasattr(cls._obj[0], "Hosta")):
             return cls._obj[0].Hosta
         instance = super().__new__(cls)
@@ -72,7 +108,7 @@ class Hosta(HostaInspector):
         setattr(cls._obj[0], "Hosta", instance)
         return instance
     
-    def __init__(self, *, caller_analysis=True):
+    def __init__(self, *, caller_analysis:bool=True):
         """
         Initialize the Hosta instance.
 
@@ -106,5 +142,74 @@ class Hosta(HostaInspector):
         self._infos.f_args   = analizer.func_args
         self._infos.f_type   = analizer.func_type
         self._infos.f_locals = analizer.func_locals
+    
+    def _bdy_add(self, key:MemKey, value:MemValue)->None:
+        """
+        Add a new memory node to the function's memory.
+
+        This method creates a new MemoryNode with the given key and value,
+        and appends it to the function's memory list. If the memory list
+        doesn't exist, it initializes it.
+
+        Args:
+            key (MemKey): The type of memory node ('ex', 'cot', or 'use').
+            value (MemValue): The value to be stored in the memory node.
+        """
+        if self._infos.f_mem is None:
+            self._infos.f_mem = []
+            id = 0
+        else:
+            id = 0
+            for node in self._infos.f_mem:
+                if node.key == key:
+                    id += 1
+        new = MemoryNode(key=key, id=id, value=value)
+        self._infos.f_mem.append(new)
         
+    def _bdy_get(self, key:MemKey)->List[MemoryNode]:
+        """
+        Retrieve memory nodes of a specific type from the function's memory.
+
+        This method searches through the function's memory list and returns
+        all nodes that match the given key.
+
+        Args:
+            key (MemKey): The type of memory node to retrieve ('ex', 'cot', or 'use').
+
+        Returns:
+            List[MemoryNode]: A list of memory nodes matching the key, or None if no matches are found.
+        """
+        l_list:List[MemoryNode] = []
         
+        if self._infos.f_mem is None:
+            return None
+        for node in self._infos.f_mem:
+            if node.key == key:
+                l_list.append(node)
+        return l_list if l_list != [] else None
+          
+    @property
+    def example(self)->Optional[List[ExampleType]]:
+        """
+        Retrieve all example nodes from the function's memory.
+
+        This property method uses _bdy_get to fetch all memory nodes with the 'ex' key.
+
+        Returns:
+            Optional[List[ExampleType]]: A list of example nodes, or None if no examples are found.
+        """
+        nodes = self._bdy_get(key="ex")
+        return [node.value for node in nodes] if nodes else None
+        
+    @property
+    def cot(self)->Optional[List[CotType]]:
+        """
+        Retrieve all chain-of-thought (cot) nodes from the function's memory.
+
+        This property method uses _bdy_get to fetch all memory nodes with the 'cot' key.
+
+        Returns:
+            Optional[List[CotType]]: A list of chain-of-thought nodes, or None if no cot nodes are found.
+        """
+        nodes = self._bdy_get(key="cot")
+        return [node.value for node in nodes] if nodes else None
