@@ -6,6 +6,21 @@ from pydantic import BaseModel
 from .inspector import HostaInspector
 from .injector import Func
 
+# class MachinBuilder:
+    
+#     _batch_size = 0
+#     _ziz_size = 0
+    
+#     def setBatchSize(self, value: int) -> MachinBuilder:
+#         self._batch_size = value
+#         return self
+#     def setziziSize(self, value: int) -> MachinBuilder:
+#         batch = value
+#         return self
+    
+# MachinBuilder().setBatchSize(787)\
+# .setziziSize(454)
+
 class MemoryNode(BaseModel):
     """ All the data given by [example, thought, use] in the body of a function """
     key:Literal["ex", "cot", "use"]
@@ -18,7 +33,7 @@ class HostaMemory(HostaInspector):
     sort of a temporary cache.
     """
     
-    def __init__(self):
+    def __init__(self, func):
         """ Initialize the HostaMemory instance """
         super().__init__()
         self._data:List[MemoryNode] = []
@@ -30,14 +45,6 @@ class HostaMemory(HostaInspector):
         Manages a function's “_examples” and “_cothought” attributes,
         printing each type of element in a specific syntax
         """
-        pass
-    
-    @staticmethod
-    def serialize(self):
-        pass
-   
-    @staticmethod
-    def deserialize(self):
         pass
      
     @property
