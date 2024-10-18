@@ -1,6 +1,13 @@
+from __future__ import annotations
+
 from typing import Callable, Tuple, List, Dict, Any
 import inspect
 from types import FrameType
+
+all = (
+    "_FuncInspector",
+    "FuncAnalizer"
+)
 
 class _FuncInspector:
     def __init__(self, func: Callable):

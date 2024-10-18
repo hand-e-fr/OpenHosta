@@ -5,7 +5,8 @@ from typing import Literal
 __all__ = (
     "RequestError",
     "ApiKeyError",
-    "FrameError"
+    "FrameError",
+    "InvalidStructureError"
 )
 
 OhErrorCodes = Literal[
@@ -29,3 +30,6 @@ class ApiKeyError(RequestError):
 
 class FrameError(OhErrorMixin):
     """ Raised when the frame inspection fail """
+    
+class InvalidStructureError(OhErrorMixin):
+    """ Raised when the bosy's function aren't placed correctly """
