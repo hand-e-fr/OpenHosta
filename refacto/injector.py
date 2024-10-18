@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Tuple, List, Callable, Dict, Any
+from typing import Tuple, List, Callable, Dict, Any, Optional
 from types import FrameType
 from pydantic import BaseModel
-import inspect
 
 from .inspector import HostaInspector
 from .analize import FuncAnalizer
+from .memory import HostaMemory
 
 class Func(BaseModel):
     """
@@ -26,7 +26,7 @@ class Func(BaseModel):
     f_call: str = ""
     f_args: Dict[str, Any] = {}
     f_type: Tuple[List[Any], Any] = ([], None)
-    f_locals: Dict[str, Any] = {}
+    f_locals: Optional[Dict[str, Any]] = None
       
 class HostaInjector(HostaInspector):
     """
@@ -38,19 +38,21 @@ class HostaInjector(HostaInspector):
     def __init__(self, exec:Callable):
         """ Initialize the HostaInjector instance """
         super().__init__()
+        if not callable(exec):
+            raise ValueError("[HostaInjector.__call__] Invalid argument. exec must be a callable.")
         self.exec:Callable = exec
         self.func:Callable = None
         self.caller_frame:FrameType = None
-
-        self.infos = Func()
+        self.infos = HostaMemory()
 
     def __call__(self, *args, **kwargs)->Func:
         """ 
         Make the instance callable. 
         Executes “self.exec”, providing the necessary information in a pydantic 'Func'.
         """
-
-        self.infos = self._get_infos_func()
+        self.func, self.caller_frame = self._extend()
+        self.infos._func = self._get_infos_func()
+        self._attach(self.func, {"_hostaInfos": self.serialize(self.infos)})
         return self.exec(self.infos, args, kwargs)
     
     def _get_infos_func(self) -> None:
@@ -59,7 +61,7 @@ class HostaInjector(HostaInspector):
         """
         analizer = FuncAnalizer(self.func, self.caller_frame)
         self.infos.f_name   = self.func.__name__
-        self.infos.f_def, _ = analizer.func_def # car defintion + proto !
+        self.infos.f_def, _ = analizer.func_def
         self.infos.f_call   = analizer.func_call
         self.infos.f_args   = analizer.func_args
         self.infos.f_type   = analizer.func_type
