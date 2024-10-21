@@ -1,19 +1,30 @@
-from src.hosta import Hosta, ExampleType
+from pydantic import BaseModel
+
 from src.example import example
+from src.config import Model
+from src.emulate import emulate
 
-def example2():
-    x = Hosta()
-    x._bdy_add(key='cot', value=ExampleType(in_="bite", out="bite"))
+mymodel = Model(
+    model="gpt-4o",
+    base_url="https://api.openai.com/v1/chat/completions",
+    api_key=""
+)
 
-def emulate():
-    x = Hosta()
-    print(x._infos)
-    return 0
+class User(BaseModel):
+    name: str = None
+    age: int = None
+    
         
-def test(a:int, b:str)->int:
-    example(a=10, b="toto", hosta_out=4)
-    example(a=20, b="tata", hosta_out=18)
-    return emulate()
+def user_info(template:User)->User:
+    """
+    This function fill the pydantic model in parameter with coherent values.
+    """
+    # example(a=10, b=3, hosta_out=30)
+    # example(a=-1, b=-1, hosta_out=1)
+    return emulate(model=mymodel)
 
-test(2, "Hello World")
-print(test.Hosta.example)
+res = user_info(User())
+print(res)
+print(type(res))
+print(type(User()))
+print(User(**res))
