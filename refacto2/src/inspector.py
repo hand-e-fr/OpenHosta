@@ -125,7 +125,7 @@ class HostaInspector:
         return (func, caller)
     
     @staticmethod
-    def _attach(self, obj:Callable, attr: Dict[str, Any])->Optional[bool]:
+    def _attach(obj:Callable, attr: Dict[str, Any])->Optional[bool]:
         """
         Attaches attributes to a function or method.
         
@@ -153,6 +153,6 @@ class HostaInspector:
                 return True
             raise AttributeError(f"[HostaInspector._attach] Failed to attach attributs. \"__func__\" attribut is missing.")
         elif inspect.isfunction(obj):
-            attr_parser(obj.__func__, attr)
+            attr_parser(obj, attr)
             return True
         raise AttributeError(f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(obj)}.")

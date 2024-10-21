@@ -225,3 +225,5 @@ class Hosta(HostaInspector):
         """
         nodes = self._bdy_get(key="cot")
         return [node.value for node in nodes] if nodes else None
+    
+#Faire un moyen de formater les exemples en str pour le user prompt
