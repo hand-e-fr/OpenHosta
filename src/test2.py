@@ -63,7 +63,7 @@ class toto(BaseModel):
     tata:str
     titi:int
         
-def mutliply(a:int, b:int)->List[int]:
+def mutliply(a:int, b:int)->toto:
     """
     This function multiplies two integers in argument.
     """

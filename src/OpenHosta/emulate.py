@@ -46,11 +46,7 @@ def emulate(
             creativity=l_creativity,
             diversity=l_diversity,
         ),
-        l_ret = model.request_handler(
-            response[0],
-            x._infos.f_type[1], 
-            None
-        )
+        l_ret = model.request_handler(response[0], x._infos)
     except NameError as e:
         raise NotImplementedError(f"[emulate]: {e}\nModel object does not have the required methods.")
         

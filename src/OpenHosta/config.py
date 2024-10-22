@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from typing import get_origin, get_args, Any, Optional
 
 from .errors import ApiKeyError, RequestError
+from .hosta import Func
 
 def is_valid_url(url:str)->bool:
     regex = re.compile(
@@ -35,18 +36,6 @@ class Model:
         self._last_request = None
         self._used_tokens = 0
         self._nb_requests = 0
-        
-        self.conversion_function = {
-            str: lambda x: str(x),
-            int: lambda x: int(x),
-            float: lambda x: float(x),
-            list: lambda x: list(x),
-            set: lambda x: set(x),
-            frozenset: lambda x: frozenset(x),
-            tuple: lambda x: tuple(x),
-            bool: lambda x: bool(x),
-            type(None): lambda x: None,
-        }
 
         if any(var is None for var in (model, base_url)):
             raise ValueError(f"[Model.__init__] Missing values.")
@@ -98,7 +87,7 @@ class Model:
         self._nb_requests += 1
         return response
 
-    def request_handler(self, response:Response, return_type:dict, return_caller:object)->Any:
+    def request_handler(self, response:Response, func:Func)->Any:
         l_ret = None
             
         data = response.json()
@@ -111,6 +100,15 @@ class Model:
             sys.stderr.write(f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
+        l_ret = l_ret_data["return"]
+        print(f"TYPE: {func.f_type[1]}")
+        if func.f_type[1] is not None:
+            if issubclass(func.f_type[1], BaseModel):
+                try:
+                    l_ret = func.f_type[1](**l_ret)
+                    print(type(l_ret))
+                except:
+                    l_ret = l_ret_data["return"]
         # if "return_hosta_type" in return_type["properties"]:
         #     if return_caller in self.conversion_function:
         #         convert_function = self.conversion_function[return_caller]
@@ -131,7 +129,6 @@ class Model:
         #         l_ret = None
         # else:
         #     l_ret = l_ret_data["return"]
-        l_ret = l_ret_data["return"]
         return l_ret
 
     def convert_to_type(self, data, type):
