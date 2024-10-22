@@ -20,7 +20,7 @@ class HostaInspector:
         pass
     
     @staticmethod
-    def _extend(*, back_level:int=2)->Tuple[Callable, FrameType]:
+    def _extend(*, back_level: int=3)->Optional[Tuple[Callable, FrameType]]:
         """
         Retrieves the callable object and the frame from which this method is called.
 
@@ -40,7 +40,7 @@ class HostaInspector:
                 - The frame object of the caller.
         """
         if back_level <= 0 or not isinstance(back_level, int):
-            raise ValueError(f"[HostaInspector._extend] back_lever must a non-zero positive integers.")
+            raise ValueError(f"[HostaInspector._extend] back_level must a non-zero positive integers.")
             
         def _get_obj_from_class(caller:FrameType)->Optional[Callable]:
             """
@@ -119,13 +119,13 @@ class HostaInspector:
         else:
             func = _get_obj_from_func(caller, caller_code, caller_name)
         
-        if func is None or not callable(func):
-            raise FrameError("[HostaInspector._extend] The callable object can't be found.")
+        if func is not None and not callable(func):
+            raise FrameError("[HostaInspector._extend] The foud object isn't a callable.")
 
         return (func, caller)
     
     @staticmethod
-    def _attach(self, obj:Callable, attr: Dict[str, Any])->Optional[bool]:
+    def _attach(obj:Callable, attr: Dict[str, Any])->Optional[bool]:
         """
         Attaches attributes to a function or method.
         
@@ -153,14 +153,6 @@ class HostaInspector:
                 return True
             raise AttributeError(f"[HostaInspector._attach] Failed to attach attributs. \"__func__\" attribut is missing.")
         elif inspect.isfunction(obj):
-            attr_parser(obj.__func__, attr)
+            attr_parser(obj, attr)
             return True
         raise AttributeError(f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(obj)}.")
-    
-    @staticmethod
-    def serialize(self):
-        pass
-   
-    @staticmethod
-    def deserialize(self):
-        pass

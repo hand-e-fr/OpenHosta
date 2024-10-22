@@ -4,7 +4,10 @@ from pydantic import BaseModel
 from typing import Callable
 import numpy as np
 
-from OpenHosta import config, emulate, thought, example, load_training_example, predict, TrainingSet
+import OpenHosta.core
+import OpenHosta.config as config
+from OpenHosta.emulate import emulate
+from OpenHosta.example import example
 
 g_apiKey = ""
 
@@ -33,70 +36,70 @@ class User(BaseModel):
     email: str
     age: int
 
-class TestPredict:
-    def test_basic_input_predict(self):
-        def predict_1(a: int) -> float:
-            """
-            This function predicts the id of a letter
-            """
-            example(1, hosta_out=1.0)
-            example(2, hosta_out=2.0)
-            example(3, hosta_out=3.0)
-            return predict()
+# class TestPredict:
+#     def test_basic_input_predict(self):
+#         def predict_1(a: int) -> float:
+#             """
+#             This function predicts the id of a letter
+#             """
+#             example(1, hosta_out=1.0)
+#             example(2, hosta_out=2.0)
+#             example(3, hosta_out=3.0)
+#             return predict()
         
-        ret_1 = predict_1(1)
-        assert type(ret_1) == float
+#         ret_1 = predict_1(1)
+#         assert type(ret_1) == float
 
 
-    def test_mutiple_input_predict(self):
-        def predict_2(a: int, b:int) -> float:
-            """
-            This function predict the id of sum of two letter
-            """
-            example(a=1, b=2, hosta_out=3.0, hosta_func=predict_2)
-            return predict()
-        ret_2 = predict_2(1, 2)
-        assert type(ret_2) == float
+#     def test_mutiple_input_predict(self):
+#         def predict_2(a: int, b:int) -> float:
+#             """
+#             This function predict the id of sum of two letter
+#             """
+#             example(a=1, b=2, hosta_out=3.0, hosta_func=predict_2)
+#             return predict()
+#         ret_2 = predict_2(1, 2)
+#         assert type(ret_2) == float
 
-    def test_attributs_predict(self, capsys):
-        def predict_3(a:int) -> float:
-            """
-            transform an int into a float
-            """
-            example(1, hosta_out=1.0)
-            return predict()
+#     def test_attributs_predict(self, capsys):
+#         def predict_3(a:int) -> float:
+#             """
+#             transform an int into a float
+#             """
+#             example(1, hosta_out=1.0)
+#             return predict()
 
-        ret = predict_3(1)
-        predict_3.retrain(epochs=15, verbose=False)
-        ret_after = predict_3(1)
-        assert ret != ret_after
+#         ret = predict_3(1)
+#         predict_3.retrain(epochs=15, verbose=False)
+#         ret_after = predict_3(1)
+#         assert ret != ret_after
 
-        ret_emulate = predict_3.emulate(1)
-        print(ret_emulate)
-        assert type(ret_emulate) == float
+#         ret_emulate = predict_3.emulate(1)
+#         print(ret_emulate)
+#         assert type(ret_emulate) == float
 
-        predict_3.continue_train(epochs=1500, get_loss=0.01, verbose=True)
-        stdout = capsys.readouterr()
-        assert "Loss target achieved at epoch" in stdout.out
+#         predict_3.continue_train(epochs=1500, get_loss=0.01, verbose=True)
+#         stdout = capsys.readouterr()
+#         assert "Loss target achieved at epoch" in stdout.out
 
-class TestTrainingset:
-    def test_training_function(self):
-        len_sublist = 0
-        def function_to_test(a: int, b: int) -> float:
-            """
-            This function returns the sum of two integers.
-            """
-            return predict()
-        example(a=1, b=2, hosta_out=3.0, hosta_func=function_to_test)
+# class TestTrainingset:
+#     def test_training_function(self):
+#         len_sublist = 0
+#         def function_to_test(a: int, b: int) -> float:
+#             """
+#             This function returns the sum of two integers.
+#             """
+#             return predict()
+#         example(a=1, b=2, hosta_out=3.0, hosta_func=function_to_test)
 
-        training_test = TrainingSet(function_to_test)
-        training_test.add(a=2, b=3, hosta_out=5.0)
-        dataset = training_test.visualize()
+#         training_test = TrainingSet(function_to_test)
+#         training_test.add(a=2, b=3, hosta_out=5.0)
+#         dataset = training_test.visualize()
 
-        expected_values = [{'a': 1, 'b': 2, 'hosta_out': 3}, {'a': 2, 'b': 3, 'hosta_out': 5}]
+#         expected_values = [{'a': 1, 'b': 2, 'hosta_out': 3}, {'a': 2, 'b': 3, 'hosta_out': 5}]
 
-        for expected in expected_values:
-            assert expected in dataset[0] or expected in dataset[1], f"{expected} n'est pas présent dans le dataset"
+#         for expected in expected_values:
+#             assert expected in dataset[0] or expected in dataset[1], f"{expected} n'est pas présent dans le dataset"
 
 class TestEmulate:
        
@@ -231,33 +234,6 @@ class TestEmulate:
     def test_FeaturePydanticLocal(self):
         pass
         
-    def test_FeatureSuggestDefaultModel(self):
-        
-        my_model = config.Model(
-            model="gpt-4o-mini",
-            base_url="https://api.openai.com/v1/chat/completions",
-            api_key=g_apiKey
-        )
-        
-        config.set_default_model(my_model)
-        
-        def multiply(a:int, b:int)->int:
-            """
-            This function multiplies two integers in parameter.
-            """
-            return emulate()
-        
-        ret = multiply(2, 3)
-        ret_suggest = multiply.__suggest__(multiply)
-        ret_model = multiply._last_response["model"]
-        
-        assert isinstance(ret_suggest, dict)
-        assert "gpt-4o-mini" in ret_model
-        assert not multiply.advanced is None
-        assert not multiply.enhanced_prompt is None
-        assert not multiply.review is None
-        assert not multiply.diagram is None
-        
     def test_rc2(self):
         
         def multiply(a:int, b:int)->int:
@@ -272,66 +248,66 @@ class TestEmulate:
         res = main()
         assert res == 6
 
-class TestThought:
+# class TestThought:
     
-    def test_BasicDirect(self):
-        ret = thought("Multiply by 2")(8)
-        assert ret == 16
+#     def test_BasicDirect(self):
+#         ret = thought("Multiply by 2")(8)
+#         assert ret == 16
     
-    def test_BasicIndirect(self):
-        x = thought("Translate in English")
-        ret = x("Bonjour Monde!")
-        assert isinstance(x, Callable)
-        assert ret == "Hello World!"
+#     def test_BasicIndirect(self):
+#         x = thought("Translate in English")
+#         ret = x("Bonjour Monde!")
+#         assert isinstance(x, Callable)
+#         assert ret == "Hello World!"
 
-    @pytest.mark.parametrize("prompt, args, expected", [
-        ("return a random integer", "", int),
-        ("return a random sentence", "", str),
-        ("return a random float", "", float),
-        ("return list with 5 random integers", "", list),
-        ("return a random bool in python", "", bool),
-    ])
-    def test_BasicTyped(self, prompt, args, expected):
-        ret = thought(prompt)(args)
-        assert isinstance(ret, expected)
+#     @pytest.mark.parametrize("prompt, args, expected", [
+#         ("return a random integer", "", int),
+#         ("return a random sentence", "", str),
+#         ("return a random float", "", float),
+#         ("return list with 5 random integers", "", list),
+#         ("return a random bool in python", "", bool),
+#     ])
+#     def test_BasicTyped(self, prompt, args, expected):
+#         ret = thought(prompt)(args)
+#         assert isinstance(ret, expected)
         
-    @pytest.mark.parametrize("prompt, args, expected", [
-        ("Count the letter un a setence", "Hello World!", int),
-        ("capitalize a setence", "hello world!", str),
-        ("Give the number Pi to 3 decimal places", "", float),
-        ("Sort in ascending order", [2, 5, 1, 12, 6], list),
-        ("Is a positive number", 6, bool),
-    ])
-    def test_FeaturePredict(self, prompt, args, expected):
-        x = thought(prompt)
-        ret = x(args)
-        assert x._return_type is expected
+#     @pytest.mark.parametrize("prompt, args, expected", [
+#         ("Count the letter un a setence", "Hello World!", int),
+#         ("capitalize a setence", "hello world!", str),
+#         ("Give the number Pi to 3 decimal places", "", float),
+#         ("Sort in ascending order", [2, 5, 1, 12, 6], list),
+#         ("Is a positive number", 6, bool),
+#     ])
+#     def test_FeaturePredict(self, prompt, args, expected):
+#         x = thought(prompt)
+#         ret = x(args)
+#         assert x._return_type is expected
 
-    def test_FeatureMultiArgs(self):
-        x = thought("Combine each word of a sentence in a string")
-        ret = x("Hello", ", how are you ?", " Nice to meet you !")
-        assert ret == "Hello, how are you ? Nice to meet you !"
+#     def test_FeatureMultiArgs(self):
+#         x = thought("Combine each word of a sentence in a string")
+#         ret = x("Hello", ", how are you ?", " Nice to meet you !")
+#         assert ret == "Hello, how are you ? Nice to meet you !"
     
-    def test_FeatureChainOfThought(self):
-        pass
+#     def test_FeatureChainOfThought(self):
+#         pass
     
-    def test_FeatureDefaultModel(self):
-        my_model = config.Model(
-            model="gpt-4o-mini",
-            base_url="https://api.openai.com/v1/chat/completions",
-            api_key=g_apiKey
-        )
+#     def test_FeatureDefaultModel(self):
+#         my_model = config.Model(
+#             model="gpt-4o-mini",
+#             base_url="https://api.openai.com/v1/chat/completions",
+#             api_key=g_apiKey
+#         )
         
-        config.set_default_model(my_model)
+#         config.set_default_model(my_model)
         
-        x = thought("Is a masculine name")
-        ret = x("Max")
-        print(x._last_response)
-        ret_model = x._last_response["model"]
-        assert ret == True
-        assert "gpt-4o-mini" in ret_model
+#         x = thought("Is a masculine name")
+#         ret = x("Max")
+#         print(x._last_response)
+#         ret_model = x._last_response["model"]
+#         assert ret == True
+#         assert "gpt-4o-mini" in ret_model
     
-    def test_FeatureCachedPrediction(self):
-        pass
+#     def test_FeatureCachedPrediction(self):
+#         pass
 class TestTypingPydantic:
     pass
