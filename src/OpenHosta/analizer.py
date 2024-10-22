@@ -1,6 +1,13 @@
+from __future__ import annotations
+
 from typing import Callable, Tuple, List, Dict, Any
 import inspect
 from types import FrameType
+
+all = (
+    "_FuncInspector",
+    "FuncAnalizer"
+)
 
 class _FuncInspector:
     def __init__(self, func: Callable):
@@ -79,7 +86,7 @@ class FuncAnalizer(_FuncInspector):
         try:
             return self._get_function_definition()
         except:
-            raise AttributeError("Function definition not found")
+            raise AttributeError("[FuncAnalizer] Function definition not found")
 
     @property
     def func_call(self) -> str:
@@ -90,7 +97,7 @@ class FuncAnalizer(_FuncInspector):
             bound_args, _ = self._get_call_info(self.caller_frame)
             return self._build_call_string(bound_args)
         except:
-            raise AttributeError("Function call not found")
+            raise AttributeError("[FuncAnalizer] Function call not found")
 
     @property
     def func_args(self) -> Dict[str, object]:
@@ -101,7 +108,7 @@ class FuncAnalizer(_FuncInspector):
             bound_args, _ = self._get_call_info(self.caller_frame)
             return bound_args
         except:
-            raise AttributeError("Function arguments not found")
+            raise AttributeError("[FuncAnalizer] Function arguments not found")
 
     @property 
     def func_type(self) -> Tuple[List[type], type]:
@@ -111,7 +118,7 @@ class FuncAnalizer(_FuncInspector):
         try:
             return self._get_function_type()
         except:
-            raise AttributeError("Function types not found")
+            raise AttributeError("[FuncAnalizer] Function types not found")
 
     @property
     def func_locals(self) -> dict:
@@ -122,7 +129,7 @@ class FuncAnalizer(_FuncInspector):
             _, values_locals = self._get_call_info(self.caller_frame)
             return values_locals
         except:
-            raise AttributeError("Function local variables not found")
+            raise AttributeError("[FuncAnalizer] Function local variables not found")
 
 
 #                   test                  #

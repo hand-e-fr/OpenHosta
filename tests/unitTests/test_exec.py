@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import patch
 import inspect
 
-from OpenHosta import exec
+from DEPRECATED import exec
 
 class TestExtendScope:
     
