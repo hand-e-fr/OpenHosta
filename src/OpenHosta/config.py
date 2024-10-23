@@ -8,6 +8,7 @@ import json
 import re
 from pydantic import BaseModel
 from typing import get_origin, get_args, Any, Optional
+from types import NoneType
 
 from .errors import ApiKeyError, RequestError
 from .hosta import Func
@@ -100,47 +101,10 @@ class Model:
             sys.stderr.write(f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
-        l_ret = l_ret_data["return"]
-        print(f"TYPE: {func.f_type[1]}")
-        if func.f_type[1] is not None:
-            if issubclass(func.f_type[1], BaseModel):
-                try:
-                    l_ret = func.f_type[1](**l_ret)
-                    print(type(l_ret))
-                except:
-                    l_ret = l_ret_data["return"]
-        # if "return_hosta_type" in return_type["properties"]:
-        #     if return_caller in self.conversion_function:
-        #         convert_function = self.conversion_function[return_caller]
-        #         if l_ret_data["return"] is not None:
-        #             l_ret = convert_function(l_ret_data["return"])
-        #     else:
-        #         l_ret = l_ret_data["return"]
-        # elif "return_hosta_type_typing" in return_type["properties"]:
-        #     l_ret = self.convert_to_type(l_ret_data["return"], return_caller)
-        # elif issubclass(return_caller, BaseModel):
-        #     try:
-        #         l_ret = return_caller(**l_ret_data["return"])
-        #     except:
-        #         sys.stderr.write("Unable to parse answer: ", l_ret_data["return"])
-        #         for m in self._last_request["messages"]:
-        #             sys.stderr.write(" "+m["role"]+">\n=======\n", m["content"][0]["text"])
-        #         sys.stderr.write("Answer>\n=======\n",  l_ret_data["return"])
-        #         l_ret = None
-        # else:
-        #     l_ret = l_ret_data["return"]
+        
         return l_ret
 
-    def convert_to_type(self, data, type):
-        origin = get_origin(type)
-        args = get_args(type)
-
-        if origin != None:
-            if origin in self.conversion_function:
-                convert_function = self.conversion_function[origin]
-                return convert_function(self.convert_to_type(d, args[0]) for d in data)
-
-        return data
+    
 
 
 class DefaultModel:
@@ -173,10 +137,11 @@ class DefaultModel:
 
 DefaultManager = DefaultModel()
 
-
 def set_default_model(new):
     DefaultManager.set_default_model(new)
 
 
 def set_default_apiKey(api_key=None):
     DefaultManager.set_default_apiKey(api_key)
+    
+# anntations, errors handling, doc
