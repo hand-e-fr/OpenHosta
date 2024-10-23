@@ -2,19 +2,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from .hosta import Hosta
+from .hosta import Hosta, Func
 from .config import Model, DefaultManager
 from .prompt import PromptManager
 
-def build_user_prompt(_infos: dict = None):
+def build_user_prompt(_infos: Func = None):
     filler = lambda pre, value: f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
     
+    print(_infos.f_type)
+    print(_infos.f_schema)
     user_prompt = (
         "---\n\n## Function infos\n\n"
         + filler("Here's the function definition:", _infos.f_def)
         + filler("Here's the function's locals variables which you can use as additional information to give your answer:", _infos.f_locals)
         + "To fill in the \"return\" value in the output JSON, create your response according to the specified JSON Schema. Make sure not to change the key \"return.\"\n\n"
-        + filler("JSON Schema to be used for \"return\" structure", _infos.f_type)
+        + filler("JSON Schema to be used for \"return\" structure", _infos.f_schema)
         # + filler("Here are some examples of expected input and output:", _infos["ho_example"])
         + "---\n"
     )

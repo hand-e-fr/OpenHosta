@@ -49,6 +49,7 @@ class Func(BaseModel):
     f_call: str = Field("", description="Actual call of the function, e.g., 'func(1, 'hello')'")
     f_args: Dict[str, Any] = Field(default_factory=dict, description="Arguments of the function, e.g., {'a': 1, 'b': 'hello'}")
     f_type: Tuple[List[Any], Any] = Field(default_factory=lambda: ([], None), description="Desired type of the input and output of the function")
+    f_schema: Dict[str, Any] = Field(default_factory=dict, description="Dictionary describing the function's return type (in case of pydantic).")
     f_locals: Optional[Dict[str, Any]] = Field(default=None, description="Local variables within the function's scope")
     f_mem: Optional[List[MemoryNode]] = Field(default=None, description="Memory nodes associated with the function, contains examples, chain of thought...")
     
@@ -134,6 +135,7 @@ class Hosta(HostaInspector):
         self._infos.f_args   = analizer.func_args
         self._infos.f_type   = analizer.func_type
         self._infos.f_locals = analizer.func_locals
+        self._infos.f_schema = analizer.func_schema
     
     def _bdy_add(self, key:MemKey, value:MemValue)->None:
         """

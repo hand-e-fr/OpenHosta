@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Callable, Tuple, List, Dict, Any
+from typing import get_args, get_origin
+from pydantic import BaseModel, create_model
 import inspect
 from types import FrameType
 
@@ -71,6 +73,29 @@ class _FuncInspector:
         output_type = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
         return input_types, output_type
     
+    def _get_function_schema(self, func: Callable) -> Dict[str, Any]:
+        sig = inspect.signature(func)
+        return_caller = sig.return_annotation if sig.return_annotation != inspect.Signature.empty else None
+        return_schema = None
+
+        if return_caller is not None:
+            if get_origin(return_caller):
+                return_caller_origin = get_origin(return_caller)
+                return_caller_args = get_args(return_caller)
+                combined = return_caller_origin[return_caller_args]
+                new_model = create_model("return_schema", annotation=(combined, ...))
+                return_schema = new_model.model_json_schema()
+            elif issubclass(return_caller, BaseModel):
+                return_schema = return_caller.model_json_schema()
+            else:
+                new_model = create_model("return_schema", annotation=(return_caller, ...))
+                return_schema = new_model.model_json_schema()
+        else:
+            No_return_specified = create_model(
+                "return_shema", annotation=(Any, ...)
+            )
+            return_schema = No_return_specified.model_json_schema()
+        return return_schema   
 
 
 class FuncAnalizer(_FuncInspector):
@@ -130,6 +155,16 @@ class FuncAnalizer(_FuncInspector):
             return values_locals
         except:
             raise AttributeError("[FuncAnalizer] Function local variables not found")
+        
+    @property
+    def func_schema(self) -> dict:
+        """
+        This method returns the function local variables as a dictionary
+        """
+        try:
+            return self._get_function_schema(self.func)
+        except:
+            raise AttributeError("[FuncAnalizer] Function schema cannot be created")
 
 
 #                   test                  #
