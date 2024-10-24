@@ -1,6 +1,5 @@
 HOSTAPATH = "./"
 PROMPTPATH = "src/prompt.json"
-CACHE_PATH = "./__hostacache__"
 
 from .core.config import Model, DefaultManager
 
@@ -13,6 +12,8 @@ from .exec.emulate import emulate
 from .exec.example import example
 from .exec.thinkof import thinkof
 from .utils.prompt import PromptManager
+from .exec.predict.predict import predict
+from .exec.predict.config import PredictConfig
 
 all = (
     "config",
@@ -21,4 +22,5 @@ all = (
     "thinkof",
     "PromptManager",
     "predict",
+    "PredictConfig"
 )
