@@ -46,8 +46,8 @@ class Model:
         self,
         sys_prompt: str,
         user_prompt: str,
-        creativity: Optional[float] = None,
-        diversity: Optional[float] = None
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None
     )->Response:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
@@ -65,8 +65,8 @@ class Model:
                 },
             ],
             "response_format": {"type": "json_object"},
-            "temperature": creativity if creativity is not None else 0.7,
-            "top_p": diversity if diversity is not None else 1,
+            "temperature": temperature if temperature is not None else 0.7,
+            "top_p": top_p if top_p is not None else 1,
         }
         headers = {
             "Content-Type": "application/json",

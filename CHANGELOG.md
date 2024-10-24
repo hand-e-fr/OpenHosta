@@ -4,14 +4,18 @@ All significant changes to this project will be documented in this file.
 
 ---
 
-## **v2.0-beta1**
+## **v2.0-beta2**
 
 - **Features**
-  - All the attributs are now attach to methods
+  - `thought` is now used to add chain of thoughts in a emulated function
+  - `PromptManager` is now available for users to change all meta-prompt.
 
-- **Internal**
-  - Added `py.typed` file for linter
-  - Refacto the project's structure
+- **Changes**
+  - `thought` function become `thinkof`
+  - `suggest` is removed
+  - `creativity` become `temperature` and `diversity` become `top_p`
+  - There's no more `hostacache` for emulated functions
+
 
 ## **v1.2.0** - 10/14/2024
 

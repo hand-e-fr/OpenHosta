@@ -23,7 +23,7 @@ def guess_type(key:str, *args)->object:
     response = l_default.api_call(
         sys_prompt=meta_prompt,
         user_prompt=l_user_prompt,
-        creativity=0.5,
+        temperature=0.5,
     )
 
     data = response.json()

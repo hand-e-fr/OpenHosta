@@ -10,12 +10,14 @@ DefaultManager.set_default_model(
 from .core import config
 from .exec.emulate import emulate
 from .exec.example import example
+from .exec.thought import thought
 from .exec.thinkof import thinkof
 from .utils.prompt import PromptManager
 
 all = (
     "config",
     "emulate",
+    "thought",
     "example",
     "thinkof",
     "PromptManager",
