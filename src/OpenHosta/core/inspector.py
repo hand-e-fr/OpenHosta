@@ -4,7 +4,7 @@ from typing import Tuple, Callable, Optional, Dict, Any
 from types import FrameType, CodeType
 import inspect
 
-from .errors import FrameError
+from ..utils.errors import FrameError
 
 all = (
     "HostaInspector"

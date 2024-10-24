@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import Dict, Any, Tuple, List, Optional, Literal, Union, TypedDict
 from pydantic import BaseModel, Field
-from functools import wraps
 
 
 from .inspector import HostaInspector
 from .analizer import FuncAnalizer
-from .errors import InvalidStructureError
+from ..utils.errors import InvalidStructureError
 
 all = (
     "Hosta",
@@ -44,9 +43,10 @@ class Func(BaseModel):
     Func is a Pydantic model representing a function's metadata.
     Useful for the executive functions and the post-processing.
     """
-    f_def: str = Field("", description="Simple definition of the function, e.g., 'def func(a:int, b:str)->int:'")
-    f_name: str = Field("", description="Name of the function, e.g., 'func'")
-    f_call: str = Field("", description="Actual call of the function, e.g., 'func(1, 'hello')'")
+    f_obj: Optional[object] = Field(default=None)
+    f_def: str = Field(default="", description="Simple definition of the function, e.g., 'def func(a:int, b:str)->int:'")
+    f_name: str = Field(default="", description="Name of the function, e.g., 'func'")
+    f_call: str = Field(default="", description="Actual call of the function, e.g., 'func(1, 'hello')'")
     f_args: Dict[str, Any] = Field(default_factory=dict, description="Arguments of the function, e.g., {'a': 1, 'b': 'hello'}")
     f_type: Tuple[List[Any], Any] = Field(default_factory=lambda: ([], None), description="Desired type of the input and output of the function")
     f_schema: Dict[str, Any] = Field(default_factory=dict, description="Dictionary describing the function's return type (in case of pydantic).")
@@ -129,6 +129,7 @@ class Hosta(HostaInspector):
         The extracted information is stored in the _infos attribute of the instance.
         """
         analizer = FuncAnalizer(self._obj[0], self._obj[1])
+        self._infos.f_obj   = self._obj[0]
         self._infos.f_name   = self._obj[0].__name__
         self._infos.f_def, _ = analizer.func_def
         self._infos.f_call   = analizer.func_call
@@ -219,5 +220,3 @@ class Hosta(HostaInspector):
         """
         nodes = self._bdy_get(key="cot")
         return [node.value for node in nodes] if nodes else None
-    
-#Faire un moyen de formater les exemples en str pour le user prompt
