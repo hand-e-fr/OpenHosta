@@ -19,4 +19,5 @@ all = (
     "example",
     "thinkof",
     "PromptManager",
+    "predict",
 )
