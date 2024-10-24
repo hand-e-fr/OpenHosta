@@ -9,14 +9,12 @@ from .prompt import PromptManager
 def build_user_prompt(_infos: Func = None):
     filler = lambda pre, value: f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
     
-    print(_infos.f_type)
-    print(_infos.f_schema)
     user_prompt = (
         "---\n\n## Function infos\n\n"
         + filler("Here's the function definition:", _infos.f_def)
         + filler("Here's the function's locals variables which you can use as additional information to give your answer:", _infos.f_locals)
-        + "To fill in the \"return\" value in the output JSON, create your response according to the specified JSON Schema. Make sure not to change the key \"return.\"\n\n"
-        + filler("JSON Schema to be used for \"return\" structure", _infos.f_schema)
+        + filler("Here's the type annotation of the function:", _infos.f_type[1])
+        + filler("If it isn't a native type, here's a schema describing the type annotation:", _infos.f_schema)
         # + filler("Here are some examples of expected input and output:", _infos["ho_example"])
         + "---\n"
     )

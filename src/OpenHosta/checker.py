@@ -13,7 +13,7 @@ class HostaChecker:
         self.func = func
         self.data = data
         try:
-            self.checked = self.data["result"]
+            self.checked = self.data["return"]
             self.is_passed = True
         except KeyError:
             self.checked = self.data
@@ -43,25 +43,30 @@ class HostaChecker:
         
     def convert_annotated(self)->Any:
         if getattr(self.func.f_type[1], '__module__', None) == 'typing':
-            origin = get_origin(type)
-            args = get_args(type)
+            pass
+        return self.checked
+        #     origin = get_origin(self.func.f_type[1])
+        #     args = get_args(self.func.f_type[1])
 
-            if origin != None:
-                if origin in self.convert:
-                    convert_function = self.convert[origin]
-                    return convert_function(self.convert_to_type(d, args[0]) for d in data)
-            return data
-        else:
-            return self.checked
+        #     if origin != None:
+        #         if origin in self.convert:
+        #             convert_function = self.convert[origin]
+        #             return convert_function(self.convert_to_type(d, args[0]) for d in self.checked)
+        #     return self.checked
+        # else:
+        #     return self.checked
         
     def convert_pydantic(self)->Optional[BaseModel]:
         try:
             if issubclass(self.func.f_type[1], BaseModel):
                 return self.func.f_type[1](**self.checked)
+            return self.checked
         except:
             return self.checked
         
     def check(self)->Any:
+        if self.checked == "None":
+            return None
         if self.is_passed:
             self.checked = self.convert(self.func.f_type[1])(self.checked)
             self.checked = self.convert_annotated()

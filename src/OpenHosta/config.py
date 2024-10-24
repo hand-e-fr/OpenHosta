@@ -12,6 +12,7 @@ from types import NoneType
 
 from .errors import ApiKeyError, RequestError
 from .hosta import Func
+from .checker import HostaChecker
 
 def is_valid_url(url:str)->bool:
     regex = re.compile(
@@ -67,7 +68,7 @@ class Model:
             ],
             "response_format": {"type": "json_object"},
             "temperature": creativity if creativity is not None else 0.7,
-            "top_p": diversity if diversity is not None else 0.7,
+            "top_p": diversity if diversity is not None else 1,
         }
         headers = {
             "Content-Type": "application/json",
@@ -89,8 +90,6 @@ class Model:
         return response
 
     def request_handler(self, response:Response, func:Func)->Any:
-        l_ret = None
-            
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
         if "usage" in data:
@@ -101,11 +100,7 @@ class Model:
             sys.stderr.write(f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
-        
-        return l_ret
-
-    
-
+        return HostaChecker(func, l_ret_data).check()
 
 class DefaultModel:
     _instance = None
