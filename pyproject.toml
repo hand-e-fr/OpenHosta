@@ -41,7 +41,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-"OpenHosta" = ["*.json"]
+"OpenHosta" = ["utils/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = [
