@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Dict, Any, Tuple, List, Optional, Literal, Union, TypedDict
 from pydantic import BaseModel, Field
 
-
 from .inspector import HostaInspector
 from .analizer import FuncAnalizer
 from ..utils.errors import InvalidStructureError
@@ -11,22 +10,19 @@ from ..utils.errors import InvalidStructureError
 all = (
     "Hosta",
     "Func",
-    "ExampleType",
-    "CotType",
     "UseType",
     "MemKey",
     "MemValue",
-    "MemGet",
     "MemoryNode"
 )
 
 class ExampleType(TypedDict):
     in_: Any
     out: Any
-    
-class CotType(TypedDict):
-    pass
 
+class CotType(TypedDict):
+    task: str
+ 
 class UseType(TypedDict):
     pass
 
