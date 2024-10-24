@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from .hosta import Hosta, Func
-from .config import Model, DefaultManager
-from .prompt import PromptManager
+from ..core.hosta import Hosta, Func
+from ..core.config import Model, DefaultManager
+from ..utils.prompt import PromptManager
 
 def build_user_prompt(_infos: Func = None):
     filler = lambda pre, value: f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
@@ -25,12 +25,17 @@ def emulate(
     model: Model = None,
     l_creativity: float = None,
     l_diversity: float = None,
+    _infos: Func = None
 )->Any:
+    x = None
     l_ret:Any = None
-    x = Hosta()
     pm = PromptManager()
     meta_prompt:str = pm.get_prompt("emulate")
-    func_prompt:str = build_user_prompt(x._infos)
+    
+    if _infos is None:
+        x = Hosta()
+        _infos = x._infos  
+    func_prompt:str = build_user_prompt(_infos)
 
     if model is None:
         model = DefaultManager.get_default_model()
@@ -42,17 +47,18 @@ def emulate(
     try:
         response = model.api_call(
             sys_prompt=f"{meta_prompt}\n{func_prompt}\n",
-            user_prompt=x._infos.f_call,
+            user_prompt=_infos.f_call,
             creativity=l_creativity,
             diversity=l_diversity,
         ),
-        l_ret = model.request_handler(response[0], x._infos)
+        l_ret = model.request_handler(response[0], _infos)
     except NameError as e:
         raise NotImplementedError(f"[emulate]: {e}\nModel object does not have the required methods.")
-        
-    x._attach(x._obj[0], {
-        "_last_request": f"{meta_prompt}\n{func_prompt}\n{x._infos.f_call}",
-        "_last_response": response[0].json()
-        })
+    
+    if x: 
+        x._attach(_infos.f_obj, {
+            "_last_request": f"{meta_prompt}\n{func_prompt}\n{_infos.f_call}",
+            "_last_response": response[0].json()
+            })
 
     return l_ret

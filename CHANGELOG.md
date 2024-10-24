@@ -4,7 +4,7 @@ All significant changes to this project will be documented in this file.
 
 ---
 
-## **v1.3.0**
+## **v2.0-beta1**
 
 - **Features**
   - All the attributs are now attach to methods

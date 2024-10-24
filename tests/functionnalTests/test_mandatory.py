@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Callable
 import numpy as np
 
-import OpenHosta.core
+import OpenHosta.OpenHosta
 import OpenHosta.config as config
 from OpenHosta.emulate import emulate
 from OpenHosta.example import example
@@ -248,66 +248,66 @@ class TestEmulate:
         res = main()
         assert res == 6
 
-# class TestThought:
+class TestThought:
     
-#     def test_BasicDirect(self):
-#         ret = thought("Multiply by 2")(8)
-#         assert ret == 16
+    def test_BasicDirect(self):
+        ret = thought("Multiply by 2")(8)
+        assert ret == 16
     
-#     def test_BasicIndirect(self):
-#         x = thought("Translate in English")
-#         ret = x("Bonjour Monde!")
-#         assert isinstance(x, Callable)
-#         assert ret == "Hello World!"
+    def test_BasicIndirect(self):
+        x = thought("Translate in English")
+        ret = x("Bonjour Monde!")
+        assert isinstance(x, Callable)
+        assert ret == "Hello World!"
 
-#     @pytest.mark.parametrize("prompt, args, expected", [
-#         ("return a random integer", "", int),
-#         ("return a random sentence", "", str),
-#         ("return a random float", "", float),
-#         ("return list with 5 random integers", "", list),
-#         ("return a random bool in python", "", bool),
-#     ])
-#     def test_BasicTyped(self, prompt, args, expected):
-#         ret = thought(prompt)(args)
-#         assert isinstance(ret, expected)
+    @pytest.mark.parametrize("prompt, args, expected", [
+        ("return a random integer", "", int),
+        ("return a random sentence", "", str),
+        ("return a random float", "", float),
+        ("return list with 5 random integers", "", list),
+        ("return a random bool in python", "", bool),
+    ])
+    def test_BasicTyped(self, prompt, args, expected):
+        ret = thought(prompt)(args)
+        assert isinstance(ret, expected)
         
-#     @pytest.mark.parametrize("prompt, args, expected", [
-#         ("Count the letter un a setence", "Hello World!", int),
-#         ("capitalize a setence", "hello world!", str),
-#         ("Give the number Pi to 3 decimal places", "", float),
-#         ("Sort in ascending order", [2, 5, 1, 12, 6], list),
-#         ("Is a positive number", 6, bool),
-#     ])
-#     def test_FeaturePredict(self, prompt, args, expected):
-#         x = thought(prompt)
-#         ret = x(args)
-#         assert x._return_type is expected
+    @pytest.mark.parametrize("prompt, args, expected", [
+        ("Count the letter un a setence", "Hello World!", int),
+        ("capitalize a setence", "hello world!", str),
+        ("Give the number Pi to 3 decimal places", "", float),
+        ("Sort in ascending order", [2, 5, 1, 12, 6], list),
+        ("Is a positive number", 6, bool),
+    ])
+    def test_FeaturePredict(self, prompt, args, expected):
+        x = thought(prompt)
+        ret = x(args)
+        assert x._return_type is expected
 
-#     def test_FeatureMultiArgs(self):
-#         x = thought("Combine each word of a sentence in a string")
-#         ret = x("Hello", ", how are you ?", " Nice to meet you !")
-#         assert ret == "Hello, how are you ? Nice to meet you !"
+    def test_FeatureMultiArgs(self):
+        x = thought("Combine each word of a sentence in a string")
+        ret = x("Hello", ", how are you ?", " Nice to meet you !")
+        assert ret == "Hello, how are you ? Nice to meet you !"
     
-#     def test_FeatureChainOfThought(self):
-#         pass
+    def test_FeatureChainOfThought(self):
+        pass
     
-#     def test_FeatureDefaultModel(self):
-#         my_model = config.Model(
-#             model="gpt-4o-mini",
-#             base_url="https://api.openai.com/v1/chat/completions",
-#             api_key=g_apiKey
-#         )
+    def test_FeatureDefaultModel(self):
+        my_model = config.Model(
+            model="gpt-4o-mini",
+            base_url="https://api.openai.com/v1/chat/completions",
+            api_key=g_apiKey
+        )
         
-#         config.set_default_model(my_model)
+        config.set_default_model(my_model)
         
-#         x = thought("Is a masculine name")
-#         ret = x("Max")
-#         print(x._last_response)
-#         ret_model = x._last_response["model"]
-#         assert ret == True
-#         assert "gpt-4o-mini" in ret_model
+        x = thought("Is a masculine name")
+        ret = x("Max")
+        print(x._last_response)
+        ret_model = x._last_response["model"]
+        assert ret == True
+        assert "gpt-4o-mini" in ret_model
     
-#     def test_FeatureCachedPrediction(self):
-#         pass
+    def test_FeatureCachedPrediction(self):
+        pass
 class TestTypingPydantic:
     pass

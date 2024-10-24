@@ -6,11 +6,9 @@ from requests.exceptions import RequestException
 from requests.models import Response
 import json
 import re
-from pydantic import BaseModel
-from typing import get_origin, get_args, Any, Optional
-from types import NoneType
+from typing import Any, Optional
 
-from .errors import ApiKeyError, RequestError
+from ..utils.errors import ApiKeyError, RequestError
 from .hosta import Func
 from .checker import HostaChecker
 
@@ -48,8 +46,8 @@ class Model:
         self,
         sys_prompt: str,
         user_prompt: str,
-        creativity: Optional[float],
-        diversity: Optional[float]
+        creativity: Optional[float] = None,
+        diversity: Optional[float] = None
     )->Response:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")

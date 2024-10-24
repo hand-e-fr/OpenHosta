@@ -74,8 +74,3 @@ class PromptManager:
             return prompt["text"]
         sys.stderr.write(f"[JSON_ERROR] Prompt not found\n")
         return None
-    
-# PromptManager = MetaPrompt()
-    
-    
-# Faire un singleton 
