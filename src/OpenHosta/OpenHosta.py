@@ -1,5 +1,6 @@
 HOSTAPATH = "./"
 PROMPTPATH = "src/prompt.json"
+CACHE_PATH = "./__hostacache__"
 
 from .core.config import Model, DefaultManager
 
