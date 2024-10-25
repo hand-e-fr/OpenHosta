@@ -47,7 +47,9 @@ class Model:
         sys_prompt: str,
         user_prompt: str,
         temperature: Optional[float] = None,
-        top_p: Optional[float] = None
+        top_p: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        
     )->Response:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
@@ -65,13 +67,17 @@ class Model:
                 },
             ],
             "response_format": {"type": "json_object"},
-            "temperature": temperature if temperature is not None else 0.7,
-            "top_p": top_p if top_p is not None else 1,
         }
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
+        if temperature is not None:
+            l_body["temperature"] = temperature
+        if temperature is not None:
+            l_body["top_p"] = top_p
+        if temperature is not None:
+            l_body["max_tokens"] = max_tokens
         self._last_request = l_body        
 
         try:

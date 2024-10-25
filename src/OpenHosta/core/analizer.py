@@ -58,7 +58,12 @@ class _FuncInspector:
         bound_args = self.sig.bind_partial(**values_args)
         bound_args.apply_defaults()
 
-        return bound_args.arguments, values_locals or None
+        try:
+            values_self = self.func.__self__.__dict__
+        except:
+            values_self = None
+            
+        return bound_args.arguments, values_locals or None, values_self
 
 
     def _build_call_string(self, bound_arguments):
@@ -119,7 +124,7 @@ class FuncAnalizer(_FuncInspector):
         This method returns the function call as a string
         """
         try:
-            bound_args, _ = self._get_call_info(self.caller_frame)
+            bound_args, _, _ = self._get_call_info(self.caller_frame)
             return self._build_call_string(bound_args)
         except:
             raise AttributeError("[FuncAnalizer] Function call not found")
@@ -130,7 +135,7 @@ class FuncAnalizer(_FuncInspector):
         This method returns the function arguments as a dictionary
         """
         try:
-            bound_args, _ = self._get_call_info(self.caller_frame)
+            bound_args, _, _ = self._get_call_info(self.caller_frame)
             return bound_args
         except:
             raise AttributeError("[FuncAnalizer] Function arguments not found")
@@ -151,10 +156,21 @@ class FuncAnalizer(_FuncInspector):
         This method returns the function local variables as a dictionary
         """
         try:
-            _, values_locals = self._get_call_info(self.caller_frame)
+            _, values_locals, _ = self._get_call_info(self.caller_frame)
             return values_locals
         except:
             raise AttributeError("[FuncAnalizer] Function local variables not found")
+        
+    @property
+    def func_self(self) -> dict:
+        """
+        This method returns the function self variables as a dictionary
+        """
+        try:
+            _, _, values_self = self._get_call_info(self.caller_frame)
+            return values_self
+        except:
+            raise AttributeError("[FuncAnalizer] Function self variables not found")
         
     @property
     def func_schema(self) -> dict:
