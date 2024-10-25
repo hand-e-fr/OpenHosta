@@ -7,6 +7,7 @@ All significant changes to this project will be documented in this file.
 ## **v2.0-beta2**
 
 - **Features**
+  - Added `max_tokens` args for emulate
   - Added `use_locals/self_as_ctx` args for emulate for clarity and modularity
   - `thought` is now used to add chain of thoughts in a emulated function
   - `PromptManager` is now available for users to change all meta-prompt.

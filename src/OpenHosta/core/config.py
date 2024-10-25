@@ -46,6 +46,7 @@ class Model:
         self,
         sys_prompt: str,
         user_prompt: str,
+        json_form: bool = True,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -66,17 +67,18 @@ class Model:
                     "content": [{"type": "text", "text": user_prompt}],
                 },
             ],
-            "response_format": {"type": "json_object"},
         }
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
+        if json_form:
+            l_body["response_format"] = {"type": "json_object"}
         if temperature is not None:
             l_body["temperature"] = temperature
-        if temperature is not None:
+        if top_p is not None:
             l_body["top_p"] = top_p
-        if temperature is not None:
+        if max_tokens is not None:
             l_body["max_tokens"] = max_tokens
         self._last_request = l_body        
 
@@ -143,4 +145,4 @@ def set_default_model(new):
 def set_default_apiKey(api_key=None):
     DefaultManager.set_default_apiKey(api_key)
     
-# anntations, errors handling, doc
+# anntations, errors handling, doc, all

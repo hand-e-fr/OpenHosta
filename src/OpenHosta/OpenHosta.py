@@ -13,6 +13,7 @@ from .exec.example import example
 from .exec.thought import thought
 from .exec.thinkof import thinkof
 from .utils.prompt import PromptManager
+from .exec.ask import ask
 
 all = (
     "config",
@@ -21,4 +22,5 @@ all = (
     "example",
     "thinkof",
     "PromptManager",
+    "ask",
 )
