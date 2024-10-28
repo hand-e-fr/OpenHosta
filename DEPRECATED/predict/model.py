@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import time
 import json
 
@@ -54,7 +53,7 @@ class CustomLinearModel(nn.Module):
         num_layers = len(self.config) - 4
         for idx in range(1, num_layers):
             layer = getattr(self, f"fc{idx}")
-            x = F.relu(layer(x))
+            x = torch.nn.functional.relu(layer(x))
 
         layer = getattr(self, f"fc{num_layers}")
         x = layer(x)

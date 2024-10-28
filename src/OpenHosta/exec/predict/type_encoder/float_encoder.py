@@ -8,3 +8,8 @@ class FloatEncoder(base.BaseEncoder):
             return [float(data)]
         except ValueError:
             raise ValueError("Provided value cannot be converted to float")
+
+    def decode(self, data: List[float]) -> Union[float, str]:
+        if len(data) == 0:
+            raise ValueError("Data is empty")
+        return data[0]

@@ -10,9 +10,9 @@ class PredictConfig:
     complexity: Optional[int] = None
     config: Optional[Dict[str, Any]] = None
     optimizer: Optional[str] = None
-    loss: Optional[str] = None
+    loss_method: Optional[str] = None
+    loss_value: float = 0.0
     epochs: Optional[int] = None
-    get_loss: float = 0.0
     batch_size: Optional[int] = None
     force_train: bool = False
     norm_max: Optional[float] = None
