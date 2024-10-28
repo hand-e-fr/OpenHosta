@@ -126,14 +126,12 @@ class Hosta(HostaInspector):
         The extracted information is stored in the _infos attribute of the instance.
         """
         analizer = FuncAnalizer(self._obj[0], self._obj[1])
-        self._infos.f_obj   = self._obj[0]
+        self._infos.f_obj    = self._obj[0]
         self._infos.f_name   = self._obj[0].__name__
-        self._infos.f_def, _ = analizer.func_def
-        self._infos.f_call   = analizer.func_call
-        self._infos.f_args   = analizer.func_args
+        self._infos.f_def    = analizer.func_def
+        self._infos.f_call, self._infos.f_args = analizer.func_call
         self._infos.f_type   = analizer.func_type
-        self._infos.f_locals = analizer.func_locals
-        self._infos.f_self = analizer.func_self
+        self._infos.f_locals, self._infos.f_self = analizer.func_locals
         self._infos.f_schema = analizer.func_schema
     
     def _bdy_add(self, key:MemKey, value:MemValue)->None:
