@@ -31,7 +31,6 @@ def build_user_prompt(
             + filler("To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:", x.cot)
         )
     user_prompt = (user_prompt + "---\n")
-    print(user_prompt)
     return user_prompt
 
 
