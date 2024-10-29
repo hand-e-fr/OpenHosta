@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Callable
 
 from ..core.hosta import Hosta, Func
 from ..core.config import Model, DefaultManager
@@ -35,13 +35,13 @@ def build_user_prompt(
 
 
 def emulate(
+    *,
     model: Optional[Model] = None,
-    temperature: Optional[float] = None,
-    top_p: Optional[float] = None,
-    max_tokens: Optional[int] = None,
-    use_locals_as_ctx: Optional[bool] = False,
-    use_self_as_ctx: Optional[bool] = False,
-    _infos: Optional[Func] = None
+    use_locals_as_ctx: bool = False,
+    use_self_as_ctx: bool = False,
+    post_callback: Optional[Callable] = None,
+    _infos: Optional[Func] = None,
+    **llm_args
 )->Any:
     x = None
     l_ret:Any = None
@@ -55,20 +55,16 @@ def emulate(
 
     if model is None:
         model = DefaultManager.get_default_model()
-    if (temperature is not None and (temperature < 0 or temperature > 1)) or (
-        top_p is not None and (top_p < 0 or top_p > 1)
-    ):
-        raise ValueError("[emulate] Out of range values (0<temperature|top_p<1)")
     
     try:
         response = model.api_call(
             sys_prompt=f"{meta_prompt}\n{func_prompt}\n",
             user_prompt=_infos.f_call,
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=max_tokens
+            **llm_args
         ),
         l_ret = model.request_handler(response[0], _infos)
+        if post_callback is not None:
+            l_ret = post_callback(l_ret)
     except NameError as e:
         raise NotImplementedError(f"[emulate]: {e}\nModel object does not have the required methods.")
     

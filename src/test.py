@@ -9,10 +9,15 @@ config.set_default_apiKey("")
 # print(res)
 # print(ask._last_tokens)
 
+def post_call(x):
+    print("Hello")
+    x += 2
+    return x
+
 def multiply(a:int, b:int)->int:
     """
     This function multiplies two integers in paramter.
     """
-    return emulate()
+    return emulate(max_tokens=5, post_callback=post_call)
 
 print(multiply(5, 6))
