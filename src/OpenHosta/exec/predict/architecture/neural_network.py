@@ -7,14 +7,70 @@ class LayerType(Enum):
     """
     Enum for different types of layers in a neural network.
     """
-    LINEAR = "Linear"
-    CONV2D = "Conv2d"
-    RELU = "ReLU"
-    DROPOUT = "Dropout"
-    BATCHNORM1D = "BatchNorm1d"
-    BATCHNORM2D = "BatchNorm2d"
-    MAXPOOL2D = "MaxPool2d"
-    AVGPOOL2D = "AvgPool2d"
+    LINEAR = 1
+    CONV2D = 2
+    RELU = 3
+    DROPOUT = 4
+    BATCHNORM1D = 5
+    BATCHNORM2D = 6
+    MAXPOOL2D = 7
+    AVGPOOL2D = 8
+
+class OptimizerAlgorithm(Enum):
+    """
+    Enum for different types of optimizers in a neural network.
+    https://pytorch.org/docs/stable/optim.html#algorithms
+    """
+    ADADELTA = 1
+    ADAFACTOR = 2
+    ADAGRAD = 3
+    ADAM = 4
+    ADAMW = 5
+    SPARSEADAM = 6
+    ADAMAX = 7
+    ASGD = 8
+    LBFGS = 9
+    NADAM = 10
+    RADAM = 11
+    RMSPROP = 12
+    RPROP = 13
+    SGD = 14
+
+
+class Device(Enum):
+    """
+    Enum for different types of devices to run the neural network
+    """
+    CPU = "cpu"
+    CUDA = "cuda"
+
+
+class LossFunction(Enum):
+    """
+    Enum for different types of loss functions in a neural network.
+    https://pytorch.org/docs/stable/nn#loss-functions
+    """
+    L1_LOSS = 1
+    MSE_LOSS = 2
+    CROSS_ENTROPY_LOSS = 3
+    CTC_LOSS = 4
+    NLL_LOSS = 5
+    POISSON_NLL_LOSS = 6
+    GAUSSIAN_NLL_LOSS = 7
+    KL_DIV_LOSS = 8
+    BCE_LOSS = 9
+    BCE_WITH_LOGITS_LOSS = 10
+    MARGIN_RANKING_LOSS = 11
+    HINGE_EMBEDDING_LOSS = 12
+    MULTI_LABEL_MARGIN_LOSS = 13
+    HUBER_LOSS = 14
+    SMOOTH_L1_LOSS = 15
+    SOFT_MARGIN_LOSS = 16
+    MULTI_LABEL_SOFT_MARGIN_LOSS = 17
+    COSINE_EMBEDDING_LOSS = 18
+    MULTI_MARGIN_LOSS = 19
+    TRIPLET_MARGIN_LOSS = 20
+    TRIPLET_MARGIN_WITH_DISTANCE_LOSS = 21
 
 class Layer:
     """
@@ -28,14 +84,23 @@ class Layer:
     :param padding: Padding added to the input.
     :param dropout: Dropout rate.
     """
-    def __init__(self, layer_type, in_features=None, out_features=None, kernel_size=None, stride=None, padding=None, dropout=None):
-        self.layer_type = layer_type
-        self.in_features = in_features
-        self.out_features = out_features
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
-        self.dropout = dropout
+    def __init__(
+        self,
+        layer_type,
+        in_features: Union[int, None] = None,
+        out_features: Union[int, None] = None,
+        kernel_size: Union[int, None] = None,
+        stride: Union[int, None] = None,
+        padding: Union[int, None] = None,
+        dropout: Union[float, None] = None
+    ):
+        self.layer_type: LayerType = layer_type
+        self.in_features: Union[int, None] = in_features
+        self.out_features: Union[int, None] = out_features
+        self.kernel_size: Union[int, None] = kernel_size
+        self.stride: Union[int, None] = stride
+        self.padding: Union[int, None] = padding
+        self.dropout: Union[float, None] = dropout
 
     def __repr__(self):
         """
@@ -60,10 +125,10 @@ class NeuralNetwork(BaseArchitecture):
         Initialize a NeuralNetwork object.
         """
         self.layers: list[Layer] = []
-        self.loss_function: Union[str, None] = None
-        self.optimizer: Union[str, None] = None
+        self.loss_function: Union[LossFunction, None] = None
+        self.optimizer: Union[OptimizerAlgorithm, None] = None
 
-    def add_layer(self, layer):
+    def add_layer(self, layer: Layer):
         """
         Add a layer to the neural network.
 
@@ -82,20 +147,20 @@ class NeuralNetwork(BaseArchitecture):
         for i, layer in enumerate(self.layers):
             print(f"Layer {i + 1}: {layer}")
 
-    def set_loss_function(self, loss_function: str):
+    def set_loss_function(self, loss_function: LossFunction):
         """
         Set the loss function for the neural network.
 
         :param loss_function: The loss function to be set.
-        :type loss_function: str
+        :type loss_function: LossFunction
         """
         self.loss_function = loss_function
 
-    def set_optimizer(self, optimizer: str):
+    def set_optimizer(self, optimizer: OptimizerAlgorithm):
         """
         Set the optimizer for the neural network.
 
         :param optimizer: The optimizer to be set.
-        :type optimizer: str
+        :type optimizer: OptimizerAlgorithm
         """
         self.optimizer = optimizer

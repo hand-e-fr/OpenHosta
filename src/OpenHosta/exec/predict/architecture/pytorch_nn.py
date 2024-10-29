@@ -1,17 +1,30 @@
+from typing import Union
+
+import torch
 import torch.nn as nn
 import torch.optim as optim
-from .neural_network import LayerType
+
+from .neural_network import LayerType, NeuralNetwork, OptimizerAlgorithm, \
+    Device, LossFunction, Layer
 
 
 class PyTorchNeuralNetwork(nn.Module):
-    def __init__(self, neural_network):
+    def __init__(self, neural_network: NeuralNetwork):
         super(PyTorchNeuralNetwork, self).__init__()
         self.layers = nn.ModuleList()
         self.build_layers(neural_network.layers)
-        self.loss_function = self.get_loss_function(neural_network.loss_function)
-        self.optimizer = self.get_optimizer(neural_network.optimizer)
 
-    def build_layers(self, layers):
+        self.loss_function: nn.Module = self.get_loss_function(neural_network.loss_function)
+        if self.loss_function is None:
+            raise ValueError(f"Unknown loss function: {neural_network.loss_function}")
+
+        self.optimizer: optim.Optimizer = self.get_optimizer(neural_network.optimizer)
+        if self.optimizer is None:
+            raise ValueError(f"Unknown optimizer: {neural_network.optimizer}")
+
+        self.device: Device = Device.CUDA if torch.cuda.is_available() else Device.CPU
+
+    def build_layers(self, layers: list[Layer]):
         for layer in layers:
             if layer.layer_type == LayerType.LINEAR:
                 self.layers.append(nn.Linear(layer.in_features, layer.out_features))
@@ -30,23 +43,60 @@ class PyTorchNeuralNetwork(nn.Module):
             elif layer.layer_type == LayerType.AVGPOOL2D:
                 self.layers.append(nn.AvgPool2d(layer.kernel_size, layer.stride, layer.padding))
 
-    def get_loss_function(self, loss_function_name):
-        if loss_function_name == "CrossEntropyLoss":
-            return nn.CrossEntropyLoss()
-        elif loss_function_name == "MSELoss":
-            return nn.MSELoss()
-        # Todo: Add more loss functions
-        else:
-            raise ValueError(f"Unknown loss function: {loss_function_name}")
 
-    def get_optimizer(self, optimizer_name):
-        if optimizer_name == "Adam":
-            return optim.Adam(self.parameters())
-        elif optimizer_name == "SGD":
-            return optim.SGD(self.parameters())
-        # Todo: Add more optimizers
-        else:
-            raise ValueError(f"Unknown optimizer: {optimizer_name}")
+    def get_loss_function(self, loss_function: LossFunction) -> Union[nn.Module, None]:
+        """
+        Get the loss function based on the loss function provided.
+        :param loss_function:
+        :return nn.Module or None:
+        """
+        return {
+            LossFunction.L1_LOSS: lambda: nn.L1Loss(),
+            LossFunction.MSE_LOSS: lambda: nn.MSELoss(),
+            LossFunction.CROSS_ENTROPY_LOSS: lambda: nn.CrossEntropyLoss(),
+            LossFunction.CTC_LOSS: lambda: nn.CTCLoss(),
+            LossFunction.NLL_LOSS: lambda: nn.NLLLoss(),
+            LossFunction.POISSON_NLL_LOSS: lambda: nn.PoissonNLLLoss(),
+            LossFunction.GAUSSIAN_NLL_LOSS: lambda: nn.GaussianNLLLoss(),
+            LossFunction.KL_DIV_LOSS: lambda: nn.KLDivLoss(),
+            LossFunction.BCE_LOSS: lambda: nn.BCELoss(),
+            LossFunction.BCE_WITH_LOGITS_LOSS: lambda: nn.BCEWithLogitsLoss(),
+            LossFunction.MARGIN_RANKING_LOSS: lambda: nn.MarginRankingLoss(),
+            LossFunction.HINGE_EMBEDDING_LOSS: lambda: nn.HingeEmbeddingLoss(),
+            LossFunction.MULTI_LABEL_MARGIN_LOSS: lambda: nn.MultiLabelMarginLoss(),
+            LossFunction.HUBER_LOSS: lambda: nn.HuberLoss(),
+            LossFunction.SMOOTH_L1_LOSS: lambda: nn.SmoothL1Loss(),
+            LossFunction.SOFT_MARGIN_LOSS: lambda: nn.SoftMarginLoss(),
+            LossFunction.MULTI_LABEL_SOFT_MARGIN_LOSS: lambda: nn.MultiLabelSoftMarginLoss(),
+            LossFunction.COSINE_EMBEDDING_LOSS: lambda: nn.CosineEmbeddingLoss(),
+            LossFunction.MULTI_MARGIN_LOSS: lambda: nn.MultiMarginLoss(),
+            LossFunction.TRIPLET_MARGIN_LOSS: lambda: nn.TripletMarginLoss(),
+            LossFunction.TRIPLET_MARGIN_WITH_DISTANCE_LOSS: lambda: nn.TripletMarginWithDistanceLoss()
+        }.get(loss_function, lambda: None)()
+
+
+    def get_optimizer(self, optimizer_algorithm: OptimizerAlgorithm) -> Union[optim.Optimizer, None]:
+        """
+        Get the optimizer based on the optimizer algorithm provided.
+        :param optimizer_algorithm:
+        :return optim.Optimizer or None:
+        """
+        return {
+            OptimizerAlgorithm.ADADELTA: lambda: optim.Adadelta(self.parameters()),
+            OptimizerAlgorithm.ADAFACTOR: lambda: optim.Adafactor(self.parameters()),
+            OptimizerAlgorithm.ADAGRAD: lambda: optim.Adagrad(self.parameters()),
+            OptimizerAlgorithm.ADAM: lambda: optim.Adam(self.parameters()),
+            OptimizerAlgorithm.ADAMW: lambda: optim.AdamW(self.parameters()),
+            OptimizerAlgorithm.SPARSEADAM: lambda: optim.SparseAdam(self.parameters()),
+            OptimizerAlgorithm.ADAMAX: lambda: optim.Adamax(self.parameters()),
+            OptimizerAlgorithm.ASGD: lambda: optim.ASGD(self.parameters()),
+            OptimizerAlgorithm.LBFGS: lambda: optim.LBFGS(self.parameters()),
+            OptimizerAlgorithm.NADAM: lambda: optim.NAdam(self.parameters()),
+            OptimizerAlgorithm.RADAM: lambda: optim.RAdam(self.parameters()),
+            OptimizerAlgorithm.RMSPROP: lambda: optim.RMSprop(self.parameters()),
+            OptimizerAlgorithm.RPROP: lambda: optim.Rprop(self.parameters()),
+            OptimizerAlgorithm.SGD: lambda: optim.SGD(self.parameters())
+        }.get(optimizer_algorithm, lambda: None)()
 
     def forward(self, x):
         for layer in self.layers:
