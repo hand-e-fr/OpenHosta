@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Tuple
 
 from .base import BaseArchitecture
 from enum import Enum
@@ -15,6 +15,7 @@ class LayerType(Enum):
     BATCHNORM2D = 6
     MAXPOOL2D = 7
     AVGPOOL2D = 8
+    SIGMOID = 9
 
 class OptimizerAlgorithm(Enum):
     """
@@ -89,17 +90,17 @@ class Layer:
         layer_type,
         in_features: Union[int, None] = None,
         out_features: Union[int, None] = None,
-        kernel_size: Union[int, None] = None,
-        stride: Union[int, None] = None,
-        padding: Union[int, None] = None,
-        dropout: Union[float, None] = None
+        kernel_size: Union[int, Tuple[int, int], None] = None,
+        stride: Union[int, Tuple[int, int], None] = None,
+        padding: Union[int, str, None] = None,
+        dropout: Union[float, None] = None,
     ):
         self.layer_type: LayerType = layer_type
         self.in_features: Union[int, None] = in_features
         self.out_features: Union[int, None] = out_features
-        self.kernel_size: Union[int, None] = kernel_size
-        self.stride: Union[int, None] = stride
-        self.padding: Union[int, None] = padding
+        self.kernel_size: Union[int, Tuple[int, int], None] = kernel_size
+        self.stride: Union[int, Tuple[int, int], None] = stride
+        self.padding: Union[int, str, None] = padding
         self.dropout: Union[float, None] = dropout
 
     def __repr__(self):

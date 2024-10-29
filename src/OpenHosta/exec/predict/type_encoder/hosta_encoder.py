@@ -1,4 +1,4 @@
-from typing import Any, List, Union
+from typing import List, Union
 
 from .int_encoder import IntEncoder
 from .float_encoder import FloatEncoder

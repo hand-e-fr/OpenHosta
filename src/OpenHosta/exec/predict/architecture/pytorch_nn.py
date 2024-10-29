@@ -6,7 +6,8 @@ import torch.optim as optim
 
 from .neural_network import LayerType, NeuralNetwork, OptimizerAlgorithm, \
     Device, LossFunction, Layer
-
+from ....utils.progress_bar import print_progress_bar
+from ... import prefix as p
 
 class PyTorchNeuralNetwork(nn.Module):
     def __init__(self, neural_network: NeuralNetwork):
@@ -42,6 +43,8 @@ class PyTorchNeuralNetwork(nn.Module):
                 self.layers.append(nn.MaxPool2d(layer.kernel_size, layer.stride, layer.padding))
             elif layer.layer_type == LayerType.AVGPOOL2D:
                 self.layers.append(nn.AvgPool2d(layer.kernel_size, layer.stride, layer.padding))
+            elif layer.layer_type == LayerType.SIGMOID:
+                self.layers.append(nn.Sigmoid())
 
 
     def get_loss_function(self, loss_function: LossFunction) -> Union[nn.Module, None]:
@@ -102,3 +105,17 @@ class PyTorchNeuralNetwork(nn.Module):
         for layer in self.layers:
             x = layer(x)
         return x
+
+    def train_model(self, x: torch.Tensor, y: torch.Tensor, epochs: int, learning_rate: float):
+        self.train()
+        self.to(self.device.value)
+        self.optimizer.zero_grad()
+        for epoch in range(epochs):
+            outputs = self(x)
+            loss = self.loss_function(outputs, y)
+            loss.backward()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            print_progress_bar(epoch + 1, epochs, prefix=f'Epoch: {epoch + 1}/{epochs}', suffix=f'Loss: {loss.item():.4f}')
+
+        print(f"{p("Predict Training")} Training complete.")
