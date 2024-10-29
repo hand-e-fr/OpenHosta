@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Any, Tuple, List, Optional, Literal, Union, TypedDict
+from typing import Dict, Any, Tuple, List, Optional, Literal, Union, TypedDict, Callable
 from pydantic import BaseModel, Field
 
 from .inspector import HostaInspector

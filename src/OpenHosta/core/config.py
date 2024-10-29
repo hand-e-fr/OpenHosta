@@ -47,9 +47,7 @@ class Model:
         sys_prompt: str,
         user_prompt: str,
         json_form: bool = True,
-        temperature: Optional[float] = None,
-        top_p: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        **llm_args
         
     )->Response:
         if self.api_key is None or not self.api_key:
@@ -74,14 +72,8 @@ class Model:
         }
         if json_form:
             l_body["response_format"] = {"type": "json_object"}
-        if temperature is not None:
-            l_body["temperature"] = temperature
-        if top_p is not None:
-            l_body["top_p"] = top_p
-        if max_tokens is not None:
-            l_body["max_tokens"] = max_tokens
-        self._last_request = l_body        
-
+        for key, value in llm_args.items():
+            l_body[key] = value
         try:
             response = requests.post(self.base_url, json=l_body, headers=headers)
             response.raise_for_status()
