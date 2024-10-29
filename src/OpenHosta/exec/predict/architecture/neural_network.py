@@ -1,3 +1,5 @@
+from typing import Union
+
 from .base import BaseArchitecture
 from enum import Enum
 
@@ -57,7 +59,9 @@ class NeuralNetwork(BaseArchitecture):
         """
         Initialize a NeuralNetwork object.
         """
-        self.layers = []
+        self.layers: list[Layer] = []
+        self.loss_function: Union[str, None] = None
+        self.optimizer: Union[str, None] = None
 
     def add_layer(self, layer):
         """
@@ -77,3 +81,21 @@ class NeuralNetwork(BaseArchitecture):
         """
         for i, layer in enumerate(self.layers):
             print(f"Layer {i + 1}: {layer}")
+
+    def set_loss_function(self, loss_function: str):
+        """
+        Set the loss function for the neural network.
+
+        :param loss_function: The loss function to be set.
+        :type loss_function: str
+        """
+        self.loss_function = loss_function
+
+    def set_optimizer(self, optimizer: str):
+        """
+        Set the optimizer for the neural network.
+
+        :param optimizer: The optimizer to be set.
+        :type optimizer: str
+        """
+        self.optimizer = optimizer
