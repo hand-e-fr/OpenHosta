@@ -46,7 +46,7 @@ class HostaDataset:
                 with open(f"{path}/{dataset_name}.pkl", "wb") as f:
                     pickle.dump(dataset, f)
         elif source_type == SourceType.TORCH:
-            torch.save(data, f"{path}/{dataset_name}.pt")
+            torch.save(data, f"{path}/dataset.pth")
         else:
             raise ValueError(f"Invalid source type: {source_type}")
 
