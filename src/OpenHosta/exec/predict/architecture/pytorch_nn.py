@@ -45,6 +45,10 @@ class PyTorchNeuralNetwork(nn.Module):
                 self.layers.append(nn.AvgPool2d(layer.kernel_size, layer.stride, layer.padding))
             elif layer.layer_type == LayerType.SIGMOID:
                 self.layers.append(nn.Sigmoid())
+            elif layer.layer_type == LayerType.TANH:
+                self.layers.append(nn.Tanh())
+            elif layer.layer_type == LayerType.SOFTMAX:
+                self.layers.append(nn.Softmax())
 
 
     def get_loss_function(self, loss_function: LossFunction) -> Union[nn.Module, None]:
@@ -106,16 +110,25 @@ class PyTorchNeuralNetwork(nn.Module):
             x = layer(x)
         return x
 
-    def train_model(self, x: torch.Tensor, y: torch.Tensor, epochs: int, learning_rate: float):
+    def train_model(self, dataset_name: str, epochs: int, learning_rate: float, batch_size: int = 32):
         self.train()
-        self.to(self.device.value)
+        self.to(self.device)
         self.optimizer.zero_grad()
+
+        dataset_manager = DatasetManager.from_source("path/to/dataset.pt", "PYTORCH")
+        dataset = dataset_manager.datasets[dataset_name]
+        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
         for epoch in range(epochs):
-            outputs = self(x)
-            loss = self.loss_function(outputs, y)
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+            for batch in loader:
+                inputs, targets = batch
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+                outputs = self(inputs)
+                loss = self.loss_function(outputs, targets)
+                loss.backward()
+                self.optimizer.step()
+                self.optimizer.zero_grad()
             print_progress_bar(epoch + 1, epochs, prefix=f'Epoch: {epoch + 1}/{epochs}', suffix=f'Loss: {loss.item():.4f}')
 
         print(f"{p("Predict Training")} Training complete.")

@@ -6,6 +6,7 @@ from enum import Enum
 class LayerType(Enum):
     """
     Enum for different types of layers in a neural network.
+    https://pytorch.org/docs/stable/nn.html
     """
     LINEAR = 1
     CONV2D = 2
@@ -16,6 +17,8 @@ class LayerType(Enum):
     MAXPOOL2D = 7
     AVGPOOL2D = 8
     SIGMOID = 9
+    SOFTMAX = 10
+    TANH = 11
 
 class OptimizerAlgorithm(Enum):
     """
