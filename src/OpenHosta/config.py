@@ -42,6 +42,7 @@ class Model:
             frozenset: lambda x: frozenset(x),
             tuple: lambda x: tuple(x),
             bool: lambda x: bool(x),
+            type(None): lambda x: None,
         }
 
         if any(var is None for var in (model, base_url)):
@@ -85,7 +86,6 @@ class Model:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
-
         self._last_request = l_body        
 
         try:
@@ -101,14 +101,13 @@ class Model:
         return response
 
     def request_handler(self, response, return_type, return_caller):
-        l_ret = ""
+        l_ret = None
 
         data = response.json()
         json_string = data["choices"][0]["message"]["content"]
 
         try:
             l_ret_data = json.loads(json_string)
-            print(f"RET/ {l_ret_data}")
             # validate(
             #     instance=l_ret_data.get("return", {}),
             #     schema=return_type.get("properties", {}),
@@ -123,7 +122,8 @@ class Model:
         if "return_hosta_type" in return_type["properties"]:
             if return_caller in self.conversion_function:
                 convert_function = self.conversion_function[return_caller]
-                l_ret = convert_function(l_ret_data["return"])
+                if l_ret_data["return"] is not None:
+                    l_ret = convert_function(l_ret_data["return"])
             else:
                 l_ret = l_ret_data["return"]
 
@@ -141,7 +141,7 @@ class Model:
                 for m in self.__last_request["messages"]:
                     sys.stderr.write(" "+m["role"]+">\n=======\n", m["content"][0]["text"])
                 sys.stderr.write("Answer>\n=======\n",  l_ret_data["return"])
-                lret = None
+                l_ret = None
 
         else:
             l_ret = l_ret_data["return"]
