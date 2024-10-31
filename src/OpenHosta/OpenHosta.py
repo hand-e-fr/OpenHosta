@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 HOSTAPATH = "./"
 PROMPTPATH = "src/prompt.json"
 
