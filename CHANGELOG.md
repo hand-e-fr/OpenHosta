@@ -4,28 +4,33 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **OpenHosta v1.2.1 - 10/14/24**
+
+- **Fixes**
+  - OpenHosta now can't be used with Python 3.13 due to the incompatibility with pytorch
+
 ## **v1.2.0** - 10/14/2024
 
-### **New Features**
+- **New Features**
 
-- **`predict` Function**  
-  The `predict` function is now available, allowing you to create internal models—currently supporting linear regression—based on user-provided training data. This simplifies model generation without relying on external APIs. Key functionalities include:
-  - **`.retrain`**: Retrain models with specified parameters.
-  - **`.continue_train`**: Continue training with existing model weights.
-  - **`.emulate`**: Run predictions through an LLM or create a model directly using internal linear regression based on training data.
+  - **`predict` Function**  
+    The `predict` function is now available, allowing you to create internal models—currently supporting linear regression—based on user-provided training data. This simplifies model generation without relying on external APIs. Key functionalities include:
+    - **`.retrain`**: Retrain models with specified parameters.
+    - **`.continue_train`**: Continue training with existing model weights.
+    - **`.emulate`**: Run predictions through an LLM or create a model directly using internal linear regression based on training data.
 
-- **TrainingSet Management**  
-  Manage training datasets effortlessly with new tools:
-  - **`.visualize`**: Inspect current data visually.
-  - **`.add`**: Add new examples.
+  - **TrainingSet Management**  
+    Manage training datasets effortlessly with new tools:
+    - **`.visualize`**: Inspect current data visually.
+    - **`.add`**: Add new examples.
 
-### **Enhancements**
+- **Enhancements**
 
-- **Expanded Dataset Support**:  
-  `load_training_example` (previously `load_examples`) supports JSON, JSONL, and CSV formats for easier integration.
+  - **Expanded Dataset Support**:  
+    `load_training_example` (previously `load_examples`) supports JSON, JSONL, and CSV formats for easier integration.
 
-- **Verbose Mode in `predict`**:  
-  Track detailed model training and define target losses with `get_loss`.
+  - **Verbose Mode in `predict`**:  
+    Track detailed model training and define target losses with `get_loss`.
 
 ---
 ## **v1.1.1** 10/07/24
