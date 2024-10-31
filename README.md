@@ -28,7 +28,7 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
 
 ### Prerequisites
 
-1. **Python 3.8+**
+1. **Python 3.10 | 3.11 | 3.12**
    - Download and install Python from [python.org](https://www.python.org/downloads/).
 
 2. **pip**
