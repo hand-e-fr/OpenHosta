@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **1.2.0
+Documentation for version: **1.2.1
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -73,18 +73,28 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Get Started](#get-started)
       - [Librairie Import](#librairie-import)
       - [Basic Setup](#basic-setup)
-    - ["emulate" Function](#emulate-function)
+  - [`emulate` Function](#emulate-function)
       - [Supported types \& Pydantic](#supported-types--pydantic)
       - [Integration Details](#integration-details)
     - ["suggest" Function](#suggest-function)
       - [Usage](#usage)
       - [Output Examples](#output-examples)
-    - ["predict" Function](#predict-function)
-      - [Parameters](#predict-function-parameters)
-      - [Additional fonctionalities](#additional-predict-functionalities)
-      - [Output setting](#training-output)
-    - ["thought" Function](#thought-function)
-    - ["example" Function](#example-function)
+  - [`predict` Function](#predict-function)
+    - [How `predict` Works](#how-predict-works)
+    - [Limitations and Known Issues](#limitations-and-known-issues)
+    - [`predict` Function Parameters](#predict-function-parameters)
+    - [Additional `predict` Functionalities](#additional-predict-functionalities)
+      - [1. `retrain`](#1-retrain)
+      - [Example:](#example)
+      - [2. `continue_train`](#2-continue_train)
+      - [Example:](#example-1)
+      - [3. `emulate`](#3-emulate)
+      - [Example:](#example-2)
+    - [TrainingSet Management](#trainingset-management)
+      - [Example:](#example-3)
+    - [Training Output of predict](#training-output-of-predict)
+  - [`thought` Function](#thought-function)
+  - [`example` Function](#example-function)
     - [Advanced configuration](#advanced-configuration)
       - [Introduction](#introduction-1)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)

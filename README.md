@@ -1,5 +1,5 @@
 # OpenHosta 
-v1.2.0 - Opensource Project
+v1.2.1 - Opensource Project
 
 **- The future of development is human -**
 
@@ -28,7 +28,7 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
 
 ### Prerequisites
 
-1. **Python 3.8+**
+1. **Python 3.10 | 3.11 | 3.12**
    - Download and install Python from [python.org](https://www.python.org/downloads/).
 
 2. **pip**
