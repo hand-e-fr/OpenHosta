@@ -68,7 +68,6 @@ def _build_attributes(func: object, last_enh) -> int:
         func.review = last_enh["review"]
         func.advanced = last_enh["advanced"]
         func.diagram = last_enh["mermaid"]
-        func.diagramm = last_enh["mermaid"]
     return 0
 
 
