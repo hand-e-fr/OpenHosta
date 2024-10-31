@@ -2,8 +2,10 @@ import pytest
 import inspect
 import re
 import sys
+from unittest.mock import patch
 
 from OpenHosta.core.inspector import HostaInspector as HI
+from OpenHosta.utils.errors import FrameError
 
 class TestExtend:
     
@@ -51,7 +53,8 @@ class TestExtend:
         pass
     
     def test_FBackNotFound(self):
-        pass
+        with pytest.raises(FrameError, match=re.escape("[HostaInspector._extend] Frame can't be found (level: 33)")):
+            HI._extend(back_level=100)
     
     def test_FuncNotCallable(self):
         pass
@@ -59,20 +62,48 @@ class TestExtend:
 class TestAttach:
     
     def test_OneAttr(self):
-        pass
-    
+        def tmp():
+            return
+        HI._attach(tmp, {"nb": 3})
+        assert tmp.nb == 3
+            
     def test_ManyAttr(self):
-        pass
+        def tmp():
+            return
+        HI._attach(tmp, {
+            "a": 1,
+            "b": "hi",
+            "c": tmp
+        })
+        assert tmp.a == 1
+        assert tmp.b == "hi"
+        assert tmp.c == tmp
     
     def test_InvalidArgs(self):
-        pass
+        def tmp():
+            return
+        with pytest.raises(ValueError, match=re.escape("[HostaInspector._attach] Invalid arguments")):
+            HI._attach(tmp, "6")
+            HI._attach("a", 1)
     
     def test_BasicMethod(self):
-        pass
+        class TMP:
+            def tmp(self):
+                return
+        x = TMP()
+        HI._attach(x.tmp, {"a": 1})
+        assert x.tmp.a == 1
     
     def test_InvalidMethod(self):
-        pass
+        def tmp():
+            return
+        with patch('inspect.ismethod', return_value=True):
+            with pytest.raises(AttributeError, match=re.escape("[HostaInspector._attach] Failed to attach attributs. \"__func__\" attribut is missing.")):
+                HI._attach(tmp, {"a": 1})
     
     def test_InvalidCallable(self):
-        pass
+        class TMP:
+            pass
+        with pytest.raises(AttributeError, match=re.escape(f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(TMP)}.")):
+            HI._attach(TMP, {"a": 1})
 

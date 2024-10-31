@@ -140,8 +140,8 @@ class HostaInspector:
         Return:
             Optional[bool]: Returns True if the attribute was successfully attached, raise an Exception otherwise. 
         """
-        if not callable(obj):
-            raise ValueError("[HostaInspector._attach] Invalid arguments: obj must a callable")
+        if not callable(obj) or not isinstance(attr, dict):
+            raise ValueError("[HostaInspector._attach] Invalid arguments")
 
         def attr_parser(obj:Callable, attr: Dict[str, Any])->bool:
             for key, value in attr.items():
