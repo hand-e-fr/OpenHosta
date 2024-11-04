@@ -1,7 +1,7 @@
 import os
 from typing import Union
 
-from .cache import HostaModelData, ModelCachedData
+from .data import PredictData
 from .type_encoder.hosta_encoder import HostaEncoder
 from .. import prefix
 from ...core.hosta import Hosta, Func
@@ -24,16 +24,29 @@ class ConfigModel: # todo: change name
     def __init__(self, architecture: ConfigArchitecture):
         self.architecture = architecture
 
+
 class PredictBase:
+    _instance = {}
+
+    def __new__(cls, x: Hosta = None, verbose: bool = False):
+        hosta_key = hash(x)
+
+        if hosta_key not in cls._instance:
+            cls._instance[hosta_key] = super(PredictBase, cls).__new__(cls)
+            cls._instance[hosta_key]._initialized = False
+        return cls._instance[hosta_key]
+
     def __init__(self, x: Hosta = None, verbose: bool = False):
-        self._infos: Func = getattr(x, "_infos")
-        self._encoder = HostaEncoder()
+        if not hasattr(self, '_initialized') or not self._initialized:
+            self._infos: Func = getattr(x, "_infos")
+            self._encoder = HostaEncoder()
+            self._data = PredictData()
+            self._initialized = True
 
     def predict(self) -> Union[int, float, bool]:
         """
         :return:
         """
-        print("Args type:")
         print("Args type:")
         for (_, t), (k, v) in zip(enumerate(self._infos.f_type[0]), self._infos.f_args.items()):
             print(f"{k}: {t} = {v}")
@@ -41,8 +54,9 @@ class PredictBase:
         print(self._infos.f_type[1])
         pass
 
+
 def predict(model: ConfigModel = None, oracle: Union[Model, None] = None, verbose: bool = False) -> Union[int, float, bool]:
-    if (verbose):
+    if verbose:
         print(f"{prefix("predict")} Predicting...")
     x: Hosta = Hosta()
     predict_base = PredictBase(x=x, verbose=verbose)
