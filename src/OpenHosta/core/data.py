@@ -6,7 +6,7 @@ T = TypeVar('T')
 CACHE_PATH = "__hostacache__"
 PREFIX = "\033[0m\033[32m\033[1mHostaCache | \033[0m"
 
-class HostaCache(Generic[T]):
+class HostaData(Generic[T]):
     def __init__(self, hash_key: str, data: T, verbose: bool = False):
         self._hash_key = hash_key
         self._data = data

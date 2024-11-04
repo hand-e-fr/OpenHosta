@@ -1,9 +1,8 @@
-import os
-import pickle
 from enum import Enum
-import pandas as pd
-
-import torch
+import csv
+import json
+import pickle
+import os
 
 
 class SourceType(Enum):
@@ -11,79 +10,153 @@ class SourceType(Enum):
     Enum for different types of sources for the dataset.
     """
     CSV = 1
-    PICKLE = 2
-    TORCH = 3
+    JSONL = 2
+    PICKLE = 3
 
 class HostaDataset:
     def __init__(self):
-        self.datasets = []
+        self.path = None
+        self.data = {}
 
-    def new_dataset(self, name: str, shape: tuple):
-        self.datasets.append({
-            "name": name,
-            "shape": shape,
-            "data": []
-        })
+    def add(self, key, value):
+        """
+        Add data to the dataset with a specific key.
 
-    def add(self, dataset_name: str, data: list):
-        for dataset in self.datasets:
-            if dataset["name"] == dataset_name:
-                if len(data) != dataset["shape"]:
-                    raise ValueError(f"Data shape {len(data)} does not match dataset shape {dataset['shape']}")
-                dataset["data"].append(data)
-                break
+        Args:
+            key: The key for the data
+            value: The value to store
+        """
+        self.data[key] = value
 
-    def save(self, path: str, source_type: SourceType = SourceType.TORCH):
-        data = {}
-        for dataset in self.datasets:
-            data[dataset["name"]] = dataset["data"]
+    def generate(self, model, n_samples: int):
+        """
+        todo: Implement dataset generation
+        """
+        pass
+
+    def encode(self, encoder, tokenizer, max_tokens: int):
+        """
+        todo: Implement dataset encoding
+        """
+        pass
+
+    def normalize(self, min_max=None):
+        """
+        todo: Implement dataset normalization
+        """
+        pass
+
+    def tensorify(self):
+        """
+        todo: Implement dataset tensorification
+        """
+        pass
+
+    def load_data(self, batch_size: int, shuffle: bool):
+        """
+        todo: Implement dataset loading
+        """
+        pass
+
+    def save(self, path: str, source_type: SourceType = SourceType.CSV):
+        """
+        Save the dataset to a file in the specified format.
+
+        Args:
+            path: Path where to save the file
+            source_type: Type of file format to save (CSV, JSONL, or PICKLE)
+        """
+        self.path = path
+
         if source_type == SourceType.CSV:
-            for dataset_name, dataset in data.items():
-                df = pd.DataFrame(dataset)
-                df.to_csv(f"{path}/{dataset_name}.csv", index=False)
+            with open(path, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['key', 'value'])  # Header
+                for key, value in self.data.items():
+                    writer.writerow([key, value])
+
+        elif source_type == SourceType.JSONL:
+            with open(path, 'w') as f:
+                for key, value in self.data.items():
+                    json.dump({'key': key, 'value': value}, f)
+                    f.write('\n')
+
         elif source_type == SourceType.PICKLE:
-            for dataset_name, dataset in data.items():
-                with open(f"{path}/{dataset_name}.pkl", "wb") as f:
-                    pickle.dump(dataset, f)
-        elif source_type == SourceType.TORCH:
-            torch.save(data, f"{path}/dataset.pth")
+            with open(path, 'wb') as f:
+                pickle.dump(self.data, f)
         else:
-            raise ValueError(f"Invalid source type: {source_type}")
+            raise ValueError(f"Unsupported source type: {source_type}")
 
     @staticmethod
     def from_source(path: str, source_type: SourceType, min_max=None):
+        """
+        Load dataset from a file.
+
+        Args:
+            path: Path to the source file
+            source_type: Type of file to load (CSV, JSONL, or PICKLE)
+            min_max: Optional tuple of (min, max) values to filter numeric data
+
+        Returns:
+            HostaDataset instance
+        """
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"File not found: {path}")
+
+        dataset = HostaDataset()
+        dataset.path = path
+
         if source_type == SourceType.CSV:
-            data = {}
-            for file in os.listdir(path):
-                if file.endswith(".csv"):
-                    dataset_name = file[:-4]
-                    df = pd.read_csv(f"{path}/{file}")
-                    data[dataset_name] = df.values.tolist()
-            if min_max is not None:
-                for dataset_name, dataset in data.items():
-                    for i, row in enumerate(dataset):
-                        row = [min_max[0] + (x - min(dataset)) / (max(dataset) - min(dataset)) * (min_max[1] - min_max[0]) for x in row]
-                        dataset[i] = row
-            return HostaDataset.from_dict(data)
+            with open(path, 'r') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    key = row['key']
+                    value = row['value']
+                    # Try to convert to float if possible
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        pass
+                    dataset.data[key] = value
+
+        elif source_type == SourceType.JSONL:
+            with open(path, 'r') as f:
+                for line in f:
+                    record = json.loads(line)
+                    dataset.data[record['key']] = record['value']
+
         elif source_type == SourceType.PICKLE:
-            data = {}
-            for file in os.listdir(path):
-                if file.endswith(".pkl"):
-                    dataset_name = file[:-4]
-                    with open(f"{path}/{file}", "rb") as f:
-                        data[dataset_name] = pickle.load(f)
-            return HostaDataset.from_dict(data)
-        elif source_type == SourceType.TORCH:
-            data = torch.load(path)
-            return HostaDataset.from_dict(data)
+            with open(path, 'rb') as f:
+                dataset.data = pickle.load(f)
         else:
-            raise ValueError(f"Invalid source type: {source_type}")
+            raise ValueError(f"Unsupported source type: {source_type}")
+
+        # Apply min_max filtering if specified
+        if min_max is not None:
+            min_val, max_val = min_max
+            filtered_data = {}
+            for key, value in dataset.data.items():
+                if isinstance(value,
+                              (int, float)) and min_val <= value <= max_val:
+                    filtered_data[key] = value
+            dataset.data = filtered_data
+
+        return dataset
 
     @staticmethod
     def from_dict(data: dict):
-        manager = HostaDataset()
-        for name, dataset in data.items():
-            manager.new_dataset(name, (len(dataset[0]),))
-            for row in dataset:
-                manager.add(name, row)
-        return manager
+        """
+        Create a dataset from a dictionary.
+
+        Args:
+            data: Dictionary containing the dataset
+
+        Returns:
+            HostaDataset instance
+        """
+        dataset = HostaDataset()
+        dataset.data = data.copy()
+        return dataset
+
+    def __len__(self):
+        return len(self.data)
