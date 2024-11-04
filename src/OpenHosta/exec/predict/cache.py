@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from ...core.cache import HostaCache
+from ...core.data import HostaData
 
 class ModelCachedData:
     def __init__(
@@ -22,7 +22,7 @@ class ModelCachedData:
         self.batch_size = batch_size
 
 
-class HostaModelCache(HostaCache[ModelCachedData]):
+class HostaModelData(HostaData[ModelCachedData]):
     @property
     def data_class(self):
         return ModelCachedData
