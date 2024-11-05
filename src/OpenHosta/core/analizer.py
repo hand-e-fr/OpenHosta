@@ -30,9 +30,12 @@ class _FuncInspector:
             func (Callable): The function to inspect.
             caller_frame (FrameType): The function's frame in which it is called.
         """
-        self.func = func
-        self.sig = inspect.signature(func)
-        _, _, _, self.values = inspect.getargvalues(caller_frame)
+        try:
+            self.func = func
+            self.sig = inspect.signature(func)
+            _, _, _, self.values = inspect.getargvalues(caller_frame)
+        except Exception as e:
+            raise AttributeError(f"[_FuncInspector.__init__] Invalid arguments:\n{e}")
 
     def _get_function_definition(self)->str:
         """
