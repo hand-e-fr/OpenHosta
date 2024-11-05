@@ -42,3 +42,7 @@ class PredictData:
     def log(self, message: str, level: str = "INFO"):
         with open(self.summary_path, "a") as file:
             file.write(f"[{datetime.now()}] [{level}] {message}\n")
+
+    def update_architecture(self, architecture: str):
+        with open(self.architecture_path, "w") as file:
+            file.write(architecture)
