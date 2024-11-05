@@ -12,7 +12,8 @@ class ModelSchema:
                  epochs: Union[int, None] = None,
                  batch_size: Union[int, None] = None,
                  learning_rate: Union[float, None] = None,
-                 get_loss: Union[float, None] = None
+                 get_loss: Union[float, None] = None,
+                 normalization: bool = False
              ):
         self.model_type: ArchitectureType = model_type
 
@@ -21,8 +22,12 @@ class ModelSchema:
         self.version: str = version
 
         self.complexity: float = complexity
+
+        if batch_size is None:
+            self.batch_size: int = int(0.05 * len(train)) if 0.05 * len(train) > 1 else len(train) # 5% of the dataset or len(train) if len(train) <= 1
+        else:
+            self.batch_size: int = batch_size
         self.epochs: int = epochs
-        self.batch_size: int = batch_size
         self.learning_rate: float = learning_rate
         self.get_loss: float = get_loss
 
