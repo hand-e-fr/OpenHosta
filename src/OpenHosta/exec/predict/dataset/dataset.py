@@ -3,6 +3,7 @@ import csv
 import json
 import pickle
 import os
+from typing import Union
 
 
 class SourceType(Enum):
@@ -87,7 +88,7 @@ class HostaDataset:
             raise ValueError(f"Unsupported source type: {source_type}")
 
     @staticmethod
-    def from_source(path: str, source_type: SourceType, min_max=None):
+    def from_source(path: str, source_type: Union[SourceType, None] = None, min_max=None):
         """
         Load dataset from a file.
 
@@ -101,6 +102,16 @@ class HostaDataset:
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"File not found: {path}")
+
+        if source_type is None:
+            if path.endswith('.csv'):
+                source_type = SourceType.CSV
+            elif path.endswith('.jsonl'):
+                source_type = SourceType.JSONL
+            elif path.endswith('.pkl'):
+                source_type = SourceType.PICKLE
+            else:
+                raise ValueError(f"Please specify the source type for the file: {path}, Supported types are: CSV, JSONL, PICKLE")
 
         dataset = HostaDataset()
         dataset.path = path
