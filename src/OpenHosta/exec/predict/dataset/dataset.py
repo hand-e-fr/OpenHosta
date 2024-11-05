@@ -16,17 +16,16 @@ class SourceType(Enum):
 class HostaDataset:
     def __init__(self):
         self.path = None
-        self.data = {}
+        self.data = []
 
-    def add(self, key, value):
+    def add(self, value):
         """
-        Add data to the dataset with a specific key.
+        Add data to the dataset.
 
         Args:
-            key: The key for the data
             value: The value to store
         """
-        self.data[key] = value
+        self.data.append(value)
 
     def generate(self, model, n_samples: int):
         """
@@ -70,15 +69,15 @@ class HostaDataset:
 
         if source_type == SourceType.CSV:
             with open(path, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(['key', 'value'])  # Header
-                for key, value in self.data.items():
-                    writer.writerow([key, value])
+                writer = csv.DictWriter(f, fieldnames=self.data[0].keys())
+                writer.writeheader()
+                for row in self.data:
+                    writer.writerow(row)
 
         elif source_type == SourceType.JSONL:
             with open(path, 'w') as f:
-                for key, value in self.data.items():
-                    json.dump({'key': key, 'value': value}, f)
+                for row in self.data:
+                    json.dump(row, f)
                     f.write('\n')
 
         elif source_type == SourceType.PICKLE:
@@ -110,20 +109,19 @@ class HostaDataset:
             with open(path, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    key = row['key']
-                    value = row['value']
-                    # Try to convert to float if possible
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        pass
-                    dataset.data[key] = value
+                    # Convert numeric values to float if possible
+                    for key in row:
+                        try:
+                            row[key] = float(row[key])
+                        except ValueError:
+                            pass
+                    dataset.add(row)
 
         elif source_type == SourceType.JSONL:
             with open(path, 'r') as f:
                 for line in f:
                     record = json.loads(line)
-                    dataset.data[record['key']] = record['value']
+                    dataset.add(record)
 
         elif source_type == SourceType.PICKLE:
             with open(path, 'rb') as f:
@@ -134,22 +132,17 @@ class HostaDataset:
         # Apply min_max filtering if specified
         if min_max is not None:
             min_val, max_val = min_max
-            filtered_data = {}
-            for key, value in dataset.data.items():
-                if isinstance(value,
-                              (int, float)) and min_val <= value <= max_val:
-                    filtered_data[key] = value
-            dataset.data = filtered_data
+            dataset.data = [row for row in dataset.data if all(min_val <= value <= max_val for value in row.values() if isinstance(value, (int, float)))]
 
         return dataset
 
     @staticmethod
-    def from_dict(data: dict):
+    def from_list(data: list):
         """
-        Create a dataset from a dictionary.
+        Create a dataset from a list.
 
         Args:
-            data: Dictionary containing the dataset
+            data: List containing the dataset
 
         Returns:
             HostaDataset instance
@@ -160,3 +153,6 @@ class HostaDataset:
 
     def __len__(self):
         return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)

@@ -1,5 +1,5 @@
 import os
-from typing import Union
+from typing import Union, Tuple
 
 from .data import PredictData
 from .model_schema import ModelSchema
@@ -43,6 +43,9 @@ class PredictBase:
             self._encoder: HostaEncoder = HostaEncoder()
             self._data: PredictData = PredictData(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(hash(x))))
             self._initialized: bool = True
+            self.examples: dict[int, Tuple[list[Union[int, float, bool]], Union[int, float, bool]]] = {}
+            for ex in self._infos.f_mem:
+                self.examples[ex.id] = (list(ex.value["in_"].values()), ex.value["out"])
 
     def predict(self) -> Union[int, float, bool]:
         """
@@ -54,8 +57,6 @@ class PredictBase:
         print("Return type:")
         print(self._infos.f_type[1])
         print("Examples:")
-        for ex in self._infos.f_mem:
-            print(f"Input: {ex.value['in_']}, Output: {ex.value['out']}")
         return 0
 
 
@@ -64,4 +65,7 @@ def predict(model: ConfigModel = None, oracle: Union[Model, None] = None, verbos
         print(f"{prefix("predict")} Predicting...")
     x: Hosta = Hosta()
     predict_base = PredictBase(x=x, model=model, oracle=oracle, verbose=verbose)
+    print("Examples:")
+    for ex in predict_base.examples:
+        print(f"{ex}: in={predict_base.examples[ex][0]}, out={predict_base.examples[ex][1]}")
     return predict_base.predict()
