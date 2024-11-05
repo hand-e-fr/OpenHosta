@@ -12,8 +12,7 @@ class ModelSchema:
                  epochs: Union[int, None] = None,
                  batch_size: Union[int, None] = None,
                  learning_rate: Union[float, None] = None,
-                 get_loss: Union[float, None] = None,
-                 normalization: bool = False
+                 get_loss: Union[float, None] = None
              ):
         self.model_type: ArchitectureType = model_type
 
