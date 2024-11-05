@@ -50,14 +50,14 @@ class TestExtend:
         assert res[0] == (tmp, res[1])
 
     def test_FuncWithGlobals(self):
-        pass
+        pass # TODO
     
     def test_FBackNotFound(self):
         with pytest.raises(FrameError, match=re.escape("[HostaInspector._extend] Frame can't be found (level: 33)")):
             HI._extend(back_level=100)
     
     def test_FuncNotCallable(self):
-        pass
+        pass # TODO
     
 class TestAttach:
     
@@ -106,4 +106,3 @@ class TestAttach:
             pass
         with pytest.raises(AttributeError, match=re.escape(f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(TMP)}.")):
             HI._attach(TMP, {"a": 1})
-
