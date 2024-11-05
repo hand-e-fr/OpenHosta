@@ -1,10 +1,21 @@
+from typing import Union
+
 from ..neural_network import NeuralNetwork, Layer, LayerType
 
 class LinearRegressionBuilder(NeuralNetwork):
-    def __init__(self):
+    def __init__(self,
+                 input_size: Union[int, None] = None,
+                 output_size: Union[int, None] = None,
+                 complexity: Union[float, None] = None,
+                 activation: LayerType = LayerType.RELU
+             ):
         super().__init__()
 
-    def architecture(self, input_size, output_size, config=None, complexity=1.0, activation=LayerType.RELU):
+        if input_size is None or output_size is None:
+            raise ValueError("Input and output size must be specified")
+
+        _complexity: float = complexity if complexity is not None else 1.0
+
         hidden_size_1 = int(input_size * (2 * complexity))
         hidden_size_2 = int(((input_size * output_size) / 2) * complexity)
         hidden_size_3 = int(output_size * (2 * complexity))
@@ -16,5 +27,3 @@ class LinearRegressionBuilder(NeuralNetwork):
         self.add_layer(Layer(LayerType.LINEAR, in_features=hidden_size_2, out_features=hidden_size_3))
         self.add_layer(Layer(activation))
         self.add_layer(Layer(LayerType.LINEAR, in_features=hidden_size_3, out_features=output_size))
-
-        return config

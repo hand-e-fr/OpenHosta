@@ -1,6 +1,6 @@
 from enum import Enum
 
-class Architecture(Enum):
+class ArchitectureType(Enum):
     """
     Enum for different built-in architectures for neural networks.
     """
