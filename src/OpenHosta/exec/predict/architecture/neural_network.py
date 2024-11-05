@@ -1,3 +1,4 @@
+import json
 from typing import Union, Tuple
 
 from .base import BaseArchitecture
@@ -168,3 +169,69 @@ class NeuralNetwork(BaseArchitecture):
         :type optimizer: OptimizerAlgorithm
         """
         self.optimizer = optimizer
+
+    def to_json(self) -> str:
+        """
+        Convert the neural network configuration to a JSON string.
+
+        :return: JSON string representation of the neural network
+        :rtype: str
+        """
+        network_dict = {
+            "layers": [
+                {
+                    "layer_type": layer.layer_type.name,
+                    "in_features": layer.in_features,
+                    "out_features": layer.out_features,
+                    "kernel_size": layer.kernel_size,
+                    "stride": layer.stride,
+                    "padding": layer.padding,
+                    "dropout": layer.dropout
+                }
+                for layer in self.layers
+            ],
+            "loss_function": self.loss_function.name if self.loss_function else None,
+            "optimizer": self.optimizer.name if self.optimizer else None
+        }
+        return json.dumps(network_dict, indent=2)
+
+    @classmethod
+    def from_json(cls, json_str: str) -> 'NeuralNetwork':
+        """
+        Create a neural network from a JSON string configuration.
+
+        :param json_str: JSON string containing the neural network configuration
+        :type json_str: str
+        :return: A new NeuralNetwork instance
+        :rtype: NeuralNetwork
+        :raises ValueError: If the JSON string is invalid or contains invalid configuration
+        """
+        try:
+            network_dict = json.loads(json_str)
+            network = cls()
+
+            # Set loss function if specified
+            if network_dict.get("loss_function"):
+                network.loss_function = LossFunction[network_dict["loss_function"]]
+
+            # Set optimizer if specified
+            if network_dict.get("optimizer"):
+                network.optimizer = OptimizerAlgorithm[network_dict["optimizer"]]
+
+            # Add layers
+            for layer_dict in network_dict.get("layers", []):
+                layer = Layer(
+                    layer_type=LayerType[layer_dict["layer_type"]],
+                    in_features=layer_dict.get("in_features"),
+                    out_features=layer_dict.get("out_features"),
+                    kernel_size=layer_dict.get("kernel_size"),
+                    stride=layer_dict.get("stride"),
+                    padding=layer_dict.get("padding"),
+                    dropout=layer_dict.get("dropout")
+                )
+                network.add_layer(layer)
+
+            return network
+
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise ValueError(f"Invalid JSON configuration: {str(e)}")
