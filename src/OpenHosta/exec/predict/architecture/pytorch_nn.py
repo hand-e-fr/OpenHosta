@@ -4,8 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from .neural_network import LayerType, NeuralNetwork, OptimizerAlgorithm, \
-    Device, LossFunction, Layer
+from ....exec.predict.architecture.neural_network import LayerType, NeuralNetwork, OptimizerAlgorithm, Device, LossFunction, Layer
 from ....utils.progress_bar import print_progress_bar
 
 class PyTorchNeuralNetwork(nn.Module):
@@ -114,9 +113,9 @@ class PyTorchNeuralNetwork(nn.Module):
         self.to(self.device)
         self.optimizer.zero_grad()
 
-        dataset_manager = DatasetManager.from_source("path/to/dataset.pt", "PYTORCH")
-        dataset = dataset_manager.datasets[dataset_name]
-        loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        # dataset_manager = DatasetManager.from_source("path/to/dataset.pt", "PYTORCH")
+        # dataset = dataset_manager.datasets[dataset_name]
+        # loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
         for epoch in range(epochs):
             for batch in loader:
