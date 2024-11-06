@@ -3,6 +3,7 @@ from typing import Union, Tuple, Callable, Optional
 
 from .data import PredictData
 from .model_schema import ModelSchema
+from .encoder.simple_encoder import SimpleEncoder
 from ...core.hosta import Hosta, Func
 from ...core.config import Model
 
@@ -37,7 +38,7 @@ class PredictBase:
                 raise ValueError(f"Return type must be one of [int, float, bool], not {self._infos.f_type[1]}")
             self._model: ConfigModel = model
             self._verbose: bool = verbose
-            # self._encoder: HostaEncoder = HostaEncoder()
+            self._encoder: SimpleEncoder = SimpleEncoder()
             self._data: PredictData = PredictData(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(hash(x))))
             self._initialized: bool = True
             self.oracle: Optional[Union[Model, Callable]] = oracle
@@ -49,21 +50,10 @@ class PredictBase:
         """
         :return:
         """
-        print("Args type:")
-        for (_, t), (k, v) in zip(enumerate(self._infos.f_type[0]), self._infos.f_args.items()):
-            print(f"{k}: {t} = {v}")
-        print("Return type:")
-        print(self._infos.f_type[1])
-        print("Examples:")
         return 0
 
 
 def predict(model: ConfigModel = None, oracle: Optional[Model] = None, verbose: bool = False) -> Union[int, float, bool]:
-    if verbose:
-        print(f"Predicting...")
     x: Hosta = Hosta()
     predict_base = PredictBase(x=x, model=model, oracle=oracle, verbose=verbose)
-    print("Examples:")
-    for ex in predict_base.examples:
-        print(f"{ex}: in={predict_base.examples[ex][0]}, out={predict_base.examples[ex][1]}")
     return predict_base.predict()
