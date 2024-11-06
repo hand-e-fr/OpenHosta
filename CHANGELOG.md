@@ -5,6 +5,22 @@ All significant changes to this project will be documented in this file.
 ---
 
 ## **v2.0-beta2**
+- **Added**
+  - Introduced `BaseEncoder` as an Abstract Base Class (ABC) for all specific encoders, providing a standardized interface.
+  - Added `BoolEncoder` to handle encoding of boolean values.
+  - Introduced `PredictConfig` data class to encapsulate parameters for the `predict` function.
+  - Initial implementation of the `HostaCache` class in `core/cache.py` with generic type support.
+  - Initial implementation of the `ModelCachedData` and `HostaModelCache` classes in `predict/cache.py`.
+- **Changed**
+  - Refactored `IntEncoder` and `FloatEncoder` to inherit from `BaseEncoder` and implement the encode method.
+  - Updated `HostaEncoder` to use a dictionary (`self.encoders`) for mapping data types to their corresponding encoders. This allows for easier extension and maintenance.
+  - Improved type handling in `HostaEncoder.encode` method for better extensibility and readability.
+  - Refactored `predict` function to accept a single `PredictConfig` object instead of multiple parameters. This change improves readability and maintainability of the function.
+- **Fixed**
+  - Enhanced exception handling in `FloatEncoder` to provide more informative error messages.
+  - Removed unnecessary constructors from encoder classes, streamlining the code.
+
+## **v2.0-beta1**
 
 - **Features**
   - Added `max_tokens` args for emulate
