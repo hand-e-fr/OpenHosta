@@ -6,10 +6,10 @@ from requests.exceptions import RequestException
 from requests.models import Response
 import json
 import re
-from typing import Any, Optional
+from typing import Any
 
 from ..utils.errors import ApiKeyError, RequestError
-from .hosta import Func
+from .pydantic_usage import Func
 from .checker import HostaChecker
 
 def is_valid_url(url:str)->bool:

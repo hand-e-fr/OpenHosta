@@ -27,8 +27,10 @@ classifiers = [
 ]
 dependencies = [
   "requests>=2.32.3",
-  "pydantic>=2.8.2",
 ]
+
+[project.optional-dependencies]
+pydantic = ["pydantic>=2.8.2"]
 
 [project.urls]
 Homepage = "https://github.com/hand-e-fr/OpenHosta"

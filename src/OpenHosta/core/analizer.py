@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
-from typing import get_args, get_origin
-from pydantic import BaseModel, create_model
 import inspect
 from types import FrameType
+
+from ..utils.import_handler import is_pydantic
 
 all = (
     "_FuncInspector",
@@ -104,27 +104,13 @@ class _FuncInspector:
         Returns:
             The JSON schema of the function's return type.
         """
-        return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
-        return_schema = None
-
-        if return_caller is not None:
-            if get_origin(return_caller):
-                return_caller_origin = get_origin(return_caller)
-                return_caller_args = get_args(return_caller)
-                combined = return_caller_origin[return_caller_args]
-                new_model = create_model("return_schema", annotation=(combined, ...))
-                return_schema = new_model.model_json_schema()
-            elif issubclass(return_caller, BaseModel):
-                return_schema = return_caller.model_json_schema()
-            else:
-                new_model = create_model("return_schema", annotation=(return_caller, ...))
-                return_schema = new_model.model_json_schema()
+        if is_pydantic:
+            print ("hello3")
+            from .pydantic_usage import get_function_schema_pydantic
+            
+            return get_function_schema_pydantic(self)
         else:
-            No_return_specified = create_model(
-                "return_shema", annotation=(Any, ...)
-            )
-            return_schema = No_return_specified.model_json_schema()
-        return return_schema   
+            return {"type": "integer"}
 
 
 class FuncAnalizer(_FuncInspector):
