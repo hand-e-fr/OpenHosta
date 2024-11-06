@@ -5,9 +5,9 @@ from ..neural_network import NeuralNetwork, Layer, LayerType
 
 class ClassificationBuilder(NeuralNetwork):
     def __init__(self,
-                 input_size: Union[int, None] = None,
-                 output_size: Union[int, None] = None,
-                 complexity: Union[float, None] = None,
+                 input_size: Optional[int] = None,
+                 output_size: Optional[int] = None,
+                 complexity: Optional[float] = None,
                  activation: LayerType = LayerType.RELU
              ):
         super().__init__()

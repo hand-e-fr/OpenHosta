@@ -8,11 +8,11 @@ class ModelSchema:
                  name: str = "",
                  weight_path: str = "",
                  version: str = "",
-                 complexity: Union[float, None] = None,
-                 epochs: Union[int, None] = None,
-                 batch_size: Union[int, None] = None,
-                 learning_rate: Union[float, None] = None,
-                 get_loss: Union[float, None] = None
+                 complexity: Optional[float] = None,
+                 epochs: Optional[int] = None,
+                 batch_size: Optional[int] = None,
+                 learning_rate: Optional[float] = None,
+                 get_loss: Optional[float] = None
              ):
         self.model_type: ArchitectureType = model_type
 

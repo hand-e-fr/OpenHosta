@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 import torch
 import torch.nn as nn
@@ -49,7 +49,7 @@ class PyTorchNeuralNetwork(nn.Module):
                 self.layers.append(nn.Softmax())
 
 
-    def get_loss_function(self, loss_function: LossFunction) -> Union[nn.Module, None]:
+    def get_loss_function(self, loss_function: LossFunction) -> Optional[nn.Module]:
         """
         Get the loss function based on the loss function provided.
         :param loss_function:
@@ -80,7 +80,7 @@ class PyTorchNeuralNetwork(nn.Module):
         }.get(loss_function, lambda: None)()
 
 
-    def get_optimizer(self, optimizer_algorithm: OptimizerAlgorithm) -> Union[optim.Optimizer, None]:
+    def get_optimizer(self, optimizer_algorithm: OptimizerAlgorithm) -> Optional[optim.Optimizer]:
         """
         Get the optimizer based on the optimizer algorithm provided.
         :param optimizer_algorithm:
