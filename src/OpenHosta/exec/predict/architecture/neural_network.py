@@ -1,7 +1,6 @@
 import json
 from typing import Union, Tuple
 
-from .base import BaseArchitecture
 from enum import Enum
 
 class LayerType(Enum):
@@ -124,7 +123,7 @@ class Layer:
             f"dropout={self.dropout})"
         )
 
-class NeuralNetwork(BaseArchitecture):
+class NeuralNetwork:
     def __init__(self):
         """
         Initialize a NeuralNetwork object.
