@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Callable, Tuple, List, Dict, Any
-from typing import get_args, get_origin
-from pydantic import BaseModel, create_model
+from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 import inspect
 from types import FrameType
+
+from ..utils.import_handler import is_pydantic
 
 all = (
     "_FuncInspector",
@@ -12,99 +12,112 @@ all = (
 )
 
 class _FuncInspector:
-    def __init__(self, func: Callable):
-        self.func = func
-        self.sig = inspect.signature(func)
+    """
+    A class for inspecting the signature, definition, and call information of a function.
+
+    Args:
+        func (Callable): The function to inspect.
+
+    Attributes:
+        func (Callable): The function to inspect.
+        sig (Signature): The signature of the function.
+    """
+    def __init__(self, func: Callable, caller_frame: FrameType):
+        """
+        Initialize the function inspector with the given function.
+
+        Args:
+            func (Callable): The function to inspect.
+            caller_frame (FrameType): The function's frame in which it is called.
+        """
+        try:
+            self.func = func
+            self.sig = inspect.signature(func)
+            _, _, _, self.values = inspect.getargvalues(caller_frame)
+        except Exception as e:
+            raise AttributeError(f"[_FuncInspector.__init__] Invalid arguments:\n{e}")
+
+    def _get_function_definition(self)->str:
+        """
+        Build the string representing the function's definition.
+
+        Returns:
+            The string representing the function's definition.
+        """
+        source = inspect.getsource(self.func)
+        definition = f"```python\n{source}\n```"
+        return definition
 
 
-    def _get_function_signature(self):
-        func_name = self.func.__name__
-        func_params = ", ".join(
-            [
-                (
-                    f"{param_name}: {param.annotation.__name__}"
-                    if param.annotation != inspect.Parameter.empty and hasattr(param.annotation, '__name__')
-                    else param_name
-                )
-                for param_name, param in self.sig.parameters.items()
-            ]
-        )
-        func_return = (
-            f" -> {self.sig.return_annotation.__name__}"
-            if self.sig.return_annotation != inspect.Signature.empty and hasattr(self.sig.return_annotation, '__name__')
-            else ""
-        )
-        return func_name, func_params, func_return
+    def _get_function_locals(self)->Tuple[dict, dict]:
+        """
+        Get the attributs and local variables of the function call.
 
-
-    def _get_function_definition(self):
-        func_name, func_params, func_return = self._get_function_signature()
-        definition = (
-            f"```python\ndef {func_name}({func_params}):{func_return}\n"
-            f"    \"\"\"\n    {self.func.__doc__}\n    \"\"\"\n```"
-        )
-        prototype = f"def {func_name}({func_params}):{func_return}"
-        return definition, prototype
-
-
-    def _get_call_info(self, caller_frame):
-        _, _, _, values = inspect.getargvalues(caller_frame)
-
-        values_args = {k: v for k, v in values.items() if k in self.sig.parameters}
-        values_locals = {k: v for k, v in values.items() if k not in self.sig.parameters}
-
+        Returns:
+            A tuple containing the bound arguments, local variables, and local attributs.
+        """
+        values_locals = {k: v for k, v in self.values.items() if k not in self.sig.parameters}
         values_locals.pop('self', None)
 
+        try:
+            values_self = self.func.__self__.__dict__
+        except:
+            values_self = None    
+        return values_locals or None, values_self
+
+
+    def _get_function_call(self)->Tuple[str, inspect.BoundArguments]:
+        """
+        Build a string representing the function call.
+
+        Returns:
+            A tuple containing a string representing the function call and the bound arguments.
+        """
+        values_args = {k: v for k, v in self.values.items() if k in self.sig.parameters}
+        
         bound_args = self.sig.bind_partial(**values_args)
         bound_args.apply_defaults()
-
-        return bound_args.arguments, values_locals or None
-
-
-    def _build_call_string(self, bound_arguments):
+        
+        bound_arguments = bound_args.arguments
+        
         args_str = ", ".join(
             f"{k}={v!r}" for k, v in bound_arguments.items()
         )
         call_str = f"{self.func.__name__}({args_str})"
-        return call_str
+        return call_str, bound_arguments
 
-    def _get_function_type(self):
+    def _get_function_type(self)->Tuple[List[Type[Any]], Type[Any]]:
+        """
+        Get the input and output types of the function.
+
+        Returns:
+            A tuple containing the input types and output type.
+        """
         input_types = [param.annotation for param in self.sig.parameters.values()]
         output_type = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
         return input_types, output_type
     
-    def _get_function_schema(self, func: Callable) -> Dict[str, Any]:
-        sig = inspect.signature(func)
-        return_caller = sig.return_annotation if sig.return_annotation != inspect.Signature.empty else None
-        return_schema = None
+    def _get_function_schema(self) -> Dict[str, Any]:
+        """
+        Get the JSON schema of the function's return type.
 
-        if return_caller is not None:
-            if get_origin(return_caller):
-                return_caller_origin = get_origin(return_caller)
-                return_caller_args = get_args(return_caller)
-                combined = return_caller_origin[return_caller_args]
-                new_model = create_model("return_schema", annotation=(combined, ...))
-                return_schema = new_model.model_json_schema()
-            elif issubclass(return_caller, BaseModel):
-                return_schema = return_caller.model_json_schema()
-            else:
-                new_model = create_model("return_schema", annotation=(return_caller, ...))
-                return_schema = new_model.model_json_schema()
+        Returns:
+            The JSON schema of the function's return type.
+        """
+        if is_pydantic:
+            from .pydantic_usage import get_function_schema_pydantic
+            
+            return get_function_schema_pydantic(self)
         else:
-            No_return_specified = create_model(
-                "return_shema", annotation=(Any, ...)
-            )
-            return_schema = No_return_specified.model_json_schema()
-        return return_schema   
+            return {"type": "integer"}
 
 
 class FuncAnalizer(_FuncInspector):
     def __init__(self, func: Callable, caller_frame: FrameType):
-        super().__init__(func)
-        self.caller_frame = caller_frame
+        super().__init__(func, caller_frame)
 
     @property
-    def func_def(self) -> str:
+    def func_def(self) -> Optional[str]:
         """
         This method returns the function definition and his prototype as a string
         """
@@ -114,29 +127,17 @@ class FuncAnalizer(_FuncInspector):
             raise AttributeError("[FuncAnalizer] Function definition not found")
 
     @property
-    def func_call(self) -> str:
+    def func_call(self) -> Optional[Tuple[str, inspect.BoundArguments]]:
         """
-        This method returns the function call as a string
+        This method returns the function call as a string and the bound arguments
         """
         try:
-            bound_args, _ = self._get_call_info(self.caller_frame)
-            return self._build_call_string(bound_args)
+            return self._get_function_call()
         except:
             raise AttributeError("[FuncAnalizer] Function call not found")
 
-    @property
-    def func_args(self) -> Dict[str, object]:
-        """
-        This method returns the function arguments as a dictionary
-        """
-        try:
-            bound_args, _ = self._get_call_info(self.caller_frame)
-            return bound_args
-        except:
-            raise AttributeError("[FuncAnalizer] Function arguments not found")
-
     @property 
-    def func_type(self) -> Tuple[List[type], type]:
+    def func_type(self) -> Optional[Tuple[List[Type[Any]], Type[Any]]]:
         """
         This method returns the function input and output types as a tuple
         """
@@ -146,22 +147,21 @@ class FuncAnalizer(_FuncInspector):
             raise AttributeError("[FuncAnalizer] Function types not found")
 
     @property
-    def func_locals(self) -> dict:
+    def func_locals(self) -> Optional[Tuple[dict, dict]]:
         """
-        This method returns the function local variables as a dictionary
+        This method returns the function local variables and attributs.
         """
         try:
-            _, values_locals = self._get_call_info(self.caller_frame)
-            return values_locals
+            return self._get_function_locals()
         except:
             raise AttributeError("[FuncAnalizer] Function local variables not found")
         
     @property
-    def func_schema(self) -> dict:
+    def func_schema(self) -> Optional[Dict[str, Any]]:
         """
-        This method returns the function local variables as a dictionary
+        This method returns the return schema of the function.
         """
         try:
-            return self._get_function_schema(self.func)
+            return self._get_function_schema()
         except:
             raise AttributeError("[FuncAnalizer] Function schema cannot be created")
