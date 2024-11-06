@@ -1,5 +1,5 @@
 import os
-from typing import Union, Tuple, Callable
+from typing import Union, Tuple, Callable, Optional
 
 from .data import PredictData
 from .model_schema import ModelSchema
@@ -16,7 +16,7 @@ class ConfigModel: # todo: change name
 class PredictBase:
     _instance = {}
 
-    def __new__(cls, x: Hosta = None, model: ConfigModel = None, oracle: Union[Model, Callable, None] = None, verbose: bool = False):
+    def __new__(cls, x: Hosta = None, model: ConfigModel = None, oracle: Optional[Union[Model, Callable]] = None, verbose: bool = False):
         hosta_key = hash(x) # todo: change hash function
 
         if hosta_key not in cls._instance:
@@ -29,7 +29,7 @@ class PredictBase:
                 pass
         return cls._instance[hosta_key]
 
-    def __init__(self, x: Hosta = None, model: ConfigModel = None, oracle: Union[Model, Callable, None] = None, verbose: bool = False):
+    def __init__(self, x: Hosta = None, model: ConfigModel = None, oracle: Optional[Union[Model, Callable]] = None, verbose: bool = False):
         if not hasattr(self, '_initialized') or not getattr(self, '_initialized'):
             self._infos: Func = getattr(x, "_infos")
             if self._infos.f_type[1] is None:
@@ -41,7 +41,7 @@ class PredictBase:
             self._encoder: HostaEncoder = HostaEncoder()
             self._data: PredictData = PredictData(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(hash(x))))
             self._initialized: bool = True
-            self.oracle: Union[Model, Callable, None] = oracle
+            self.oracle: Optional[Union[Model, Callable]] = oracle
             self.examples: dict[int, Tuple[list[Union[int, float, bool]], Union[int, float, bool]]] = {}
             for ex in self._infos.f_mem:
                 self.examples[ex.id] = (list(ex.value["in_"].values()), ex.value["out"])
@@ -59,7 +59,7 @@ class PredictBase:
         return 0
 
 
-def predict(model: ConfigModel = None, oracle: Union[Model, None] = None, verbose: bool = False) -> Union[int, float, bool]:
+def predict(model: ConfigModel = None, oracle: Optional[Model] = None, verbose: bool = False) -> Union[int, float, bool]:
     if verbose:
         print(f"Predicting...")
     x: Hosta = Hosta()
