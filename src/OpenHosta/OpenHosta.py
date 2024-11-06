@@ -15,6 +15,8 @@ from .exec.example import example
 from .exec.thought import thought
 from .exec.thinkof import thinkof
 from .utils.prompt import PromptManager
+from .exec.predict.predict import predict, ModelSchema
+from .exec.predict.architecture.builtins import ArchitectureType
 from .exec.ask import ask
 
 all = (
@@ -23,6 +25,9 @@ all = (
     "thought",
     "example",
     "thinkof",
-    "PromptManager",
     "ask",
+    "PromptManager",
+    "predict",
+    "ModelSchema",
+    "ArchitectureType",
 )

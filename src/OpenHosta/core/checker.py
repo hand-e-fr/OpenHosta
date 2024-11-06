@@ -8,6 +8,7 @@ from .hosta import Func
 
 T = TypeVar('T')
 
+
 class HostaChecker:
     """
     A class used to check and convert the output of a Language Model (LLM) to the type specified in a function's annotation.
@@ -22,7 +23,8 @@ class HostaChecker:
         checked (Any): The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         is_passed (bool): A flag indicating whether the checked data should be converted or not. It is set to True if `data` contains a "return" key.
     """
-    def __init__(self, func: Func, data:dict):
+
+    def __init__(self, func: Func, data: dict):
         self.func = func
         self.data = data
         try:
@@ -31,8 +33,8 @@ class HostaChecker:
         except KeyError:
             self.checked = self.data
             self.is_passed = False
-    
-    def _default(x:Any)->Any:
+
+    def _default(x: Any) -> Any:
         """
         A default conversion function that returns the input as is.
 
@@ -43,8 +45,8 @@ class HostaChecker:
             Any: The input data as is.
         """
         return x
-    
-    def convert(self, typ:Type[T])-> Dict[Type[T], Optional[Callable[[Any], T]]]:
+
+    def convert(self, typ: Type[T]) -> Dict[Type[T], Optional[Callable[[Any], T]]]:
         """
         A method to create a conversion function for a given type.
 
@@ -70,9 +72,9 @@ class HostaChecker:
         }
         if typ not in convertMap.keys():
             return self._default.__func__
-        return convertMap[typ]  
-        
-    def convert_annotated(self)->Any:
+        return convertMap[typ]
+
+    def convert_annotated(self) -> Any:
         """
         A method to convert the checked data based on the type annotations of the function.
 
@@ -80,7 +82,7 @@ class HostaChecker:
             Any: The converted checked data based on the type annotations.
         """
         if getattr(self.func.f_type[1], '__module__', None) == 'typing':
-            pass # Make a deep checking when annotated (see below)
+            pass  # Make a deep checking when annotated (see below)
         return self.checked
         #     origin = get_origin(self.func.f_type[1])
         #     args = get_args(self.func.f_type[1])
@@ -92,8 +94,8 @@ class HostaChecker:
         #     return self.checked
         # else:
         #     return self.checked
-        
-    def check(self)->Any:
+
+    def check(self) -> Any:
         """
         A method to check and convert the input data based on the function's type annotations and Pydantic model annotations.
 
@@ -107,7 +109,6 @@ class HostaChecker:
             self.checked = self.convert_annotated()
             if is_pydantic:
                 from .pydantic_usage import convert_pydantic
-                
+
                 self.checked = convert_pydantic(self.func.f_type[1], self.checked)
         return self.checked
-        

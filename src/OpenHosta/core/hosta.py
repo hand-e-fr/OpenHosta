@@ -182,3 +182,7 @@ class Hosta(HostaInspector):
         """
         nodes = self._bdy_get(key="cot")
         return [node.value for node in nodes] if nodes else None
+
+    @property
+    def infos(self):
+        return self._infos
