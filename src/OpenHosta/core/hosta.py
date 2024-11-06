@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Dict, Any, Tuple, List, Optional, Literal, Union, TypedDict, Callable
-from pydantic import BaseModel, Field
+from typing import List, Optional
 
 from .inspector import HostaInspector
 from .analizer import FuncAnalizer
 from ..utils.errors import InvalidStructureError
+from ..utils.hosta_type import MemoryNode, MemKey, MemValue, ExampleType, CotType
+from .pydantic_usage import Func
 
 all = (
     "Hosta",
@@ -15,41 +16,6 @@ all = (
     "MemValue",
     "MemoryNode"
 )
-
-class ExampleType(TypedDict):
-    in_: Any
-    out: Any
-
-class CotType(TypedDict):
-    task: str
- 
-class UseType(TypedDict):
-    pass
-
-MemKey = Literal["ex", "cot", "use"]
-MemValue = Union[CotType, ExampleType, UseType]
-    
-class MemoryNode(BaseModel):
-    key:MemKey
-    id:int
-    value:MemValue
-
-class Func(BaseModel):
-    """
-    Func is a Pydantic model representing a function's metadata.
-    Useful for the executive functions and the post-processing.
-    """
-    f_obj: Optional[object] = Field(default=None)
-    f_def: str = Field(default="", description="Simple definition of the function, e.g., 'def func(a:int, b:str)->int:'")
-    f_name: str = Field(default="", description="Name of the function, e.g., 'func'")
-    f_call: str = Field(default="", description="Actual call of the function, e.g., 'func(1, 'hello')'")
-    f_args: Dict[str, Any] = Field(default_factory=dict, description="Arguments of the function, e.g., {'a': 1, 'b': 'hello'}")
-    f_type: Tuple[List[Any], Any] = Field(default_factory=lambda: ([], None), description="Desired type of the input and output of the function")
-    f_schema: Dict[str, Any] = Field(default_factory=dict, description="Dictionary describing the function's return type (in case of pydantic).")
-    f_locals: Optional[Dict[str, Any]] = Field(default=None, description="Local variables within the function's scope")
-    f_self: Optional[Dict[str, Any]] = Field(default=None)
-    f_mem: Optional[List[MemoryNode]] = Field(default=None, description="Memory nodes associated with the function, contains examples, chain of thought...")
-    
 
 class Hosta(HostaInspector):
     """

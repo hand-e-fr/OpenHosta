@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import NoneType
 from typing import Type, Any, Dict, Optional, Callable, TypeVar
-from pydantic import BaseModel
 
+from ..utils.import_handler import is_pydantic
 from .hosta import Func
 
 T = TypeVar('T')
@@ -93,20 +93,6 @@ class HostaChecker:
         # else:
         #     return self.checked
         
-    def convert_pydantic(self)->Optional[BaseModel]:
-        """
-        A method to convert the checked data based on the Pydantic model annotations of the function.
-
-        Returns:
-            Optional[BaseModel]: The converted checked data based on the Pydantic model annotations.
-        """
-        try:
-            if issubclass(self.func.f_type[1], BaseModel):
-                return self.func.f_type[1](**self.checked)
-            return self.checked
-        except:
-            return self.checked
-        
     def check(self)->Any:
         """
         A method to check and convert the input data based on the function's type annotations and Pydantic model annotations.
@@ -119,6 +105,10 @@ class HostaChecker:
         if self.is_passed:
             self.checked = self.convert(self.func.f_type[1])(self.checked)
             self.checked = self.convert_annotated()
-            self.checked = self.convert_pydantic()
+            if is_pydantic:
+                print("hello2")
+                from .pydantic_usage import convert_pydantic
+                
+                self.checked = convert_pydantic(self.func.f_type[1], self.checked)
         return self.checked
         
