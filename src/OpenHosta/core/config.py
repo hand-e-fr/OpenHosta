@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import sys
-import requests
-from requests.exceptions import RequestException
-from requests.models import Response
+# import requests
+# from requests.exceptions import RequestException
+# from requests.models import Response
 import json
 import re
-from typing import Any
+from typing import Any, Dict
+from http.client import HTTPSConnection
+from urllib.parse import urlparse
 
 from ..utils.errors import ApiKeyError, RequestError
 from .pydantic_usage import Func
@@ -49,7 +51,7 @@ class Model:
         json_form: bool = True,
         **llm_args
         
-    )->Response:
+    )->Dict:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
 
@@ -75,23 +77,35 @@ class Model:
         for key, value in llm_args.items():
             l_body[key] = value
         try:
-            response = requests.post(self.base_url, json=l_body, headers=headers)
-            response.raise_for_status()
-        except RequestException as e:
-            RequestException(f"[Model.api_call] Request failed:\n{e}\n\n")
-        if response.status_code != 200:
-            if "invalid_api_key" in str(response.text):
-                raise ApiKeyError("[Model.api_call] Incorrect API key.")
-            else:    
-                raise RequestError(f"[Model.api_call] API call was unsuccessful.\nStatus code: {response.status_code}:\n{response.text}")
-        self._nb_requests += 1
-        return response
+            parsed_url = urlparse(self.base_url)
+            conn = HTTPSConnection(parsed_url.netloc)
+            
+            body_json = json.dumps(l_body)
+            conn.request("POST", parsed_url.path, body_json, headers)
+            
+            response = conn.getresponse()
+            response_data = response.read()
+            
+            conn.close()
 
-    def request_handler(self, response:Response, func:Func)->Any:
-        data = response.json()
-        json_string = data["choices"][0]["message"]["content"]
-        if "usage" in data:
-            self._used_tokens += int(data["usage"]["total_tokens"])
+            if response.status != 200:
+                response_text = response_data.decode('utf-8')
+                if "invalid_api_key" in response_text:
+                    raise ApiKeyError("[Model.api_call] Incorrect API key.")
+                else:
+                    raise RequestError(
+                        f"[Model.api_call] API call was unsuccessful.\n"
+                        f"Status code: {response.status}:\n{response_text}"
+                    )
+            self._nb_requests += 1
+            return json.loads(response_data)
+        except Exception as e:
+            raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
+
+    def request_handler(self, response:Dict, func:Func)->Any:
+        json_string = response["choices"][0]["message"]["content"]
+        if "usage" in response:
+            self._used_tokens += int(response["usage"]["total_tokens"])
         try:
             l_ret_data = json.loads(json_string)
         except json.JSONDecodeError as e:

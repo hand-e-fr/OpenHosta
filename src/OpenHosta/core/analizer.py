@@ -105,7 +105,6 @@ class _FuncInspector:
             The JSON schema of the function's return type.
         """
         if is_pydantic:
-            print ("hello3")
             from .pydantic_usage import get_function_schema_pydantic
             
             return get_function_schema_pydantic(self)

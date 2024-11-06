@@ -1,6 +1,5 @@
 from typing import Any, Dict, get_args, get_origin, Union, List, Tuple
 import inspect
-from pydantic import BaseModel, create_model, Field
 from types import NoneType
 
 def _get_type_schema(tp: Any) -> Dict[str, Any]:
@@ -76,8 +75,8 @@ def test1()->None:
 def test2()->Tuple[List[bool], List[bool]]:
     return
 
-class TMP(BaseModel):
-    var:str = Field(default="", description="Hello World!")
+class TMP():
+    var:str = ""
     
 def test3()->TMP:
     return

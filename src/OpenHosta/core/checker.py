@@ -106,7 +106,6 @@ class HostaChecker:
             self.checked = self.convert(self.func.f_type[1])(self.checked)
             self.checked = self.convert_annotated()
             if is_pydantic:
-                print("hello2")
                 from .pydantic_usage import convert_pydantic
                 
                 self.checked = convert_pydantic(self.func.f_type[1], self.checked)

@@ -71,7 +71,7 @@ def emulate(
     if x: 
         x._attach(_infos.f_obj, {
             "_last_request": f"{meta_prompt}\n{func_prompt}\n{_infos.f_call}",
-            "_last_response": response[0].json()
+            "_last_response": response[0]
             })
 
     return l_ret
