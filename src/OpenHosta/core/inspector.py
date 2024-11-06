@@ -20,7 +20,7 @@ class HostaInspector:
         pass
     
     @staticmethod
-    def _extend(*, back_level: int=3)->Optional[Tuple[Callable, FrameType]]:
+    def _extend(*, back_level: int=3)->Tuple[Optional[Callable], FrameType]:
         """
         Retrieves the callable object and the frame from which this method is called.
 
@@ -56,7 +56,7 @@ class HostaInspector:
             Returns:
                 Callable: The unwrapped method object if found, otherwise None.
             """
-            func: Callable = None
+            func: Optional[Callable] = None
             
             obj = caller.f_locals["self"]
             func = getattr(obj, caller_name, None)
@@ -82,7 +82,7 @@ class HostaInspector:
             Returns:
                 Callable: The unwrapped function object if found, otherwise None.
             """
-            func: Callable = None
+            func: Optional[Callable] = None
             l_caller:FrameType = caller
             
             while not l_caller.f_back is None:
@@ -97,10 +97,11 @@ class HostaInspector:
             func = caller.f_globals.get(name)
             return inspect.unwrap(func) if func else None
                     
-        func: Callable = None
-        current:FrameType = None
+        func: Optional[Callable] = None
+        current:Optional[FrameType] = inspect.currentframe()
         
-        current = inspect.currentframe()
+        if current is None:
+            raise FrameError(f"[HostaInspector._extend] Current frame can't be found")
         for k in range(back_level):
             current = current.f_back
             if current is None:
@@ -143,7 +144,7 @@ class HostaInspector:
         if not callable(obj) or not isinstance(attr, dict):
             raise ValueError("[HostaInspector._attach] Invalid arguments")
 
-        def attr_parser(obj:Callable, attr: Dict[str, Any])->bool:
+        def attr_parser(obj:Callable, attr: Dict[str, Any])->None:
             for key, value in attr.items():
                 setattr(obj, key, value)
         

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Callable, Tuple, List, Dict, Any, Optional, Type
+from typing import Callable, Tuple, List, Dict, Any, Optional, Union, OrderedDict
+from types import MethodType
 import inspect
 from types import FrameType
 
@@ -22,7 +23,7 @@ class _FuncInspector:
         func (Callable): The function to inspect.
         sig (Signature): The signature of the function.
     """
-    def __init__(self, func: Callable, caller_frame: FrameType):
+    def __init__(self, func: Union[Callable, MethodType], caller_frame: FrameType):
         """
         Initialize the function inspector with the given function.
 
@@ -49,7 +50,7 @@ class _FuncInspector:
         return definition
 
 
-    def _get_function_locals(self)->Tuple[dict, dict]:
+    def _get_function_locals(self)->Tuple[Optional[Dict[str, Any]], Any]:
         """
         Get the attributs and local variables of the function call.
 
@@ -59,14 +60,13 @@ class _FuncInspector:
         values_locals = {k: v for k, v in self.values.items() if k not in self.sig.parameters}
         values_locals.pop('self', None)
 
-        try:
-            values_self = self.func.__self__.__dict__
-        except:
-            values_self = None    
+        values_self = None
+        if hasattr(self.func, '__self__'):
+            values_self = getattr(self.func.__self__, '__dict__', None)
         return values_locals or None, values_self
 
 
-    def _get_function_call(self)->Tuple[str, inspect.BoundArguments]:
+    def _get_function_call(self)->Tuple[str, OrderedDict[str, Any]]:
         """
         Build a string representing the function call.
 
@@ -86,7 +86,7 @@ class _FuncInspector:
         call_str = f"{self.func.__name__}({args_str})"
         return call_str, bound_arguments
 
-    def _get_function_type(self)->Tuple[List[Type[Any]], Type[Any]]:
+    def _get_function_type(self)->Tuple[List[Any], Any]:
         """
         Get the input and output types of the function.
 
@@ -113,7 +113,7 @@ class _FuncInspector:
 
 
 class FuncAnalizer(_FuncInspector):
-    def __init__(self, func: Callable, caller_frame: FrameType):
+    def __init__(self, func: Union[Callable, MethodType], caller_frame: FrameType):
         super().__init__(func, caller_frame)
 
     @property
@@ -127,7 +127,7 @@ class FuncAnalizer(_FuncInspector):
             raise AttributeError("[FuncAnalizer] Function definition not found")
 
     @property
-    def func_call(self) -> Optional[Tuple[str, inspect.BoundArguments]]:
+    def func_call(self) -> Tuple[str, OrderedDict[str, Any]]:
         """
         This method returns the function call as a string and the bound arguments
         """
@@ -137,7 +137,7 @@ class FuncAnalizer(_FuncInspector):
             raise AttributeError("[FuncAnalizer] Function call not found")
 
     @property 
-    def func_type(self) -> Optional[Tuple[List[Type[Any]], Type[Any]]]:
+    def func_type(self) -> Optional[Tuple[List[Any], Any]]:
         """
         This method returns the function input and output types as a tuple
         """
@@ -147,7 +147,7 @@ class FuncAnalizer(_FuncInspector):
             raise AttributeError("[FuncAnalizer] Function types not found")
 
     @property
-    def func_locals(self) -> Optional[Tuple[dict, dict]]:
+    def func_locals(self) -> Tuple[Optional[Dict[str, Any]], Any]:
         """
         This method returns the function local variables and attributs.
         """
