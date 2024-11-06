@@ -3,7 +3,7 @@ import csv
 import json
 import pickle
 import os
-from typing import Union
+from typing import Union, Optional
 
 
 class SourceType(Enum):
@@ -88,7 +88,7 @@ class HostaDataset:
             raise ValueError(f"Unsupported source type: {source_type}")
 
     @staticmethod
-    def from_source(path: str, source_type: Union[SourceType, None] = None, min_max=None):
+    def from_source(path: str, source_type: Optional[SourceType] = None, min_max=None):
         """
         Load dataset from a file.
 

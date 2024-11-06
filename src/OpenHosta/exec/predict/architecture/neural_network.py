@@ -1,5 +1,5 @@
 import json
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 
 from enum import Enum
 
@@ -91,20 +91,20 @@ class Layer:
     def __init__(
         self,
         layer_type,
-        in_features: Union[int, None] = None,
-        out_features: Union[int, None] = None,
-        kernel_size: Union[int, Tuple[int, int], None] = None,
-        stride: Union[int, Tuple[int, int], None] = None,
-        padding: Union[int, str, None] = None,
-        dropout: Union[float, None] = None,
+        in_features: Optional[int] = None,
+        out_features: Optional[int] = None,
+        kernel_size: Optional[Union[int, tuple[int, int]]] = None,
+        stride: Optional[Union[int, tuple[int, int]]] = None,
+        padding: Optional[Union[int, str]] = None,
+        dropout: Optional[float] = None,
     ):
         self.layer_type: LayerType = layer_type
-        self.in_features: Union[int, None] = in_features
-        self.out_features: Union[int, None] = out_features
-        self.kernel_size: Union[int, Tuple[int, int], None] = kernel_size
-        self.stride: Union[int, Tuple[int, int], None] = stride
-        self.padding: Union[int, str, None] = padding
-        self.dropout: Union[float, None] = dropout
+        self.in_features: Optional[int] = in_features
+        self.out_features: Optional[int] = out_features
+        self.kernel_size: Optional[Union[int, tuple[int, int]]] = kernel_size
+        self.stride: Optional[Union[int, tuple[int, int]]] = stride
+        self.padding: Optional[Union[int, str]] = padding
+        self.dropout: Optional[float] = dropout
 
     def __repr__(self):
         """
@@ -129,8 +129,8 @@ class NeuralNetwork:
         Initialize a NeuralNetwork object.
         """
         self.layers: list[Layer] = []
-        self.loss_function: Union[LossFunction, None] = None
-        self.optimizer: Union[OptimizerAlgorithm, None] = None
+        self.loss_function: Optional[LossFunction] = None
+        self.optimizer: Optional[OptimizerAlgorithm] = None
 
     def add_layer(self, layer: Layer):
         """
