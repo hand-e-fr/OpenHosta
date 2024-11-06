@@ -3,7 +3,6 @@ from typing import Union, Tuple, Callable, Optional
 
 from .data import PredictData
 from .model_schema import ModelSchema
-from .type_encoder.hosta_encoder import HostaEncoder
 from ...core.hosta import Hosta, Func
 from ...core.config import Model
 
@@ -38,7 +37,7 @@ class PredictBase:
                 raise ValueError(f"Return type must be one of [int, float, bool], not {self._infos.f_type[1]}")
             self._model: ConfigModel = model
             self._verbose: bool = verbose
-            self._encoder: HostaEncoder = HostaEncoder()
+            # self._encoder: HostaEncoder = HostaEncoder()
             self._data: PredictData = PredictData(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(hash(x))))
             self._initialized: bool = True
             self.oracle: Optional[Union[Model, Callable]] = oracle
