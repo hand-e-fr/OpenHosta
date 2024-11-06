@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 HOSTAPATH = "./"
 PROMPTPATH = "src/prompt.json"
 
@@ -10,18 +12,22 @@ DefaultManager.set_default_model(
 from .core import config
 from .exec.emulate import emulate
 from .exec.example import example
+from .exec.thought import thought
 from .exec.thinkof import thinkof
 from .utils.prompt import PromptManager
 from .exec.predict.predict import predict, ModelSchema
 from .exec.predict.architecture.builtins import ArchitectureType
+from .exec.ask import ask
 
 all = (
     "config",
     "emulate",
+    "thought",
     "example",
     "thinkof",
+    "ask",
     "PromptManager",
     "predict",
     "ModelSchema",
-    "ArchitectureType"
+    "ArchitectureType",
 )
