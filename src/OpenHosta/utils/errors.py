@@ -33,3 +33,6 @@ class FrameError(OhErrorMixin):
     
 class InvalidStructureError(OhErrorMixin):
     """ Raised when the bosy's function aren't placed correctly """
+    
+    
+# création d'agent + multimodal + tools

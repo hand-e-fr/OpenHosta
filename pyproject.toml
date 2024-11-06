@@ -15,7 +15,7 @@ authors = [
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.8"
+requires-python = ">=3.10,<3.13"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3.8",
@@ -25,10 +25,9 @@ classifiers = [
     "Natural Language :: French",
     "Topic :: Software Development :: Code Generators"
 ]
-dependencies = [
-  "requests>=2.32.3",
-  "pydantic>=2.8.2",
-]
+
+[project.optional-dependencies]
+pydantic = ["pydantic>=2.8.2"]
 
 [project.urls]
 Homepage = "https://github.com/hand-e-fr/OpenHosta"

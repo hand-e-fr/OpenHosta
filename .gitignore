@@ -17,3 +17,4 @@ src/OpenHosta.egg-info
 build/
 .pypirc
 testtest.py
+tiling.py
