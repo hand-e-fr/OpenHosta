@@ -7,7 +7,6 @@ from ..utils.import_handler import is_pydantic
 from ..utils.hosta_type import MemoryNode
 
 if is_pydantic:
-    print("hello1")
     from pydantic import BaseModel, Field, ConfigDict, create_model
     
     def convert_pydantic(caller, checked)->Optional[BaseModel]:
@@ -70,7 +69,6 @@ if is_pydantic:
             return_schema = No_return_specified.model_json_schema()
         return return_schema  
 else:
-    print("hi1")
     class Func:
         f_obj: Optional[object] = None
         f_def: str = ""

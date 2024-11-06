@@ -11,3 +11,4 @@ def multiply(a:int, b:int):
 res = multiply(5, 6)
 print(res)
 print(type(res))
+print(multiply._last_request)
