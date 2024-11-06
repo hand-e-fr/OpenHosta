@@ -4,7 +4,6 @@ from typing import Union, Tuple, Callable
 from .data import PredictData
 from .model_schema import ModelSchema
 from .type_encoder.hosta_encoder import HostaEncoder
-from .. import prefix
 from ...core.hosta import Hosta, Func
 from ...core.config import Model
 
@@ -22,7 +21,7 @@ class PredictBase:
 
         if hosta_key not in cls._instance:
             if verbose:
-                print(f"{prefix('predict')} Creating new instance of PredictBase")
+                print(f"Creating new instance of PredictBase")
             cls._instance[hosta_key] = super(PredictBase, cls).__new__(cls)
             try:
                 setattr(cls._instance[hosta_key], '_initialized', False)
@@ -62,7 +61,7 @@ class PredictBase:
 
 def predict(model: ConfigModel = None, oracle: Union[Model, None] = None, verbose: bool = False) -> Union[int, float, bool]:
     if verbose:
-        print(f"{prefix("predict")} Predicting...")
+        print(f"Predicting...")
     x: Hosta = Hosta()
     predict_base = PredictBase(x=x, model=model, oracle=oracle, verbose=verbose)
     print("Examples:")

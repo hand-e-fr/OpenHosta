@@ -7,7 +7,6 @@ import torch.optim as optim
 from .neural_network import LayerType, NeuralNetwork, OptimizerAlgorithm, \
     Device, LossFunction, Layer
 from ....utils.progress_bar import print_progress_bar
-from ... import prefix as p
 
 class PyTorchNeuralNetwork(nn.Module):
     def __init__(self, neural_network: NeuralNetwork):

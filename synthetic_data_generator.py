@@ -194,7 +194,7 @@ IMPORTANT RULES:
 
         random.shuffle(generated_data)
 
-        with open(output_file, 'w', newline='') as f:
+        with open(output_file, 'w', newline='', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(headers)
             writer.writerows(generated_data)
