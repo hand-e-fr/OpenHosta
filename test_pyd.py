@@ -1,6 +1,7 @@
 from OpenHosta import config, emulate
+import os
 
-config.set_default_apiKey("")
+config.set_default_apiKey(os.environ['OPENAI_KEY'])
 
 def multiply(a:int, b:int):
     """
