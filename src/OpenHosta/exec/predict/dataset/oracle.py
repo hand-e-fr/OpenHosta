@@ -1,9 +1,8 @@
 import inspect
-import random
 from collections import Counter
 from typing import Optional, Dict, Any, List, Type
 
-from .dataset import HostaDataset
+from .dataset import HostaDataset, SourceType
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
 from ....utils.prompt import PromptManager
@@ -14,7 +13,7 @@ class LLMSyntheticDataGenerator:
 
 
     @staticmethod
-    def _validate_row(row: str, expected_fields: int, return_type: str) -> Optional[List[str]]:
+    def _validate_row(row: str, expected_fields: int, return_type: Type) -> Optional[List[str]]:
         try:
             values = []
             in_quotes = False
@@ -45,9 +44,9 @@ class LLMSyntheticDataGenerator:
                     pass
 
             # Handle the output value based on return type
-            if return_type == "str":
+            if return_type == str:
                 values[-1] = f'"{values[-1]}"'
-            elif return_type in ["int", "float"]:
+            elif return_type in (int, float):
                 try:
                     num = float(values[-1])
                     values[-1] = str(int(num) if num.is_integer() else num)
@@ -156,17 +155,19 @@ class LLMSyntheticDataGenerator:
 
         # TODO: Implement data generation logic
         generated_data: List = []
+        result: List[Dict] = []
         conversation_history: List = []
         attempts = 0
+        expected_fields = len(input_types) + 1
 
         conversation_history.append({
             "role": "system",
             "content": "You are a data generation assistant focused on creating diverse, realistic data. Avoid repetitive patterns."
         })
 
-        while attempts < attempts_number:
+        while attempts < request_amounts:
             try:
-                content = self._create_prompt(example_per_request, func, examples)
+                content = prompt
 
                 # Add information about already generated data
                 if generated_data:
@@ -181,25 +182,28 @@ class LLMSyntheticDataGenerator:
                     "content": content
                 })
 
-                response = openai.ChatCompletion.create(
-                    model="gpt-4o-mini",
+                response = model.api_call(
                     messages=conversation_history,
-                    temperature=1.0
+                    temperature=1.0,
+                    json_form=False,
                 )
 
                 # Add the assistant's response to conversation history
                 conversation_history.append({
                     "role": "assistant",
-                    "content": response.choices[0].message.content
+                    "content": response["choices"][0]["message"]["content"]
                 })
 
-                rows = response.choices[0].message.content.strip().split('\n')
+                rows = response["choices"][0]["message"]["content"].strip().split('\n')
 
                 for row in rows:
-                    cleaned_row = self._validate_row(row, expected_fields, return_type)
-                    if cleaned_row and self._is_diverse_enough(generated_data, cleaned_row):
+                    cleaned_row = LLMSyntheticDataGenerator._validate_row(row, expected_fields, output_type)
+                    if cleaned_row and LLMSyntheticDataGenerator._is_diverse_enough(generated_data, cleaned_row):
                         # append cleaned_row if it is not already in generated_data
                         if cleaned_row not in generated_data:
+                            dictrow = dict(zip(input_types.keys(), cleaned_row[:-1]))
+                            dictrow["output"] = cleaned_row[-1]
+                            result.append(dictrow)
                             generated_data.append(cleaned_row)
 
                 # Keep conversation history manageable by keeping only last 10 messages
@@ -212,8 +216,6 @@ class LLMSyntheticDataGenerator:
 
             attempts += 1
 
-        random.shuffle(generated_data)
-
-        print(prompt)
-
-        return HostaDataset()
+        dataset: HostaDataset = HostaDataset.from_list(result)
+        dataset.save("build/pas_mal_les_donnees.csv", source_type=SourceType.CSV)
+        return dataset
