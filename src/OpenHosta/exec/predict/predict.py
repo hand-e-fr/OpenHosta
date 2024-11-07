@@ -1,7 +1,7 @@
 import os
 from typing import Union, Optional, Literal
 
-from src.OpenHosta.core.config import DefaultModel
+from OpenHosta.core.config import DefaultModel
 from .memory import PredictMemory
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
@@ -18,7 +18,9 @@ def predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDatase
 
     encoder: SimpleEncoder = SimpleEncoder()
     memory: PredictMemory = PredictMemory(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(Hosta.hash_func(func))))
-    dataset: HostaDataset = data_scientist(func=func, memory=memory, oracle=oracle, model=model)
+
+    # if Hosta.hash_func(func) == memory.hash:
+    dataset: HostaDataset = data_preparator(func=func, memory=memory, oracle=oracle, model=model)
           
     
     print(f"len: {len(dataset.data)}")
@@ -31,8 +33,7 @@ def predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDatase
 
 
 
-
-def data_scientist(func: Func, memory: PredictMemory, oracle: Optional[Union[Model, HostaDataset]], model: Optional[ConfigModel]) -> HostaDataset:
+def data_preparator(func: Func, memory: PredictMemory, oracle: Optional[Union[Model, HostaDataset]], model: Optional[ConfigModel]) -> HostaDataset:
     """
     This function is used to generate the dataset for the model.
     he works like a data scientist, make a iterative process of each step automatically.
