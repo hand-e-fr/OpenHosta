@@ -5,6 +5,7 @@ from typing import Any, Optional
 from ..core.config import Model, DefaultManager
 from ..utils.errors import RequestError
 
+
 def ask(
     *,
     user:str,
@@ -17,7 +18,7 @@ def ask(
     if system is None:
         system = "You are an helpful assistant."
         
-    response = model.api_call(
+    response = model.simple_api_call(
         system,
         user,
         False,

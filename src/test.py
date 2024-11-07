@@ -1,6 +1,7 @@
-from typing import Any, Dict, get_args, get_origin, Union, List, Tuple
 import inspect
 from types import NoneType
+from typing import Any, Dict, get_args, get_origin, Union, List, Tuple
+
 
 def _get_type_schema(tp: Any) -> Dict[str, Any]:
     """

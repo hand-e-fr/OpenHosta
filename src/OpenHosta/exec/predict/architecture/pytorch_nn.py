@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -6,6 +6,7 @@ import torch.optim as optim
 
 from ....exec.predict.architecture.neural_network import LayerType, NeuralNetwork, OptimizerAlgorithm, Device, LossFunction, Layer
 from ....utils.progress_bar import print_progress_bar
+
 
 class PyTorchNeuralNetwork(nn.Module):
     def __init__(self, neural_network: NeuralNetwork):

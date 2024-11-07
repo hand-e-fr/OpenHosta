@@ -1,11 +1,12 @@
-import torch
-import torch.nn as nn
-
-from ....exec.predict.architecture.neural_network import LayerType ,NeuralNetwork, Layer, LossFunction, OptimizerAlgorithm
-from ....exec.predict.architecture.pytorch_nn import PyTorchNeuralNetwork
-
 from time import sleep
+
+import torch
+
+from ....exec.predict.architecture.neural_network import LayerType, NeuralNetwork, Layer, LossFunction, OptimizerAlgorithm
+from ....exec.predict.architecture.pytorch_nn import PyTorchNeuralNetwork
 from ....utils.progress_bar import print_progress_bar
+
+
 # from OpenHosta import prefix as p
 
 class HostaTrainer(PyTorchNeuralNetwork):

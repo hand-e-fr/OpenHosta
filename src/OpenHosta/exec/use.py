@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union, Any, Callable, Union
+from typing import Any, Callable, Union
 
 from ..core.hosta import Hosta, UseType
 

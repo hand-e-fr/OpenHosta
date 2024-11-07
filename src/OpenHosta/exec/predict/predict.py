@@ -2,10 +2,11 @@ import os
 from typing import Union, Tuple, Callable, Optional
 
 from .cache import PredictCache
-from .model_schema import ModelSchema
+from .dataset.oracle import LLMSyntheticDataGenerator
 from .encoder.simple_encoder import SimpleEncoder
-from ...core.hosta import Hosta, Func
+from .model_schema import ModelSchema
 from ...core.config import Model
+from ...core.hosta import Hosta, Func
 
 
 class ConfigModel: # todo: change name
@@ -31,10 +32,10 @@ class PredictBase:
 
     def __init__(self, x: Hosta = None, model: ConfigModel = None, oracle: Optional[Union[Model, Callable]] = None, verbose: bool = False):
         if not hasattr(self, '_initialized') or not getattr(self, '_initialized'):
-            self._infos: Func = getattr(x, "_infos")
-            assert self._infos, "Function must be provided."
-            assert self._infos.f_type[1], "Return type must be specified for the function."
-            assert self._infos.f_type[1] in [int, float, bool], f"Return type must be one of [int, float, bool], not {self._infos.f_type[1]}."
+            self.infos: Func = getattr(x, "_infos")
+            assert self.infos, "Function must be provided."
+            assert self.infos.f_type[1], "Return type must be specified for the function."
+            assert self.infos.f_type[1] in [int, float, bool], f"Return type must be one of [int, float, bool], not {self.infos.f_type[1]}."
 
             self._model: ConfigModel = model
             self._verbose: bool = verbose
@@ -54,5 +55,10 @@ class PredictBase:
 def predict(model: ConfigModel = None, oracle: Optional[Model] = None, verbose: bool = False) -> Union[int, float, bool]:
     x: Hosta = Hosta()
     predict_base = PredictBase(x=x, model=model, oracle=oracle, verbose=verbose)
-    print(x._infos)
+    LLMSyntheticDataGenerator.generate_synthetic_data(
+        func=predict_base.infos,
+        request_amounts=3,
+        examples_in_req=50,
+        model=None
+    )
     return predict_base.predict()

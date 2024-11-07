@@ -2,6 +2,7 @@ from typing import Optional
 
 from .architecture.builtins import ArchitectureType
 
+
 class ModelSchema:
     def __init__(self,
                  model_type: ArchitectureType = ArchitectureType.LINEAR_REGRESSION,
