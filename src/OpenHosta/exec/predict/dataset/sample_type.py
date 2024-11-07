@@ -1,5 +1,7 @@
 from typing import List, Any, Optional
+
 from pydantic import BaseModel
+
 
 class Sample:
     """

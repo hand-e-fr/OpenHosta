@@ -2,10 +2,11 @@ import csv
 import json
 import os
 import pickle
-import os
-from typing import List, Optional
-from .sample_type import Sample
 from enum import Enum
+from typing import List, Optional
+
+from .sample_type import Sample
+
 
 class SourceType(Enum):
     """
