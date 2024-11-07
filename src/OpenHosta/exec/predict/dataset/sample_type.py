@@ -1,7 +1,6 @@
 from typing import List, Any, Optional
 
 # from pydantic import BaseModel
-from ....utils.import_handler import is_pydantic
 
 
 class Sample:
