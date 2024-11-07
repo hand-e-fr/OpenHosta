@@ -1,6 +1,7 @@
 from typing import List, Any, Optional
 
-from pydantic import BaseModel
+# from pydantic import BaseModel
+from ....utils.import_handler import is_pydantic
 
 
 class Sample:
@@ -39,8 +40,8 @@ class Sample:
         Flatten any nested data structure into a list.
         Handles: BaseModel, dict, list/tuple, primitive types
         """
-        if isinstance(data, BaseModel):
-            return self._flatten_data(data.model_dump())
+        # if isinstance(data, BaseModel):
+        #     return self._flatten_data(data.model_dump())
         if isinstance(data, dict):
             result = []
             for value in data.values():
