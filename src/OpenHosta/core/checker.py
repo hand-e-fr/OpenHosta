@@ -3,8 +3,8 @@ from __future__ import annotations
 from types import NoneType
 from typing import Type, Any, Dict, Optional, Callable, TypeVar
 
-from ..utils.import_handler import is_pydantic
 from .hosta import Func
+from ..utils.import_handler import is_pydantic
 
 T = TypeVar('T')
 

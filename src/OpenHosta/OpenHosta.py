@@ -11,16 +11,6 @@ DefaultManager.set_default_model(
     Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions", api_key=os.getenv("OPENAI_API_KEY") or None)
 )
 
-from .core import config
-from .exec.emulate import emulate
-from .exec.example import example
-from .exec.thought import thought
-from .exec.thinkof import thinkof
-from .utils.prompt import PromptManager
-from .exec.predict.predict import predict, ModelSchema
-from .exec.predict.architecture.builtins import ArchitectureType
-from .exec.ask import ask
-
 all = (
     "config",
     "emulate",

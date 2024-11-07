@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Optional, Callable
 
-from ..core.hosta import Hosta, Func
 from ..core.config import Model, DefaultManager
+from ..core.hosta import Hosta, Func
 from ..utils.prompt import PromptManager
 
 
-def build_user_prompt(
+def _build_user_prompt(
         _infos: Func = None,
         x: Hosta = None,
         use_locals_as_ctx: Optional[bool] = False,
@@ -52,13 +52,13 @@ def emulate(
     if _infos is None:
         x = Hosta()
         _infos = x._infos
-    func_prompt: str = build_user_prompt(_infos, x, use_locals_as_ctx, use_self_as_ctx)
+    func_prompt: str = _build_user_prompt(_infos, x, use_locals_as_ctx, use_self_as_ctx)
 
     if model is None:
         model = DefaultManager.get_default_model()
 
     try:
-        response = model.api_call(
+        response = model.simple_api_call(
             sys_prompt=f"{meta_prompt}\n{func_prompt}\n",
             user_prompt=_infos.f_call,
             **llm_args

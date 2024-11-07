@@ -4,6 +4,7 @@ from typing import Any
 
 from ..core.hosta import Hosta, ExampleType
 
+
 def example(*args, hosta_out:Any=None, **kwargs):
     x =  Hosta()
     if args != ():

@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
 from typing import List, Any, Dict, Union, Tuple
 
 from .base_encoder import BaseEncoder
+
 
 class StringEncoder(BaseEncoder):
     def __init__(self) -> None:

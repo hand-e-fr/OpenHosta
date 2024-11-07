@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional, Dict, Tuple, List, Any, get_args, get_origin
 import inspect
+from typing import Optional, Dict, Tuple, List, Any, get_args, get_origin
 
-from ..utils.import_handler import is_pydantic
 from ..utils.hosta_type import MemoryNode
+from ..utils.import_handler import is_pydantic
 
 if is_pydantic:
     from pydantic import BaseModel, Field, ConfigDict, create_model

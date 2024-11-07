@@ -1,9 +1,9 @@
-from enum import Enum
 import csv
 import json
-import pickle
 import os
-from typing import Union, Optional
+import pickle
+from enum import Enum
+from typing import Optional
 
 
 class SourceType(Enum):

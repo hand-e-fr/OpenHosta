@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Tuple, Callable, Optional, Dict, Any
-from types import FrameType, CodeType
 import inspect
+from types import FrameType, CodeType
+from typing import Tuple, Callable, Optional, Dict, Any
 
 from ..utils.errors import FrameError
 

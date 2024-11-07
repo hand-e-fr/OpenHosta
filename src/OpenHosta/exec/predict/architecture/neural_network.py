@@ -1,7 +1,7 @@
 import json
-from typing import Union, Tuple, Optional
-
 from enum import Enum
+from typing import Union, Optional
+
 
 class LayerType(Enum):
     """

@@ -1,8 +1,7 @@
-import torch
 from OpenHosta.exec.predict.architecture.pytorch_nn import PyTorchNeuralNetwork
-from OpenHosta.exec import prefix
-from OpenHosta.exec.predict.architecture.neural_network import Layer, LayerType, NeuralNetwork
-# from keras import 
+from OpenHosta.exec.predict.architecture.pytorch_nn import PyTorchNeuralNetwork
+
+# from keras import
 if __name__ == "__main__":
     nn = NeuralNetwork()
 

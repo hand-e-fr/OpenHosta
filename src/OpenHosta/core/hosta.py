@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from .inspector import HostaInspector
 from .analizer import FuncAnalizer
+from .inspector import HostaInspector
+from .pydantic_usage import Func
 from ..utils.errors import InvalidStructureError
 from ..utils.hosta_type import MemoryNode, MemKey, MemValue, ExampleType, CotType
-from .pydantic_usage import Func
 
 all = (
     "Hosta",
