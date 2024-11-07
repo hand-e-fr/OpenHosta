@@ -1,18 +1,43 @@
 from __future__ import annotations
 
-from typing import Callable, Tuple, List, Dict, Any, Optional, Union, OrderedDict
-from types import MethodType
+from typing import( 
+    Any, 
+    Dict, 
+    get_args, 
+    get_origin, 
+    Union, 
+    List, 
+    Tuple, 
+    Mapping, 
+    Sequence,
+    Collection,
+    Literal,
+    Final,
+    Type,
+    Annotated,
+    ClassVar,
+    Protocol,
+    AnyStr,
+    ByteString,
+    Set,
+    FrozenSet,
+    AbstractSet,
+    Optional,
+    Callable,
+    OrderedDict,
+    TypeVar
+)
+from types import MethodType, NoneType
 import inspect
 from types import FrameType
 
 from ..utils.import_handler import is_pydantic
 
 all = (
-    "_FuncInspector",
     "FuncAnalizer"
 )
 
-class _FuncInspector:
+class FuncAnalizer:
     """
     A class for inspecting the signature, definition, and call information of a function.
 
@@ -23,7 +48,7 @@ class _FuncInspector:
         func (Callable): The function to inspect.
         sig (Signature): The signature of the function.
     """
-    def __init__(self, func: Union[Callable, MethodType], caller_frame: FrameType):
+    def __init__(self, func: Union[Callable, MethodType] | None, caller_frame: FrameType | None):
         """
         Initialize the function inspector with the given function.
 
@@ -38,7 +63,8 @@ class _FuncInspector:
         except Exception as e:
             raise AttributeError(f"[_FuncInspector.__init__] Invalid arguments:\n{e}")
 
-    def _get_function_definition(self)->str:
+    @property
+    def func_def(self)->str:
         """
         Build the string representing the function's definition.
 
@@ -49,8 +75,8 @@ class _FuncInspector:
         definition = f"```python\n{source}\n```"
         return definition
 
-
-    def _get_function_locals(self)->Tuple[Optional[Dict[str, Any]], Any]:
+    @property
+    def func_locals(self)->Tuple[Optional[Dict[str, Any]], Any]:
         """
         Get the attributs and local variables of the function call.
 
@@ -65,8 +91,8 @@ class _FuncInspector:
             values_self = getattr(self.func.__self__, '__dict__', None)
         return values_locals or None, values_self
 
-
-    def _get_function_call(self)->Tuple[str, OrderedDict[str, Any]]:
+    @property
+    def func_call(self)->Tuple[str, OrderedDict[str, Any]]:
         """
         Build a string representing the function call.
 
@@ -86,7 +112,8 @@ class _FuncInspector:
         call_str = f"{self.func.__name__}({args_str})"
         return call_str, bound_arguments
 
-    def _get_function_type(self)->Tuple[List[Any], Any]:
+    @property
+    def func_type(self)->Tuple[List[Any], Any]:
         """
         Get the input and output types of the function.
 
@@ -97,71 +124,140 @@ class _FuncInspector:
         output_type = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
         return input_types, output_type
     
-    def _get_function_schema(self) -> Dict[str, Any]:
+    def _get_type_schema(self, tp: Any) -> Dict[str, Any]:
+        """
+        Generate a JSON schema for a given type.
+
+        Args:
+            tp: The type to generate the schema for.
+
+        Returns:
+            The JSON schema for the type.
+        """
+        if tp == Any:
+            return {"type": "any"}
+        
+        origin = get_origin(tp)
+        args = get_args(tp)
+        
+        if origin in (Union, Optional):
+            if len(args) == 2 and (NoneType in args or type(None) in args):
+                main_type = args[0] if args[1] in (NoneType, type(None)) else args[1]
+                return {
+                    "anyOf": [
+                        self._get_type_schema(main_type),
+                        {"type": "null"}
+                    ]
+                }
+            return {"anyOf": [self._get_type_schema(arg) for arg in args]}
+        
+        if origin in (list, List, Sequence, Collection):
+            return {
+                "type": "array",
+                "items": self._get_type_schema(args[0]) if args else {"type": "any"}
+            }
+        
+        if origin in (dict, Dict, Mapping):
+            return {
+                "type": "object",
+                "additionalProperties": self._get_type_schema(args[1]) if args else {"type": "any"}
+            }
+            
+        if origin is Final:
+            return self._get_type_schema(args[0]) if args else {"type": "any"}
+        
+        if origin is Type:
+            return {"type": "object", "format": "type"}
+        
+        if origin is ClassVar:
+            return self._get_type_schema(args[0]) if args else {"type": "any"}
+        
+        if origin is Annotated:
+            return self._get_type_schema(args[0])
+        
+        if origin is Literal:
+            return {"enum": list(args)}
+        
+        if origin in (tuple, Tuple):
+            if len(args) == 2 and args[1] is ...:
+                return {
+                    "type": "array",
+                    "items": self._get_type_schema(args[0])
+                }
+            return {
+                "type": "array",
+                "prefixItems": [self._get_type_schema(arg) for arg in args],
+                "items": False
+            }
+        
+        if origin in (set, Set, frozenset, FrozenSet, AbstractSet):
+            return {
+                "type": "array",
+                "uniqueItems": True,
+                "items": self._get_type_schema(args[0]) if args else {"type": "any"}
+            }
+            
+        if hasattr(tp, "__annotations__") and isinstance(tp, type) and hasattr(tp, "__total__"):
+            properties = {
+                key: self._get_type_schema(value)
+                for key, value in tp.__annotations__.items()
+            }
+            required = [key for key in properties.keys()] if getattr(tp, "__total__", True) else []
+            return {
+                "type": "object",
+                "properties": properties,
+                "required": required,
+                "additionalProperties": False
+            }
+            
+        if isinstance(tp, TypeVar):
+            if tp.__constraints__:
+                return {
+                    "anyOf": [
+                        self._get_type_schema(constraint) 
+                        for constraint in tp.__constraints__
+                    ]
+                }
+            elif tp.__bound__:
+                return self._get_type_schema(tp.__bound__)
+            else:
+                return {"type": "any"}
+        
+        if isinstance(tp, type) and issubclass(tp, Protocol):
+            return {"type": "object", "format": "protocol"}
+        
+        if tp is int:
+            return {"type": "integer"}
+        if tp is float:
+            return {"type": "number"}
+        if tp is str or tp is AnyStr:
+            return {"type": "string"}
+        if tp is bool:
+            return {"type": "boolean"}
+        if tp is NoneType or tp is None:
+            return {"type": "null"}
+        if tp is bytes or tp is bytearray or tp is ByteString:
+            return {"type": "string", "format": "binary"}
+        
+        raise ValueError(f"[_get_type_schema] Unsupported type: {tp}")
+    
+    @property
+    def func_schema(self) -> Dict[str, Any]:
         """
         Get the JSON schema of the function's return type.
 
         Returns:
             The JSON schema of the function's return type.
         """
-        if is_pydantic:
-            from .pydantic_usage import get_function_schema_pydantic
-            
-            return get_function_schema_pydantic(self)
-        else:
-            return {"type": "integer"}
-
-
-class FuncAnalizer(_FuncInspector):
-    def __init__(self, func: Union[Callable, MethodType], caller_frame: FrameType):
-        super().__init__(func, caller_frame)
-
-    @property
-    def func_def(self) -> Optional[str]:
-        """
-        This method returns the function definition and his prototype as a string
-        """
-        try:
-            return self._get_function_definition()
-        except:
-            raise AttributeError("[FuncAnalizer] Function definition not found")
-
-    @property
-    def func_call(self) -> Tuple[str, OrderedDict[str, Any]]:
-        """
-        This method returns the function call as a string and the bound arguments
-        """
-        try:
-            return self._get_function_call()
-        except:
-            raise AttributeError("[FuncAnalizer] Function call not found")
-
-    @property 
-    def func_type(self) -> Optional[Tuple[List[Any], Any]]:
-        """
-        This method returns the function input and output types as a tuple
-        """
-        try:
-            return self._get_function_type()
-        except:
-            raise AttributeError("[FuncAnalizer] Function types not found")
-
-    @property
-    def func_locals(self) -> Tuple[Optional[Dict[str, Any]], Any]:
-        """
-        This method returns the function local variables and attributs.
-        """
-        try:
-            return self._get_function_locals()
-        except:
-            raise AttributeError("[FuncAnalizer] Function local variables not found")
+        return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
         
-    @property
-    def func_schema(self) -> Optional[Dict[str, Any]]:
-        """
-        This method returns the return schema of the function.
-        """
-        try:
-            return self._get_function_schema()
-        except:
-            raise AttributeError("[FuncAnalizer] Function schema cannot be created")
+        if return_caller is not None:
+            if is_pydantic:
+                from .pydantic_usage import get_pydantic_schema
+                
+                pyd_sch = get_pydantic_schema(return_caller)
+                if pyd_sch is not None:
+                    return pyd_sch
+            return self._get_type_schema(return_caller)
+        else:
+            return self._get_type_schema(Any)

@@ -14,6 +14,7 @@ def example(*args, hosta_out:Any=None, **kwargs):
             x._infos.f_type[1]
         ))
     if len(kwargs) != len(x._infos.f_type[0]):
+        print(x._infos.f_type[1])
         raise ValueError("[example] Invalid number of argument. Expected {}, got {}".format(len(x._infos.f_type[0]), len(kwargs)))
     for (k1, v1), (k2, v2) in zip(kwargs.items(), x._infos.f_args.items()):
         if k1 != k2:

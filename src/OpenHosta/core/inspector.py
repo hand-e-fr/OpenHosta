@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Tuple, Callable, Optional, Dict, Any
-from types import FrameType, CodeType
+from typing import Tuple, Callable, Optional, Dict, Any, Union
+from types import FrameType, CodeType, MethodType
 import inspect
 
 from ..utils.errors import FrameError
@@ -20,7 +20,7 @@ class HostaInspector:
         pass
     
     @staticmethod
-    def _extend(*, back_level: int=3)->Tuple[Optional[Callable], FrameType]:
+    def _extend(*, back_level: int=3)->Tuple[Union[Callable, MethodType], FrameType]:
         """
         Retrieves the callable object and the frame from which this method is called.
 
@@ -56,7 +56,7 @@ class HostaInspector:
             Returns:
                 Callable: The unwrapped method object if found, otherwise None.
             """
-            func: Optional[Callable] = None
+            func: Union[Callable, MethodType]
             
             obj = caller.f_locals["self"]
             func = getattr(obj, caller_name, None)
@@ -82,7 +82,7 @@ class HostaInspector:
             Returns:
                 Callable: The unwrapped function object if found, otherwise None.
             """
-            func: Optional[Callable] = None
+            func: Union[Callable, MethodType]
             l_caller:FrameType = caller
             
             while not l_caller.f_back is None:
@@ -97,7 +97,7 @@ class HostaInspector:
             func = caller.f_globals.get(name)
             return inspect.unwrap(func) if func else None
                     
-        func: Optional[Callable] = None
+        func: Union[Callable, MethodType]
         current:Optional[FrameType] = inspect.currentframe()
         
         if current is None:

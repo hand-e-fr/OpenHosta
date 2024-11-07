@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import sys
-# import requests
-# from requests.exceptions import RequestException
-# from requests.models import Response
 import json
 import re
 from typing import Any, Dict

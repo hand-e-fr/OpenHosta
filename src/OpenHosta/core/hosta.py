@@ -60,7 +60,6 @@ class Hosta(HostaInspector):
         if (hasattr(cls._obj[0], "Hosta")):
             return cls._obj[0].Hosta
         instance = super().__new__(cls)
-        instance.__init__(*args, **kwargs)
         cls._attach(cls._obj[0], {"Hosta": instance})
         return instance
     
@@ -99,6 +98,7 @@ class Hosta(HostaInspector):
         self._infos.f_type   = analizer.func_type
         self._infos.f_locals, self._infos.f_self = analizer.func_locals
         self._infos.f_schema = analizer.func_schema
+        print(self._infos.f_schema)
     
     def _bdy_add(self, key:MemKey, value:MemValue)->None:
         """

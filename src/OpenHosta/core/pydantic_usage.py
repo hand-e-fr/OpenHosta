@@ -40,34 +40,17 @@ if is_pydantic:
         f_self: Optional[Dict[str, Any]] = Field(default=None)
         f_mem: Optional[List[MemoryNode]] = Field(default=None, description="Memory nodes associated with the function, contains examples, chain of thought...")
         
-    def get_function_schema_pydantic(self) -> Dict[str, Any]:
+    def get_pydantic_schema(return_caller) -> Optional[Dict[str, Any]]:
         """
         Get the JSON schema of the function's return type.
 
         Returns:
             The JSON schema of the function's return type.
         """
-        return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
-        return_schema = None
+        if issubclass(return_caller, BaseModel):
+            return return_caller.model_json_schema()
+        return None
 
-        if return_caller is not None:
-            if get_origin(return_caller):
-                return_caller_origin = get_origin(return_caller)
-                return_caller_args = get_args(return_caller)
-                combined = return_caller_origin[return_caller_args]
-                new_model = create_model("return_schema", annotation=(combined, ...))
-                return_schema = new_model.model_json_schema()
-            elif issubclass(return_caller, BaseModel):
-                return_schema = return_caller.model_json_schema()
-            else:
-                new_model = create_model("return_schema", annotation=(return_caller, ...))
-                return_schema = new_model.model_json_schema()
-        else:
-            No_return_specified = create_model(
-                "return_shema", annotation=(Any, ...)
-            )
-            return_schema = No_return_specified.model_json_schema()
-        return return_schema  
 else:
     class Func:
         f_obj: Optional[object] = None
