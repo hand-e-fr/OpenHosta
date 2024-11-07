@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Literal, Union, TypedDict
+from dataclasses import dataclass
 
 class ExampleType(TypedDict):
     in_: Any
@@ -14,7 +15,8 @@ class UseType(TypedDict):
 
 MemKey = Literal["ex", "cot", "use"]
 MemValue = Union[CotType, ExampleType, UseType]
-    
+
+@dataclass  
 class MemoryNode:
     key:MemKey
     id:int

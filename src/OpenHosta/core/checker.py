@@ -102,7 +102,7 @@ class HostaChecker:
             Returns:
                 Any: The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         """
-        if self.checked == "None":
+        if self.checked == "None" or self.checked is None:
             return None
         if self.is_passed:
             self.checked = self.convert(self.func.f_type[1])(self.checked)
