@@ -7,11 +7,10 @@ from .emulate import emulate
 from ..core.config import DefaultManager
 from ..core.hosta import Func
 from ..utils.errors import RequestError
-from ..utils.prompt import PromptManager
+from ..utils.meta_prompt import THOUGHT_PROMPT
 
 
 def guess_type(key:str, *args)->object:
-    meta_prompt = PromptManager().get_prompt("thought")
     l_default = DefaultManager.get_default_model()
 
     l_user_prompt = (
@@ -22,7 +21,7 @@ def guess_type(key:str, *args)->object:
     )
 
     response = l_default.simple_api_call(
-        sys_prompt=meta_prompt,
+        sys_prompt=f"{THOUGHT_PROMPT!r}{THOUGHT_PROMPT.USER_SEP}",
         user_prompt=l_user_prompt,
         temperature=0.5,
     )

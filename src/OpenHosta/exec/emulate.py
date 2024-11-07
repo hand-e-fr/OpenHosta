@@ -4,7 +4,7 @@ from typing import Any, Optional, Callable
 
 from ..core.config import Model, DefaultManager
 from ..core.hosta import Hosta, Func
-from ..utils.prompt import PromptManager
+from ..utils.meta_prompt import EMULATE_PROMPT
 
 
 def _build_user_prompt(
@@ -16,22 +16,21 @@ def _build_user_prompt(
     filler = lambda pre, value: f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
 
     user_prompt = (
-            "---\n\n## Function infos\n\n"
-            + filler("Here's the function definition:", _infos.f_def)
-            + filler("Here's the type annotation of the function:", _infos.f_type[1])
-            + filler("If it isn't a native type, here's a schema describing the type annotation:", _infos.f_schema)
+            filler(EMULATE_PROMPT.PRE_DEF, _infos.f_def)
+            + filler(EMULATE_PROMPT.PRE_TYPE, _infos.f_type[1])
+            + filler(EMULATE_PROMPT.PRE_SCHEMA, _infos.f_schema)
     )
     if use_locals_as_ctx:
-        user_prompt = (user_prompt + filler("Here's the function's locals variables which you can use as additional information to give your answer:", _infos.f_locals))
+        user_prompt = (user_prompt + filler(EMULATE_PROMPT.PRE_LOCALS, _infos.f_locals))
     if use_self_as_ctx:
-        user_prompt = (user_prompt + filler("Here's the method's class attributs variables which you can use as additional information to give your answer:", _infos.f_self))
+        user_prompt = (user_prompt + filler(EMULATE_PROMPT.PRE_SELF, _infos.f_self))
     if x:
         user_prompt = (
                 user_prompt
-                + filler("Here are some examples of expected input and output:", x.example)
-                + filler("To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:", x.cot)
+                + filler(EMULATE_PROMPT.PRE_EXAMPLE, x.example)
+                + filler(EMULATE_PROMPT.PRE_COT, x.cot)
         )
-    user_prompt = (user_prompt + "---\n")
+    user_prompt = (user_prompt + EMULATE_PROMPT.FINAL_SEP)
     return user_prompt
 
 
@@ -46,8 +45,6 @@ def emulate(
 ) -> Any:
     x = None
     l_ret: Any = None
-    pm = PromptManager()
-    meta_prompt: str = pm.get_prompt("emulate")
 
     if _infos is None:
         x = Hosta()
@@ -57,9 +54,10 @@ def emulate(
     if model is None:
         model = DefaultManager.get_default_model()
 
+    print(f"{EMULATE_PROMPT!r}\n{func_prompt}\n")
     try:
         response = model.simple_api_call(
-            sys_prompt=f"{meta_prompt}\n{func_prompt}\n",
+            sys_prompt=f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
             user_prompt=_infos.f_call,
             **llm_args
         ),
@@ -71,7 +69,7 @@ def emulate(
 
     if x:
         x._attach(_infos.f_obj, {
-            "_last_request": f"{meta_prompt}\n{func_prompt}\n{_infos.f_call}",
+            "_last_request": f"{EMULATE_PROMPT!r}\n{func_prompt}\n{_infos.f_call}",
             "_last_response": response[0]
         })
 

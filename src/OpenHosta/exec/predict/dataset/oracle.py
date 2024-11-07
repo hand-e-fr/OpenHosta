@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List, Type
 from .dataset import HostaDataset, SourceType
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
-from ....utils.prompt import PromptManager
+# from ....utils.prompt import PromptManager
 
 
 class LLMSyntheticDataGenerator:
@@ -146,10 +146,10 @@ class LLMSyntheticDataGenerator:
             raise ValueError(f"Invalid parameters: {e}")
 
         prompt: str = (
-            PromptManager().get_prompt("synthetic_data_generator")
-            .replace("{func_name}", func.f_name)
-            .replace("{signature}", str(func.f_sig))
-            .replace("{docstring}", func.f_doc)
+            # PromptManager().get_prompt("synthetic_data_generator")
+            # .replace("{func_name}", func.f_name)
+            # .replace("{signature}", str(func.f_sig))
+            # .replace("{docstring}", func.f_doc)
         )
         prompt += LLMSyntheticDataGenerator._build_user_prompt(examples, func, output_type, examples_in_req)
 
