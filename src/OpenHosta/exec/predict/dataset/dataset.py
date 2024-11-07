@@ -3,7 +3,7 @@ import json
 import os
 import pickle
 from enum import Enum
-from typing import Optional
+from typing import Optional, Dict
 
 
 class SourceType(Enum):
@@ -17,7 +17,7 @@ class SourceType(Enum):
 class HostaDataset:
     def __init__(self):
         self.path = None
-        self.data = []
+        self.data = [Dict]
 
     def add(self, value):
         """
