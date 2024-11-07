@@ -1,9 +1,16 @@
-from abc import ABC, abstractmethod
 from typing import List, Any, Dict, Union, Tuple
 
 from .base_encoder import BaseEncoder
 
+
 class StringEncoder(BaseEncoder):
+    """
+    Encoder for string values. Create a Optimized little w2v fo each words present in the dataset.
+    Example:
+        - 'hello' -> 1
+        - 'world' -> 2
+        - 'hello' -> 1 (same as first time) 
+    """
     def __init__(self) -> None:
         self.word_to_id: Dict[str, int] = {'<UNK>': 0}
         self.id_to_word: Dict[int, str] = {0: '<UNK>'}
@@ -30,6 +37,9 @@ class StringEncoder(BaseEncoder):
     
 
 class IntEncoder(BaseEncoder):
+    """
+    Encoder for integer values. No encoding is done, the value is returned as is.
+    """
     def encode(self, value: int) -> int:
         return value
 
@@ -99,32 +109,32 @@ class SimpleEncoder:
         return decoded_data
 
 # Exemple d'utilisation
-if __name__ == "__main__":
-    encoders = SimpleEncoder()
+# if __name__ == "__main__":
+#     encoders = SimpleEncoder()
     
-    data = [
-        ['hello', 10, 10.5, True, 'world'],
-        ['world', 20, 20.5, False, 'hello']
-    ]
+#     data = [
+#         ['hello', 10, 10.5, True, 'world'],
+#         ['world', 20, 20.5, False, 'hello']
+#     ]
 
-    data_2 = [
-        [['hello', 10, 10.5, True], ['world']],
-        [['world', 20, 20.5], ['hello']]
-    ]
+#     data_2 = [
+#         [['hello', 10, 10.5, True], ['world']],
+#         [['world', 20, 20.5], ['hello']]
+#     ]
     
-    # Encodage
-    features_list, targets_list = encoders.encode_dataset(data)
-    print("Features de base:", data[0][:-1], data[1][:-1])
-    print("Features encodées:", features_list)
-    print("Target de base:", [data[0][-1]], [data[1][-1]])
-    print("Targets encodées:", targets_list)
+#     # Encodage
+#     features_list, targets_list = encoders.encode_dataset(data)
+#     print("Features de base:", data[0][:-1], data[1][:-1])
+#     print("Features encodées:", features_list)
+#     print("Target de base:", [data[0][-1]], [data[1][-1]])
+#     print("Targets encodées:", targets_list)
     
-    # Pour voir le vocabulaire des strings
-    string_encoder = encoders._encoders[str]
-    print("Vocabulaire:", string_encoder.word_to_id)
+#     # Pour voir le vocabulaire des strings
+#     string_encoder = encoders._encoders[str]
+#     print("Vocabulaire:", string_encoder.word_to_id)
     
-    # Décodage (si nécessaire)
-    feature_types = [str, int, float, bool]
-    target_type = str
-    decoded_data = encoders.decode_dataset(features_list, targets_list, feature_types, target_type)
-    print("Données décodées:", decoded_data)
+#     # Décodage (si nécessaire)
+#     feature_types = [str, int, float, bool]
+#     target_type = str
+#     decoded_data = encoders.decode_dataset(features_list, targets_list, feature_types, target_type)
+#     print("Données décodées:", decoded_data)

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional
 
 from ..neural_network import NeuralNetwork, Layer, LayerType
 

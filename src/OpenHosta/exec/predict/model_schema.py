@@ -2,7 +2,8 @@ from typing import Optional
 
 from .architecture.builtins import ArchitectureType
 
-class ModelSchema:
+
+class ConfigModel:
     def __init__(self,
                  model_type: ArchitectureType = ArchitectureType.LINEAR_REGRESSION,
                  name: str = "",
@@ -12,7 +13,8 @@ class ModelSchema:
                  epochs: Optional[int] = None,
                  batch_size: Optional[int] = None,
                  learning_rate: Optional[float] = None,
-                 get_loss: Optional[float] = None
+                 get_loss: Optional[float] = None,
+                 dataset_path: Optional[str] = None,
              ):
         self.model_type: ArchitectureType = model_type
 
@@ -22,13 +24,15 @@ class ModelSchema:
 
         self.complexity: float = complexity
 
-        if batch_size is None:
-            self.batch_size: int = int(0.05 * len(train)) if 0.05 * len(train) > 1 else len(train) # 5% of the dataset or len(train) if len(train) <= 1
-        else:
-            self.batch_size: int = batch_size
+        # if batch_size is None:
+        #     self.batch_size: int = int(0.05 * len(train)) if 0.05 * len(train) > 1 else len(train) # 5% of the dataset or len(train) if len(train) <= 1
+        # else:
+        #     self.batch_size: int = batch_size
+        self.batch_size: int = batch_size 
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
         self.get_loss: float = get_loss
+        self.dataset_path: str = dataset_path
 
     def to_json(self):
         return f"""{{
@@ -40,14 +44,15 @@ class ModelSchema:
             "epochs": {self.epochs},
             "batch_size": {self.batch_size},
             "learning_rate": {self.learning_rate},
-            "get_loss": {self.get_loss}
+            "get_loss": {self.get_loss},
+            "dataset_path": "{self.dataset_path}"
         }}"""
 
     @staticmethod
     def from_json(json_str: str):
         import json
         data = json.loads(json_str)
-        return ModelSchema(
+        return ConfigModel(
             name=data["name"],
             model_type=ArchitectureType(data["model_type"]),
             weight_path=data["weight_path"],
@@ -56,5 +61,7 @@ class ModelSchema:
             epochs=data["epochs"],
             batch_size=data["batch_size"],
             learning_rate=data["learning_rate"],
-            get_loss=data["get_loss"]
+            get_loss=data["get_loss"],
+            dataset_path=data["dataset_path"]
+
         )

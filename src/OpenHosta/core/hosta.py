@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from .inspector import HostaInspector
 from .analizer import FuncAnalizer
+from .inspector import HostaInspector
+from .pydantic_usage import Func
 from ..utils.errors import InvalidStructureError
 from ..utils.hosta_type import MemoryNode, MemKey, MemValue, ExampleType, CotType
-from .pydantic_usage import Func
 
 all = (
     "Hosta",
@@ -93,12 +93,13 @@ class Hosta(HostaInspector):
         analizer = FuncAnalizer(self._obj[0], self._obj[1])
         self._infos.f_obj    = self._obj[0]
         self._infos.f_name   = self._obj[0].__name__
+        self._infos.f_doc    = self._obj[0].__doc__
         self._infos.f_def    = analizer.func_def
         self._infos.f_call, self._infos.f_args = analizer.func_call
         self._infos.f_type   = analizer.func_type
         self._infos.f_locals, self._infos.f_self = analizer.func_locals
         self._infos.f_schema = analizer.func_schema
-        print(self._infos.f_schema)
+        self._infos.f_sig    = analizer.sig
     
     def _bdy_add(self, key:MemKey, value:MemValue)->None:
         """

@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 from pydoc import locate
 
-from ..core.config import DefaultManager
-from ..utils.prompt import PromptManager
 from .emulate import emulate
+from ..core.config import DefaultManager
 from ..core.hosta import Func
 from ..utils.errors import RequestError
+from ..utils.prompt import PromptManager
+
 
 def guess_type(key:str, *args)->object:
     meta_prompt = PromptManager().get_prompt("thought")
@@ -20,7 +21,7 @@ def guess_type(key:str, *args)->object:
         + f"{args}\n"
     )
 
-    response = l_default.api_call(
+    response = l_default.simple_api_call(
         sys_prompt=meta_prompt,
         user_prompt=l_user_prompt,
         temperature=0.5,
