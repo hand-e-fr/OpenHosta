@@ -3,13 +3,15 @@ from __future__ import annotations
 import sys
 import json
 import re
-from typing import Any, Dict
+import sys
 from http.client import HTTPSConnection
+from typing import Any, Dict
 from urllib.parse import urlparse
 
-from ..utils.errors import ApiKeyError, RequestError
-from .pydantic_usage import Func
 from .checker import HostaChecker
+from .pydantic_usage import Func
+from ..utils.errors import ApiKeyError, RequestError
+
 
 def is_valid_url(url:str)->bool:
     regex = re.compile(
@@ -41,29 +43,34 @@ class Model:
         elif not is_valid_url(self.base_url):
             raise ValueError(f"[Model.__init__] Invalid URL.")
 
-    def api_call(
+    def simple_api_call(
         self,
         sys_prompt: str,
         user_prompt: str,
         json_form: bool = True,
         **llm_args
-        
+    )->Dict:
+        return self.api_call(
+            [
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            json_form,
+            **llm_args
+        )
+
+    def api_call(
+        self,
+        messages: list[dict[str, str]],
+        json_form: bool = True,
+        **llm_args
     )->Dict:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
 
         l_body = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": [{"type": "text", "text": sys_prompt}],
-                },
-                {
-                    "role": "user",
-                    "content": [{"type": "text", "text": user_prompt}],
-                },
-            ],
+            "messages": messages,
         }
         headers = {
             "Content-Type": "application/json",

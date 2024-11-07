@@ -1,12 +1,12 @@
 import os
 from datetime import datetime
 
-class PredictData:
+class PredictCache:
     _instance = None
 
     def __new__(cls, path: str = None):
         if cls._instance is None:
-            cls._instance = super(PredictData, cls).__new__(cls)
+            cls._instance = super(PredictCache, cls).__new__(cls)
             if path is not None:
                 cls._instance._initialize(path)
         return cls._instance

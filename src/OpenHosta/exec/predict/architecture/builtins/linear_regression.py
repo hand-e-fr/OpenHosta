@@ -1,6 +1,7 @@
-from typing import Union
+from typing import Optional
 
 from ..neural_network import NeuralNetwork, Layer, LayerType
+
 
 class LinearRegressionBuilder(NeuralNetwork):
     def __init__(self,

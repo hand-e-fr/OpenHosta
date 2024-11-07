@@ -30,6 +30,7 @@ from typing import(
 from types import MethodType, NoneType
 import inspect
 from types import FrameType
+from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 
 from ..utils.import_handler import is_pydantic
 
