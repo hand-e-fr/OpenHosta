@@ -29,8 +29,8 @@ class PredictBase:
 
     def __init__(self, x: Hosta = None, model: ConfigModel = None, oracle: Optional[Union[Model, Callable]] = None, verbose: bool = False):
         if not hasattr(self, '_initialized') or not getattr(self, '_initialized'):
-            self._infos: Func = getattr(x, "_infos")
-            if self._infos.f_type[1] is None:
+            self.infos: Func = getattr(x, "_infos")
+            if self.infos.f_type[1] is None:
                 raise ValueError(f"Return type must be specified for the function")
             # if self._infos.f_type[1] not in [int, float, bool]:
             #     raise ValueError(f"Return type must be one of [int, float, bool], not {self._infos.f_type[1]}")
@@ -51,7 +51,7 @@ class PredictBase:
         return 0
 
 
-def predict(model: ConfigModel = None, oracle: Optional[Model] = None, verbose: bool = False) -> Union[int, float, bool]:
+def predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDataset]] = None, verbose: bool = False) -> Union[int, float, bool]:
     x: Hosta = Hosta()
     print(x._infos.f_args)
     print("*"*100)
@@ -68,13 +68,19 @@ def predict(model: ConfigModel = None, oracle: Optional[Model] = None, verbose: 
 
     inf = Sample(x.infos.f_args)
     print(inf)
+
     predict_base = PredictBase(x=x, model=model, oracle=oracle, verbose=verbose)
-    LLMSyntheticDataGenerator.generate_synthetic_data(
-        func=predict_base.infos,
-        request_amounts=3,
-        examples_in_req=50,
-        model=None
-    )
+    generated_dataset: Optional[HostaDataset] = None
+
+    if oracle:
+        if isinstance(oracle, Model):
+            generated_dataset = LLMSyntheticDataGenerator.generate_synthetic_data(
+                func=predict_base.infos,
+                request_amounts=3,
+                examples_in_req=50,
+                model=None
+            )
+
     return predict_base.predict()
 
 

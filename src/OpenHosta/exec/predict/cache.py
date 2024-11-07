@@ -1,10 +1,12 @@
 import os
 from datetime import datetime
+from typing import Optional
+
 
 class PredictCache:
     _instance = None
 
-    def __new__(cls, path: str = None):
+    def __new__(cls, path: Optional[str] = None):
         if cls._instance is None:
             cls._instance = super(PredictCache, cls).__new__(cls)
             if path is not None:
