@@ -187,13 +187,31 @@ class HostaDataset:
         Create a dataset from a list.
 
         Args:
-            data: List containing the dataset
+            data: List of dictionaries or tuples/lists representing Sample input and output.
+                  Each item should either be:
+                  - a dict with keys for input (e.g., 'input_0', 'input_1', ...) and optional 'output', or
+                  - a tuple/list where the first part is input(s) and the last item is output (optional).
 
         Returns:
             HostaDataset instance
         """
         dataset = HostaDataset()
-        dataset.data = data.copy()
+
+        for entry in data:
+            if isinstance(entry, dict):
+                # If the entry is already a dictionary, let's assume it has the keys in the right structure
+                dataset.add(Sample(entry))
+            elif isinstance(entry, (list, tuple)):
+                # If it's a list or tuple, we assume it's structured as (inputs..., [output])
+                inputs = list(entry[:-1])  # All but last element are inputs
+                output = entry[-1] if len(entry) > 1 else None  # Last element could be output if present
+                sample_dict = {f'input_{i}': input_value for i, input_value in enumerate(inputs)}
+                if output is not None:
+                    sample_dict['output'] = output
+                dataset.add(Sample(sample_dict))
+            else:
+                raise ValueError(f"Unsupported data format in list entry: {entry}")
+
         return dataset
 
     def __len__(self):

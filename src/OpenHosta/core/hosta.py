@@ -7,6 +7,7 @@ from .inspector import HostaInspector
 from .pydantic_usage import Func
 from ..utils.errors import InvalidStructureError
 from ..utils.hosta_type import MemoryNode, MemKey, MemValue, ExampleType, CotType
+import hashlib
 
 all = (
     "Hosta",
@@ -187,3 +188,28 @@ class Hosta(HostaInspector):
     @property
     def infos(self):
         return self._infos
+
+    @staticmethod
+    def hash_func(func: Func)->str:
+        """
+        Generate a hash value for a function without use builtin python hash function.
+
+        This method generates a hash value for a function using a custom algorithm
+        Hashed by func.f_doc, func.f_def, func.f_call, func.f_args, func.f_type, func.f_schema, func.f_locals, func.f_self
+
+        Args:
+            func (object): The function to hash.
+
+        Returns:
+            str: The hash value of the function.
+        """
+        return hashlib.md5(
+            str(func.f_doc).encode() +
+            str(func.f_def).encode() +
+            str(func.f_call).encode() +
+            str(func.f_args).encode() +
+            str(func.f_type).encode() +
+            str(func.f_schema).encode() +
+            str(func.f_locals).encode() +
+            str(func.f_self).encode()
+        ).hexdigest()
