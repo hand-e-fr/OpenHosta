@@ -236,7 +236,7 @@ def average_seasonal_temperature(city: str, season: Literal["winter", "spring", 
     """
     pass
 
-examples = {
+_examples = {
     1: (["New York", "winter", 40.7128, -74.0060], 0),
     2: (["Paris", "spring", 48.8566, 2.3522], 0),
     3: (["Tokyo", "summer", 35.6895, 139.6917], 0)
@@ -249,7 +249,7 @@ generator = SyntheticDataGenerator(os.environ['OPENAI_API_KEY'])
 generator.generate_data(
     func=average_seasonal_temperature,
     attempts_number=5,
-    examples=examples,
+    examples=_examples,
     output_file='build/average_seasonal_temperature.csv',
     example_per_request=100
 )

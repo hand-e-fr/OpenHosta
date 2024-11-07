@@ -26,8 +26,7 @@
         },
         {
             "key": "synthetic_data_generator",
-            "system_message": "You are a data generation assistant focused on creating diverse, realistic data. Avoid repetitive patterns.",
-            "text": "",
+            "text": "{func_name}{signature}:\n    \\\"\\\"\\\"{docstring}\\\"\\\"\\\"\n\nIMPORTANT RULES:\n1. Input values should respect the type hints\n2. Output values MUST be diverse - avoid generating the same output repeatedly\n3. Each row must be in CSV format\n4. For text outputs, enclose them in double quotes\n5. NO MORE THAN 20% of outputs should be the same value\n6. Generate inputs across the entire possible range\n7. Ensure proper formatting for {return_type} output type",
             "category": "executive",
             "version": "v1.0"
         }

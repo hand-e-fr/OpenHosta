@@ -1,7 +1,7 @@
 import os
 from typing import Union, Tuple, Callable, Optional
 
-from .data import PredictData
+from .cache import PredictCache
 from .model_schema import ModelSchema
 from .encoder.simple_encoder import SimpleEncoder
 from ...core.hosta import Hosta, Func
@@ -32,19 +32,17 @@ class PredictBase:
     def __init__(self, x: Hosta = None, model: ConfigModel = None, oracle: Optional[Union[Model, Callable]] = None, verbose: bool = False):
         if not hasattr(self, '_initialized') or not getattr(self, '_initialized'):
             self._infos: Func = getattr(x, "_infos")
-            if self._infos.f_type[1] is None:
-                raise ValueError(f"Return type must be specified for the function")
-            if self._infos.f_type[1] not in [int, float, bool]:
-                raise ValueError(f"Return type must be one of [int, float, bool], not {self._infos.f_type[1]}")
+            assert self._infos, "Function must be provided."
+            assert self._infos.f_type[1], "Return type must be specified for the function."
+            assert self._infos.f_type[1] in [int, float, bool], f"Return type must be one of [int, float, bool], not {self._infos.f_type[1]}."
+
             self._model: ConfigModel = model
             self._verbose: bool = verbose
             self._encoder: SimpleEncoder = SimpleEncoder()
-            self._data: PredictData = PredictData(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(hash(x))))
+            self._data: PredictCache = PredictCache(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(hash(x))))
             self._initialized: bool = True
             self.oracle: Optional[Union[Model, Callable]] = oracle
             self.examples: dict[int, Tuple[list[Union[int, float, bool]], Union[int, float, bool]]] = {}
-            for ex in self._infos.f_mem:
-                self.examples[ex.id] = (list(ex.value["in_"].values()), ex.value["out"])
 
     def predict(self) -> Union[int, float, bool]:
         """
@@ -56,4 +54,5 @@ class PredictBase:
 def predict(model: ConfigModel = None, oracle: Optional[Model] = None, verbose: bool = False) -> Union[int, float, bool]:
     x: Hosta = Hosta()
     predict_base = PredictBase(x=x, model=model, oracle=oracle, verbose=verbose)
+    print(x._infos)
     return predict_base.predict()
