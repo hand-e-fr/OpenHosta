@@ -2,9 +2,10 @@ import csv
 import json
 import os
 import pickle
+import os
+from typing import List, Optional
+from .sample_type import Sample
 from enum import Enum
-from typing import Optional, Dict
-
 
 class SourceType(Enum):
     """
@@ -17,7 +18,8 @@ class SourceType(Enum):
 class HostaDataset:
     def __init__(self):
         self.path = None
-        self.data = [Dict]
+        self.data : List[Sample] = []
+        self.dictionnary = {}
 
     def add(self, value):
         """
@@ -32,13 +34,21 @@ class HostaDataset:
         """
         todo: Implement dataset generation
         """
+        self.data_sample
         pass
 
-    def encode(self, encoder, tokenizer, max_tokens: int):
+    def encode(self, encoder, tokenizer, max_tokens: int, classification: bool = False):
         """
         todo: Implement dataset encoding
         """
-        pass
+        if self.data[0].output is None:
+            pass
+        else :
+            if classification:
+                pass
+            for sample in self.data:
+                pass
+            
 
     def normalize(self, min_max=None):
         """
@@ -57,10 +67,15 @@ class HostaDataset:
         todo: Implement dataset loading
         """
         pass
+    def fit(self, data):
+        self.data_sample = Sample(self.data)
+        self.data_sample.to_sample(data)
 
+    
     def save(self, path: str, source_type: SourceType = SourceType.CSV):
         """
         Save the dataset to a file in the specified format.
+        Converts Sample objects back to dictionaries for storage.
 
         Args:
             path: Path where to save the file
@@ -68,37 +83,49 @@ class HostaDataset:
         """
         self.path = path
 
+        # Convert Samples to dictionaries for saving
+        dict_data = []
+        for sample in self.data:
+            sample_dict = {}
+            # Add inputs with generic keys
+            for i, input_value in enumerate(sample.input):
+                sample_dict[f'input_{i}'] = input_value
+            # Add output if it exists
+            if sample.output is not None:
+                sample_dict['output'] = sample.output
+            dict_data.append(sample_dict)
+
         if source_type == SourceType.CSV:
             with open(path, 'w', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=self.data[0].keys())
+                if not dict_data:
+                    return
+                writer = csv.DictWriter(f, fieldnames=dict_data[0].keys())
                 writer.writeheader()
-                for row in self.data:
-                    writer.writerow(row)
+                writer.writerows(dict_data)
 
         elif source_type == SourceType.JSONL:
             with open(path, 'w') as f:
-                for row in self.data:
+                for row in dict_data:
                     json.dump(row, f)
                     f.write('\n')
 
         elif source_type == SourceType.PICKLE:
             with open(path, 'wb') as f:
-                pickle.dump(self.data, f)
+                pickle.dump(self.data, f)  # Pour Pickle, on peut sauver les Sample directement
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
 
     @staticmethod
-    def from_source(path: str, source_type: Optional[SourceType] = None, min_max=None):
+    def from_source(path: str, source_type: Optional[SourceType] = None):
         """
-        Load dataset from a file.
+        Load dataset from a file and convert each row to a Sample object.
 
         Args:
             path: Path to the source file
             source_type: Type of file to load (CSV, JSONL, or PICKLE)
-            min_max: Optional tuple of (min, max) values to filter numeric data
 
         Returns:
-            HostaDataset instance
+            HostaDataset instance with Sample objects
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"File not found: {path}")
@@ -111,7 +138,7 @@ class HostaDataset:
             elif path.endswith('.pkl'):
                 source_type = SourceType.PICKLE
             else:
-                raise ValueError(f"Please specify the source type for the file: {path}, Supported types are: CSV, JSONL, PICKLE")
+                raise ValueError(f"Please specify the source type for the file: {path}")
 
         dataset = HostaDataset()
         dataset.path = path
@@ -120,31 +147,37 @@ class HostaDataset:
             with open(path, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    # Convert numeric values to float if possible
-                    for key in row:
+                    # Convert string numbers to float if possible
+                    processed_row = {}
+                    for key, value in row.items():
                         try:
-                            row[key] = float(row[key])
+                            processed_row[key] = float(value)
                         except ValueError:
-                            pass
-                    dataset.add(row)
+                            processed_row[key] = value
+                    dataset.data.append(Sample(processed_row))
 
         elif source_type == SourceType.JSONL:
             with open(path, 'r') as f:
                 for line in f:
                     record = json.loads(line)
-                    dataset.add(record)
+                    if not isinstance(record, dict):
+                        record = {'input_0': record}
+                    dataset.data.append(Sample(record))
 
         elif source_type == SourceType.PICKLE:
             with open(path, 'rb') as f:
-                dataset.data = pickle.load(f)
+                loaded_data = pickle.load(f)
+                # Si les données sont déjà des Sample, les utiliser directement
+                if loaded_data and isinstance(loaded_data[0], Sample):
+                    dataset.data = loaded_data
+                else:
+                    # Sinon, convertir chaque élément en Sample
+                    for item in loaded_data:
+                        if not isinstance(item, dict):
+                            item = {'input_0': item}
+                        dataset.data.append(Sample(item))
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
-
-        # Apply min_max filtering if specified
-        if min_max is not None:
-            min_val, max_val = min_max
-            dataset.data = [row for row in dataset.data if all(min_val <= value <= max_val for value in row.values() if isinstance(value, (int, float)))]
-
         return dataset
 
     @staticmethod
