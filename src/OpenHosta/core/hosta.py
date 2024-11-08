@@ -18,6 +18,7 @@ all = (
     "MemoryNode"
 )
 
+
 class Hosta(HostaInspector):
     """
     Hosta is a class that extends HostaInspector and provides functionality for analyzing
@@ -25,7 +26,7 @@ class Hosta(HostaInspector):
 
     This class implements a singleton pattern and uses introspection to gather details
     about the callable that called the function that instantiated it.
-    
+
     If many function instantiated it in the same callable, the first function will create
     an instance and attach it to the callable so that the next function can retrieve it.
 
@@ -36,8 +37,8 @@ class Hosta(HostaInspector):
     """
     _initialized = False
     _obj = None
-    
-    def __new__(cls, *args, **kwargs)->'Hosta':
+
+    def __new__(cls, *args, **kwargs) -> 'Hosta':
         """
         Create a new instance of Hosta or return the existing one if already created.
 
@@ -63,8 +64,8 @@ class Hosta(HostaInspector):
         instance = super().__new__(cls)
         cls._attach(cls._obj[0], {"Hosta": instance})
         return instance
-    
-    def __init__(self, *, caller_analysis:bool=True):
+
+    def __init__(self, *, caller_analysis: bool = True):
         """
         Initialize the Hosta instance.
 
@@ -80,7 +81,7 @@ class Hosta(HostaInspector):
             self._infos = Func()
             if caller_analysis:
                 self._get_infos_func()
-            
+
     def _get_infos_func(self) -> None:
         """
         Analyze and store information about the calling function.
@@ -92,17 +93,17 @@ class Hosta(HostaInspector):
         The extracted information is stored in the _infos attribute of the instance.
         """
         analizer = FuncAnalizer(self._obj[0], self._obj[1])
-        self._infos.f_obj    = self._obj[0]
-        self._infos.f_name   = self._obj[0].__name__
-        self._infos.f_doc    = self._obj[0].__doc__
-        self._infos.f_def    = analizer.func_def
+        self._infos.f_obj = self._obj[0]
+        self._infos.f_name = self._obj[0].__name__
+        self._infos.f_doc = self._obj[0].__doc__
+        self._infos.f_def = analizer.func_def
         self._infos.f_call, self._infos.f_args = analizer.func_call
-        self._infos.f_type   = analizer.func_type
+        self._infos.f_type = analizer.func_type
         self._infos.f_locals, self._infos.f_self = analizer.func_locals
         self._infos.f_schema = analizer.func_schema
-        self._infos.f_sig    = analizer.sig
-    
-    def _bdy_add(self, key:MemKey, value:MemValue)->None:
+        self._infos.f_sig = analizer.sig
+
+    def _bdy_add(self, key: MemKey, value: MemValue) -> None:
         """
         Add a new memory node to the function's memory.
 
@@ -114,9 +115,9 @@ class Hosta(HostaInspector):
             key (MemKey): The type of memory node ('ex', 'cot', or 'use').
             value (MemValue): The value to be stored in the memory node.
         """
-        seen:List[MemKey] = []
-        previous:MemKey = None
-        
+        seen: List[MemKey] = []
+        previous: MemKey = None
+
         if self._infos.f_mem is None:
             self._infos.f_mem = []
             id = 0
@@ -135,9 +136,10 @@ class Hosta(HostaInspector):
             elif node.key in seen and node.key == previous.key:
                 previous = node
             else:
-                raise InvalidStructureError("[Hosta._bdy_add] Inconsistent function structure. Place your OpenHosta functions per block.")
+                raise InvalidStructureError(
+                    "[Hosta._bdy_add] Inconsistent function structure. Place your OpenHosta functions per block.")
 
-    def _bdy_get(self, key:MemKey)->List[MemoryNode]:
+    def _bdy_get(self, key: MemKey) -> List[MemoryNode]:
         """
         Retrieve memory nodes of a specific type from the function's memory.
 
@@ -150,17 +152,17 @@ class Hosta(HostaInspector):
         Returns:
             List[MemoryNode]: A list of memory nodes matching the key, or None if no matches are found.
         """
-        l_list:List[MemoryNode] = []
-        
+        l_list: List[MemoryNode] = []
+
         if self._infos.f_mem is None:
             return None
         for node in self._infos.f_mem:
             if node.key == key:
                 l_list.append(node)
         return l_list if l_list != [] else None
-          
+
     @property
-    def example(self)->Optional[List[ExampleType]]:
+    def example(self) -> Optional[List[ExampleType]]:
         """
         Retrieve all example nodes from the function's memory.
 
@@ -171,9 +173,9 @@ class Hosta(HostaInspector):
         """
         nodes = self._bdy_get(key="ex")
         return [node.value for node in nodes] if nodes else None
-        
+
     @property
-    def cot(self)->Optional[List[CotType]]:
+    def cot(self) -> Optional[List[CotType]]:
         """
         Retrieve all chain-of-thought (cot) nodes from the function's memory.
 
@@ -190,7 +192,7 @@ class Hosta(HostaInspector):
         return self._infos
 
     @staticmethod
-    def hash_func(func: Func)->str:
+    def hash_func(func: Func) -> str:
         """
         Generate a hash value for a function without use builtin python hash function.
 

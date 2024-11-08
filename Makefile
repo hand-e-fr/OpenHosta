@@ -71,6 +71,8 @@ clean:
 	@$(L_SHELL) $(FIND) 'dist' | $(RM)
 	@$(L_SHELL) $(FIND) 'OpenHosta.egg-info' | $(RM)
 	@$(L_SHELL) $(FIND) '.pytest_cache' | $(RM)
+	@$(L_SHELL) $(FIND) '.mypy_cache' | $(RM)
+	@$(L_SHELL) $(FIND) '.coverage' | $(RM)
 	@$(L_SHELL) $(WRITE) '$(TAG) Uninstalling package: $(PACKAGE_NAME)...' $(COLOR) 
 	@$(PIP) uninstall -y OpenHosta > $(NULL_DEVICE)
 	@$(L_SHELL) $(CLEAR)

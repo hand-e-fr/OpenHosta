@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Union
 
+
 class BaseEncoder(ABC):
     @abstractmethod
     def encode(self, data: Union[int, float, bool, str]) -> List[Union[int, float]]:

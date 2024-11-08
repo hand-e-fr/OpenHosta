@@ -8,23 +8,23 @@ from ..utils.errors import RequestError
 
 def ask(
     *,
-    user:str,
-    system:Optional[str] = None,
-    model:Optional[Model] = None,
+    user: str,
+    system: Optional[str] = None,
+    model: Optional[Model] = None,
     **api_args
-)->Any:
+) -> Any:
     if model is None:
         model = DefaultManager.get_default_model()
     if system is None:
         system = "You are an helpful assistant."
-        
+
     response = model.simple_api_call(
         system,
         user,
         False,
         **api_args
     )
-    
+
     try:
         data = response.json()
         res = data["choices"][0]["message"]["content"]

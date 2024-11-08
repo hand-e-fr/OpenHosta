@@ -10,7 +10,7 @@ from ..utils.errors import RequestError
 from ..utils.meta_prompt import THOUGHT_PROMPT
 
 
-def guess_type(key:str, *args)->object:
+def guess_type(key: str, *args) -> object:
     l_default = DefaultManager.get_default_model()
 
     l_user_prompt = (
@@ -32,15 +32,16 @@ def guess_type(key:str, *args)->object:
 
     return locate(type_str)
 
+
 def thinkof(key):
-    
+
     def inner_func(*args, **kwargs):
-        _infos:Func = Func()
-        
+        _infos: Func = Func()
+
         if not hasattr(inner_func, "_return_type"):
             setattr(inner_func, "_return_type", guess_type(key, *args))
 
-        _infos.f_def = key 
+        _infos.f_def = key
         _infos.f_call = str(*args)
         _infos.f_type = ([], inner_func._return_type)
 
@@ -51,5 +52,3 @@ def thinkof(key):
         return result
 
     return inner_func
- 
- 

@@ -13,22 +13,25 @@ def _build_user_prompt(
         use_locals_as_ctx: Optional[bool] = False,
         use_self_as_ctx: Optional[bool] = False,
 ):
-    filler = lambda pre, value: f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
+    def filler(
+        pre, value): return f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
 
     user_prompt = (
-            filler(EMULATE_PROMPT.PRE_DEF, _infos.f_def)
-            + filler(EMULATE_PROMPT.PRE_TYPE, _infos.f_type[1])
-            + filler(EMULATE_PROMPT.PRE_SCHEMA, _infos.f_schema)
+        filler(EMULATE_PROMPT.PRE_DEF, _infos.f_def)
+        + filler(EMULATE_PROMPT.PRE_TYPE, _infos.f_type[1])
+        + filler(EMULATE_PROMPT.PRE_SCHEMA, _infos.f_schema)
     )
     if use_locals_as_ctx:
-        user_prompt = (user_prompt + filler(EMULATE_PROMPT.PRE_LOCALS, _infos.f_locals))
+        user_prompt = (
+            user_prompt + filler(EMULATE_PROMPT.PRE_LOCALS, _infos.f_locals))
     if use_self_as_ctx:
-        user_prompt = (user_prompt + filler(EMULATE_PROMPT.PRE_SELF, _infos.f_self))
+        user_prompt = (
+            user_prompt + filler(EMULATE_PROMPT.PRE_SELF, _infos.f_self))
     if x:
         user_prompt = (
-                user_prompt
-                + filler(EMULATE_PROMPT.PRE_EXAMPLE, x.example)
-                + filler(EMULATE_PROMPT.PRE_COT, x.cot)
+            user_prompt
+            + filler(EMULATE_PROMPT.PRE_EXAMPLE, x.example)
+            + filler(EMULATE_PROMPT.PRE_COT, x.cot)
         )
     user_prompt = (user_prompt + EMULATE_PROMPT.USER_SEP)
     return user_prompt
@@ -49,7 +52,8 @@ def emulate(
     if _infos is None:
         x = Hosta()
         _infos = x._infos
-    func_prompt: str = _build_user_prompt(_infos, x, use_locals_as_ctx, use_self_as_ctx)
+    func_prompt: str = _build_user_prompt(
+        _infos, x, use_locals_as_ctx, use_self_as_ctx)
 
     if model is None:
         model = DefaultManager.get_default_model()
@@ -64,7 +68,8 @@ def emulate(
         if post_callback is not None:
             l_ret = post_callback(l_ret)
     except NameError as e:
-        raise NotImplementedError(f"[emulate]: {e}\nModel object does not have the required methods.")
+        raise NotImplementedError(
+            f"[emulate]: {e}\nModel object does not have the required methods.")
 
     if x:
         x._attach(_infos.f_obj, {

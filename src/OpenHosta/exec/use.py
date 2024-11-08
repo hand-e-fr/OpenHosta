@@ -12,18 +12,23 @@ all = (
     "DB"
 )
 
+
 class VAR:
     pass
+
 
 class TOOL:
     pass
 
+
 class RAG:
     pass
+
 
 class DB:
     pass
 
-def use(obj:Union[Callable, Any], typ:Union[VAR, TOOL, RAG, DB], title:str):
+
+def use(obj: Union[Callable, Any], typ: Union[VAR, TOOL, RAG, DB], title: str):
     x = Hosta()
     x._bdy_add('use', UseType())

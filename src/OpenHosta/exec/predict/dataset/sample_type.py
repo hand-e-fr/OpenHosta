@@ -7,7 +7,7 @@ class Sample:
     """
     A class to handle data samples for machine learning.
     Expects a dictionary where all keys except 'output' are considered as inputs.
-    
+
     Example:
         data = {
             'feature1': [1, 2],     # Any key except 'output' is considered input
@@ -18,18 +18,19 @@ class Sample:
         }
         sample = Sample(data)
     """
-    
+
     def __init__(self, data: dict):
         if not isinstance(data, dict):
             raise TypeError("Data must be a dictionary")
-            
+
         self._input: List[Any] = []
         self._output: Optional[Any] = None
-        
+
         output_data = data.pop('output', None)
         if output_data is not None:
             output_flattened = self._flatten_data(output_data)
-            self._output = output_flattened[0] if len(output_flattened) == 1 else output_flattened
+            self._output = output_flattened[0] if len(
+                output_flattened) == 1 else output_flattened
 
         for value in data.values():
             self._input.extend(self._flatten_data(value))
@@ -65,7 +66,6 @@ class Sample:
 
     def __repr__(self) -> str:
         return f"Sample(input={self.input}, output={self.output})"
-
 
 
 ############################################
@@ -118,4 +118,3 @@ class Sample:
 #     print(f"{sample4}")
 #     print(f"Input: {sample4.input}")
 #     print(f"Output: {sample4.output}")
-
