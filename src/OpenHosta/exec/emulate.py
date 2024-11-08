@@ -30,7 +30,7 @@ def _build_user_prompt(
                 + filler(EMULATE_PROMPT.PRE_EXAMPLE, x.example)
                 + filler(EMULATE_PROMPT.PRE_COT, x.cot)
         )
-    user_prompt = (user_prompt + EMULATE_PROMPT.FINAL_SEP)
+    user_prompt = (user_prompt + EMULATE_PROMPT.USER_SEP)
     return user_prompt
 
 
@@ -54,7 +54,6 @@ def emulate(
     if model is None:
         model = DefaultManager.get_default_model()
 
-    print(f"{EMULATE_PROMPT!r}\n{func_prompt}\n")
     try:
         response = model.simple_api_call(
             sys_prompt=f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
