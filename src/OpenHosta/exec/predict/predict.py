@@ -1,8 +1,9 @@
 import os
-from typing import Union, Tuple, Callable, Optional, Literal
+from typing import Union, Optional, Literal
 
-from .cache import PredictCache
-from .dataset.dataset import HostaDataset
+from OpenHosta.core.config import DefaultModel
+from .memory import PredictMemory
+from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
 from .dataset.sample_type import Sample
 from .encoder.simple_encoder import SimpleEncoder
@@ -11,101 +12,55 @@ from ...core.config import Model
 from ...core.hosta import Hosta, Func
 
 
-class PredictBase:
-    _instance = {}
-
-    def __new__(cls, x: Hosta = None, model: ConfigModel = None, oracle: Optional[Union[Model, Callable]] = None, verbose: bool = False):
-        hosta_key = hash(x) # todo: change hash function
-
-        if hosta_key not in cls._instance:
-            if verbose:
-                print(f"Creating new instance of PredictBase")
-            cls._instance[hosta_key] = super(PredictBase, cls).__new__(cls)
-            try:
-                setattr(cls._instance[hosta_key], '_initialized', False)
-            except AttributeError:
-                pass
-        return cls._instance[hosta_key]
-
-    def __init__(self, x: Hosta = None, model: ConfigModel = None, oracle: Optional[Union[Model, Callable]] = None, verbose: bool = False):
-        if not hasattr(self, '_initialized') or not getattr(self, '_initialized'):
-            self._infos: Func = getattr(x, "_infos")
-            if self._infos.f_type[1] is None:
-                raise ValueError(f"Return type must be specified for the function")
-            # if self._infos.f_type[1] not in [int, float, bool]:
-            #     raise ValueError(f"Return type must be one of [int, float, bool], not {self._infos.f_type[1]}")
-            self._model: ConfigModel = model
-            self._verbose: bool = verbose
-            self._encoder: SimpleEncoder = SimpleEncoder()
-            self._data: PredictCache = PredictCache(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(hash(x))))
-            self._initialized: bool = True
-            self.oracle: Optional[Union[Model, Callable]] = oracle
-            self.examples: dict[int, Tuple[list[Union[int, float, bool]], Union[int, float, bool]]] = {}
-            # for ex in self._infos.f_mem:
-            #     self.examples[ex.id] = (list(ex.value["in_"].values()), ex.value["out"])
-
-    def predict(self) -> Union[int, float, bool]:
-        """
-        :return:
-        """
-        return 0
-
-
-def predict(model: ConfigModel = None, oracle: Optional[Model] = None, verbose: bool = False) -> Union[int, float, bool]:
+def predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDataset]] = None, verbose: bool = False) -> Union[int, float, bool]:
     x: Hosta = Hosta()
-    print(x._infos.f_args)
-    print("*"*100)
-    print(model.name)
-    print("*"*100)
-    # print(model.dataset_path)
-    memory = ...
-    if not memory.compilation : # fact that the function has been compiled and not changed and all the file are her
-        dataset = data_scientist(hosta=x, model=model, oracle=oracle)
+    func: Func = getattr(x, "_infos")
+
+    encoder: SimpleEncoder = SimpleEncoder()
+    memory: PredictMemory = PredictMemory(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(Hosta.hash_func(func))))
+
+    # if Hosta.hash_func(func) == memory.hash:
+    dataset: HostaDataset = data_preparator(func=func, memory=memory, oracle=oracle, model=model)
           
     
-    print(len(dataset.data))
+    print(f"len: {len(dataset.data)}")
     print("inférence sample")
 
     inf = Sample(x.infos.f_args)
     print(inf)
-    predict_base = PredictBase(x=x, model=model, oracle=oracle, verbose=verbose)
-    LLMSyntheticDataGenerator.generate_synthetic_data(
-        func=predict_base.infos,
-        request_amounts=3,
-        examples_in_req=50,
-        model=None
-    )
-    return predict_base.predict()
+
+    return 0 # todo: return the prediction
 
 
 
-
-def data_scientist(hosta : Hosta = None ,model: ConfigModel = None, oracle: Optional[Model] = None) -> HostaDataset:
+def data_preparator(func: Func, memory: PredictMemory, oracle: Optional[Union[Model, HostaDataset]], model: Optional[ConfigModel]) -> HostaDataset:
     """
     This function is used to generate the dataset for the model.
     he works like a data scientist, make a iterative process of each step automatically.
     Args:
-        hosta: The hosta function
-        model: The model configuration
-        oracle: The oracle model
+        :param func: The function to analyze
+        :param memory: The memory of the prediction
+        :param oracle: The model to use to generate the dataset
+        :param model: The model configuration
     Returns:
-        HostaDataset: An instance of the class that contains the dataset
+        :rtype: HostaDataset: The dataset generated
     """
-    if model.dataset_path is not None:
-        dataset = HostaDataset.from_source(model.dataset_path)
-        dataset.from_source(model.dataset_path)
-        # for sample in dataset.data:
-            # print(sample)
-        # print(dataset.data)
-    else:
-        dataset = HostaDataset.generate(model=oracle, n_samples=100)
-        # for sample in dataset.data:
-            # print(sample)
-    
-    if hosta.infos.f_type[1] == Literal:
+    dataset: Optional[HostaDataset] = None
+
+    if oracle is None and memory.data_path is not None and os.path.exists(memory.data_path) and os.path.isfile(memory.data_path) and os.path.getsize(memory.data_path) > 0:
+        dataset = HostaDataset.from_source(memory.data_path, SourceType.CSV)
+    elif oracle is None or isinstance(oracle, Model):
+        dataset = LLMSyntheticDataGenerator.generate_synthetic_data(
+            func=func,
+            request_amounts=3, # todo: make it a parameter
+            examples_in_req=50, # todo: make it a parameter
+            model=oracle if oracle is not None else DefaultModel().get_default_model()
+        )
+        dataset.save(memory.data_path, SourceType.CSV)
+    if func.f_type[1] == Literal:
         classification = True
     else:
         classification = False
 
-    dataset.encode(encoder=SimpleEncoder(), tokenizer=None, max_tokens=10, classification=classification)
+    # dataset.encode(encoder=SimpleEncoder(), tokenizer=None, max_tokens=10, classification=classification)
     return dataset
