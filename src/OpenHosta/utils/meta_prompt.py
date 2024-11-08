@@ -2,16 +2,19 @@ from __future__ import annotations
 
 from typing import List
 
+
 class MetaPrompt:
 
-    def __init__(self, shards:List[str]):
+    def __init__(self, shards: List[str]):
         for shard in shards:
             if not isinstance(shard, str):
-                raise ValueError("[MetaPrompt.__init__] Shards must be strings.")
+                raise ValueError(
+                    "[MetaPrompt.__init__] Shards must be strings.")
             try:
                 setattr(self, "_{}".format(shard.upper()), "")
             except:
-                raise AttributeError(f"[MetaPrompt.__init__] Failed to initialize {shard} attributs")
+                raise AttributeError(
+                    f"[MetaPrompt.__init__] Failed to initialize {shard} attributs")
 
     def __repr__(self):
         ctx = {}
@@ -19,6 +22,7 @@ class MetaPrompt:
             if key.startswith("CTX_"):
                 ctx[key] = value
         return "\n".join(ctx.values())
+
 
 EMULATE_PROMPT = MetaPrompt([
     "CTX_MAIN",

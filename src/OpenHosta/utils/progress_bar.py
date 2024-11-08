@@ -12,7 +12,8 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
         fill        - Optional  : bar fill character (Str)
         print_end   - Optional  : end character (e.g. "\r", "\r\n") (Str)
     """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                     (iteration / float(total)))
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
     print(f'\r{prefix}  {bar}  {percent}% {suffix}', end=print_end)

@@ -17,20 +17,20 @@ def predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDatase
     func: Func = getattr(x, "_infos")
 
     encoder: SimpleEncoder = SimpleEncoder()
-    memory: PredictMemory = PredictMemory(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(Hosta.hash_func(func))))
+    memory: PredictMemory = PredictMemory(path=os.path.join(
+        os.path.dirname(__file__), "__hostacache__", str(Hosta.hash_func(func))))
 
     # if Hosta.hash_func(func) == memory.hash:
-    dataset: HostaDataset = data_preparator(func=func, memory=memory, oracle=oracle, model=model)
-          
-    
+    dataset: HostaDataset = data_preparator(
+        func=func, memory=memory, oracle=oracle, model=model)
+
     print(f"len: {len(dataset.data)}")
     print("inférence sample")
 
     inf = Sample(x.infos.f_args)
     print(inf)
 
-    return 0 # todo: return the prediction
-
+    return 0  # todo: return the prediction
 
 
 def data_preparator(func: Func, memory: PredictMemory, oracle: Optional[Union[Model, HostaDataset]], model: Optional[ConfigModel]) -> HostaDataset:
@@ -52,8 +52,8 @@ def data_preparator(func: Func, memory: PredictMemory, oracle: Optional[Union[Mo
     elif oracle is None or isinstance(oracle, Model):
         dataset = LLMSyntheticDataGenerator.generate_synthetic_data(
             func=func,
-            request_amounts=3, # todo: make it a parameter
-            examples_in_req=50, # todo: make it a parameter
+            request_amounts=3,  # todo: make it a parameter
+            examples_in_req=50,  # todo: make it a parameter
             model=oracle if oracle is not None else DefaultModel().get_default_model()
         )
         dataset.save(memory.data_path, SourceType.CSV)

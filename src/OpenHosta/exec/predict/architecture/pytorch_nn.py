@@ -14,11 +14,14 @@ class PyTorchNeuralNetwork(nn.Module):
         self.layers = nn.ModuleList()
         self.build_layers(neural_network.layers)
 
-        self.loss_function: nn.Module = self.get_loss_function(neural_network.loss_function)
+        self.loss_function: nn.Module = self.get_loss_function(
+            neural_network.loss_function)
         if self.loss_function is None:
-            raise ValueError(f"Unknown loss function: {neural_network.loss_function}")
+            raise ValueError(
+                f"Unknown loss function: {neural_network.loss_function}")
 
-        self.optimizer: optim.Optimizer = self.get_optimizer(neural_network.optimizer)
+        self.optimizer: optim.Optimizer = self.get_optimizer(
+            neural_network.optimizer)
         if self.optimizer is None:
             raise ValueError(f"Unknown optimizer: {neural_network.optimizer}")
 
@@ -27,9 +30,11 @@ class PyTorchNeuralNetwork(nn.Module):
     def build_layers(self, layers: list[Layer]):
         for layer in layers:
             if layer.layer_type == LayerType.LINEAR:
-                self.layers.append(nn.Linear(layer.in_features, layer.out_features))
+                self.layers.append(
+                    nn.Linear(layer.in_features, layer.out_features))
             elif layer.layer_type == LayerType.CONV2D:
-                self.layers.append(nn.Conv2d(layer.in_features, layer.out_features, layer.kernel_size, layer.stride, layer.padding))
+                self.layers.append(nn.Conv2d(
+                    layer.in_features, layer.out_features, layer.kernel_size, layer.stride, layer.padding))
             elif layer.layer_type == LayerType.RELU:
                 self.layers.append(nn.ReLU())
             elif layer.layer_type == LayerType.DROPOUT:
@@ -39,16 +44,17 @@ class PyTorchNeuralNetwork(nn.Module):
             elif layer.layer_type == LayerType.BATCHNORM2D:
                 self.layers.append(nn.BatchNorm2d(layer.in_features))
             elif layer.layer_type == LayerType.MAXPOOL2D:
-                self.layers.append(nn.MaxPool2d(layer.kernel_size, layer.stride, layer.padding))
+                self.layers.append(nn.MaxPool2d(
+                    layer.kernel_size, layer.stride, layer.padding))
             elif layer.layer_type == LayerType.AVGPOOL2D:
-                self.layers.append(nn.AvgPool2d(layer.kernel_size, layer.stride, layer.padding))
+                self.layers.append(nn.AvgPool2d(
+                    layer.kernel_size, layer.stride, layer.padding))
             elif layer.layer_type == LayerType.SIGMOID:
                 self.layers.append(nn.Sigmoid())
             elif layer.layer_type == LayerType.TANH:
                 self.layers.append(nn.Tanh())
             elif layer.layer_type == LayerType.SOFTMAX:
                 self.layers.append(nn.Softmax())
-
 
     def get_loss_function(self, loss_function: LossFunction) -> Optional[nn.Module]:
         """
@@ -79,7 +85,6 @@ class PyTorchNeuralNetwork(nn.Module):
             LossFunction.TRIPLET_MARGIN_LOSS: lambda: nn.TripletMarginLoss(),
             LossFunction.TRIPLET_MARGIN_WITH_DISTANCE_LOSS: lambda: nn.TripletMarginWithDistanceLoss()
         }.get(loss_function, lambda: None)()
-
 
     def get_optimizer(self, optimizer_algorithm: OptimizerAlgorithm) -> Optional[optim.Optimizer]:
         """
@@ -128,6 +133,7 @@ class PyTorchNeuralNetwork(nn.Module):
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
-            print_progress_bar(epoch + 1, epochs, prefix=f'Epoch: {epoch + 1}/{epochs}', suffix=f'Loss: {loss.item():.4f}')
+            print_progress_bar(
+                epoch + 1, epochs, prefix=f'Epoch: {epoch + 1}/{epochs}', suffix=f'Loss: {loss.item():.4f}')
 
         print(f"{p("Predict Training")} Training complete.")

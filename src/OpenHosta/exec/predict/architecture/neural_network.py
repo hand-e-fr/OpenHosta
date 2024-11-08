@@ -20,6 +20,7 @@ class LayerType(Enum):
     SOFTMAX = 10
     TANH = 11
 
+
 class OptimizerAlgorithm(Enum):
     """
     Enum for different types of optimizers in a neural network.
@@ -76,6 +77,7 @@ class LossFunction(Enum):
     TRIPLET_MARGIN_LOSS = 20
     TRIPLET_MARGIN_WITH_DISTANCE_LOSS = 21
 
+
 class Layer:
     """
     Initialize a Layer object.
@@ -88,6 +90,7 @@ class Layer:
     :param padding: Padding added to the input.
     :param dropout: Dropout rate.
     """
+
     def __init__(
         self,
         layer_type,
@@ -122,6 +125,7 @@ class Layer:
             f"padding={self.padding}, "
             f"dropout={self.dropout})"
         )
+
 
 class NeuralNetwork:
     def __init__(self):

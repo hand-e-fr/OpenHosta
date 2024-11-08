@@ -16,10 +16,11 @@ class SourceType(Enum):
     JSONL = 2
     PICKLE = 3
 
+
 class HostaDataset:
     def __init__(self):
         self.path = None
-        self.data : List[Sample] = []
+        self.data: List[Sample] = []
         self.dictionnary = {}
 
     def add(self, value):
@@ -44,12 +45,11 @@ class HostaDataset:
         """
         if self.data[0].output is None:
             pass
-        else :
+        else:
             if classification:
                 pass
             for sample in self.data:
                 pass
-            
 
     def normalize(self, min_max=None):
         """
@@ -68,11 +68,11 @@ class HostaDataset:
         todo: Implement dataset loading
         """
         pass
+
     def fit(self, data):
         self.data_sample = Sample(self.data)
         self.data_sample.to_sample(data)
 
-    
     def save(self, path: str, source_type: SourceType = SourceType.CSV):
         """
         Save the dataset to a file in the specified format.
@@ -112,7 +112,8 @@ class HostaDataset:
 
         elif source_type == SourceType.PICKLE:
             with open(path, 'wb') as f:
-                pickle.dump(self.data, f)  # Pour Pickle, on peut sauver les Sample directement
+                # Pour Pickle, on peut sauver les Sample directement
+                pickle.dump(self.data, f)
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
 
@@ -139,7 +140,8 @@ class HostaDataset:
             elif path.endswith('.pkl'):
                 source_type = SourceType.PICKLE
             else:
-                raise ValueError(f"Please specify the source type for the file: {path}")
+                raise ValueError(
+                    f"Please specify the source type for the file: {path}")
 
         dataset = HostaDataset()
         dataset.path = path
@@ -204,13 +206,16 @@ class HostaDataset:
             elif isinstance(entry, (list, tuple)):
                 # If it's a list or tuple, we assume it's structured as (inputs..., [output])
                 inputs = list(entry[:-1])  # All but last element are inputs
-                output = entry[-1] if len(entry) > 1 else None  # Last element could be output if present
-                sample_dict = {f'input_{i}': input_value for i, input_value in enumerate(inputs)}
+                # Last element could be output if present
+                output = entry[-1] if len(entry) > 1 else None
+                sample_dict = {f'input_{i}': input_value for i,
+                               input_value in enumerate(inputs)}
                 if output is not None:
                     sample_dict['output'] = output
                 dataset.add(Sample(sample_dict))
             else:
-                raise ValueError(f"Unsupported data format in list entry: {entry}")
+                raise ValueError(
+                    f"Unsupported data format in list entry: {entry}")
 
         return dataset
 

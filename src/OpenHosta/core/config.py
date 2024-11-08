@@ -13,7 +13,7 @@ from .pydantic_usage import Func
 from ..utils.errors import ApiKeyError, RequestError
 
 
-def is_valid_url(url:str)->bool:
+def is_valid_url(url: str) -> bool:
     regex = re.compile(
         r"^(?:http|ftp)s?://"
         r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"
@@ -25,6 +25,7 @@ def is_valid_url(url:str)->bool:
         re.IGNORECASE,
     )
     return re.match(regex, url) is not None
+
 
 class Model:
 
@@ -49,7 +50,7 @@ class Model:
         user_prompt: str,
         json_form: bool = True,
         **llm_args
-    )->Dict:
+    ) -> Dict:
         return self.api_call(
             [
                 {"role": "system", "content": sys_prompt},
@@ -64,7 +65,7 @@ class Model:
         messages: list[dict[str, str]],
         json_form: bool = True,
         **llm_args
-    )->Dict:
+    ) -> Dict:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
 
@@ -83,13 +84,13 @@ class Model:
         try:
             parsed_url = urlparse(self.base_url)
             conn = HTTPSConnection(parsed_url.netloc)
-            
+
             body_json = json.dumps(l_body)
             conn.request("POST", parsed_url.path, body_json, headers)
-            
+
             response = conn.getresponse()
             response_data = response.read()
-            
+
             conn.close()
 
             if response.status != 200:
@@ -106,24 +107,27 @@ class Model:
         except Exception as e:
             raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
 
-    def request_handler(self, response:Dict, func:Func)->Any:
+    def request_handler(self, response: Dict, func: Func) -> Any:
         json_string = response["choices"][0]["message"]["content"]
         if "usage" in response:
             self._used_tokens += int(response["usage"]["total_tokens"])
         try:
             l_ret_data = json.loads(json_string)
         except json.JSONDecodeError as e:
-            sys.stderr.write(f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
+            sys.stderr.write(
+                f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
         return HostaChecker(func, l_ret_data).check()
+
 
 class DefaultModel:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(DefaultModel, cls).__new__(cls, *args, **kwargs)
+            cls._instance = super(DefaultModel, cls).__new__(
+                cls, *args, **kwargs)
         return cls._instance
 
     def __init__(self):
@@ -148,11 +152,12 @@ class DefaultModel:
 
 DefaultManager = DefaultModel()
 
+
 def set_default_model(new):
     DefaultManager.set_default_model(new)
 
 
 def set_default_apiKey(api_key=None):
     DefaultManager.set_default_apiKey(api_key)
-    
+
 # anntations, errors handling, doc, all

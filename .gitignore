@@ -20,3 +20,4 @@ mypy/
 .mypy_cache/
 linter.py
 *pt.py
+tests/reports/*report.txt
