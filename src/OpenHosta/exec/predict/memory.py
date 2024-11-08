@@ -1,55 +1,33 @@
 import os
-from datetime import datetime
 from typing import Optional
 
-
-class PredictMemory:
-    _instance = None
-
-    def __new__(cls, path: Optional[str] = None):
-        if cls._instance is None:
-            cls._instance = super(PredictMemory, cls).__new__(cls)
-            if path is not None:
-                cls._instance._initialize(path)
-        return cls._instance
-
-    def _initialize(self, path: str):
-        self.weights_path = os.path.join(path, "weights.pth")
-        self.architecture_path = os.path.join(path, "architecture.json")
-        self.summary_path = os.path.join(path, "summary.txt")
-        self.data_path = os.path.join(path, "data.csv")
-        self.npy_data_path = os.path.join(path, "data.npy")
-
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        if not os.path.exists(self.architecture_path):
-            with open(self.architecture_path, "w") as file:
-                file.write("")
-
-        if not os.path.exists(self.summary_path):
-            with open(self.summary_path, "w") as file:
-                file.write("=== Log Summary ===\n")
-
-        if not os.path.exists(self.weights_path):
-            with open(self.weights_path, "wb") as file:
-                pass
-
-        if not os.path.exists(self.data_path):
-            with open(self.data_path, "w") as file:
-                pass
-
-        if not os.path.exists(self.npy_data_path):
-            with open(self.npy_data_path, "wb") as file:
-                pass
-
-    def __init__(self, path: str = None):
+CACHE_DIR = "__hostacache__"
+class HostaMemory:
+    """
+    Base class for persistent memory management.
+    """
+    _instances = {}
+    
+    def __init__(self, base_path: Optional[str] = None, **kwargs):
         pass
 
-    def log(self, message: str, level: str = "INFO"):
-        with open(self.summary_path, "a") as file:
-            file.write(f"[{datetime.now()}] [{level}] {message}\n")
+    def __new__(cls, base_path: Optional[str] = None, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(HostaMemory, cls).__new__(cls)
+            cls._instances[cls]._initialized = False
+        if base_path is not None and not cls._instances[cls]._initialized:
+            cls._instances[cls]._initialize(base_path)
+        return cls._instances[cls]
+    
+    def _initialize(self, base_path: str) -> None:
+        """Initializes the hostacache directory"""
+        self.root = os.path.join(base_path if base_path else os.getcwd(), self.CACHE_DIR)
+        self._initialized = True
+        self._ensure_directory_exists(self.root)
 
-    def update_architecture(self, architecture: str):
-        with open(self.architecture_path, "w") as file:
-            file.write(architecture)
+
+    def _ensure_directory_exists(self, directory) -> None:
+        """Creates the base directory if necessary"""
+        if not os.path.exists(directory):
+            print(f"Creating directory {directory}")
+            os.makedirs(directory)

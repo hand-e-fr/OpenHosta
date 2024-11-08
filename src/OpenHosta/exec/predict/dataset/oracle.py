@@ -216,6 +216,4 @@ class LLMSyntheticDataGenerator:
 
             attempts += 1
 
-        dataset: HostaDataset = HostaDataset.from_list(result)
-        dataset.save("build/pas_mal_les_donnees.csv", source_type=SourceType.CSV)
-        return dataset
+        return HostaDataset.from_list(result)
