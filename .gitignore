@@ -18,3 +18,5 @@ build/
 .pypirc
 mypy/
 .mypy_cache/
+linter.py
+*pt.py
