@@ -21,6 +21,7 @@ class HostaDataset:
         self.path = None
         self.data : List[Sample] = []
         self.dictionnary = {}
+        self.inference : Sample = None
 
     def add(self, value):
         """
@@ -212,6 +213,15 @@ class HostaDataset:
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
 
+        return dataset
+
+    @staticmethod
+    def get_sample(self, inference: dict) -> 'HostaDataset':
+        """
+        Get a Sample object from a dictionary of input values.
+        """
+        dataset = HostaDataset()
+        dataset.inference = Sample(inference)
         return dataset
 
     def __len__(self):

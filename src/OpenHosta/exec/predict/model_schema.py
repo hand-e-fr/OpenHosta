@@ -7,7 +7,7 @@ class ConfigModel:
     def __init__(self,
                  model_type: ArchitectureType = ArchitectureType.LINEAR_REGRESSION,
                  name: str = "",
-                 weight_path: str = "",
+                 path: str = "",
                  version: str = "",
                  complexity: Optional[float] = None,
                  epochs: Optional[int] = None,
@@ -19,7 +19,7 @@ class ConfigModel:
         self.model_type: ArchitectureType = model_type
 
         self.name: str = name
-        self.weight_path: str = weight_path
+        self.path: str = path
         self.version: str = version
 
         self.complexity: float = complexity
@@ -38,7 +38,7 @@ class ConfigModel:
         return f"""{{
             "name": "{self.name}",
             "model_type": "{self.model_type}",
-            "weight_path": "{self.weight_path}",
+            "weight_path": "{self.path}",
             "version": "{self.version}",
             "complexity": {self.complexity},
             "epochs": {self.epochs},
@@ -55,7 +55,7 @@ class ConfigModel:
         return ConfigModel(
             name=data["name"],
             model_type=ArchitectureType(data["model_type"]),
-            weight_path=data["weight_path"],
+            path=data["path"],
             version=data["version"],
             complexity=data["complexity"],
             epochs=data["epochs"],
