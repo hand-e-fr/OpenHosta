@@ -5,9 +5,9 @@ from ..neural_network import NeuralNetwork, Layer, LayerType
 
 class LinearRegressionBuilder(NeuralNetwork):
     def __init__(self,
-                 input_size: Optional[int] = None,
-                 output_size: Optional[int] = None,
-                 complexity: Optional[float] = None,
+                 input_size: int = None,
+                 output_size: int = None,
+                 complexity: float = None,
                  activation: LayerType = LayerType.RELU
              ):
         super().__init__()

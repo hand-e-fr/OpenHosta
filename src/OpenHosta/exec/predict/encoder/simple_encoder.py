@@ -121,14 +121,14 @@ class SimpleEncoder:
 #         [['hello', 10, 10.5, True], ['world']],
 #         [['world', 20, 20.5], ['hello']]
 #     ]
-    
+
 #     # Encodage
 #     features_list, targets_list = encoders.encode_dataset(data)
 #     print("Features de base:", data[0][:-1], data[1][:-1])
 #     print("Features encodées:", features_list)
 #     print("Target de base:", [data[0][-1]], [data[1][-1]])
 #     print("Targets encodées:", targets_list)
-    
+
 #     # Pour voir le vocabulaire des strings
 #     string_encoder = encoders._encoders[str]
 #     print("Vocabulaire:", string_encoder.word_to_id)

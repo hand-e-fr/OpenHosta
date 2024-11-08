@@ -1,24 +1,22 @@
 import os
 from typing import Union, Optional, Literal
 
-from OpenHosta.core.config import DefaultModel
-from .predict_memory import PredictMemory, PredictFileType
-from .dataset.dataset import HostaDataset, SourceType
-from .dataset.oracle import LLMSyntheticDataGenerator
-from .dataset.sample_type import Sample
-from .encoder.simple_encoder import SimpleEncoder
 from .model_schema import ConfigModel
-from ...core.config import Model
+from .dataset.dataset import HostaDataset, SourceType
+
 from ...core.hosta import Hosta, Func
-from .architecture.builtins.classification import ClassificationBuilder
-from .architecture.builtins.linear_regression import LinearRegressionBuilder
+from ...core.config import Model, DefaultModel
+from .predict_memory import PredictMemory
+# from .architecture.builtins.linear_regression import LinearRegressionBuilder
+
+# from .dataset.sample_type import Sample
+# from .encoder.simple_encoder import SimpleEncoder
 
 architectures_model = {
     "classification": "on classifie nous",
     "linear_regression": 'on fait une régression linéaire'
 }
 
-import numpy as np
 def predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDataset]] = None, verbose: bool = False) -> Union[int, float, bool]:
     x: Hosta = Hosta()
     func: Func = getattr(x, "_infos")
@@ -27,46 +25,20 @@ def predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDatase
     base_path = model.path if model is not None and model.path is not None else os.getcwd()
 
     memory = PredictMemory.loading(base_path=base_path, name=name)
-
-    if memory.weight.exist:
-        print("Weights found :", memory.weight)
-
-    else:
-        print("Weights not found :", memory.weight)
-
-    
+    print(func.f_args)
+    dataset = HostaDataset.get_sample(func.f_args)
+    print(dataset.inference)
     if memory.architecture.exist:
-        print("Architecture found :", memory.architecture)
-        print("Architecture :", memory.architecture.element)
-    else:
-        print("Architecture not found :", memory.architecture)
-        memory.update(PredictFileType.ARCHITECTURE, architectures_model)
-        print("Architecture updated :", memory.architecture)
-
-    print("summary path :", memory.summary.path)
-
-    
+        print("architecture exist")
+        print(memory.architecture)
+    else :
+        print("architecture not ready")
     
     return 0
     
-    
-    
-    encoder: SimpleEncoder = SimpleEncoder()
-    # memory: PredictMemory = PredictMemory(path=os.path.join(os.path.dirname(__file__), "__hostacache__", str(Hosta.hash_func(func))))
 
-    # if Hosta.hash_func(func) == memory.hash:
-    dataset: HostaDataset = data_preparator(func=func, memory=memory, oracle=oracle, model=model)
-
-    
-    print(f"len: {len(dataset.data)}")
-    print("inférence sample")
-
-    inf = Sample(x.infos.f_args)
-    print(inf)
-
-    return 0 # todo: return the prediction
-
-
+from .dataset.oracle import LLMSyntheticDataGenerator
+from .architecture.builtins.classification import ClassificationBuilder
 
 def data_preparator(func: Func, memory: PredictMemory, oracle: Optional[Union[Model, HostaDataset]], model: Optional[ConfigModel]) -> HostaDataset:
     """
@@ -101,14 +73,4 @@ def data_preparator(func: Func, memory: PredictMemory, oracle: Optional[Union[Mo
 
     dataset.encode(tokenizer=None, max_tokens=10, classification=classification)
     return dataset
-
-
-
-def new_predict(model: ConfigModel = None, oracle: Optional[Union[Model, HostaDataset]] = None, verbose: bool = False) -> Union[int, float, bool]:
-    x: Hosta = Hosta()
-    func: Func = getattr(x, "_infos")
-
-
-
-    dataset = HostaDataset.get_sample(func.f_args)
 

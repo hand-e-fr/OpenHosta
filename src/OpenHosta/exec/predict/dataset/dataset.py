@@ -89,10 +89,8 @@ class HostaDataset:
         dict_data = []
         for sample in self.data:
             sample_dict = {}
-            # Add inputs with generic keys
             for i, input_value in enumerate(sample.input):
                 sample_dict[f'input_{i}'] = input_value
-            # Add output if it exists
             if sample.output is not None:
                 sample_dict['output'] = sample.output
             dict_data.append(sample_dict)
@@ -113,7 +111,7 @@ class HostaDataset:
 
         elif source_type == SourceType.PICKLE:
             with open(path, 'wb') as f:
-                pickle.dump(self.data, f)  # Pour Pickle, on peut sauver les Sample directement
+                pickle.dump(self.data, f)
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
 
@@ -169,14 +167,12 @@ class HostaDataset:
         elif source_type == SourceType.PICKLE:
             with open(path, 'rb') as f:
                 loaded_data = pickle.load(f)
-                # Si les données sont déjà des Sample, les utiliser directement
                 if loaded_data and isinstance(loaded_data[0], Sample):
                     dataset.data = loaded_data
                 else:
-                    # Sinon, convertir chaque élément en Sample
                     for item in loaded_data:
                         if not isinstance(item, dict):
-                            item = {'input_0': item}
+                            item = {'input': item}
                         dataset.data.append(Sample(item))
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
@@ -216,7 +212,7 @@ class HostaDataset:
         return dataset
 
     @staticmethod
-    def get_sample(self, inference: dict) -> 'HostaDataset':
+    def get_sample(inference: dict) -> 'HostaDataset':
         """
         Get a Sample object from a dictionary of input values.
         """

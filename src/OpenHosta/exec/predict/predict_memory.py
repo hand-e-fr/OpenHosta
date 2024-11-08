@@ -1,7 +1,7 @@
 from enum import Enum
 import json
 import numpy as np
-from .memory import HostaMemory
+from ...core.memory import HostaMemory
 from typing import Optional, Dict, Any, NamedTuple
 import os
 
@@ -93,11 +93,13 @@ class PredictMemory(HostaMemory):
         path = self.paths[file_type]
         mode = 'wb' if file_type in [PredictFileType.WEIGHTS, PredictFileType.DATA_NPY] else 'w'
         
-        with open(path, mode) as f:
-            if file_type == PredictFileType.SUMMARY:
-                f.write("=== Prediction Log Summary ===\n")
-            elif file_type == PredictFileType.ARCHITECTURE:
-                json.dump({}, f) 
+        with open(path, mode):
+            pass
+        #     if file_type == PredictFileType.SUMMARY:
+        #         f.write("=== Prediction Log Summary ===\n")
+        #     elif file_type == PredictFileType.ARCHITECTURE:
+        #         json.dump({}, f) 
+        # create but write nothing for now ?
 
     def update(self, file_type: PredictFileType, content: Any) -> None:
         """Update a file with new content"""
