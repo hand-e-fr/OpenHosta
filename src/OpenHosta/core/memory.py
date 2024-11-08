@@ -1,12 +1,12 @@
 import os
 from typing import Optional
 
-CACHE_DIR = "__hostacache__"
 class HostaMemory:
     """
     Base class for persistent memory management.
     """
     _instances = {}
+    CACHE_DIR = "__hostacache__"
     
     def __init__(self, base_path: Optional[str] = None, **kwargs):
         pass
