@@ -26,8 +26,7 @@ def guess_type(key:str, *args)->object:
         temperature=0.5,
     )
 
-    data = response.json()
-    type_json = data["choices"][0]["message"]["content"]
+    type_json = response["choices"][0]["message"]["content"]
     type_dict = json.loads(type_json)
     type_str = str(type_dict["type"])
 
