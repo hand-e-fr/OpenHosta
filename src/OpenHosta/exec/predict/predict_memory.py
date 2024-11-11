@@ -10,11 +10,12 @@ File = NamedTuple("File", [("exist", bool), ("path", str), ("element", Any)])
 
 class PredictFileType(Enum):
     """File types specific to prediction"""
-    WEIGHTS = "weights.pth"
     ARCHITECTURE = "architecture.json"
-    SUMMARY = "summary.txt"
-    DATA_CSV = "data.csv"
+    WEIGHTS = "weights.pth"
+    DICTIONNARY = "dictionnary.txt"
+    DATA_ = "data." # to handle multiple file types, by default ourselves is csv !
     DATA_NPY = "data.npy"
+    SUMMARY = "summary.txt"
 
 
 class PredictMemory(HostaMemory):
@@ -143,8 +144,12 @@ class PredictMemory(HostaMemory):
         return self.files[PredictFileType.SUMMARY]
     
     @property
-    def data_csv(self) -> File:
-        return self.files[PredictFileType.DATA_CSV]
+    def dictionnary(self) -> File:
+        return self.dictionnary[PredictFileType.DICTIONNARY]
+    
+    @property
+    def data(self) -> File:
+        return self.files[PredictFileType.DATA_]
     
     @property
     def data_npy(self) -> File:

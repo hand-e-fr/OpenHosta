@@ -65,3 +65,19 @@ class ConfigModel:
             dataset_path=data["dataset_path"]
 
         )
+    
+
+
+
+class New_Config_Model:
+    archi_type: ArchitectureType
+    archi_complexity: int
+    archi_name: str
+    archi_version: float
+    train_epochs: int
+    train_batch_size: int
+    train_learning_rate: float
+    train_get_loss: float
+    data_path: str
+    data_validation: bool # val_set or no
+    
