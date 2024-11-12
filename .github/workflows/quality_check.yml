@@ -91,7 +91,7 @@ jobs:
           python-version: "3.12"
           
       - name: Install dependencies
-        run: pip install .[dev,pydantic]
+        run: pip install .[tests]
         
       - name: Run unit tests
         run: python -m pytest tests/unitTests -v --cov=OpenHosta.core
@@ -106,7 +106,7 @@ jobs:
           python-version: "3.12"
           
       - name: Install dependencies
-        run: pip install .[dev,pydantic]
+        run: pip install .[tests]
         
       - name: Run functional tests
         run: python -m pytest tests/functionnalTests -v --cov=OpenHosta
