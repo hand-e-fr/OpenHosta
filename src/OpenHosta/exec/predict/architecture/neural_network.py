@@ -4,7 +4,7 @@ from typing import Union, Optional
 
 from torch import nn
 
-from ....utils.torch_nn_utils import map_pytorch_layer_to_custom
+from ....utils.torch_nn_utils import map_pytorch_layer_to_custom, map_pytorch_loss_to_custom, map_pytorch_optimizer_to_custom
 
 
 class LayerType(Enum):
@@ -241,11 +241,14 @@ class NeuralNetwork:
 
 
     @classmethod
-    def from_torch_nn(cls, torch_model: nn.Module) -> 'NeuralNetwork':
+    def from_torch_nn(cls, torch_model: nn.Module, loss_fn=None, optimizer=None) -> 'NeuralNetwork':
         """
-        Creates a NeuralNetwork instance from a torch.nn.Module instance.
+        Creates a NeuralNetwork instance from a torch.nn.Module model,
+        with optional loss function and optimizer mappings.
 
         :param torch_model: The PyTorch neural network model.
+        :param loss_fn: PyTorch loss function instance (optional).
+        :param optimizer: PyTorch optimizer instance (optional).
         :return: A NeuralNetwork instance.
         """
         network = cls()
@@ -257,5 +260,19 @@ class NeuralNetwork:
                 network.add_layer(nn_layer)
             except ValueError as e:
                 print(f"Skipping unsupported layer: {e}")
+
+        # Set loss function and optimizer if specified
+        if loss_fn is not None:
+            try:
+                network.loss_function = map_pytorch_loss_to_custom(loss_fn)
+            except ValueError as e:
+                print(f"Skipping unsupported loss function: {e}")
+
+        # Set optimizer if specified
+        if optimizer is not None:
+            try:
+                network.optimizer = map_pytorch_optimizer_to_custom(optimizer)
+            except ValueError as e:
+                print(f"Skipping unsupported optimizer: {e}")
 
         return network
