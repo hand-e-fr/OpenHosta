@@ -54,20 +54,93 @@ Installing OpenHosta with GitHub gives you access to all the source code, allowi
 
 ## Additional Dependencies
 
+You can install additional dependencies to use deeper features of `OpenHosta`. You'll need to add the following options.
+
+> **Note**
+> `OpenHosta` base features are "Pure Python". This means that it contains 0 dependencies. It include the `emulate` function and all its related functionalities (`config`, `example`, `thought`), the `thinkof` function and the `ask` function. 
+> However, you don't have access to `predict` and the `pydantic` compatibility.
+```sh
+pip install -U OpenHosta # With pip
+```
+*or* 
+```sh
+pip install . # With GitHub
+```
+
 ### `predict`
+
+Adds the `predict` function and all its features.
+```sh
+pip install -U OpenHosta[predict]
+```
 
 ### `pydantic`
 
+Adds the `pydantic` compatibility with all functions.
+```sh
+pip install OpenHosta[pydantic]
+```
+*or*
+```sh
+pip install pydantic # Basically the same
+```
+
 ### `dev`
+
+*Not inclued in "all"*
+
+Adds all the useful OpenHosta development tools for those who'd like to contribute.
+```sh
+pip install .[dev] # Useful only with the GitHub install, yon won't need it if you're not interested in contributing for OpenHosta 
+```
 
 ### `tests`
 
+*Not inclued in "all"*
+
+Adds all the package used for executing the `OpenHosta`'s tests.
+```sh
+pip install .[tests] # Also only useful with the GitHub install
+```
+
+### Combining Options
+
+All options can be combined as needed.
+
+For example, if you're a contributor, it might be useful to install `dev` and `tests` packages:
+```sh
+pip install .[dev, tests]
+```
+Note that the `pydantic` and `predict` package are the same as `all`.
+
 ## API Key Setup
 
+1. Get API key from your favorite provider. As default model we use OpenAI `GPT-4o`, you can get a key from https://platform.openai.com/account/api-keys
+2. Then all you have to do is set a environment variable containing this API key:
+   - Windows:
+    ```sh
+    setx OPENAI_API_KEY "your-openai-api-key"
+    ```
+   - MacOS/Linux:
+    ```sh
+    # in your .bashrc or .zshrc
+    export OPENAI_API_KEY='your-anthropic-api-key'
+    ```
+
 ## Common Issues
+
+If you encounter a problem, try these few method that may fix it:
+
+- Update pip: ``pip install --upgrade pip``
+- Use virtual environment
+- Try ``pip3`` instead of ``pip``
+- Use ``sudo`` (Unix) or run as administrator (Windows) if permission errors occur
+
+For more help and if the problem persist, please file an issue on GitHub.
 
 ```
 py -3.12 -m pip install
 ```
 
 emulate en dehors du return 
+expliquer comment configurer un modèle avec l'url, la clé, le nom...
