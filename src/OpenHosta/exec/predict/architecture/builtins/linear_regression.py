@@ -28,3 +28,6 @@ class LinearRegressionBuilder(NeuralNetwork):
         self.add_layer(Layer(LayerType.LINEAR, in_features=hidden_size_2, out_features=hidden_size_3))
         self.add_layer(Layer(activation))
         self.add_layer(Layer(LayerType.LINEAR, in_features=hidden_size_3, out_features=output_size))
+
+class LinearRegression():
+    pass

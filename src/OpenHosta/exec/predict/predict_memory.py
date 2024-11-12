@@ -6,19 +6,24 @@ from typing import Optional, Dict, Any, NamedTuple
 import os
 
 
-File = NamedTuple("File", [("exist", bool), ("path", str), ("element", Any)])
+# 1. Structures de base
+File = NamedTuple("File", [("exist", bool), ("path", str)])
 
 class PredictFileType(Enum):
-    """File types specific to prediction"""
+    """Enumaration for different types of files in the prediction memory."""
     ARCHITECTURE = "architecture.json"
     WEIGHTS = "weights.pth"
     DICTIONNARY = "dictionnary.txt"
-    DATA_ = "data." # to handle multiple file types, by default ourselves is csv !
-    DATA_NPY = "data.npy"
+    DATA = "data."
     SUMMARY = "summary.txt"
 
-
 class PredictMemory(HostaMemory):
+    """
+    This module defines the PredictMemory class, which manages the structure of files for prediction purposes. 
+    It inherits from HostaMemory, which handles the main cache directory.
+
+    He uses the File structure to store the status of each file and his path.
+    """
     def __init__(self, base_path: Optional[str] = None, *, name: str = None, **kwargs):
         super().__init__(base_path=base_path, **kwargs)
         if name is None:
@@ -28,129 +33,74 @@ class PredictMemory(HostaMemory):
         self.files: Dict[PredictFileType, File] = {}
 
     @staticmethod
-    def load(base_path: Optional[str] = None, *, name: str = None) -> 'PredictMemory':
-        """Creates or loads a PredictMemory instance with all its files"""
+    def load(base_path: Optional[str] = None, name: str = None) -> 'PredictMemory':
+        """
+        Static method to create or load a memory.
+        Args:
+            base_path: Base path for the memory.
+            name: Name of the memory.
+        Returns:
+            PredictMemory instance.
+        """
         memory = PredictMemory(base_path=base_path, name=name)
-        
-        if not memory.files:
-            memory._initialize_predict_directory
-            for file_type in PredictFileType:
-                memory.files[file_type] = memory._process_file(file_type)
-        
+        memory._initialize_predict_directory
+        memory._check_files()
         return memory
-
-    def _process_file(self, file_type: PredictFileType) -> File:
-        """Process a single file and return its File object"""
-        path = self.paths[file_type]
-        
-        # Create file if it doesn't exist
-        if not os.path.exists(path):
-            self._create_empty_file(file_type)
-            return File(exist=False, path=path, element=None)
-        
-        # Check if file has content
-        is_not_empty = self._is_file_not_empty(file_type)
-        content = self._read_file(file_type) if is_not_empty else None
-        
-        return File(exist=is_not_empty, path=path, element=content)
-
-    def _is_file_not_empty(self, file_type: PredictFileType) -> bool:
-        """Check if a file has content"""
-        path = self.paths[file_type]
-        if file_type in [PredictFileType.WEIGHTS, PredictFileType.DATA_NPY]:
-            return os.path.getsize(path) > 0
-        try:
-            with open(path, 'r') as f:
-                return len(f.read().strip()) > 0
-        except Exception:
-            return False
-
-    def _read_file(self, file_type: PredictFileType) -> Any:
-        """Read and return file content"""
-        path = self.paths[file_type]
-        try:
-            if file_type == PredictFileType.ARCHITECTURE:
-                with open(path, 'r') as f:
-                    content = f.read().strip()
-                    if not content:
-                        return {}
-                    return json.loads(content)
-            elif file_type == PredictFileType.DATA_NPY:
-                return np.load(path)
-            elif file_type in [PredictFileType.WEIGHTS]:
-                with open(path, 'rb') as f:
-                    return f.read()
-            else:
-                with open(path, 'r') as f:
-                    return f.read()
-        except json.JSONDecodeError:
-            raise json.JSONDecodeError(f"Error reading {file_type.value}: JSON is invalid", path, 0)
-        except Exception as e:
-            print(f"Error reading {file_type.value}: {str(e)}")
-            return None
-
-    def _create_empty_file(self, file_type: PredictFileType) -> None:
-        """Create an empty file with appropriate initial content"""
-        path = self.paths[file_type]
-        mode = 'wb' if file_type in [PredictFileType.WEIGHTS, PredictFileType.DATA_NPY] else 'w'
-        
-        with open(path, mode):
-            pass
-        #     if file_type == PredictFileType.SUMMARY:
-        #         f.write("=== Prediction Log Summary ===\n")
-        #     elif file_type == PredictFileType.ARCHITECTURE:
-        #         json.dump({}, f) 
-        # create but write nothing for now ?
-
-    def update(self, file_type: PredictFileType, content: Any) -> None:
-        """Update a file with new content"""
-        path = self.paths[file_type]
-        
-        # Save content
-        if file_type == PredictFileType.ARCHITECTURE:
-            with open(path, 'w') as f:
-                json.dump(content, f, indent=4)
-        elif file_type == PredictFileType.DATA_NPY:
-            np.save(path, content)
-        elif file_type in [PredictFileType.WEIGHTS]:
-            with open(path, 'wb') as f:
-                f.write(content)
-        else:
-            with open(path, 'w') as f:
-                f.write(str(content))
-        
-        self.files[file_type] = File(exist=True, path=path, element=content)
 
     @property
     def _initialize_predict_directory(self) -> None:
-        """Initialize the prediction directory and file paths"""
-        predict_dir = os.path.join(self.root, self.name)
+        """
+        Initializes the directory and file structure for predictions.
+        """
+        predict_dir = os.path.join(self.cache_root, self.name)
         self._ensure_directory_exists(predict_dir)
-        
         self.paths = {
             file_type: os.path.join(predict_dir, file_type.value)
             for file_type in PredictFileType
         }
+
+    def _check_files(self) -> None:
+        """
+        Checks the status of all files.
+        """
+        for file_type in PredictFileType:
+            path = self.paths[file_type]
+            exists = os.path.exists(path) and os.path.getsize(path) > 0
+            self.files[file_type] = File(exist=exists, path=path)
+
+    # def update(self, file_type: PredictFileType, content: Any) -> None:
+    #     """
+    #     Met à jour un fichier avec un nouveau contenu.
+    #     Process:
+    #     1. Récupère le chemin du fichier
+    #     2. Écrit le contenu selon le type:
+    #        - Binaire pour weights
+    #        - JSON pour architecture
+    #        - Texte pour les autres
+    #     3. Met à jour l'état du fichier
+    #     """
+    #     path = self.paths[file_type]
+    #     try:
+    #         if file_type in [PredictFileType.WEIGHTS]:
+    #             with open(path, 'wb') as f:
+    #                 f.write(content)
+    #         else:
+    #             with open(path, 'w') as f:
+    #                 if file_type == PredictFileType.ARCHITECTURE:
+    #                     json.dump(content, f, indent=4)
+    #                 else:
+    #                     f.write(str(content))
+    #         self.files[file_type] = File(exist=True, path=path)
+    #     except Exception as e:
+    #         print(f"Error updating {file_type.value}: {str(e)}")
+
     @property
-    def weight(self) -> File:
-        return self.files[PredictFileType.WEIGHTS]
-    
+    def architecture(self) -> File: return self.files[PredictFileType.ARCHITECTURE]
     @property
-    def architecture(self) -> File:
-        return self.files[PredictFileType.ARCHITECTURE]
-    
+    def weights(self) -> File: return self.files[PredictFileType.WEIGHTS]
     @property
-    def summary(self) -> File:
-        return self.files[PredictFileType.SUMMARY]
-    
+    def data(self) -> File: return self.files[PredictFileType.DATA]
     @property
-    def dictionnary(self) -> File:
-        return self.dictionnary[PredictFileType.DICTIONNARY]
-    
+    def summary(self) -> File: return self.files[PredictFileType.SUMMARY]
     @property
-    def data(self) -> File:
-        return self.files[PredictFileType.DATA_]
-    
-    @property
-    def data_npy(self) -> File:
-        return self.files[PredictFileType.DATA_NPY]
+    def dictionnary(self) -> File: return self.files[PredictFileType.DICTIONNARY]

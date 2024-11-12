@@ -120,7 +120,7 @@ class LLMSyntheticDataGenerator:
             request_amounts: int = 3, # Amount of requests to the model
             examples_in_req: int = 50, # Examples amount in each request
             model: Optional[Model] = None # Model to use for data generation
-    ) -> HostaDataset:
+    ) -> List[Dict]:
         input_types: Dict[str, Type] = dict(zip(func.f_args.keys(), func.f_type[0]))
         output_type: Type = func.f_type[1]
         examples: List[Dict] = []
@@ -216,4 +216,4 @@ class LLMSyntheticDataGenerator:
 
             attempts += 1
 
-        return HostaDataset.from_list(result)
+        return result

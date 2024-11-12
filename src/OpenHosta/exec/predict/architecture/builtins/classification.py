@@ -45,8 +45,12 @@ class Classification(nn.Module, BaseArchitecture):
     def forward(self, x):
         if self.layers is None or len(self.layers) == 0:
             return x
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             x = layer(x)
+            if i < len(self.layers) - 1:
+                x = nn.ReLU()(x)
+            else:
+                x = nn.Softmax(dim=1)(x)
         return x
     
     def training(self, train_set, epochs, verbose):
