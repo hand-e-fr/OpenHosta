@@ -1,3 +1,4 @@
+
 PACKAGE_NAME := OpenHosta
 SRC_DIR := src/OpenHosta
 TEST_DIR := tests
@@ -50,9 +51,6 @@ help:
 
 install: all
 	@$(L_SHELL) $(WRITE) '$(TAG) [INSTALL]' $(COLOR)
-	@$(L_SHELL) $(WRITE) '$(TAG) Installing dependencies...' $(COLOR)
-	@$(PIP) install requirements.txt > $(NULL_DEVICE)
-	@$(PIP) install requirements-dev.txt > $(NULL_DEVICE)
 	@$(L_SHELL) $(WRITE) '$(TAG) Installing package: $(PACKAGE_NAME)...' $(COLOR)
 	@$(PIP) install . > $(NULL_DEVICE)
 	@$(L_SHELL) $(WRITE) '$(TAG) Succesfully installed $(PACKAGE_NAME) !' $(COLOR)
@@ -64,29 +62,6 @@ build: clean
 upload: build
 	$(PYTHON) -m twine upload dist/* --verbose
 
-ftests: clean
-	@$(L_SHELL) $(WRITE) '$(TAG) Installing package: $(PACKAGE_NAME)...' $(COLOR) 
-	@$(PIP) install . > $(NULL_DEVICE)
-	@$(L_SHELL) $(WRITE) '$(TAG) Running functionnal tests...' $(COLOR) 
-	@$(L_SHELL) $(SET_ENV)
-	@-$(L_SHELL) "$(PYTEST) .\\tests\\functionnalTests\\test_mandatory.py $(ARGS)"
-	@$(L_SHELL) $(UNSET_ENV)
-	@$(L_SHELL) $(WRITE) '$(TAG) Uninstalling package: $(PACKAGE_NAME)...' $(COLOR) 
-	@$(PIP) uninstall -y OpenHosta > $(NULL_DEVICE)
-	@$(L_SHELL) $(WRITE) '$(TAG) Succesfully ran functionnal tests !' $(COLOR)
-
-utests: clean
-	@$(L_SHELL) $(WRITE) '$(TAG) Installing package: $(PACKAGE_NAME)...' $(COLOR) 
-	@$(PIP) install . > $(NULL_DEVICE)
-	@$(L_SHELL) $(WRITE) '$(TAG) Running unit tests...' $(COLOR) 
-	@$(L_SHELL) $(SET_ENV)
-	@-$(L_SHELL) "$(PYTEST) .\\tests\\unitTests\\test_exec.py $(ARGS)"
-	@$(L_SHELL) $(UNSET_ENV)
-	@$(L_SHELL) $(WRITE) '$(TAG) Uninstalling package: $(PACKAGE_NAME)...' $(COLOR) 
-	@$(PIP) uninstall -y OpenHosta > $(NULL_DEVICE)
-	@$(L_SHELL) $(WRITE) '$(TAG) Succesfully ran unit tests !' $(COLOR)
-
-
 clean:
 	@$(L_SHELL) $(WRITE) '$(TAG) [CLEAN]' $(COLOR)
 	@$(L_SHELL) $(WRITE) '$(TAG) Cleaning repository...' $(COLOR)
@@ -96,6 +71,8 @@ clean:
 	@$(L_SHELL) $(FIND) 'dist' | $(RM)
 	@$(L_SHELL) $(FIND) 'OpenHosta.egg-info' | $(RM)
 	@$(L_SHELL) $(FIND) '.pytest_cache' | $(RM)
+	@$(L_SHELL) $(FIND) '.mypy_cache' | $(RM)
+	@$(L_SHELL) $(FIND) '.coverage' | $(RM)
 	@$(L_SHELL) $(WRITE) '$(TAG) Uninstalling package: $(PACKAGE_NAME)...' $(COLOR) 
 	@$(PIP) uninstall -y OpenHosta > $(NULL_DEVICE)
 	@$(L_SHELL) $(CLEAR)

@@ -1,32 +1,37 @@
-from .config import Model, DefaultManager
+from __future__ import annotations
+from .exec.ask import ask
+from .exec.predict.architecture.builtins import ArchitectureType
+from .exec.predict.model_schema import ConfigModel
+from .exec.predict.predict import predict
+from .utils.meta_prompt import EMULATE_PROMPT
+from .exec.thinkof import thinkof
+from .exec.thought import thought
+from .exec.example import example
+from .exec.emulate import emulate
+from .core import config
+from .core.config import Model, DefaultManager
+
+import os
+
+HOSTAPATH = "./"
+PROMPTPATH = "src/prompt.json"
+
 
 DefaultManager.set_default_model(
-    Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions")
+    Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions",
+          api_key=os.getenv("OPENAI_API_KEY") or None)
 )
 
-from .emulate import _exec_emulate
-from .predict import _exec_predict
-from .trainset import TrainingSet
-from . import config
-from .thought import thought
-from .exec import HostaInjector
-from .example import example, save_examples, load_training_example
-from .enhancer import suggest
 
-emulate = HostaInjector(_exec_emulate)
-predict = HostaInjector(_exec_predict)
-
-__all__ = (
+all = (
+    "config",
     "emulate",
     "thought",
-    "example", 
-    "save_examples",
-    "load_training_example",
-    "TrainingSet",
-    "config", 
-    "Model", 
-    "DefaultManager",
-    "suggest",
-    "predict"
+    "example",
+    "thinkof",
+    "ask",
+    "EMULATE_PROMPT",
+    "predict",
+    "ModelSchema",
+    "ArchitectureType",
 )
-

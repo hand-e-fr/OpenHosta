@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Callable
 import numpy as np
 
-from OpenHosta import config, emulate, thought, example, load_training_example, predict, TrainingSet
+from OpenHosta import config, emulate, thinkof, example
 
 g_apiKey = ""
 
@@ -231,33 +231,6 @@ class TestEmulate:
     def test_FeaturePydanticLocal(self):
         pass
         
-    def test_FeatureSuggestDefaultModel(self):
-        
-        my_model = config.Model(
-            model="gpt-4o-mini",
-            base_url="https://api.openai.com/v1/chat/completions",
-            api_key=g_apiKey
-        )
-        
-        config.set_default_model(my_model)
-        
-        def multiply(a:int, b:int)->int:
-            """
-            This function multiplies two integers in parameter.
-            """
-            return emulate()
-        
-        ret = multiply(2, 3)
-        ret_suggest = multiply.__suggest__(multiply)
-        ret_model = multiply._last_response["model"]
-        
-        assert isinstance(ret_suggest, dict)
-        assert "gpt-4o-mini" in ret_model
-        assert not multiply.advanced is None
-        assert not multiply.enhanced_prompt is None
-        assert not multiply.review is None
-        assert not multiply.diagram is None
-        
     def test_rc2(self):
         
         def multiply(a:int, b:int)->int:
@@ -272,14 +245,14 @@ class TestEmulate:
         res = main()
         assert res == 6
 
-class TestThought:
+class Testthinkof:
     
     def test_BasicDirect(self):
-        ret = thought("Multiply by 2")(8)
+        ret = thinkof("Multiply by 2")(8)
         assert ret == 16
     
     def test_BasicIndirect(self):
-        x = thought("Translate in English")
+        x = thinkof("Translate in English")
         ret = x("Bonjour Monde!")
         assert isinstance(x, Callable)
         assert ret == "Hello World!"
@@ -292,7 +265,7 @@ class TestThought:
         ("return a random bool in python", "", bool),
     ])
     def test_BasicTyped(self, prompt, args, expected):
-        ret = thought(prompt)(args)
+        ret = thinkof(prompt)(args)
         assert isinstance(ret, expected)
         
     @pytest.mark.parametrize("prompt, args, expected", [
@@ -303,16 +276,16 @@ class TestThought:
         ("Is a positive number", 6, bool),
     ])
     def test_FeaturePredict(self, prompt, args, expected):
-        x = thought(prompt)
+        x = thinkof(prompt)
         ret = x(args)
         assert x._return_type is expected
 
     def test_FeatureMultiArgs(self):
-        x = thought("Combine each word of a sentence in a string")
+        x = thinkof("Combine each word of a sentence in a string")
         ret = x("Hello", ", how are you ?", " Nice to meet you !")
         assert ret == "Hello, how are you ? Nice to meet you !"
     
-    def test_FeatureChainOfThought(self):
+    def test_FeatureChainOfthinkof(self):
         pass
     
     def test_FeatureDefaultModel(self):
@@ -324,7 +297,7 @@ class TestThought:
         
         config.set_default_model(my_model)
         
-        x = thought("Is a masculine name")
+        x = thinkof("Is a masculine name")
         ret = x("Max")
         print(x._last_response)
         ret_model = x._last_response["model"]
