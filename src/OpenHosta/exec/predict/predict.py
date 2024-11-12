@@ -37,9 +37,8 @@ def predict(
     x: Hosta = Hosta()
     func: Func = getattr(x, "_infos")
     name = model.name if model and model.name else func.f_name #TODO: add hash of args into the name of the func
-    base_path = model.path if model and model.path else os.getcwd()
-    
-    memory = PredictMemory.loading(base_path=base_path, name=name)
+
+    memory = PredictMemory.load(base_path=model.path, name=name)
     dataset = HostaDataset.get_sample(func.f_args) # just get a sample type of the input, parsing it into one list of value
     
     # Gestion de l'architecture
