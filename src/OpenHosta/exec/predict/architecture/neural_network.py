@@ -2,6 +2,10 @@ import json
 from enum import Enum
 from typing import Union, Optional
 
+from torch import nn
+
+from ....utils.torch_nn_utils import map_pytorch_layer_to_custom
+
 
 class LayerType(Enum):
     """
@@ -234,3 +238,24 @@ class NeuralNetwork:
 
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise ValueError(f"Invalid JSON configuration: {str(e)}")
+
+
+    @classmethod
+    def from_torch_nn(cls, torch_model: nn.Module) -> 'NeuralNetwork':
+        """
+        Creates a NeuralNetwork instance from a torch.nn.Module instance.
+
+        :param torch_model: The PyTorch neural network model.
+        :return: A NeuralNetwork instance.
+        """
+        network = cls()
+
+        # Iterating through the PyTorch model's children (layers)
+        for layer in torch_model.children():
+            try:
+                nn_layer = map_pytorch_layer_to_custom(layer)
+                network.add_layer(nn_layer)
+            except ValueError as e:
+                print(f"Skipping unsupported layer: {e}")
+
+        return network
