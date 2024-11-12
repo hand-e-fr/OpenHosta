@@ -95,7 +95,6 @@ jobs:
         
       - name: Run unit tests
         run: python -m pytest tests/unitTests -v --cov=OpenHosta.core
-        continue-on-error: true
 
   functional-tests:
     needs: setup
@@ -111,7 +110,6 @@ jobs:
         
       - name: Run functional tests
         run: python -m pytest tests/functionnalTests -v --cov=OpenHosta
-        continue-on-error: true
 
   notify:
     needs: [code-quality, static-analysis, unit-tests, functional-tests]
