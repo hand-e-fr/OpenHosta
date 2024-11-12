@@ -27,7 +27,9 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-pydantic = ["pydantic>=2.8.2"]
+pydantic = [
+    "pydantic>=2.8.2"
+]
 dev = [ 
     "pytest>=8.3.2",
     "pytest-cov>=5.0.0",
@@ -36,9 +38,12 @@ dev = [
     "autopep8>=2.3.1",
     "pylint>=3.3.1",
     "pyflakes>=3.2.0",
-    "bandit>=1.7.10",
-    "interrogate>=1.7.0",
-
+    "bandit>=1.7.10"
+]
+tests = [
+    "pillow>=11.0.0",
+    "pydantic>=2.8.2",
+    "Flask>=3.0.3"
 ]
 predict = []
 
