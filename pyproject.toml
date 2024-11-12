@@ -27,6 +27,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+all = []
 pydantic = [
     "pydantic>=2.8.2"
 ]
