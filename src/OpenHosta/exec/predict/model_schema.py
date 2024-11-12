@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .architecture.builtins import ArchitectureType
+from .architecture import ArchitectureType
 
 
 class ConfigModel:

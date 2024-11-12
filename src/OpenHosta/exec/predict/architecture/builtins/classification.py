@@ -2,7 +2,7 @@ from abc import ABCMeta, ABC
 from typing import Optional
 
 from ..neural_network import NeuralNetwork, Layer, LayerType
-from ..base_architecture import BaseArchitecture
+from ..architecture import BaseArchitecture
 from torch import nn
 
 class Classification(nn.Module, BaseArchitecture):
