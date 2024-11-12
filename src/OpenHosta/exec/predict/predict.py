@@ -3,7 +3,8 @@ from typing import Union, Optional, Literal
 
 from .model_schema import ConfigModel
 from .predict_memory import PredictMemory, File
-from .architecture.architecture import Architecture
+from .architecture import ArchitectureType, BaseArchitecture
+from .architecture.builtins.classification import Classification
 from .dataset.dataset import HostaDataset, SourceType
 
 from ...core.hosta import Hosta, Func
@@ -14,10 +15,6 @@ from ...core.config import Model, DefaultModel
 # from .dataset.sample_type import Sample
 # from .encoder.simple_encoder import SimpleEncoder
 
-architectures_model = {
-    "classification": "on classifie nous",
-    "linear_regression": 'on fait une régression linéaire'
-}
 def predict(
     model: ConfigModel = None,
     oracle: Optional[Union[Model, HostaDataset]] = None, #TODO: function for creating data (call a subclass of oracle ?)
@@ -68,8 +65,12 @@ def _load_or_create_architecture(
     if memory.architecture.exist:
         json_architecture = memory.architecture.element
         return Architecture.load_architecure_from_json(json_architecture)
-    
-    architecture = Architecture.get_architecture(func=func, model=model)  # on envoie le type du model, la complexity et le type d'output (detecter si classification avec literal)
+
+    if model is not None:
+        if model.model_type == ArchitectureType.LINEAR_REGRESSION:
+            architecture = LinearRegressionBuilder()
+        elif model.model_type == ArchitectureType.CLASSIFICATION:
+            architecture = Classification()
     architecture.save_architecture_to_json(memory.architecture) # à voir si on save dans model ou just on utilise le path (besoin de modif le type File)
     return architecture
 

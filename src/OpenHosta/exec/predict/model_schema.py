@@ -24,11 +24,7 @@ class ConfigModel:
 
         self.complexity: float = complexity
 
-        # if batch_size is None:
-        #     self.batch_size: int = int(0.05 * len(train)) if 0.05 * len(train) > 1 else len(train) # 5% of the dataset or len(train) if len(train) <= 1
-        # else:
-        #     self.batch_size: int = batch_size
-        self.batch_size: int = batch_size 
+        self.batch_size: int = batch_size
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
         self.get_loss: float = get_loss

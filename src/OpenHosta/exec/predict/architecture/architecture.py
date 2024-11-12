@@ -1,21 +1,28 @@
-from typing import Union
+from abc import ABC
+from ..predict_memory import PredictMemory
+from enum import Enum
 
-from ....core.hosta import Func
+class ArchitectureType(Enum):
+    """
+    Enum for different built-in architectures for neural networks.
+    """
+    LINEAR_REGRESSION = 1
+    CLASSIFICATION = 2
 
-from .neural_network import NeuralNetwork
-from .builtins.linear_regression import LinearRegressionBuilder
-from .builtins.classification import ClassificationBuilder
 
-LINEAR_REGRESSION = "linear_regression"
-CLASSIFICATION = "classification"
+class BaseArchitecture(ABC):
 
-class Architecture(NeuralNetwork):
-    def __init__(self):
-        super().__init__()
+    def training(self, train_set, epochs, verbose):
+        pass
 
-    @staticmethod
-    def get_architecture(func: Func, archi: Union[LinearRegressionBuilder, ClassificationBuilder] = None):
-        """
-        Get the architecture of the neural network for the given function.
-        """
-    pass
+    def validate(self, validation_set):
+        pass
+
+    def predict(self, test_set):
+        pass
+
+    def init_weights(self):
+        pass
+
+    def save_architecture(self, memory: PredictMemory):
+
