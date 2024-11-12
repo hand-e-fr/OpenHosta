@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Set up Python 3.12
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.12"
           
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
           
@@ -56,7 +56,7 @@ jobs:
         run: python -m isort --check-only src/OpenHosta > tests/reports/isort_report.txt
         
       - name: Upload quality reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: quality-reports
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
           
@@ -84,7 +84,7 @@ jobs:
         run: python -m bandit -c pyproject.toml -r src/OpenHosta > tests/reports/bandit_report.txt
         
       - name: Upload analysis reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: analysis-reports
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
           
@@ -106,7 +106,7 @@ jobs:
         run: python -m pytest tests/unitTests -v --cov=OpenHosta.core > tests/reports/unittest_report.txt
         
       - name: Upload test reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-test-reports
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
           
@@ -128,7 +128,7 @@ jobs:
         run: python -m pytest tests/functionnalTests -v --cov=OpenHosta > tests/reports/functest_report.txt
         
       - name: Upload test reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: functional-test-reports
