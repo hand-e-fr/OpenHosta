@@ -16,3 +16,4 @@ __hostacache__/
 src/OpenHosta.egg-info
 build/
 .pypirc
+tests/reports/*.txt
