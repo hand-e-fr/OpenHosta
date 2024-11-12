@@ -196,7 +196,6 @@ def custom_loss_to_pytorch(loss_function: LossFunction) -> Union[nn.Module, None
 
 optimizer_algorithm_map = {
     optim.Adadelta: OptimizerAlgorithm.ADADELTA,
-    optim.Adafactor: OptimizerAlgorithm.ADAFACTOR,
     optim.Adagrad: OptimizerAlgorithm.ADAGRAD,
     optim.Adam: OptimizerAlgorithm.ADAM,
     optim.AdamW: OptimizerAlgorithm.ADAMW,
@@ -207,7 +206,7 @@ optimizer_algorithm_map = {
     optim.Rprop: OptimizerAlgorithm.RPROP,
     optim.SGD: OptimizerAlgorithm.SGD,
     optim.LBFGS: OptimizerAlgorithm.LBFGS,
-    optim.Nadam: OptimizerAlgorithm.NADAM,
+    optim.NAdam: OptimizerAlgorithm.NADAM,
     optim.RAdam: OptimizerAlgorithm.RADAM,
 }
 
