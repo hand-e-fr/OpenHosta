@@ -1,0 +1,146 @@
+name: Python Quality Check
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.12"
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev,pydantic]
+          
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+  code-quality:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.12"
+          
+      - name: Install dependencies
+        run: pip install .[dev,pydantic]
+        
+      - name: Run autopep8
+        run: python -m autopep8 --recursive --in-place src/OpenHosta
+        
+      - name: Run pyflakes
+        run: python -m pyflakes src/OpenHosta/ > tests/reports/pyflakes_report.txt
+        
+      - name: Run isort
+        run: python -m isort --check-only src/OpenHosta > tests/reports/isort_report.txt
+        
+      - name: Upload quality reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: quality-reports
+          path: tests/reports/
+
+  static-analysis:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.12"
+          
+      - name: Install dependencies
+        run: pip install .[dev,pydantic]
+        
+      - name: Run mypy
+        run: python -m mypy src/OpenHosta > tests/reports/mypy_report.txt
+        
+      - name: Run pylint
+        run: python -m pylint --rcfile=pyproject.toml src/OpenHosta > tests/reports/pylint_report.txt
+        
+      - name: Run bandit
+        run: python -m bandit -c pyproject.toml -r src/OpenHosta > tests/reports/bandit_report.txt
+        
+      - name: Upload analysis reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: analysis-reports
+          path: tests/reports/
+
+  unit-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.12"
+          
+      - name: Install dependencies
+        run: pip install .[dev,pydantic]
+        
+      - name: Run unit tests
+        run: python -m pytest tests/unitTests -v --cov=OpenHosta.core > tests/reports/unittest_report.txt
+        
+      - name: Upload test reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: unit-test-reports
+          path: tests/reports/
+
+  functional-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.12"
+          
+      - name: Install dependencies
+        run: pip install .[dev,pydantic]
+        
+      - name: Run functional tests
+        run: python -m pytest tests/functionnalTests -v --cov=OpenHosta > tests/reports/functest_report.txt
+        
+      - name: Upload test reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: functional-test-reports
+          path: tests/reports/
+
+  notify:
+    needs: [code-quality, static-analysis, unit-tests, functional-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check for failures
+        if: contains(needs.*.result, 'failure')
+        run: |
+          echo "Some jobs have failed. Check the reports for more details."
+          exit 1
