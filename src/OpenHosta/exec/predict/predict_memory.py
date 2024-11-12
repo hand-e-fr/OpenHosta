@@ -28,7 +28,7 @@ class PredictMemory(HostaMemory):
         self.files: Dict[PredictFileType, File] = {}
 
     @staticmethod
-    def loading(base_path: Optional[str] = None, *, name: str = None) -> 'PredictMemory':
+    def load(base_path: Optional[str] = None, *, name: str = None) -> 'PredictMemory':
         """Creates or loads a PredictMemory instance with all its files"""
         memory = PredictMemory(base_path=base_path, name=name)
         

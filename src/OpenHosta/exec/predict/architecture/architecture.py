@@ -3,13 +3,14 @@ from typing import Union
 from ....core.hosta import Func
 
 from .neural_network import NeuralNetwork
-from architecture.builtins.linear_regression import LinearRegressionBuilder
-from architecture.builtins.classification import ClassificationBuilder
+from .builtins.linear_regression import LinearRegressionBuilder
+from .builtins.classification import ClassificationBuilder
+
 LINEAR_REGRESSION = "linear_regression"
 CLASSIFICATION = "classification"
 
 class Architecture(NeuralNetwork):
-    def __init__():
+    def __init__(self):
         super().__init__()
 
     @staticmethod
