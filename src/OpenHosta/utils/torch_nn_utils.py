@@ -1,8 +1,7 @@
 from torch import nn
 from torch import optim
-from enum import Enum
 from typing import Optional, Union
-from ..exec.predict.architecture.neural_network import Layer, LayerType, LossFunction, OptimizerAlgorithm
+from ..exec.predict.architecture.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
 
 def map_pytorch_layer_to_custom(layer) -> Layer:
     """

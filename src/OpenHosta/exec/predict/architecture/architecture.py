@@ -25,4 +25,4 @@ class BaseArchitecture(ABC):
         pass
 
     def save_architecture(self, memory: PredictMemory):
-
+        pass
