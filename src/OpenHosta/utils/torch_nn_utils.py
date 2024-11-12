@@ -3,7 +3,7 @@ from torch import optim
 from typing import Optional, Union
 from ..exec.predict.architecture.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
 
-def map_pytorch_layer_to_custom(layer) -> Layer:
+def pytorch_layer_to_custom(layer) -> Layer:
     """
     Maps a PyTorch layer instance to a custom Layer representation.
 
@@ -84,7 +84,91 @@ def map_pytorch_layer_to_custom(layer) -> Layer:
     else:
         raise ValueError(f"Unsupported PyTorch layer type: {layer.__class__.__name__}")
 
-def map_pytorch_loss_to_custom(loss_instance) -> LossFunction:
+
+def custom_layer_to_pytorch(layer: Layer) -> Union[nn.Module, None]:
+    """
+    Maps a custom Layer instance to a PyTorch layer.
+
+    :param layer: The custom Layer instance.
+    :return: The PyTorch layer instance.
+    """
+    if layer.layer_type == LayerType.LINEAR:
+        return nn.Linear(layer.in_features, layer.out_features)
+
+    elif layer.layer_type == LayerType.CONV2D:
+        return nn.Conv2d(
+            in_channels=layer.in_features,
+            out_channels=layer.out_features,
+            kernel_size=layer.kernel_size,
+            stride=layer.stride,
+            padding=layer.padding
+        )
+
+    elif layer.layer_type == LayerType.DROPOUT:
+        return nn.Dropout(p=layer.dropout)
+
+    elif layer.layer_type == LayerType.RELU:
+        return nn.ReLU()
+
+    elif layer.layer_type == LayerType.BATCHNORM1D:
+        return nn.BatchNorm1d(num_features=layer.out_features)
+
+    elif layer.layer_type == LayerType.BATCHNORM2D:
+        return nn.BatchNorm2d(num_features=layer.out_features)
+
+    elif layer.layer_type == LayerType.MAXPOOL2D:
+        return nn.MaxPool2d(
+            kernel_size=layer.kernel_size,
+            stride=layer.stride,
+            padding=layer.padding
+        )
+
+    elif layer.layer_type == LayerType.AVGPOOL2D:
+        return nn.AvgPool2d(
+            kernel_size=layer.kernel_size,
+            stride=layer.stride,
+            padding=layer.padding
+        )
+
+    elif layer.layer_type == LayerType.SIGMOID:
+        return nn.Sigmoid()
+
+    elif layer.layer_type == LayerType.SOFTMAX:
+        return nn.Softmax()
+
+    elif layer.layer_type == LayerType.TANH:
+        return nn.Tanh()
+
+    else:
+        return None
+
+
+loss_function_map = {
+    nn.L1Loss: LossFunction.L1_LOSS,
+    nn.MSELoss: LossFunction.MSE_LOSS,
+    nn.CrossEntropyLoss: LossFunction.CROSS_ENTROPY_LOSS,
+    nn.CTCLoss: LossFunction.CTC_LOSS,
+    nn.NLLLoss: LossFunction.NLL_LOSS,
+    nn.PoissonNLLLoss: LossFunction.POISSON_NLL_LOSS,
+    nn.GaussianNLLLoss: LossFunction.GAUSSIAN_NLL_LOSS,
+    nn.KLDivLoss: LossFunction.KL_DIV_LOSS,
+    nn.BCELoss: LossFunction.BCE_LOSS,
+    nn.BCEWithLogitsLoss: LossFunction.BCE_WITH_LOGITS_LOSS,
+    nn.MarginRankingLoss: LossFunction.MARGIN_RANKING_LOSS,
+    nn.HingeEmbeddingLoss: LossFunction.HINGE_EMBEDDING_LOSS,
+    nn.HuberLoss: LossFunction.HUBER_LOSS,
+    nn.SmoothL1Loss: LossFunction.SMOOTH_L1_LOSS,
+    nn.CosineEmbeddingLoss: LossFunction.COSINE_EMBEDDING_LOSS,
+    nn.MultiLabelSoftMarginLoss: LossFunction.MULTI_LABEL_SOFT_MARGIN_LOSS,
+    nn.TripletMarginLoss: LossFunction.TRIPLET_MARGIN_LOSS,
+    nn.MultiMarginLoss: LossFunction.MULTI_MARGIN_LOSS,
+    nn.SoftMarginLoss: LossFunction.SOFT_MARGIN_LOSS,
+    nn.MultiLabelMarginLoss: LossFunction.MULTI_LABEL_MARGIN_LOSS,
+    nn.TripletMarginWithDistanceLoss: LossFunction.TRIPLET_MARGIN_WITH_DISTANCE_LOSS,
+}
+
+
+def pytorch_loss_to_custom(loss_instance) -> LossFunction:
     """
     Maps a PyTorch loss function instance to a custom LossFunction enum.
 
@@ -92,37 +176,42 @@ def map_pytorch_loss_to_custom(loss_instance) -> LossFunction:
     :return: The custom LossFunction enum.
     """
 
-    mapping = {
-        nn.L1Loss: LossFunction.L1_LOSS,
-        nn.MSELoss: LossFunction.MSE_LOSS,
-        nn.CrossEntropyLoss: LossFunction.CROSS_ENTROPY_LOSS,
-        nn.CTCLoss: LossFunction.CTC_LOSS,
-        nn.NLLLoss: LossFunction.NLL_LOSS,
-        nn.PoissonNLLLoss: LossFunction.POISSON_NLL_LOSS,
-        nn.GaussianNLLLoss: LossFunction.GAUSSIAN_NLL_LOSS,
-        nn.KLDivLoss: LossFunction.KL_DIV_LOSS,
-        nn.BCELoss: LossFunction.BCE_LOSS,
-        nn.BCEWithLogitsLoss: LossFunction.BCE_WITH_LOGITS_LOSS,
-        nn.MarginRankingLoss: LossFunction.MARGIN_RANKING_LOSS,
-        nn.HingeEmbeddingLoss: LossFunction.HINGE_EMBEDDING_LOSS,
-        nn.HuberLoss: LossFunction.HUBER_LOSS,
-        nn.SmoothL1Loss: LossFunction.SMOOTH_L1_LOSS,
-        nn.CosineEmbeddingLoss: LossFunction.COSINE_EMBEDDING_LOSS,
-        nn.MultiLabelSoftMarginLoss: LossFunction.MULTI_LABEL_SOFT_MARGIN_LOSS,
-        nn.TripletMarginLoss: LossFunction.TRIPLET_MARGIN_LOSS,
-        nn.MultiMarginLoss: LossFunction.MULTI_MARGIN_LOSS,
-        nn.SoftMarginLoss: LossFunction.SOFT_MARGIN_LOSS,
-        nn.MultiLabelMarginLoss: LossFunction.MULTI_LABEL_MARGIN_LOSS,
-        nn.TripletMarginWithDistanceLoss: LossFunction.TRIPLET_MARGIN_WITH_DISTANCE_LOSS,
-    }
-
     loss_type = type(loss_instance)
-    if loss_type in mapping:
-        return mapping[loss_type]
+    if loss_type in loss_function_map:
+        return loss_function_map[loss_type]
     raise ValueError(f"Unsupported PyTorch loss function: {loss_type.__name__}")
 
+def custom_loss_to_pytorch(loss_function: LossFunction) -> Union[nn.Module, None]:
+    """
+    Maps a custom LossFunction enum to a PyTorch loss function.
 
-def map_pytorch_optimizer_to_custom(optimizer_instance) -> OptimizerAlgorithm:
+    :param loss_function: The custom LossFunction enum.
+    :return: The PyTorch loss function instance.
+    """
+
+    if loss_function in loss_function_map:
+        return loss_function_map[loss_function]
+    return None
+
+
+optimizer_algorithm_map = {
+    optim.Adadelta: OptimizerAlgorithm.ADADELTA,
+    optim.Adafactor: OptimizerAlgorithm.ADAFACTOR,
+    optim.Adagrad: OptimizerAlgorithm.ADAGRAD,
+    optim.Adam: OptimizerAlgorithm.ADAM,
+    optim.AdamW: OptimizerAlgorithm.ADAMW,
+    optim.Adamax: OptimizerAlgorithm.ADAMAX,
+    optim.SparseAdam: OptimizerAlgorithm.SPARSEADAM,
+    optim.ASGD: OptimizerAlgorithm.ASGD,
+    optim.RMSprop: OptimizerAlgorithm.RMSPROP,
+    optim.Rprop: OptimizerAlgorithm.RPROP,
+    optim.SGD: OptimizerAlgorithm.SGD,
+    optim.LBFGS: OptimizerAlgorithm.LBFGS,
+    optim.Nadam: OptimizerAlgorithm.NADAM,
+    optim.RAdam: OptimizerAlgorithm.RADAM,
+}
+
+def pytorch_optimizer_to_custom(optimizer_instance) -> OptimizerAlgorithm:
     """
     Maps a PyTorch optimizer instance to a custom OptimizerAlgorithm enum.
 
@@ -130,24 +219,21 @@ def map_pytorch_optimizer_to_custom(optimizer_instance) -> OptimizerAlgorithm:
     :return: The custom OptimizerAlgorithm enum.
     """
 
-    mapping = {
-        optim.Adadelta: OptimizerAlgorithm.ADADELTA,
-        optim.Adafactor: OptimizerAlgorithm.ADAFACTOR,
-        optim.Adagrad: OptimizerAlgorithm.ADAGRAD,
-        optim.Adam: OptimizerAlgorithm.ADAM,
-        optim.AdamW: OptimizerAlgorithm.ADAMW,
-        optim.Adamax: OptimizerAlgorithm.ADAMAX,
-        optim.SparseAdam: OptimizerAlgorithm.SPARSEADAM,
-        optim.ASGD: OptimizerAlgorithm.ASGD,
-        optim.RMSprop: OptimizerAlgorithm.RMSPROP,
-        optim.Rprop: OptimizerAlgorithm.RPROP,
-        optim.SGD: OptimizerAlgorithm.SGD,
-        optim.LBFGS: OptimizerAlgorithm.LBFGS,
-        optim.Nadam: OptimizerAlgorithm.NADAM,
-        optim.RAdam: OptimizerAlgorithm.RADAM,
-    }
-
     optimizer_type = type(optimizer_instance)
-    if optimizer_type in mapping:
-        return mapping[optimizer_type]
+    if optimizer_type in optimizer_algorithm_map:
+        return optimizer_algorithm_map[optimizer_type]
     raise ValueError(f"Unsupported PyTorch optimizer: {optimizer_type.__name__}")
+
+
+def custom_optimizer_to_pytorch(optimizer_algorithm: OptimizerAlgorithm, model: nn.Module, **kwargs) -> Union[optim.Optimizer, None]:
+    """
+    Maps a custom OptimizerAlgorithm enum to a PyTorch optimizer.
+
+    :param optimizer_algorithm: The custom OptimizerAlgorithm enum.
+    :param model: The PyTorch model.
+    :return: The PyTorch optimizer instance.
+    """
+
+    if optimizer_algorithm in optimizer_algorithm_map:
+        return optimizer_algorithm_map[optimizer_algorithm](model.parameters(), **kwargs)
+    return None
