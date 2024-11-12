@@ -171,7 +171,7 @@ my_model = config.Model(
 )
 ```
 
-Note that some features like `thought` or `__suggest__` specifically use the default model. So if you want to change it, use this.
+Note that some features like `thought` or `__suggest__` specifically use the default model. So if you want to change it, use this:
 
 ```python
 config.set_default_model(my_model)
