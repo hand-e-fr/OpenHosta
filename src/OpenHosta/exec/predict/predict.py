@@ -38,8 +38,8 @@ def predict(
     dataset = HostaDataset.get_sample(func.f_args) # just get a sample type of the input, parsing it into one list of value
     
     # Gestion de l'architecture
-    # architecture = _load_or_create_architecture(memory, func, model)
-    architecture = None
+    architecture = _load_or_create_architecture(memory, func, model)
+
     # Gestion des poids et de l'entraînement
     if not _load_weights_if_exists(memory, architecture):
         _prepare_and_train_model(
@@ -52,7 +52,7 @@ def predict(
             verbose=verbose
         )
     # dataset.
-    return 
+    return
     return architecture.inference()
 
 
@@ -72,6 +72,9 @@ def _load_or_create_architecture(
             architecture = None
         elif model.model_type == ArchitectureType.CLASSIFICATION:
             architecture = Classification()
+    else:
+        # todo
+        architecture = Classification()
     architecture.save_architecture_to_json(memory.architecture) # à voir si on save dans model ou just on utilise le path (besoin de modif le type File)
     return architecture
 
