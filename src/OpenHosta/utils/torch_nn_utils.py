@@ -1,7 +1,5 @@
 from typing import Union
 
-import numpy as np
-import torch
 from torch import nn
 from torch import optim
 
@@ -148,7 +146,7 @@ def custom_layer_to_pytorch(layer: Layer) -> Union[nn.Module, None]:
         return None
 
 
-loss_function_map = {
+_LOSS_FUNC_MAP = {
     nn.L1Loss: LossFunction.L1_LOSS,
     nn.MSELoss: LossFunction.MSE_LOSS,
     nn.CrossEntropyLoss: LossFunction.CROSS_ENTROPY_LOSS,
@@ -182,8 +180,8 @@ def pytorch_loss_to_custom(loss_instance) -> LossFunction:
     """
 
     loss_type = type(loss_instance)
-    if loss_type in loss_function_map:
-        return loss_function_map[loss_type]
+    if loss_type in _LOSS_FUNC_MAP:
+        return _LOSS_FUNC_MAP[loss_type]
     raise ValueError(f"Unsupported PyTorch loss function: {loss_type.__name__}")
 
 def custom_loss_to_pytorch(loss_function: LossFunction) -> Union[nn.Module, None]:
@@ -194,12 +192,12 @@ def custom_loss_to_pytorch(loss_function: LossFunction) -> Union[nn.Module, None
     :return: The PyTorch loss function instance.
     """
 
-    if loss_function in loss_function_map:
-        return loss_function_map[loss_function]
+    if loss_function in _LOSS_FUNC_MAP:
+        return _LOSS_FUNC_MAP[loss_function]
     return None
 
 
-optimizer_algorithm_map = {
+_OPTIMIZER_MAP = {
     optim.Adadelta: OptimizerAlgorithm.ADADELTA,
     optim.Adagrad: OptimizerAlgorithm.ADAGRAD,
     optim.Adam: OptimizerAlgorithm.ADAM,
@@ -224,8 +222,8 @@ def pytorch_optimizer_to_custom(optimizer_instance) -> OptimizerAlgorithm:
     """
 
     optimizer_type = type(optimizer_instance)
-    if optimizer_type in optimizer_algorithm_map:
-        return optimizer_algorithm_map[optimizer_type]
+    if optimizer_type in _OPTIMIZER_MAP:
+        return _OPTIMIZER_MAP[optimizer_type]
     raise ValueError(f"Unsupported PyTorch optimizer: {optimizer_type.__name__}")
 
 
@@ -238,8 +236,8 @@ def custom_optimizer_to_pytorch(optimizer_algorithm: OptimizerAlgorithm, model: 
     :return: The PyTorch optimizer instance.
     """
 
-    if optimizer_algorithm in optimizer_algorithm_map:
-        return optimizer_algorithm_map[optimizer_algorithm](model.parameters(), **kwargs)
+    if optimizer_algorithm in _OPTIMIZER_MAP:
+        return _OPTIMIZER_MAP[optimizer_algorithm](model.parameters(), **kwargs)
     return None
 
 def type_size(data):
@@ -271,9 +269,5 @@ def type_size(data):
     elif isinstance(data, str):
         # Each character in a string is treated as a single element
         return len(data)
-    elif isinstance(data, np.ndarray):
-        return data.size  # np.ndarray.size returns the total number of elements in the array
-    elif isinstance(data, torch.Tensor):
-        return data.numel()  # numel() returns the total number of elements in the tensor
     else:
         raise TypeError(f'Unsupported data type: {type(data)}')
