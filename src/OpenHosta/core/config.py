@@ -4,7 +4,7 @@ import sys
 import json
 import re
 import sys
-from http.client import HTTPSConnection
+import requests
 from typing import Any, Dict
 from urllib.parse import urlparse
 
@@ -74,36 +74,32 @@ class Model:
             "messages": messages,
         }
         headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
         }
+        
+        if "azure.com" in self.base_url:
+            headers |= {"api-key": f"{self.api_key}"}
+        else:
+            headers |= {"Authorization": f"Bearer {self.api_key}"}
+ 
         if json_form:
             l_body["response_format"] = {"type": "json_object"}
         for key, value in llm_args.items():
             l_body[key] = value
         try:
-            parsed_url = urlparse(self.base_url)
-            conn = HTTPSConnection(parsed_url.netloc)
+            response = requests.post(self.base_url, headers=headers, json=l_body, timeout=30)
 
-            body_json = json.dumps(l_body)
-            conn.request("POST", parsed_url.path, body_json, headers)
-
-            response = conn.getresponse()
-            response_data = response.read()
-
-            conn.close()
-
-            if response.status != 200:
-                response_text = response_data.decode('utf-8')
+            if response.status_code  != 200:
+                response_text = response.text
                 if "invalid_api_key" in response_text:
                     raise ApiKeyError("[Model.api_call] Incorrect API key.")
                 else:
                     raise RequestError(
                         f"[Model.api_call] API call was unsuccessful.\n"
-                        f"Status code: {response.status}:\n{response_text}"
+                        f"Status code: {response.status_code }:\n{response_text}"
                     )
             self._nb_requests += 1
-            return json.loads(response_data)
+            return response.json()
         except Exception as e:
             raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
 
