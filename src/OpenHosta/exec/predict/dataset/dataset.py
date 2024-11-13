@@ -206,8 +206,7 @@ class HostaDataset:
             raise ValueError(f"Unsupported source type: {source_type}")
         return self.data
 
-    @staticmethod
-    def convert_list(data: list):
+    def convert_list(self, data: list):
         """
         Create a dataset from a list.
 
@@ -220,12 +219,11 @@ class HostaDataset:
         Returns:
             HostaDataset instance
         """
-        dataset = HostaDataset()
 
         for entry in data:
             if isinstance(entry, dict):
                 # If the entry is already a dictionary, let's assume it has the keys in the right structure
-                dataset.add(Sample(entry))
+                self.add(Sample(entry))
             elif isinstance(entry, (list, tuple)):
                 # If it's a list or tuple, we assume it's structured as (inputs..., [output])
                 inputs = list(entry[:-1])  # All but last element are inputs
@@ -233,11 +231,10 @@ class HostaDataset:
                 sample_dict = {f'input_{i}': input_value for i, input_value in enumerate(inputs)}
                 if output is not None:
                     sample_dict['output'] = output
-                dataset.add(Sample(sample_dict))
+                self.add(Sample(sample_dict))
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
 
-        return dataset
 
     @staticmethod
     def from_input(inference: dict, memory, verbose: int) -> 'HostaDataset':
