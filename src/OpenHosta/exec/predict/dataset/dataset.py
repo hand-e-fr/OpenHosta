@@ -7,6 +7,7 @@ from typing import List, Optional, Any
 from .sample_type import Sample
 from ..encoder.new_encoder import EnhancedEncoder
 
+
 class SourceType(Enum):
     """
     Enum for different types of sources for the dataset.

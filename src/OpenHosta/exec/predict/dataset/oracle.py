@@ -2,7 +2,6 @@ import inspect
 from collections import Counter
 from typing import Optional, Dict, Any, List, Type
 
-from .dataset import HostaDataset, SourceType
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
 from ....utils.prompt import PromptManager

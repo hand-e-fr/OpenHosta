@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Any, Dict, Union, Optional
-from collections import defaultdict
 from typing import List, Any, Dict, Union
+
 from ..dataset.sample_type import Sample
+
 
 # from ..dataset.sample_type import Sample  # Ensure that the Sample class is correctly defined in this module
 
