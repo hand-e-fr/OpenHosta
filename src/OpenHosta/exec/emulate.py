@@ -58,23 +58,32 @@ def emulate(
     if model is None:
         model = DefaultManager.get_default_model()
 
+    if x:
+        x._attach(_infos.f_obj, {
+            "_last_request": None,
+            "_last_response": None
+        })
+
     try:
+        if x:
+            _infos.f_obj._last_request = {
+                    'sys_prompt':f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
+                    'user_prompt':_infos.f_call} | llm_args
+        
         response = model.simple_api_call(
             sys_prompt=f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
             user_prompt=_infos.f_call,
             **llm_args
-        ),
-        l_ret = model.request_handler(response[0], _infos)
+        )
+
+        if x:
+            _infos.f_obj._last_response=response
+        
+        l_ret = model.request_handler(response, _infos)
         if post_callback is not None:
             l_ret = post_callback(l_ret)
     except NameError as e:
         raise NotImplementedError(
             f"[emulate]: {e}\nModel object does not have the required methods.")
-
-    if x:
-        x._attach(_infos.f_obj, {
-            "_last_request": f"{EMULATE_PROMPT!r}\n{func_prompt}\n{_infos.f_call}",
-            "_last_response": response[0]
-        })
 
     return l_ret
