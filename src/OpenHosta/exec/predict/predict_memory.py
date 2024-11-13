@@ -50,10 +50,10 @@ class PredictMemory(HostaMemory):
         """
         Initializes the directory and file structure for predictions.
         """
-        predict_dir = os.path.join(self.cache_root, self.name)
-        self._ensure_directory_exists(predict_dir)
+        self.predict_dir = os.path.join(self.cache_root, self.name)
+        self._ensure_directory_exists(self.predict_dir)
         self.paths = {
-            file_type: os.path.join(predict_dir, file_type.value)
+            file_type: os.path.join(self.predict_dir, file_type.value)
             for file_type in PredictFileType
         }
 
