@@ -9,12 +9,6 @@ from .predict_memory import PredictMemory
 from ...core.config import Model, DefaultModel
 from ...core.hosta import Hosta, Func
 
-
-# from .model.builtins.linear_regression import LinearRegressionBuilder
-
-# from .dataset.sample_type import Sample
-# from .encoder.simple_encoder import SimpleEncoder
-
 def predict(
     model: ConfigModel = None,
     oracle: Optional[Union[Model, HostaDataset]] = None, #TODO: function for creating data (call a subclass of oracle ?)
@@ -54,26 +48,6 @@ def predict(
     return prediction
 
 
-# def _load_or_create_architecture(
-#     memory: PredictMemory,
-#     func: Func,
-#     model: Optional[ConfigModel] = None
-# ) -> BaseArchitecture:
-#     """Load or create a new model."""
-#     if memory.model.exist:
-#         json_architecture = memory.model.element
-#         return BaseArchitecture.load_architecure_from_json(json_architecture)
-
-#     if model is not None:
-#         if model.model_type == ArchitectureType.LINEAR_REGRESSION:
-#             # model = LinearRegression()
-#             model = None
-#         elif model.model_type == ArchitectureType.CLASSIFICATION:
-#             model = Classification()
-#     model.save_architecture_to_json(memory.model) # à voir si on save dans model ou just on utilise le path (besoin de modif le type File)
-#     return model
-#                     BECOME 
-######################################################
 def get_architecture(memory: PredictMemory, func: Func, model: Optional[ConfigModel] = None, verbose: bool = False) -> HostaModel:
     """
     Load or create a new model.
@@ -84,22 +58,6 @@ def get_architecture(memory: PredictMemory, func: Func, model: Optional[ConfigMo
         return HostaModel.from_hosta(func, model, memory.architecture.path, verbose)
 
 
-
-# def load_weights(
-#     memory: PredictMemory,
-#     model: BaseArchitecture
-# ) -> bool:
-#     """load weights if they exist."""
-#     if memory.weight.exist:
-#         print(" weight exists")
-#         weight = memory.weight.element
-#         # weight = load_weights(memory.weight.element) # rajouter dans config_model un path absolue à des weights ?
-#         # model.init_weight(weight) # et assert si les poids ne correspondent pas à l'archi
-#         return True
-#     print(" weight doesn't exist")
-#     return False
-#                     BECOME 
-######################################################
 def load_weights(memory: PredictMemory, architecture: HostaModel) -> bool:
     """
     Load weights if they exist.
@@ -112,31 +70,7 @@ def load_weights(memory: PredictMemory, architecture: HostaModel) -> bool:
     print(memory.weights.path)
     return False 
 
-# def train_model(
-#     model: ConfigModel,
-#     memory: PredictMemory,
-#     dataset: HostaDataset,
-#     model: BaseArchitecture,
-#     func: Func,
-#     oracle: Optional[Union[Model, HostaDataset]],
-#     verbose: bool
-# ) -> None:
-#     """Prépare les données et entraîne le modèle."""
-#     if memory.data_npy.exist:
-#         print("  load data from npy")
-#         dataset.load_data_npy(memory.data_npy.path)
-#     else:
-#         print("  prepare dataset don't have numpy")
-#         prepare_dataset(model, memory, dataset, func, oracle, verbose)
-#     return
-#     dataset.prepare_training() # torch, normalization + dataloader
-#     model.training(dataset.train_set, epochs=10, verbose=verbose)
-#     if verbose:
-#         dataset.init_example() # validation su les examples (encode....) + un val_test si généré à ajouter
-#         model.eval(dataset.val_set)
-#     model.save_weights(memory.weight)
-#                     BECOME 
-######################################################
+
 def train_model(model: ConfigModel, memory: PredictMemory, architecture: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
     """
     Prepare the data and train the model.
@@ -154,39 +88,6 @@ def train_model(model: ConfigModel, memory: PredictMemory, architecture: HostaMo
     architecture.save_weights(memory.weights.path)
 
 
-# def prepare_dataset(
-#     model: ConfigModel,
-#     memory: PredictMemory,
-#     dataset: HostaDataset,
-#     func: Func,
-#     oracle: Optional[Union[Model, HostaDataset]],
-#     verbose: bool
-# ) -> None:
-#     """Prépare le dataset pour l'entraînement."""
-#     if not memory.data.exist:
-#         print("   generate data")
-#         data = LLMSyntheticDataGenerator.generate_synthetic_data(
-#             func=func,
-#             request_amounts=3,  # TODO: make it a parameter
-#             examples_in_req=50,  # TODO: make it a parameter
-#             model=oracle if oracle is not None else DefaultModel().get_default_model()
-#             # verbose=verbose #TODO: ajouter le verbose la !
-#         )
-
-#         memory.update(PredictFileType.DATA, data.data, SourceType.CSV)
-#         memory.data.element = data.data
-
-#     else:
-#         print("   load data already exist")
-#         dataset.data = memory.data.element
-#     dataset.convert_to_sample(memory.data.element) # on charge le dataset depuis le path du memory ou  -> JSON, CSV, Jsonl
-#     print("*" * 60)
-#     print(memory.data.element)
-#     # print(dataset.data)
-#     return
-#     dataset.encode() # encode + numpy ? 
-#                     BECOME 
-######################################################
 def prepare_dataset(model: ConfigModel, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> tuple:
     """
     Prepare the dataset for training.
