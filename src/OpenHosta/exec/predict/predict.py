@@ -40,17 +40,16 @@ def predict(
     hosta_model : HostaModel = get_hosta_model(memory.architecture, func, model)
     architecture = None
     if not load_weights(memory, hosta_model):
-        train_model(model, memory, hosta_model, dataset, oracle, func)
+        train_model(model, memory, hosta_model, dataset, oracle, func, verbose)
     
     if dataset is None:
         inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionnary
     else:
         inference = dataset.prepare_input(func.f_args)
     
-    # prediction = architecture.inference(inference)
+    prediction = architecture.inference(inference)
 
-    # return prediction
-    return 0
+    return prediction
 
 
 def get_hosta_model(architecture_file: File, func: Func, model: Optional[ConfigModel] = None, verbose: int = 2) -> HostaModel:
