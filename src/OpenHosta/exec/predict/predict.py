@@ -1,14 +1,14 @@
 import os
-from typing import Union, Optional, Literal
+from typing import Union, Optional
 
-from .model_schema import ConfigModel
-from .predict_memory import PredictMemory, File, PredictFileType
-from .model import ArchitectureType, HostaModel
-from .model.builtins.classification import Classification
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
-from ...core.hosta import Hosta, Func
+from .model import HostaModel
+from .model_schema import ConfigModel
+from .predict_memory import PredictMemory
 from ...core.config import Model, DefaultModel
+from ...core.hosta import Hosta, Func
+
 
 # from .model.builtins.linear_regression import LinearRegressionBuilder
 
@@ -216,8 +216,8 @@ def generate_data(memory: PredictMemory, func: Func, oracle: Optional[Union[Mode
     """
     data = LLMSyntheticDataGenerator.generate_synthetic_data(
         func=func,
-        request_amounts=3,  # TODO: make it a parameter
-        examples_in_req=50,  # TODO: make it a parameter
+        request_amounts=1,  # TODO: make it a parameter
+        examples_in_req=5,  # TODO: make it a parameter
         model=oracle if oracle is not None else DefaultModel().get_default_model()
         # verbose=verbose #TODO: ajouter le verbose la !
     )
