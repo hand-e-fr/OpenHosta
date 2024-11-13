@@ -1,3 +1,5 @@
+from typing import Optional
+
 from torch import nn
 from torch import optim
 
@@ -7,26 +9,26 @@ from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_t
 
 
 class Classification(HostaModel):
-    def __init__(self, neural_network: NeuralNetwork, input_size : int, output_size : int, complexity : int):
+    def __init__(self, neural_network: Optional[NeuralNetwork], input_size : int, output_size : int, complexity : int):
         super().__init__()
 
         self.complexity = complexity
 
         # Set the loss function
-        if neural_network.loss_function is None:
+        if neural_network is None or neural_network.loss_function is None:
             self.loss = nn.CrossEntropyLoss()
         else:
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
 
         # Set the optimizer
-        if neural_network.optimizer is None:
+        if neural_network is None or neural_network.optimizer is None:
             self.optimizer = optim.Adam(self.parameters(), lr=0.001)
         else:
             self.optimizer = custom_optimizer_to_pytorch(neural_network.optimizer, self, lr=0.001)
 
         # Create the layers of the neural network
         self.layers = []
-        if neural_network.layers is None or len(neural_network.layers) == 0:
+        if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
             transition_value = int(((input_size * output_size) / 2) * self.complexity)
 
             input_layer = int(input_size * (2 * self.complexity))

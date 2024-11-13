@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Type
 
 from torch import nn
 from torch import optim
@@ -250,6 +250,8 @@ def type_size(data):
     Returns:
         The size (number of elements) of the given data.
     """
+    if isinstance(data, type):
+        return 1
     if isinstance(data, int):
         return 1
     elif isinstance(data, float):
