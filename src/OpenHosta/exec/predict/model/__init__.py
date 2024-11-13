@@ -1,6 +1,8 @@
-from .hosta_model import ArchitectureType, HostaModel
+from .hosta_model import HostaModel
+from .model_provider import ArchitectureType, HostaModelProvider
 
 all = (
     'ArchitectureType',
-    'BaseArchitecture'
+    'HostaModel',
+    'HostaModelProvider',
 )
