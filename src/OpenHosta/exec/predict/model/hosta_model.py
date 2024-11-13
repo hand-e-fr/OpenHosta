@@ -19,7 +19,7 @@ class ArchitectureType(Enum):
     CLASSIFICATION = 2
 
 
-class BaseArchitecture(ABC, nn.Module):
+class HostaModel(ABC, nn.Module):
 
     def training(self, train_set, epochs, verbose):
         pass
@@ -40,7 +40,7 @@ class BaseArchitecture(ABC, nn.Module):
     def from_hosta_func(func, model, path, verbose):
         input_size = type_size(func.f_type[0])
         output_size = type_size(func.f_type[1])
-        architecture: Optional[BaseArchitecture] = None
+        architecture: Optional[HostaModel] = None
 
         with open(path, 'r') as file:
             file_content = file.read()

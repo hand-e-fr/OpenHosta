@@ -19,7 +19,7 @@ from .exec.thinkof import thinkof
 from .utils.prompt import PromptManager
 from .exec.predict.predict import predict
 from .exec.predict.model_schema import ConfigModel
-from .exec.predict.architecture import ArchitectureType
+from .exec.predict.model import ArchitectureType
 from .exec.ask import ask
 
 all = (

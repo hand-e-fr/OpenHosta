@@ -1,12 +1,12 @@
 from torch import nn
 from torch import optim
 
-from ..architecture import BaseArchitecture
+from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
 
 
-class Classification(BaseArchitecture):
+class Classification(HostaModel):
     def __init__(self, neural_network: NeuralNetwork, input_size : int, output_size : int, complexity : int):
         super().__init__()
 

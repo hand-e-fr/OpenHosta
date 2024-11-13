@@ -11,7 +11,7 @@ File = NamedTuple("File", [("exist", bool), ("path", str)])
 
 class PredictFileType(Enum):
     """Enumaration for different types of files in the prediction memory."""
-    ARCHITECTURE = "architecture.json"
+    ARCHITECTURE = "model.json"
     WEIGHTS = "weights.pth"
     DICTIONNARY = "dictionnary.txt"
     DATA = "data."
@@ -75,7 +75,7 @@ class PredictMemory(HostaMemory):
     #     1. Récupère le chemin du fichier
     #     2. Écrit le contenu selon le type:
     #        - Binaire pour weights
-    #        - JSON pour architecture
+    #        - JSON pour model
     #        - Texte pour les autres
     #     3. Met à jour l'état du fichier
     #     """
