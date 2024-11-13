@@ -96,11 +96,15 @@ class PredictMemory(HostaMemory):
 
     @property
     def architecture(self) -> File: return self.files[PredictFileType.ARCHITECTURE]
+
     @property
     def weights(self) -> File: return self.files[PredictFileType.WEIGHTS]
+
     @property
     def data(self) -> File: return self.files[PredictFileType.DATA]
+
     @property
     def summary(self) -> File: return self.files[PredictFileType.SUMMARY]
+
     @property
     def dictionnary(self) -> File: return self.files[PredictFileType.DICTIONNARY]
