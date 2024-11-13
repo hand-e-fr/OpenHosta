@@ -115,7 +115,7 @@ class EnhancedEncoder:
             List of encoded Sample objects
         """
         encoded_samples = []
-        
+        # print("in samples")
         # First pass: encode all values and build vocabularies
         for sample in samples:
             encoded_input = []
@@ -139,7 +139,7 @@ class EnhancedEncoder:
         # Limit vocabulary sizes for string features
         for encoder in self.string_encoders.values():
             encoder.limit_vocab(max_tokens)
-
+        print("finish encoding here yes")
         return encoded_samples
 
     def decode_prediction(self, prediction: Any, position: int) -> Any:
@@ -169,15 +169,15 @@ class EnhancedEncoder:
     
 
 
-# Initialisation avec dictionnaire existant optionnel
-existing_dict = {0: {'chat': 1, 'chien': 2}}
-encoder = EnhancedEncoder(existing_dict)
-your_samples = Sample({'input': 'chat', 'output': 'chien'})
-# Encodage des samples
-encoded_samples = encoder.encode(samples=your_samples, max_tokens=1000)
+# # Initialisation avec dictionnaire existant optionnel
+# existing_dict = {0: {'chat': 1, 'chien': 2}}
+# encoder = EnhancedEncoder(existing_dict)
+# your_samples = Sample({'input': 'chat', 'output': 'chien'})
+# # Encodage des samples
+# encoded_samples = encoder.encode(samples=your_samples, max_tokens=1000)
 
-# Décodage d'une prédiction
-decoded_value = encoder.decode_prediction(prediction=1, position=0)  # 'chat'
+# # Décodage d'une prédiction
+# decoded_value = encoder.decode_prediction(prediction=1, position=0)  # 'chat'
 
-# Accès au dictionnaire final
-final_dict = encoder.dictionary
+# # Accès au dictionnaire final
+# final_dict = encoder.dictionary

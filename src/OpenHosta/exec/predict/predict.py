@@ -39,10 +39,10 @@ def predict(
 
     dataset : HostaDataset = None
     
-    architecture : HostaModel = get_architecture(memory, func, model, verbose)
-
+    # architecture : HostaModel = get_architecture(memory, func, model, verbose)
+    architecture = None
     if not load_weights(memory, architecture):
-        train_model(model, memory, architecture, dataset, oracle, verbose)
+        train_model(model, memory, architecture, dataset, oracle, func, verbose)
     
     if dataset is None:
         inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionnary
@@ -104,9 +104,12 @@ def load_weights(memory: PredictMemory, architecture: HostaModel) -> bool:
     """
     Load weights if they exist.
     """
-    if memory.weight.exist:
+    if memory.weights.exist:
+        print("Loading weights")
         architecture.load_weights(memory.weight.path)
         return True
+    print("Weights not found")
+    print(memory.weights.path)
     return False 
 
 # def train_model(
@@ -189,11 +192,16 @@ def prepare_dataset(model: ConfigModel, memory: PredictMemory, dataset: HostaDat
     Prepare the dataset for training.
     """
     if model.dataset_path is not None:
-        dataset = HostaDataset.from_files(model.dataset_path, SourceType.CSV) # or JSONL jsp comment faire la détection la
+        dataset = HostaDataset.from_files(model.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
     else :
-        dataset = generate_data(memory, dataset, func, oracle, verbose) 
+        print("generate Data")
+        dataset = generate_data(memory, func, oracle, verbose) 
+    print("encode data")
+    dataset.encode(max_tokens=10, inference=False)
+    print("FINISH")
+    print(dataset.data)
     
-    dataset.encode()
+    return "FINISH"
     if model.normalize:
         dataset.normalize()
     model.tensorise()

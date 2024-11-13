@@ -22,6 +22,11 @@ class HostaDataset:
         self.inference: Sample = None  # Inference data for understanding the data
         self.verbose = verbose  # Verbose level for debugging
         self._encoder = None  # Will store the encoder instance
+    def add(self, sample: Sample):
+        """
+        Add a Sample object to the dataset.
+        """
+        self.data.append(sample)
 
     def encode(self, max_tokens: int, inference:bool = False):
         """
@@ -44,6 +49,7 @@ class HostaDataset:
             if self.verbose == 2:
                 print(f"Encoding {len(self.data)} samples...")
             self.data = self._encoder.encode(self.data, max_tokens)
+            print(self.data)
         else:
             if self.verbose == 2:
                 print("Encoding inference data...")
@@ -268,34 +274,34 @@ class HostaDataset:
         return iter(self.data)
 
 
-#TODO important
-# Ajouter un self.verbose dans chaque init de classe pour le debug
-# A chaque fois ça change le self.data du coup ?, 
+# #TODO important
+# # Ajouter un self.verbose dans chaque init de classe pour le debug
+# # A chaque fois ça change le self.data du coup ?, 
 
-# Générateur de dataset
-HostaDataset.from_files("path.data.csv", SourceType.CSV) #from_source -> from_file
-HostaDataset.from_files("path.data.jsonl", SourceType.JSONL)
-HostaDataset.from_list([{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}])
-HostaDataset.from_input({"a": 1, "b": 2, "c": 3}) # predict commence par ça et donc pas bien on init hosta_dataset à l'endroit ou l'on en à besoin
-# Les from sont des staticmethod des func convert_files, convert_list, convert_input commme ça on peut les utiliser dans le process 
+# # Générateur de dataset
+# HostaDataset.from_files("path.data.csv", SourceType.CSV) #from_source -> from_file
+# HostaDataset.from_files("path.data.jsonl", SourceType.JSONL)
+# HostaDataset.from_list([{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}])
+# HostaDataset.from_input({"a": 1, "b": 2, "c": 3}) # predict commence par ça et donc pas bien on init hosta_dataset à l'endroit ou l'on en à besoin
+# # Les from sont des staticmethod des func convert_files, convert_list, convert_input commme ça on peut les utiliser dans le process 
 
 
-HostaDataset.save("path.data.csv", SourceType.CSV) # permet de save le dataset en dur si besoin
-# peut être le déplacer dans le generator de data du coup 
+# HostaDataset.save("path.data.csv", SourceType.CSV) # permet de save le dataset en dur si besoin
+# # peut être le déplacer dans le generator de data du coup 
 
-#TODO
-train_set, val_set = HostaDataset.from_process_data("path_to_data_ready") # uque en static method lui
+# #TODO
+# train_set, val_set = HostaDataset.from_process_data("path_to_data_ready") # uque en static method lui
 
-HostaDataset.encode(encoder=SimpleEncoder(), tokenizer=None, max_tokens=100, architecture=Architecure) # peut être hardcode le simpleencoder au début
-HostaDataset.normalize(min=0, max=1)
-HostaDataset.tensorise(dtype="float32")
-train_set, val_set = HostaDataset.to_data(batch_size=32, shuffle=True, test_size=0.8) # test_size = 1 par défaut
-# from_data aussi alors
-HostaDataset.prepare_input(inference_data={"a": 1, "b": 2, "c": 3}) # permet de préparer l'inférence
-    #convert_input
-    #encode
-    #normalize
-    #tensorise
+# HostaDataset.encode(encoder=SimpleEncoder(), tokenizer=None, max_tokens=100, architecture=Architecure) # peut être hardcode le simpleencoder au début
+# HostaDataset.normalize(min=0, max=1)
+# HostaDataset.tensorise(dtype="float32")
+# train_set, val_set = HostaDataset.to_data(batch_size=32, shuffle=True, test_size=0.8) # test_size = 1 par défaut
+# # from_data aussi alors
+# HostaDataset.prepare_input(inference_data={"a": 1, "b": 2, "c": 3}) # permet de préparer l'inférence
+#     #convert_input
+#     #encode
+#     #normalize
+#     #tensorise
 
-#Later
-HostaDataset.from_dict({{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}})
+# #Later
+# HostaDataset.from_dict({{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}})
