@@ -25,7 +25,9 @@ class LinearRegression(HostaModel):
                 hidden_layer_1 = transition_value
 
             self.layers.append(nn.Linear(input_size, input_layer))
+            self.layers.append(nn.ReLU())
             self.layers.append(nn.Linear(input_layer, hidden_layer_1))
+            self.layers.append(nn.ReLU())
             self.layers.append(nn.Linear(hidden_layer_1, output_size))
         else:
             self.layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
@@ -47,15 +49,6 @@ class LinearRegression(HostaModel):
 
         # Move model to the selected device (CPU or GPU)
         self.to(self.device)
-
-    def forward(self, x):
-        if self.layers is None or len(self.layers) == 0:
-            return x
-        for i, layer in enumerate(self.layers):
-            x = layer(x)
-            if i < len(self.layers) - 1:
-                x = nn.ReLU()(x)  # Apply ReLU between layers
-        return x
 
     def training(self, train_set, epochs, verbose=False):
         self.train()

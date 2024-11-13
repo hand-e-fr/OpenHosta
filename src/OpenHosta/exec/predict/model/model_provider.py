@@ -25,7 +25,7 @@ class HostaModelProvider:
             if model.model_type == ArchitectureType.LINEAR_REGRESSION:
                 hosta_model = LinearRegression(architecture, input_size, output_size, complexity)
             elif model.model_type == ArchitectureType.CLASSIFICATION:
-                hosta_model = Classification(architecture, input_size, output_size, complexity)
+                hosta_model = Classification(architecture, input_size, output_size, complexity, 2)
         else:
             hosta_model = LinearRegression(architecture, input_size, output_size, complexity)
 

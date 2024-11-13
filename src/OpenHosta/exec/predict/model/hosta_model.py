@@ -10,10 +10,16 @@ from ..predict_memory import PredictMemory
 class HostaModel(ABC, nn.Module):
     def __init__(self, device: Optional[str]):
         self.device = device if device is not None else ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.layers = []
         super().__init__()
 
     def training(self, train_set, epochs, verbose):
         pass
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
 
     def validate(self, validation_set):
         pass
