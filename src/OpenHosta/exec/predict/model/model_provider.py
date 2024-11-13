@@ -1,5 +1,7 @@
 from typing import Optional
 
+from numpy.ma.extras import mr_class
+
 from .builtins.classification import Classification
 from .builtins.linear_regression import LinearRegression
 from .hosta_model import HostaModel
@@ -17,7 +19,7 @@ class HostaModelProvider:
         input_size = type_size(func.f_type[0])
         output_size = type_size(func.f_type[1])
         hosta_model: Optional[HostaModel] = None
-        complexity = model.complexity if model is not None else 1
+        complexity: int = 44
 
         if model is not None and model.model_type is not None:
             if model.model_type == ArchitectureType.LINEAR_REGRESSION:

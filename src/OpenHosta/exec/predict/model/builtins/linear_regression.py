@@ -14,6 +14,25 @@ class LinearRegression(HostaModel):
 
         self.complexity = complexity
 
+        self.layers = []
+        if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
+            transition_value = int(((input_size * output_size) / 2) * self.complexity)
+
+            input_layer = int(input_size * (2 * self.complexity))
+            if input_size > output_size:
+                hidden_layer_1 = int(transition_value / output_size)
+            else:
+                hidden_layer_1 = transition_value
+
+            self.layers.append(nn.Linear(input_size, input_layer))
+            self.layers.append(nn.Linear(input_layer, hidden_layer_1))
+            self.layers.append(nn.Linear(hidden_layer_1, output_size))
+        else:
+            self.layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
+
+        for i, layer in enumerate(self.layers):
+            setattr(self, f'fc{i+1}', layer)
+
         # Set the loss function
         if neural_network is None or neural_network.loss_function is None:
             self.loss = nn.MSELoss()
@@ -25,24 +44,6 @@ class LinearRegression(HostaModel):
             self.optimizer = optim.Adam(self.parameters(), lr=0.001)
         else:
             self.optimizer = custom_optimizer_to_pytorch(neural_network.optimizer, self, lr=0.001)
-
-        # Create the layers of the neural network
-        self.layers = []
-        if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
-            transition_value = int(((input_size * output_size) / 2) * self.complexity)
-
-            input_layer = int(input_size * (2 * self.complexity))
-            if input_size > output_size:
-                hidden_layer_1 = int(transition_value / output_size)
-            else:
-                hidden_layer_1 = transition_value
-            output_layer = int(output_size * (2 * self.complexity))
-
-            self.layers.append(nn.Linear(input_size, input_layer))
-            self.layers.append(nn.Linear(input_layer, hidden_layer_1))
-            self.layers.append(nn.Linear(hidden_layer_1, output_layer))
-        else:
-            self.layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
 
     def forward(self, x):
         if self.layers is None or len(self.layers) == 0:
