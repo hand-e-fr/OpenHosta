@@ -4,8 +4,6 @@ from typing import List, Any, Dict, Union
 from ..dataset.sample_type import Sample
 
 
-# from ..dataset.sample_type import Sample  # Ensure that the Sample class is correctly defined in this module
-
 class BaseEncoder(ABC):
     @abstractmethod
     def encode(self, data: Any) -> Union[int, float]:
@@ -16,51 +14,6 @@ class BaseEncoder(ABC):
     def decode(self, encoded_value: Any) -> Any:
         """Decode a prediction back to its original type"""
         pass
-
-class StringEncoder(BaseEncoder):
-    def __init__(self, existing_dict: Dict[str, int] = None):
-        """
-        Initialize with optional existing dictionary
-        """
-        self.word_to_id = {'<UNK>': 0} if existing_dict is None else existing_dict
-        self.id_to_word = {v: k for k, v in self.word_to_id.items()}
-        self.next_id = max(self.word_to_id.values()) + 1 if self.word_to_id else 1
-
-    def encode(self, value: str) -> int:
-        """
-        Encode a string value to integer
-        """
-        value = str(value).lower().strip()
-        if value not in self.word_to_id:
-            self.word_to_id[value] = self.next_id
-            self.id_to_word[self.next_id] = value
-            self.next_id += 1
-        return self.word_to_id[value]
-
-    def decode(self, encoded_value: int) -> str:
-        """
-        Decode an integer back to string
-        """
-        return self.id_to_word.get(encoded_value, '<UNK>')
-
-    def limit_vocab(self, max_tokens: int):
-        """
-        Limit vocabulary size to max_tokens
-        """
-        if len(self.word_to_id) > max_tokens:
-            sorted_tokens = sorted(
-                self.word_to_id.items(),
-                key=lambda x: x[1]
-            )[:max_tokens]
-            
-            self.word_to_id = {'<UNK>': 0}
-            self.id_to_word = {0: '<UNK>'}
-            
-            for idx, (token, _) in enumerate(sorted_tokens[1:], start=1):
-                self.word_to_id[token] = idx
-                self.id_to_word[idx] = token
-            
-            self.next_id = max_tokens
 
 class NumericEncoder(BaseEncoder):
     def encode(self, value: Union[int, float]) -> float:
@@ -76,108 +29,123 @@ class BooleanEncoder(BaseEncoder):
     def decode(self, encoded_value: int) -> bool:
         return bool(encoded_value)
 
-class EnhancedEncoder:
-    def __init__(self, existing_dict: Dict[int, Dict[str, int]] = None):
+class StringEncoder(BaseEncoder):
+    def __init__(self, existing_dict: Dict[str, int] = None):
         """
-        Initialize with optional existing dictionary for each feature position
+        Initialize with optional existing dictionary.
+        If existing_dict is provided, we're in inference mode.
         """
-        self.encoders = {}
-        self.feature_types = {}
-        self.string_encoders = {}
-        if existing_dict:
-            for pos, vocab in existing_dict.items():
-                self.string_encoders[int(pos)] = StringEncoder(vocab)
+        self.inference_mode = existing_dict is not None
+        self.word_to_id = {'<UNK>': 0} if existing_dict is None else existing_dict
+        self.id_to_word = {v: k for k, v in self.word_to_id.items()}
+        self.next_id = max(self.word_to_id.values()) + 1 if self.word_to_id else 1
+        self.max_tokens = None
 
-    def _get_encoder(self, value: Any, position: int) -> BaseEncoder:
+    def set_max_tokens(self, max_tokens: int):
+        """Set maximum length for encoded sequences"""
+        self.max_tokens = max_tokens
+
+    def encode(self, value: str) -> List[int]:
         """
-        Get or create appropriate encoder for a value type
+        Encode a string into a list of integers.
+        For classification (output), returns a single integer.
+        For input features, returns a list of integers of length max_tokens.
         """
-        if isinstance(value, str):
-            if position not in self.string_encoders:
-                self.string_encoders[position] = StringEncoder()
-            return self.string_encoders[position]
-        elif isinstance(value, bool):
-            return BooleanEncoder()
-        elif isinstance(value, (int, float)):
-            return NumericEncoder()
-        else:
-            raise ValueError(f"Unsupported type: {type(value)}")
+        if self.max_tokens is None:
+            raise ValueError("max_tokens must be set before encoding")
+
+        # Pour la classification (output), on garde le comportement original
+        if not self.inference_mode and isinstance(value, str) and len(value.split()) == 1:
+            value = value.lower().strip()
+            if value not in self.word_to_id:
+                self.word_to_id[value] = self.next_id
+                self.id_to_word[self.next_id] = value
+                self.next_id += 1
+            return [self.word_to_id[value]]  # Return single ID for classification
+
+        # Pour les features d'entrée (tokenization)
+        words = str(value).lower().strip().split()
+        encoded = []
+
+        for word in words:
+            if not self.inference_mode and word not in self.word_to_id:
+                self.word_to_id[word] = self.next_id
+                self.id_to_word[self.next_id] = word
+                self.next_id += 1
+            encoded.append(self.word_to_id.get(word, 0))
+
+        # Pad or truncate to max_tokens
+        if len(encoded) > self.max_tokens:
+            return encoded[:self.max_tokens]
+        return encoded + [0] * (self.max_tokens - len(encoded))
+
+    def decode(self, encoded_value: Union[int, List[int]]) -> str:
+        """
+        Decode either a single integer (classification) or list of integers (features)
+        """
+        # Pour la classification (output)
+        if isinstance(encoded_value, (int, float)):
+            return self.id_to_word.get(int(encoded_value), '<UNK>')
+
+        # Pour les features
+        words = []
+        for idx in encoded_value:
+            if idx != 0:  # Skip padding
+                words.append(self.id_to_word.get(idx, '<UNK>'))
+        return ' '.join(words)
+
+class EnhancedEncoder:
+    def __init__(self, existing_dict: Dict[str, int] = None):
+        self.string_encoder = StringEncoder(existing_dict)
+        self.feature_types = {}
+        self.encoders = {
+            str: self.string_encoder,
+            int: NumericEncoder(),
+            float: NumericEncoder(),
+            bool: BooleanEncoder()
+        }
 
     def encode(self, samples: List[Sample], max_tokens: int) -> List[Sample]:
-        """
-        Encode a list of samples
+        self.string_encoder.set_max_tokens(max_tokens)
         
-        Args:
-            samples: List of Sample objects
-            max_tokens: Maximum vocabulary size for string features
-            
-        Returns:
-            List of encoded Sample objects
-        """
         encoded_samples = []
-        # print("in samples")
-        # First pass: encode all values and build vocabularies
         for sample in samples:
             encoded_input = []
             for idx, value in enumerate(sample.input):
-                encoder = self._get_encoder(value, idx)
+                encoder = self.encoders[type(value)]
                 self.feature_types[idx] = type(value)
-                encoded_input.append(encoder.encode(value))
+                encoded_value = encoder.encode(value)
+                # Extend input list if string encoder returns a list
+                if isinstance(encoded_value, list):
+                    encoded_input.extend(encoded_value)
+                else:
+                    encoded_input.append(encoded_value)
 
             encoded_output = None
             if sample.output is not None:
                 output_idx = len(sample.input)
-                encoder = self._get_encoder(sample.output, output_idx)
+                encoder = self.encoders[type(sample.output)]
                 self.feature_types[output_idx] = type(sample.output)
                 encoded_output = encoder.encode(sample.output)
+                # Si c'est une liste (string), prendre le premier élément pour la classification
+                if isinstance(encoded_output, list):
+                    encoded_output = encoded_output[0]
 
             encoded_samples.append(Sample({
                 'input': encoded_input,
                 'output': encoded_output
             }))
 
-        # Limit vocabulary sizes for string features
-        for encoder in self.string_encoders.values():
-            encoder.limit_vocab(max_tokens)
-        print("finish encoding here yes")
         return encoded_samples
 
     def decode_prediction(self, prediction: Any, position: int) -> Any:
-        """
-        Decode a single prediction
-        
-        Args:
-            prediction: The value to decode
-            position: Feature position for proper decoder selection
-            
-        Returns:
-            Decoded value in original type
-        """
         if position not in self.feature_types:
             raise ValueError(f"Unknown feature position: {position}")
 
-        encoder = self._get_encoder(self.feature_types[position](), position)
-        return encoder.decode(prediction)
+        return self.encoders[self.feature_types[position]].decode(prediction)
 
     @property
-    def dictionary(self) -> Dict[int, Dict[str, int]]:
-        """
-        Get the current string encoding dictionary
-        """
-        return {pos: encoder.word_to_id 
-                for pos, encoder in self.string_encoders.items()}
-    
+    def dictionary(self) -> Dict[str, int]:
+        return self.string_encoder.word_to_id
 
 
-# # Initialisation avec dictionnaire existant optionnel
-# existing_dict = {0: {'chat': 1, 'chien': 2}}
-# encoder = EnhancedEncoder(existing_dict)
-# your_samples = Sample({'input': 'chat', 'output': 'chien'})
-# # Encodage des samples
-# encoded_samples = encoder.encode(samples=your_samples, max_tokens=1000)
-
-# # Décodage d'une prédiction
-# decoded_value = encoder.decode_prediction(prediction=1, position=0)  # 'chat'
-
-# # Accès au dictionnaire final
-# final_dict = encoder.dictionary
