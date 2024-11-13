@@ -4,7 +4,7 @@ from typing import Union, Optional
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
 from .model import HostaModel
-from .model_schema import ConfigModel
+from .config_model import ConfigModel
 from .predict_memory import PredictMemory
 from ...core.config import Model, DefaultModel
 from ...core.hosta import Hosta, Func
