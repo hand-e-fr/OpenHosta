@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .model import ArchitectureType
+from .model.neural_network_types import ArchitectureType
 
 
 class ConfigModel:
