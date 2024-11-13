@@ -2,9 +2,10 @@ import csv
 import json
 import os
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from .sample_type import Sample
+from ..encoder.new_encoder import EnhancedEncoder
 
 class SourceType(Enum):
     """
@@ -15,24 +16,82 @@ class SourceType(Enum):
     JSON = "json"
 class HostaDataset:
     def __init__(self, verbose: int = 0):
-        self.path = None # Path to the file
-        self.data : List[Sample] = [] # List of Sample objects
-        self.dictionnary = {} # Dictionnary for mapping str to id
-        self.inference : Sample = None # Inference data for understanding the data
-        self.verbose = verbose # Verbose level for debugging
+        self.path = None  # Path to the file
+        self.data: List[Sample] = []  # List of Sample objects
+        self.dictionnary = {}  # Dictionnary for mapping str to id
+        self.inference: Sample = None  # Inference data for understanding the data
+        self.verbose = verbose  # Verbose level for debugging
+        self._encoder = None  # Will store the encoder instance
 
-    def encode(self, encoder, tokenizer, max_tokens: int, classification: bool = False):
+    def encode(self, max_tokens: int, inference:bool = False):
         """
-        todo: Implement dataset encoding
+        Encode either dataset or inference data using the EnhancedEncoder.
+        Handles both cases uniformly and maintains encoding consistency.
+        
+        Args:
+            max_tokens: Maximum number of tokens for string features
         """
-        if self.data[0].output is None:
-            pass
-        else :
-            if classification:
-                pass
-            for sample in self.data:
-                pass
+        # Initialize encoder if not exists
+        if self._encoder is None:
+            if self.verbose > 0:
+                print("Initializing encoder...")
+            self._encoder = EnhancedEncoder(existing_dict=self.dictionnary)
+
+        if self.verbose > 0:
+            print("Starting encoding process...")
+
+        if not inference:
+            if self.verbose == 2:
+                print(f"Encoding {len(self.data)} samples...")
+            self.data = self._encoder.encode(self.data, max_tokens)
+        else:
+            if self.verbose == 2:
+                print("Encoding inference data...")
+            self.inference = self._encoder.encode([self.inference], max_tokens)[0]
+
+        # Update dictionary with final mapping
+        self.dictionnary = self._encoder.dictionary
+
+        if self.verbose == 2:
+            print("Encoding completed")
+            print(f"Dictionary size: {sum(len(d) for d in self.dictionnary.values())} entries")
+
+    def decode(self, predictions: List[Any], position: int) -> List[Any]:
+        """
+        Decode predictions back to their original type.
+        
+        Args:
+            predictions: List of predictions to decode
+            position: Position of the feature (used for classification mapping)
             
+        Returns:
+            List of decoded predictions
+            
+        Example:
+            # For classification output (position = len(input_features))
+            decoded = dataset.decode([1, 2, 1], len(dataset.data[0].input))
+            # For regression output
+            decoded = dataset.decode([0.1, 0.2, 0.3], len(dataset.data[0].input))
+        """
+        if self._encoder is None:
+            raise ValueError("Dataset must be encoded before decoding")
+
+        decoded_predictions = []
+        for pred in predictions:
+            try:
+                decoded_pred = self._encoder.decode_prediction(pred, position)
+                decoded_predictions.append(decoded_pred)
+            except ValueError as e:
+                if self.verbose > 0:
+                    print(f"Warning: {e}")
+                decoded_predictions.append(None)
+
+        if self.verbose > 0:
+            print(f"Decoded {len(predictions)} predictions")
+            if len(decoded_predictions) > 0:
+                print(f"Sample decoded prediction: {decoded_predictions[0]}")
+
+        return decoded_predictions
 
     def normalize(self, min_max=None):
         """

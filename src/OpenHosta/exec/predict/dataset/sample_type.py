@@ -13,7 +13,7 @@ class Sample:
             'feature1': [1, 2],     # Any key except 'output' is considered input
             'feature2': {'a': 3},    # Can contain any nested structure
             'feature3': 4,           # Can contain any primitive type
-            'feature4': BaseModel(), # Can contain Pydantic models
+            'feature4': BaseModel(), # Can contain Pydantic models 
             'output': 9      # Optional output
         }
         sample = Sample(data)
