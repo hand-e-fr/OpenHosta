@@ -62,26 +62,16 @@ class NeuralNetwork:
         """
         network_dict = {
             "layers": [
-                {
-                    "layer_type": layer.layer_type.name if layer.layer_type else None,
-                    "in_features": layer.in_features if layer.in_features else None,
-                    "out_features": layer.out_features if layer.out_features else None,
-                    "kernel_size": layer.kernel_size if layer.kernel_size else None,
-                    "stride": layer.stride if layer.stride else None,
-                    "padding": layer.padding if layer.padding else None,
-                    "dropout": layer.dropout if layer.dropout else None
-                }
+                layer.to_json()
                 for layer in self.layers
-            ],
-            "loss_function": self.loss_function.name if self.loss_function else None,
-            "optimizer": self.optimizer.name if self.optimizer else None
+            ]
         }
-
-        # Remove any entries with None values
-        for layer in network_dict["layers"]:
-            layer = {k: v for k, v in layer.items() if v is not None}
-
-        network_dict = {k: v for k, v in network_dict.items() if v is not None}
+        print(f"loss_function: {self.loss_function}")
+        if self.loss_function is not None:
+            network_dict["loss_function"] = self.loss_function.name
+        print(f"optimizer: {self.optimizer}")
+        if self.optimizer is not None:
+            network_dict["optimizer"] = self.optimizer.name
         return json.dumps(network_dict, indent=2)
 
     @classmethod
@@ -99,14 +89,20 @@ class NeuralNetwork:
             network_dict = json.loads(json_str)
             network = cls()
 
-            network.loss_function = LossFunction[network_dict.get("loss_function", None)]
+            if network_dict.get("loss_function", None) is not None:
+                network.loss_function = LossFunction[network_dict.get("loss_function", None).upper()]
+            else:
+                network.loss_function = None
 
-            network.optimizer = OptimizerAlgorithm[network_dict.get("optimizer", None)]
+            if network_dict.get("optimizer", None) is not None:
+                network.optimizer = OptimizerAlgorithm[network_dict.get("optimizer", None).upper()]
+            else:
+                network.optimizer = None
 
             # Add layers
             for layer_dict in network_dict.get("layers", []):
                 layer = Layer(
-                    layer_type=LayerType[layer_dict.get("layer_type", None)],
+                    layer_type=LayerType[layer_dict.get("layer_type", None).upper()],
                     in_features=layer_dict.get("in_features"),
                     out_features=layer_dict.get("out_features"),
                     kernel_size=layer_dict.get("kernel_size"),

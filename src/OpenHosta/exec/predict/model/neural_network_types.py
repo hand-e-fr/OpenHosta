@@ -126,3 +126,29 @@ class Layer:
             f"padding={self.padding}, "
             f"dropout={self.dropout})"
         )
+
+    def to_json(self):
+        """
+        Convert the layer configuration to a JSON string.
+
+        :return: JSON string representation of the layer
+        :rtype: str
+        """
+        json = {}
+
+        if self.layer_type is not None:
+            json["layer_type"] = self.layer_type.name
+        if self.in_features is not None:
+            json["in_features"] = self.in_features
+        if self.out_features is not None:
+            json["out_features"] = self.out_features
+        if self.kernel_size is not None:
+            json["kernel_size"] = self.kernel_size
+        if self.stride is not None:
+            json["stride"] = self.stride
+        if self.padding is not None:
+            json["padding"] = self.padding
+        if self.dropout is not None:
+            json["dropout"] = self.dropout
+
+        return json
