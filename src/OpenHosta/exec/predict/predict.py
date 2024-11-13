@@ -3,14 +3,14 @@ from typing import Union, Optional, Literal
 
 from .model_schema import ConfigModel
 from .predict_memory import PredictMemory, File, PredictFileType
-from .architecture import ArchitectureType, BaseArchitecture
-from .architecture.builtins.classification import Classification
+from .model import ArchitectureType, HostaModel
+from .model.builtins.classification import Classification
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
 from ...core.hosta import Hosta, Func
 from ...core.config import Model, DefaultModel
 
-# from .architecture.builtins.linear_regression import LinearRegressionBuilder
+# from .model.builtins.linear_regression import LinearRegressionBuilder
 
 # from .dataset.sample_type import Sample
 # from .encoder.simple_encoder import SimpleEncoder
@@ -39,7 +39,7 @@ def predict(
 
     dataset : HostaDataset = None
     
-    architecture : BaseArchitecture = get_architecture(memory, func, model, verbose)
+    architecture : HostaModel = get_architecture(memory, func, model, verbose)
 
     if not load_weights(memory, architecture):
         train_model(model, memory, architecture, dataset, oracle, verbose)
@@ -59,48 +59,48 @@ def predict(
 #     func: Func,
 #     model: Optional[ConfigModel] = None
 # ) -> BaseArchitecture:
-#     """Load or create a new architecture."""
-#     if memory.architecture.exist:
-#         json_architecture = memory.architecture.element
+#     """Load or create a new model."""
+#     if memory.model.exist:
+#         json_architecture = memory.model.element
 #         return BaseArchitecture.load_architecure_from_json(json_architecture)
 
 #     if model is not None:
 #         if model.model_type == ArchitectureType.LINEAR_REGRESSION:
-#             # architecture = LinearRegression()
-#             architecture = None
+#             # model = LinearRegression()
+#             model = None
 #         elif model.model_type == ArchitectureType.CLASSIFICATION:
-#             architecture = Classification()
-#     architecture.save_architecture_to_json(memory.architecture) # à voir si on save dans model ou just on utilise le path (besoin de modif le type File)
-#     return architecture
+#             model = Classification()
+#     model.save_architecture_to_json(memory.model) # à voir si on save dans model ou just on utilise le path (besoin de modif le type File)
+#     return model
 #                     BECOME 
 ######################################################
-def get_architecture(memory: PredictMemory, func: Func, model: Optional[ConfigModel] = None, verbose: bool = False) -> BaseArchitecture:
+def get_architecture(memory: PredictMemory, func: Func, model: Optional[ConfigModel] = None, verbose: bool = False) -> HostaModel:
     """
-    Load or create a new architecture.
+    Load or create a new model.
     """
     if memory.architecture.exist:
-        return BaseArchitecture.from_json(memory.architecture.path, verbose) # on à juste changé de nom
+        return HostaModel.from_json(memory.architecture.path, verbose) # on à juste changé de nom
     else:
-        return BaseArchitecture.from_hosta(func, model, memory.architecture.path, verbose)
+        return HostaModel.from_hosta(func, model, memory.architecture.path, verbose)
 
 
 
 # def load_weights(
 #     memory: PredictMemory,
-#     architecture: BaseArchitecture
+#     model: BaseArchitecture
 # ) -> bool:
 #     """load weights if they exist."""
 #     if memory.weight.exist:
 #         print(" weight exists")
 #         weight = memory.weight.element
 #         # weight = load_weights(memory.weight.element) # rajouter dans config_model un path absolue à des weights ?
-#         # architecture.init_weight(weight) # et assert si les poids ne correspondent pas à l'archi
+#         # model.init_weight(weight) # et assert si les poids ne correspondent pas à l'archi
 #         return True
 #     print(" weight doesn't exist")
 #     return False
 #                     BECOME 
 ######################################################
-def load_weights(memory: PredictMemory, architecture: BaseArchitecture) -> bool:
+def load_weights(memory: PredictMemory, architecture: HostaModel) -> bool:
     """
     Load weights if they exist.
     """
@@ -113,7 +113,7 @@ def load_weights(memory: PredictMemory, architecture: BaseArchitecture) -> bool:
 #     model: ConfigModel,
 #     memory: PredictMemory,
 #     dataset: HostaDataset,
-#     architecture: BaseArchitecture,
+#     model: BaseArchitecture,
 #     func: Func,
 #     oracle: Optional[Union[Model, HostaDataset]],
 #     verbose: bool
@@ -127,14 +127,14 @@ def load_weights(memory: PredictMemory, architecture: BaseArchitecture) -> bool:
 #         prepare_dataset(model, memory, dataset, func, oracle, verbose)
 #     return
 #     dataset.prepare_training() # torch, normalization + dataloader
-#     architecture.training(dataset.train_set, epochs=10, verbose=verbose)
+#     model.training(dataset.train_set, epochs=10, verbose=verbose)
 #     if verbose:
 #         dataset.init_example() # validation su les examples (encode....) + un val_test si généré à ajouter
-#         architecture.eval(dataset.val_set)
-#     architecture.save_weights(memory.weight)
+#         model.eval(dataset.val_set)
+#     model.save_weights(memory.weight)
 #                     BECOME 
 ######################################################
-def train_model(model: ConfigModel, memory: PredictMemory, architecture: BaseArchitecture, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
+def train_model(model: ConfigModel, memory: PredictMemory, architecture: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
     """
     Prepare the data and train the model.
     """

@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torch import optim
 
-from ..exec.predict.architecture.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
+from ..exec.predict.model.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
 
 
 def pytorch_layer_to_custom(layer) -> Layer:
