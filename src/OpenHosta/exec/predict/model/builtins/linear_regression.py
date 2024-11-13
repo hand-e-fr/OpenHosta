@@ -1,5 +1,5 @@
 from typing import Optional
-
+import torch
 from torch import nn
 from torch import optim
 
@@ -9,8 +9,8 @@ from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_t
 
 
 class LinearRegression(HostaModel):
-    def __init__(self, neural_network: Optional[NeuralNetwork], input_size : int, output_size : int, complexity : int):
-        super().__init__()
+    def __init__(self, neural_network: Optional[NeuralNetwork], input_size: int, output_size: int, complexity: int, device: Optional[str] = None):
+        super().__init__(device)
 
         self.complexity = complexity
 
@@ -31,11 +31,11 @@ class LinearRegression(HostaModel):
             self.layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
 
         for i, layer in enumerate(self.layers):
-            setattr(self, f'fc{i+1}', layer)
+            setattr(self, f'fc{i + 1}', layer)
 
         # Set the loss function
         if neural_network is None or neural_network.loss_function is None:
-            self.loss = nn.MSELoss()
+            self.loss = nn.CrossEntropyLoss()
         else:
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
 
@@ -45,22 +45,63 @@ class LinearRegression(HostaModel):
         else:
             self.optimizer = custom_optimizer_to_pytorch(neural_network.optimizer, self, lr=0.001)
 
+        # Move model to the selected device (CPU or GPU)
+        self.to(self.device)
+
     def forward(self, x):
         if self.layers is None or len(self.layers) == 0:
             return x
         for i, layer in enumerate(self.layers):
             x = layer(x)
             if i < len(self.layers) - 1:
-                x = nn.ReLU()(x)
+                x = nn.ReLU()(x)  # Apply ReLU between layers
         return x
 
-    def training(self, train_set, epochs, verbose):
+    def training(self, train_set, epochs, verbose=False):
         self.train()
 
         for epoch in range(epochs):
+            running_loss = 0.0
             for inputs, labels in train_set:
+                # Move inputs and labels to the right device
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
+
+                # Zero the parameter gradients
                 self.optimizer.zero_grad()
+
+                # Forward pass
                 outputs = self(inputs)
+
+                # Compute loss
                 loss = self.loss(outputs, labels)
+
+                # Backward pass and update
                 loss.backward()
                 self.optimizer.step()
+
+                running_loss += loss.item()
+            if verbose:
+                print(f"Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(train_set)}")
+
+    def validate(self, validation_set):
+        """Validate the model on a given validation set."""
+        self.eval()  # Set model to eval mode (disable dropout, etc.)
+        validation_loss = 0.0
+        with torch.no_grad():  # No need to track gradients during validation
+            for inputs, labels in validation_set:
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
+                outputs = self(inputs)
+                loss = self.loss(outputs, labels)
+                validation_loss += loss.item()
+        return validation_loss / len(validation_set)
+
+    def predict(self, test_set):
+        """Make predictions for the given test set."""
+        self.eval()  # Set model to eval mode for inference
+        predictions = []
+        with torch.no_grad():
+            for inputs in test_set:
+                inputs = inputs.to(self.device)
+                outputs = self(inputs)
+                predictions.append(outputs.cpu())  # Move predictions to CPU if they are on GPU
+        return predictions

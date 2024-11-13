@@ -1,11 +1,15 @@
 import os
 from typing import Union, Optional
 
+import torch
+
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
 from .model import HostaModel
+from .model.model_provider import HostaModelProvider
 from .config_model import ConfigModel
-from .predict_memory import PredictMemory
+from .predict_memory import PredictMemory, File
+from .model.neural_network import NeuralNetwork
 from ...core.config import Model, DefaultModel
 from ...core.hosta import Hosta, Func
 
@@ -33,38 +37,48 @@ def predict(
 
     dataset : HostaDataset = None
     
-    # architecture : HostaModel = get_architecture(memory, func, model, verbose)
+    hosta_model : HostaModel = get_hosta_model(memory.architecture, func, model)
     architecture = None
-    if not load_weights(memory, architecture):
-        train_model(model, memory, architecture, dataset, oracle, func, verbose)
+    if not load_weights(memory, hosta_model):
+        train_model(model, memory, hosta_model, dataset, oracle, func)
     
     if dataset is None:
         inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionnary
     else:
         inference = dataset.prepare_input(func.f_args)
     
-    prediction = architecture.inference(inference)
+    # prediction = architecture.inference(inference)
 
-    return prediction
+    # return prediction
+    return 0
 
 
-def get_architecture(memory: PredictMemory, func: Func, model: Optional[ConfigModel] = None, verbose: bool = False) -> HostaModel:
+def get_hosta_model(architecture_file: File, func: Func, model: Optional[ConfigModel] = None, verbose: int = 2) -> HostaModel:
     """
     Load or create a new model.
     """
-    if memory.architecture.exist:
-        return HostaModel.from_json(memory.architecture.path, verbose) # on à juste changé de nom
-    else:
-        return HostaModel.from_hosta(func, model, memory.architecture.path, verbose)
+    if verbose > 0:
+        print("Loading model")
+    architecture: Optional[NeuralNetwork] = None
+    if architecture_file.exist:
+        with open(architecture_file.path, "r") as file:
+            json = file.read()
+        architecture = NeuralNetwork.from_json(json)
+        if verbose > 0:
+            print(f"Model loaded from {architecture_file.path}")
+        if verbose > 1:
+            architecture.summary()
+    return HostaModelProvider.from_hosta_func(func, model, architecture, architecture_file.path, verbose)
 
 
-def load_weights(memory: PredictMemory, architecture: HostaModel) -> bool:
+def load_weights(memory: PredictMemory, hosta_model: HostaModel) -> bool:
     """
     Load weights if they exist.
     """
     if memory.weights.exist:
         print("Loading weights")
-        architecture.load_weights(memory.weight.path)
+        hosta_model.load_state_dict(torch.load(memory.weights.path, weights_only=True, map_location=hosta_model.device))
+        hosta_model.eval()
         return True
     print("Weights not found")
     print(memory.weights.path)
@@ -96,7 +110,8 @@ def prepare_dataset(model: ConfigModel, memory: PredictMemory, dataset: HostaDat
         dataset = HostaDataset.from_files(model.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
     else :
         print("generate Data")
-        dataset = generate_data(memory, func, oracle, verbose) 
+        dataset = generate_data(memory, func, oracle, verbose)
+        dataset.save(os.path.join(memory.predict_dir, "dataset.csv"), SourceType.CSV)
     print("encode data")
     dataset.encode(max_tokens=10, inference=False)
     print("FINISH")

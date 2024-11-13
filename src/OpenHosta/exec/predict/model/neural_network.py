@@ -90,19 +90,19 @@ class NeuralNetwork:
             network = cls()
 
             if network_dict.get("loss_function", None) is not None:
-                network.loss_function = LossFunction[network_dict.get("loss_function", None).upper()]
+                network.loss_function = LossFunction[network_dict.get("loss_function", None)]
             else:
                 network.loss_function = None
 
             if network_dict.get("optimizer", None) is not None:
-                network.optimizer = OptimizerAlgorithm[network_dict.get("optimizer", None).upper()]
+                network.optimizer = OptimizerAlgorithm[network_dict.get("optimizer", None)]
             else:
                 network.optimizer = None
 
             # Add layers
             for layer_dict in network_dict.get("layers", []):
                 layer = Layer(
-                    layer_type=LayerType[layer_dict.get("layer_type", None).upper()],
+                    layer_type=LayerType[layer_dict.get("layer_type", None)],
                     in_features=layer_dict.get("in_features"),
                     out_features=layer_dict.get("out_features"),
                     kernel_size=layer_dict.get("kernel_size"),
