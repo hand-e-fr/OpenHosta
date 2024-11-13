@@ -106,22 +106,23 @@ def prepare_dataset(model: ConfigModel, memory: PredictMemory, dataset: HostaDat
     Prepare the dataset for training.
     """
     if model.dataset_path is not None:
+        print("LOAD DATA")
         dataset = HostaDataset.from_files(model.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
     else :
-        print("generate Data")
-        dataset = generate_data(memory, func, oracle, verbose)
-        dataset.save(os.path.join(memory.predict_dir, "dataset.csv"), SourceType.CSV)
-    print("encode data")
+        print("GENE DATA")
+        dataset = generate_data(memory, func, oracle, verbose) 
+    print("Encode data")
     dataset.encode(max_tokens=10, inference=False)
     print("FINISH")
-    print(dataset.data)
+    # print(dataset.data)
     
-    return "FINISH"
-    if model.normalize:
-        dataset.normalize()
-    model.tensorise()
-
-    train_set, val_set = dataset.to_data(batch_size=model.batch_size, shuffle=True, test_size=model.test_size)
+    # return "FINISH"
+    # if model.normalize:
+        # dataset.normalize()
+    print("tensorise")
+    dataset.tensorify()
+    print('to data')
+    train_set, val_set = dataset.to_data(batch_size=model.batch_size, shuffle=True, train_set_size=0.8)
     return train_set, val_set
 
 
