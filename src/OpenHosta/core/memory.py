@@ -21,7 +21,7 @@ class HostaMemory:
     
     def _initialize(self, base_path: str) -> None:
         """Initializes the hostacache directory"""
-        self.cache_root = os.path.join(base_path if base_path else os.getcwd(), self.CACHE_DIR)
+        self.cache_root = os.path.join(base_path, self.CACHE_DIR)
         self._initialized = True
         self._ensure_directory_exists(self.cache_root)
 

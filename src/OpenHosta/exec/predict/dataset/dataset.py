@@ -1,43 +1,25 @@
 import csv
 import json
 import os
-import pickle
 from enum import Enum
 from typing import List, Optional
 
 from .sample_type import Sample
 
-
 class SourceType(Enum):
     """
     Enum for different types of sources for the dataset.
     """
-    CSV = 1
-    JSONL = 2
-    PICKLE = 3
-
+    CSV = "csv"
+    JSONL = "jsonl"
+    JSON = "json"
 class HostaDataset:
-    def __init__(self):
-        self.path = None
-        self.data : List[Sample] = []
-        self.dictionnary = {}
-        self.inference : Sample = None
-
-    def add(self, value):
-        """
-        Add data to the dataset.
-
-        Args:
-            value: The value to store
-        """
-        self.data.append(value)
-
-    def generate(self, model, n_samples: int):
-        """
-        todo: Implement dataset generation
-        """
-        self.data_sample
-        pass
+    def __init__(self, verbose: int = 0):
+        self.path = None # Path to the file
+        self.data : List[Sample] = [] # List of Sample objects
+        self.dictionnary = {} # Dictionnary for mapping str to id
+        self.inference : Sample = None # Inference data for understanding the data
+        self.verbose = verbose # Verbose level for debugging
 
     def encode(self, encoder, tokenizer, max_tokens: int, classification: bool = False):
         """
@@ -69,25 +51,23 @@ class HostaDataset:
         todo: Implement dataset loading
         """
         pass
-    def fit(self, data):
-        self.data_sample = Sample(self.data)
-        self.data_sample.to_sample(data)
 
-    
-    def save(self, path: str, source_type: SourceType = SourceType.CSV):
+    def save(self, path: str, source_type: SourceType = SourceType.CSV, elements: Optional[List[Sample]] = None):
         """
-        Save the dataset to a file in the specified format.
+        Save the dataset or specific elements to a file in the specified format.
         Converts Sample objects back to dictionaries for storage.
 
         Args:
             path: Path where to save the file
             source_type: Type of file format to save (CSV, JSONL, or PICKLE)
+            elements: Optional list of Sample objects to save. If None, saves entire dataset
         """
         self.path = path
+        data_to_save = elements if elements is not None else self.data
 
         # Convert Samples to dictionaries for saving
         dict_data = []
-        for sample in self.data:
+        for sample in data_to_save:
             sample_dict = {}
             for i, input_value in enumerate(sample.input):
                 sample_dict[f'input_{i}'] = input_value
@@ -109,14 +89,10 @@ class HostaDataset:
                     json.dump(row, f)
                     f.write('\n')
 
-        elif source_type == SourceType.PICKLE:
-            with open(path, 'wb') as f:
-                pickle.dump(self.data, f)
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
 
-    @staticmethod
-    def from_source(path: str, source_type: Optional[SourceType] = None):
+    def convert_files(self, path: str, source_type: Optional[SourceType] = None,):
         """
         Load dataset from a file and convert each row to a Sample object.
 
@@ -125,23 +101,19 @@ class HostaDataset:
             source_type: Type of file to load (CSV, JSONL, or PICKLE)
 
         Returns:
-            HostaDataset instance with Sample objects
+            self.data will be updated with the loaded data
         """
         if not os.path.exists(path):
             raise FileNotFoundError(f"File not found: {path}")
+        self.path = path # Save the pass for acces easily later
 
         if source_type is None:
             if path.endswith('.csv'):
                 source_type = SourceType.CSV
             elif path.endswith('.jsonl'):
                 source_type = SourceType.JSONL
-            elif path.endswith('.pkl'):
-                source_type = SourceType.PICKLE
             else:
                 raise ValueError(f"Please specify the source type for the file: {path}")
-
-        dataset = HostaDataset()
-        dataset.path = path
 
         if source_type == SourceType.CSV:
             with open(path, 'r') as f:
@@ -154,7 +126,7 @@ class HostaDataset:
                             processed_row[key] = float(value)
                         except ValueError:
                             processed_row[key] = value
-                    dataset.data.append(Sample(processed_row))
+                    self.data.append(Sample(processed_row))
 
         elif source_type == SourceType.JSONL:
             with open(path, 'r') as f:
@@ -162,24 +134,14 @@ class HostaDataset:
                     record = json.loads(line)
                     if not isinstance(record, dict):
                         record = {'input_0': record}
-                    dataset.data.append(Sample(record))
+                    self.data.append(Sample(record))
 
-        elif source_type == SourceType.PICKLE:
-            with open(path, 'rb') as f:
-                loaded_data = pickle.load(f)
-                if loaded_data and isinstance(loaded_data[0], Sample):
-                    dataset.data = loaded_data
-                else:
-                    for item in loaded_data:
-                        if not isinstance(item, dict):
-                            item = {'input': item}
-                        dataset.data.append(Sample(item))
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
-        return dataset
+        return self.data
 
     @staticmethod
-    def from_list(data: list):
+    def convert_list(data: list):
         """
         Create a dataset from a list.
 
@@ -212,16 +174,69 @@ class HostaDataset:
         return dataset
 
     @staticmethod
-    def get_sample(inference: dict) -> 'HostaDataset':
+    def from_input(inference: dict, memory, verbose: int) -> 'HostaDataset':
         """
         Get a Sample object from a dictionary of input values.
         """
-        dataset = HostaDataset()
+        dataset = HostaDataset(verbose)
         dataset.inference = Sample(inference)
         return dataset
 
+    @staticmethod
+    def from_files(path: str, source_type: SourceType, verbose: int) -> 'HostaDataset':
+        """
+        Load a dataset from a file.
+        """
+        dataset = HostaDataset(verbose)
+        dataset.convert_files(path, source_type)
+        return dataset
+    
+    @staticmethod
+    def from_list(data: list, verbose: int) -> 'HostaDataset':
+        """
+        Create a dataset from a list.
+        """
+        dataset = HostaDataset(verbose)
+        dataset.convert_list(data)
+        return dataset
+
+
+    @staticmethod
     def __len__(self):
         return len(self.data)
 
     def __iter__(self):
         return iter(self.data)
+
+
+#TODO important
+# Ajouter un self.verbose dans chaque init de classe pour le debug
+# A chaque fois ça change le self.data du coup ?, 
+
+# Générateur de dataset
+HostaDataset.from_files("path.data.csv", SourceType.CSV) #from_source -> from_file
+HostaDataset.from_files("path.data.jsonl", SourceType.JSONL)
+HostaDataset.from_list([{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}])
+HostaDataset.from_input({"a": 1, "b": 2, "c": 3}) # predict commence par ça et donc pas bien on init hosta_dataset à l'endroit ou l'on en à besoin
+# Les from sont des staticmethod des func convert_files, convert_list, convert_input commme ça on peut les utiliser dans le process 
+
+
+HostaDataset.save("path.data.csv", SourceType.CSV) # permet de save le dataset en dur si besoin
+# peut être le déplacer dans le generator de data du coup 
+
+#TODO
+train_set, val_set = HostaDataset.from_process_data("path_to_data_ready") # uque en static method lui
+
+HostaDataset.encode(encoder=SimpleEncoder(), tokenizer=None, max_tokens=100, architecture=Architecure) # peut être hardcode le simpleencoder au début
+HostaDataset.normalize(min=0, max=1)
+HostaDataset.tensorise(dtype="float32")
+train_set, val_set = HostaDataset.to_data(batch_size=32, shuffle=True, test_size=0.8) # test_size = 1 par défaut
+# from_data aussi alors
+HostaDataset.prepare_input(inference_data={"a": 1, "b": 2, "c": 3}) # permet de préparer l'inférence
+    #convert_input
+    #encode
+    #normalize
+    #tensorise
+
+#Later
+HostaDataset.from_dict({{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}})

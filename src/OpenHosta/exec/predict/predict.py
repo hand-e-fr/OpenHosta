@@ -32,18 +32,20 @@ def predict(
         Model prediction
     """
     func: Func = getattr(Hosta(), "_infos")
-    name = model.name if model and model.name else func.f_name #TODO: add hash of args into the name of the func
 
-    memory : PredictMemory = PredictMemory.load(base_path=model.path, name=name)
+    name = model.name if model and model.name else func.f_name #TODO: add hash of args into the name of the func
+    base_path = model.path if model and model.path else os.getcwd()
+    memory : PredictMemory = PredictMemory.load(base_path=base_path, name=name)
+
     dataset : HostaDataset = None
     
     architecture : BaseArchitecture = get_architecture(memory, func, model, verbose)
 
-    if not load_weights(memory, architecture, verbose):
+    if not load_weights(memory, architecture):
         train_model(model, memory, architecture, dataset, oracle, verbose)
     
     if dataset is None:
-        inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire
+        inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionnary
     else:
         inference = dataset.prepare_input(func.f_args)
     
@@ -98,12 +100,12 @@ def get_architecture(memory: PredictMemory, func: Func, model: Optional[ConfigMo
 #     return False
 #                     BECOME 
 ######################################################
-def load_weights(memory: PredictMemory, architecture: BaseArchitecture, verbose: bool) -> bool:
+def load_weights(memory: PredictMemory, architecture: BaseArchitecture) -> bool:
     """
     Load weights if they exist.
     """
     if memory.weight.exist:
-        architecture.load_weights(memory.weight.path, verbose)
+        architecture.load_weights(memory.weight.path)
         return True
     return False 
 
@@ -197,6 +199,7 @@ def prepare_dataset(model: ConfigModel, memory: PredictMemory, dataset: HostaDat
     model.tensorise()
 
     train_set, val_set = dataset.to_data(batch_size=model.batch_size, shuffle=True, test_size=model.test_size)
+    return train_set, val_set
 
 
 def generate_data(memory: PredictMemory, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> HostaDataset:
@@ -210,10 +213,6 @@ def generate_data(memory: PredictMemory, func: Func, oracle: Optional[Union[Mode
         model=oracle if oracle is not None else DefaultModel().get_default_model()
         # verbose=verbose #TODO: ajouter le verbose la !
     )
-    dataset = HostaDataset.from_list(data)
-
-    dataset.data = memory.data.element
-    dataset.convert_to_sample(memory.data.element) # on charge le dataset depuis le path du memory ou  -> JSON, CSV, Jsonl
-    dataset.encode() # encode + numpy ?
+    return HostaDataset.from_list(data, verbose)
 
 
