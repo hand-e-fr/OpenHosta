@@ -6,13 +6,13 @@ from ..neural_network import NeuralNetwork
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
 
 
-class Classification(nn.Module, BaseArchitecture):
+class Classification(BaseArchitecture):
     def __init__(self, neural_network: NeuralNetwork, input_size : int, output_size : int, complexity : int):
         super().__init__()
 
         self.complexity = complexity
 
-        # Set the loss function and optimizer
+        # Set the loss function
         if neural_network.loss_function is None:
             self.loss = nn.CrossEntropyLoss()
         else:

@@ -1,7 +1,12 @@
+from typing import Union
+
+import numpy as np
+import torch
 from torch import nn
 from torch import optim
-from typing import Optional, Union
+
 from ..exec.predict.architecture.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
+
 
 def pytorch_layer_to_custom(layer) -> Layer:
     """
@@ -236,3 +241,39 @@ def custom_optimizer_to_pytorch(optimizer_algorithm: OptimizerAlgorithm, model: 
     if optimizer_algorithm in optimizer_algorithm_map:
         return optimizer_algorithm_map[optimizer_algorithm](model.parameters(), **kwargs)
     return None
+
+def type_size(data):
+    """
+    Calculate the input/output size based on the type of the input data.
+
+    Parameters:
+        data: Can be of type int, float, list, tuple, numpy array, PyTorch tensor, set, dict, or string.
+
+    Returns:
+        The size (number of elements) of the given data.
+    """
+    if isinstance(data, int):
+        return 1
+    elif isinstance(data, float):
+        return 1
+    elif isinstance(data, list):
+        # If data is a list, calculate the size recursively for all elements.
+        return len(data) * type_size(data[0]) if data else 0
+    elif isinstance(data, tuple):
+        # If data is a tuple, calculate the size for each element.
+        return sum(type_size(item) for item in data)
+    elif isinstance(data, set):
+        # Calculate size for set items (similar approach to list/tuple)
+        return sum(type_size(item) for item in data)
+    elif isinstance(data, dict):
+        # Count both keys and values
+        return sum(type_size(k) + type_size(v) for k, v in data.items())
+    elif isinstance(data, str):
+        # Each character in a string is treated as a single element
+        return len(data)
+    elif isinstance(data, np.ndarray):
+        return data.size  # np.ndarray.size returns the total number of elements in the array
+    elif isinstance(data, torch.Tensor):
+        return data.numel()  # numel() returns the total number of elements in the tensor
+    else:
+        raise TypeError(f'Unsupported data type: {type(data)}')
