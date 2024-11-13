@@ -6,7 +6,7 @@ from typing import List, Optional, Any
 
 from .sample_type import Sample
 from ..encoder.new_encoder import EnhancedEncoder
-
+import torch # Dependances
 
 class SourceType(Enum):
     """
@@ -29,94 +29,140 @@ class HostaDataset:
         """
         self.data.append(sample)
 
-    def encode(self, max_tokens: int, inference:bool = False):
+    def encode(self, max_tokens: int, inference : bool = False):
         """
-        Encode either dataset or inference data using the EnhancedEncoder.
-        Handles both cases uniformly and maintains encoding consistency.
-        
-        Args:
-            max_tokens: Maximum number of tokens for string features
+        Encode dataset and/or inference data.
+        Training mode: creates dictionary
+        Inference mode: uses existing dictionary
         """
-        # Initialize encoder if not exists
         if self._encoder is None:
-            if self.verbose > 0:
-                print("Initializing encoder...")
-            self._encoder = EnhancedEncoder(existing_dict=self.dictionnary)
-
-        if self.verbose > 0:
-            print("Starting encoding process...")
-
+            # First call (training mode) - create new encoder
+            self._encoder = EnhancedEncoder()
         if not inference:
-            if self.verbose == 2:
-                print(f"Encoding {len(self.data)} samples...")
-            self.data = self._encoder.encode(self.data, max_tokens)
-            print(self.data)
+            self.data = self._encoder.encode(self.data, max_tokens=10)
+            # Save dictionary after encoding training data
+            self.dictionary = self._encoder.dictionary
         else:
-            if self.verbose == 2:
-                print("Encoding inference data...")
-            self.inference = self._encoder.encode([self.inference], max_tokens)[0]
-
-        # Update dictionary with final mapping
-        self.dictionnary = self._encoder.dictionary
-
-        if self.verbose == 2:
-            print("Encoding completed")
-            print(f"Dictionary size: {sum(len(d) for d in self.dictionnary.values())} entries")
+            # If there's inference data, encode it using existing dictionary
+            inference_encoder = EnhancedEncoder(existing_dict=self.dictionary)
+            self.inference = inference_encoder.encode([self.inference], max_tokens)[0]
 
     def decode(self, predictions: List[Any], position: int) -> List[Any]:
-        """
-        Decode predictions back to their original type.
-        
-        Args:
-            predictions: List of predictions to decode
-            position: Position of the feature (used for classification mapping)
-            
-        Returns:
-            List of decoded predictions
-            
-        Example:
-            # For classification output (position = len(input_features))
-            decoded = dataset.decode([1, 2, 1], len(dataset.data[0].input))
-            # For regression output
-            decoded = dataset.decode([0.1, 0.2, 0.3], len(dataset.data[0].input))
-        """
         if self._encoder is None:
             raise ValueError("Dataset must be encoded before decoding")
+        return [self._encoder.decode_prediction(pred, position) for pred in predictions]
 
-        decoded_predictions = []
-        for pred in predictions:
-            try:
-                decoded_pred = self._encoder.decode_prediction(pred, position)
-                decoded_predictions.append(decoded_pred)
-            except ValueError as e:
-                if self.verbose > 0:
-                    print(f"Warning: {e}")
-                decoded_predictions.append(None)
+    def tensorify(self, dtype=None):
+        """
+        Convertit les données en tenseurs PyTorch
+        """
+        if dtype is None:
+            dtype = torch.float32
+            
+        for sample in self.data:
+            # Vérifier si c'est déjà un tensor
+            if not isinstance(sample._input, torch.Tensor):
+                sample._input = torch.tensor(sample._input, dtype=dtype)
+            
+            if sample._output is not None and not isinstance(sample._output, torch.Tensor):
+                # Si l'output est un scalaire, le convertir en tensor 0-D
+                if isinstance(sample._output, (int, float)):
+                    sample._output = torch.tensor(sample._output, dtype=dtype)
+                else:
+                    sample._output = torch.tensor(sample._output, dtype=dtype)
+        
+        return self
 
-        if self.verbose > 0:
-            print(f"Decoded {len(predictions)} predictions")
-            if len(decoded_predictions) > 0:
-                print(f"Sample decoded prediction: {decoded_predictions[0]}")
+    # def normalize(self, min_val=0.0, max_val=1.0, inference=False):
+    #     """
+    #     Normalize the data after tensorification
+    #     Args:
+    #         min_val: desired minimum value (default: 0.0)
+    #         max_val: desired maximum value (default: 1.0)
+    #         inference: whether to normalize inference data
+    #     """
+    #     if not inference:
+    #         # Training data normalization
+    #         if not isinstance(self.data[0].input, torch.Tensor):
+    #             self.tensorify()
 
-        return decoded_predictions
+    #         # Stack all inputs and outputs to calculate ranges
+    #         inputs = torch.stack([sample.input for sample in self.data])
+    #         outputs = torch.stack([sample.output for sample in self.data if sample.output is not None])
+            
+    #         # Calculate and store normalization parameters
+    #         self.input_min = inputs.min(dim=0).values
+    #         self.input_max = inputs.max(dim=0).values
+    #         self.output_min = outputs.min(dim=0).values
+    #         self.output_max = outputs.max(dim=0).values
+            
+    #         # Normalize inputs and outputs
+    #         for sample in self.data:
+    #             sample.input = self._normalize_tensor(sample.input, self.input_min, self.input_max, min_val, max_val)
+    #             if sample.output is not None:
+    #                 sample.output = self._normalize_tensor(sample.output, self.output_min, self.output_max, min_val, max_val)
+        
+    #     else:
+    #         # Inference data normalization
+    #         if not hasattr(self, 'input_min'):
+    #             raise ValueError("Must normalize training data before inference data")
+    #         self.inference.input = self._normalize_tensor(self.inference.input, self.input_min, self.input_max, min_val, max_val)
+        
+    #     return self
 
-    def normalize(self, min_max=None):
-        """
-        todo: Implement dataset normalization
-        """
-        pass
+    # def denormalize_output(self, output, min_val=0.0, max_val=1.0):
+    #     """
+    #     Denormalize model predictions back to original scale
+    #     """
+    #     if not hasattr(self, 'output_min'):
+    #         raise ValueError("Dataset must be normalized before denormalization")
+    #     return self._normalize_tensor(output, min_val, max_val, self.output_min, self.output_max)
 
-    def tensorify(self):
-        """
-        todo: Implement dataset tensorification
-        """
-        pass
+    # def _normalize_tensor(self, x, old_min, old_max, new_min, new_max):
+    #     """Helper method for normalization/denormalization"""
+    #     return new_min + (x - old_min) * (new_max - new_min) / (old_max - old_min)
 
-    def load_data(self, batch_size: int, shuffle: bool):
+    def to_data(self, batch_size: int, shuffle: bool, train_set_size: float = 0.8):
         """
-        todo: Implement dataset loading
+        Crée les DataLoaders pour l'entraînement et la validation
         """
-        pass
+        # S'assurer que les données sont en tenseurs
+        if not isinstance(self.data[0]._input, torch.Tensor):
+            self.tensorify()
+        
+        # Empiler tous les tenseurs
+        inputs = torch.stack([sample._input for sample in self.data])
+        
+        # Vérifier si nous avons des outputs
+        has_outputs = all(sample._output is not None for sample in self.data)
+        
+        if has_outputs:
+            outputs = torch.stack([sample._output for sample in self.data])
+            dataset = torch.utils.data.TensorDataset(inputs, outputs)
+        else:
+            dataset = torch.utils.data.TensorDataset(inputs)
+        
+        # Calculer la taille du train set
+        train_size = int(train_set_size * len(dataset))
+        
+        # Split into train and validation
+        train_dataset = torch.utils.data.Subset(dataset, range(train_size))
+        val_dataset = torch.utils.data.Subset(dataset, range(train_size, len(dataset)))
+        
+        # Create dataloaders
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=shuffle
+        )
+        
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False
+        )
+        
+        return train_loader, val_loader
 
     def save(self, path: str, source_type: SourceType = SourceType.CSV, elements: Optional[List[Sample]] = None):
         """
