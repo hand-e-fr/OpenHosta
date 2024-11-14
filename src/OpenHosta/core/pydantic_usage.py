@@ -59,9 +59,12 @@ if is_pydantic:
         Returns:
             The JSON schema of the function's return type.
         """
-        if issubclass(return_caller, BaseModel):
-            return return_caller.model_json_schema()
-        return None
+        try:
+            if issubclass(return_caller, BaseModel):
+                return return_caller.model_json_schema()
+            return None
+        except:
+            return None
 
 else:
     class Func:
