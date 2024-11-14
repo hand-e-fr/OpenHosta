@@ -50,7 +50,8 @@ def emulate(
     l_ret: Any = None
 
     if _infos is None:
-        _infos = getattr(Hosta()._update_call(), "_infos")
+        x = Hosta()
+        _infos = getattr(x._update_call(), "_infos")
     func_prompt: str = _build_user_prompt(
         _infos, x, use_locals_as_ctx, use_self_as_ctx)
 

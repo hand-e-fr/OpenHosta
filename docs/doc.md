@@ -263,13 +263,11 @@ Let's take the same example, but using this feature:
 
 ```python
 from pydantic import BaseModel
-from OpenHosta import emulate, config
+from OpenHosta import emulate
 
 class Person(BaseModel):
     name: str
     age: int
-
-config.set_default_api_key("put-your-api-key-here")
 
 def find_first_name(sentence:str)->Person:
     """
@@ -287,10 +285,69 @@ def find_first_name(sentence:str)->Person:
 
 ### Body Functions
 
+In addition to the docstring-as-prompt, you can enhance your prompting with specialized functions. This way you can try different techniques like Zero/Few-shot prompting or Chain-of-Thought. If you're not familliar with theses concept, please check the [Reference](#references) section.
+
 #### `Example`
+
+The first of the body function is `example`. It allow you to give example to LLM.
+
+```python
+from OpenHosta import emulate, example
+
+def is_positive(sentence:str)->bool:
+    """
+    This function return True if the sentence in parameter is positive, False otherwise. 
+    """
+    example(sentence="Marc got a good mark in his exam.", hosta_out=True)
+    example(sentence="The weather is awful today !", hosta_out=False)
+    return emulate()
+
+print(is_positive("I can do it !")) # True
+
+# It will be write as follow in the final prompt:
+#######
+# Here are some examples of expected input and output:
+#[{'in_': {'sentence': 'Marc got a good mark in his exam.'}, 'out': True}, {'in_': {'sentence': 'The weather is awful today !'}, 'out': False}]
+```
+
+As shown above, `example` takes two types of argument. There are input parameters which must be named (kwargs) and exactly be the same number and type as in the function's definition. Finally, there's the “hosta_out” parameter. This corresponds to the expected LLM output.
+
+Giving inconsistent examples can severely impact LLM performance. But it can be a very good tool if it's used properly. 
 
 #### `Thought`
 
+The second body function is `thought`. It allows you to create chain of thought inside your prompt to enhance it's performance for more complex tasks.
+
+```python
+from OpenHosta import emulate, thought
+from typing import List, Optional
+
+def car_advice(query:str, car_available:List[str])->Optional[str]:
+    """
+    This function gives the best advice for the query in parameter. It must return the best car in the list "car_available" fitting the user's needs.
+    If no car fit the user's needs, this function returns None.
+    """
+    thought("identify the context and the need of the user")
+    thought("Look at the car available to find a car matching his needs")
+    thought("Return the name of the most relevant car, if no car is matching return None")
+    return emulate()
+
+car_list = [
+    "Lamborghini Aventador LP700-4",
+    "Volkswagen Coccinelle type 1",
+    "Ford Mustang 2024"
+]
+
+print(car_advice("I lives in the center of a big city with a lot of traffic, what do you recommend ?", car_list))
+# Volkswagen Coccinelle type 1
+print(car_advice("I would two buy a new car, but I would like an electric because I don't want to ruin my planet.", car_list))
+# None
+
+# It will be write as follow in the final prompt:
+#####
+# To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
+# [{'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}, {'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}]
+```
 
 ## `thinkof` Function
 
@@ -338,7 +395,7 @@ print(x._return_type) # int
 
 ### Introduction
 
-This section explains how to customize the program to make its own LLM call and response handling functions. This can be useful if you need a specific functionality that is not provided by the standard library, or to enable compatibility with a specific LLM.
+This section explains how to customize the program to make its own LLM call and response handling functions. This can be useful if you need a specific functionality that is not provided by the standard library, or to enable compatibility with a specific LLM. 
 
 ### Models
 
@@ -455,6 +512,9 @@ print(ret)
 - **GPT-4o**: https://en.wikipedia.org/wiki/GPT-4o
 - **AI**: https://en.wikipedia.org/wiki/Artificial_intelligence
 - **NLP**: https://en.wikipedia.org/wiki/Natural_language_processing
+- **Zero-Shot Prompting**: https://www.promptingguide.ai/techniques/zeroshot
+- **Few-Shot Prompting**: https://www.promptingguide.ai/techniques/fewshot
+- **Chain-of-Thought**: https://www.promptingguide.ai/techniques/cot
 
 ---
 
