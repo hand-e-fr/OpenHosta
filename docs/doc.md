@@ -88,6 +88,8 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [Custom Response Handling Function](#custom-response-handling-function)
       - [Create a new instance](#create-a-new-instance)
     - [Prompts](#prompts)
+      - [Edit the prompt](#edit-the-prompt)
+      - [Show me the prompt !](#show-me-the-prompt-)
   - [References](#references)
 
 ---
@@ -539,7 +541,50 @@ print(ret)
 
 ### Prompts
 
-`emulate` works by putting the emulated function's parsed data in a meta-prompt designed to give the best performance and ensure a
+#### Edit the prompt
+
+`emulate` works by putting the emulated function's parsed data in a meta-prompt designed to give the best performance and ensure a constant ouptput format. But you can different parts of this meta-prompt. Here's how you do it.
+
+You first need to import `EMULATE_PROMPT`
+
+```python
+from OpenHosta import EMULATE_PROMPT
+```
+
+This is an instance of a class conatining attributes. These attributes are all the separated parts (named "shards") of the prompt, that are then combined to build the final prompt. You'll only need to change theses attributes to change automatically the prompt.
+
+Here's all the shards:
+- **CTX_MAIN**: The main context gived to the LLM.
+- **CTX_SEP1**: The separator between the context and the example.
+- **CTX_EXAMPLE**: The examples decribing the overall functioning of OpenHosta.
+- **CTX_SEP2**: The separator between the context and emulated function's infos. 
+- **PRE_DEF**: The sentence introducing the function's definition.
+- **PRE_TYPE**: The sentence introducing the function's annotations.
+- **PRE_SCHEMA**: The sentence introducing the function's return type's schema.
+- **PRE_LOCALS**: The sentence introducing the function's local variables (Optional).
+- **PRE_SELF**: The sentence introducing the function's local attributes (Optional).
+- **PRE_EXAMPLE**: The sentence introducing the examples given by the user (Optional). 
+- **PRE_COT**: The sentence introducing the Chain-of-Thought (Optional).
+- **USER_SEP**: The separator between the system prompt and the user prompt.
+
+You can find all the separated values by visiting the [meta_prompt.py](../src/OpenHosta/utils/meta_prompt.py) file.
+
+To see te full filled prompt send to the LLM, you can also use the `print_last_prompt` function:
+
+```python
+from OpenHosta import emulate, print_last_prompt
+
+def multiply(a:int, b:int)->int:
+    """
+    This function multiplies two integers in parameter.
+    """
+    return emulate()
+
+multiply(5, 6)
+print_last_prompt(multiply)
+```
+
+#### Show me the prompt !
 
 ---
 
