@@ -204,8 +204,6 @@ class Hosta(HostaInspector):
             str: The hash value of the function.
         """
         return hashlib.md5(
-            str(func.f_doc).encode() +
             str(func.f_def).encode() +
-            str(func.f_type).encode() +
-            str(func.f_schema).encode()
+            str(func.f_type).encode()
         ).hexdigest()
