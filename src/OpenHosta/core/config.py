@@ -6,7 +6,6 @@ import re
 import sys
 import requests
 from typing import Any, Dict
-from urllib.parse import urlparse
 
 from .checker import HostaChecker
 from .pydantic_usage import Func

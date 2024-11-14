@@ -75,8 +75,6 @@ class FuncAnalizer:
         Returns:
             The string representing the function's definition.
         """
-        sig = inspect.signature(self.func)
-
         func_name = self.func.__name__
         func_params = ", ".join(
             [
@@ -85,12 +83,12 @@ class FuncAnalizer:
                     if param.annotation != inspect.Parameter.empty
                     else param_name
                 )
-                for param_name, param in sig.parameters.items()
+                for param_name, param in self.sig.parameters.items()
             ]
         )
         func_return = (
-            f" -> {sig.return_annotation.__name__}"
-            if sig.return_annotation != inspect.Signature.empty
+            f" -> {self.sig.return_annotation.__name__}"
+            if self.sig.return_annotation != inspect.Signature.empty
             else ""
         )
         definition = (
