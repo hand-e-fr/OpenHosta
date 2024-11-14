@@ -137,10 +137,3 @@ If you encounter a problem, try these few method that may fix it:
 - Use ``sudo`` (Unix) or run as administrator (Windows) if permission errors occur
 
 For more help and if the problem persist, please file an issue on GitHub.
-
-```
-py -3.12 -m pip install
-```
-
-emulate en dehors du return 
-expliquer comment configurer un modèle avec l'url, la clé, le nom...
