@@ -1,5 +1,4 @@
-from typing import Optional, Literal
-import typing
+from typing import Optional, Literal, get_origin
 from numpy.ma.extras import mr_class
 
 from .builtins.classification import Classification
@@ -19,22 +18,15 @@ class HostaModelProvider:
         input_size = type_size(func.f_type[0], config.max_tokens)
         output_size = type_size(func.f_type[1], config.max_tokens)
         hosta_model: Optional[HostaModel] = None
-        print("here 1 ")
         if config is not None and config.model_type is not None:
             if config.model_type == ArchitectureType.LINEAR_REGRESSION:
                 hosta_model = LinearRegression(architecture, input_size, output_size, config.complexity)
-                print("here 1.1")
             elif config.model_type == ArchitectureType.CLASSIFICATION:
-                print("here 1.2")
                 hosta_model = Classification(architecture, input_size, output_size, config.complexity, 1)
-            print("here 2")
         else:
-            print(f"Model type is : {type(func.f_type[1])}")
-            if getattr(func.f_type[1], '__origin__', None) is typing.Literal :
-                print("Output type is Literal, defaulting to classification")
+            if get_origin(func.f_type[1]) == Literal:
                 hosta_model = Classification(architecture, input_size, output_size, 4, 1)
             else:
-                print("Output type is not Literal, defaulting to linear regression")
                 hosta_model = LinearRegression(architecture, input_size, output_size, 4)
 
         with open(path, 'w') as file:

@@ -14,7 +14,7 @@ from ...core.hosta import Hosta, Func
 def predict(
     config: PredictConfig = PredictConfig(),
     oracle: Optional[Union[Model, HostaDataset]] = None, #TODO: function for creating data (call a subclass of oracle ?)
-    verbose: bool = False
+    verbose: int = 0 
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
@@ -27,6 +27,9 @@ def predict(
     Returns:
         Model prediction
     """
+    assert config != None, "Please provide a valid configuration not None"
+    assert verbose != None and verbose >= 0 and verbose <= 2, "Please provide a valid verbose level (0, 1 or 2)"
+
     func: Func = getattr(Hosta(), "_infos")
 
     name = config.name if config and config.name else func.f_name #TODO: add hash of args into the name of the func
@@ -35,20 +38,17 @@ def predict(
 
     dataset: Optional[HostaDataset] = None
     
-    hosta_model: HostaModel = get_hosta_model(memory.architecture, func, config)
-    # architecture = None
-    if not load_weights(memory, hosta_model):
+    hosta_model: HostaModel = get_hosta_model(memory.architecture, func, config, verbose)
+    if verbose == 2:
+        print(f"[\033[92mArchitecture\033[0m] loaded, type : {type(hosta_model).__name__}")
+        
+    if not load_weights(memory, hosta_model, verbose):
         train_model(config, memory, hosta_model, dataset, oracle, func, verbose)
     
     if dataset is None:
-        print("10.1 Dataset is None")
-        dataset = HostaDataset.from_input(func.f_args, verbose) # Pour le dictionnaire on envoie memory.dictionary
-        print("et puis ici")
-        print(dataset.inference)
+        dataset = HostaDataset.from_input(func.f_args, verbose)
     else:
-        print("10.2 Dataset is not None")
         dataset.prepare_inference(func.f_args)
-    print("10.3 Inference")
     torch_prediction = hosta_model.inference(dataset.inference._input)
     prediction = dataset.decode(torch_prediction, func_f_type=func.f_type[1])
     return prediction
@@ -58,81 +58,81 @@ def get_hosta_model(architecture_file: File, func: Func, config: Optional[Predic
     """
     Load or create a new model.
     """
-    if verbose > 0:
-        print("Loading model")
     architecture: Optional[NeuralNetwork] = None
 
     if architecture_file.exist:
-        print("0.1 Architecture exist")
         with open(architecture_file.path, "r") as file:
             json = file.read()
         architecture = NeuralNetwork.from_json(json)
-        if verbose > 0:
-            print(f"Model loaded from {architecture_file.path}")
-        if verbose > 1:
-            architecture.summary()
+        if verbose == 2:
+            print(f"[\033[92mArchitecture\033[0m] found at {architecture_file.path}")
+            # architecture.summary() # TODO: summary
+    else:
+        if verbose == 2:
+            print(f"[\033[93mArchitecture\033[0m] not found, creating one")
     return HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, verbose)
 
 
-def load_weights(memory: PredictMemory, hosta_model: HostaModel) -> bool:
+def load_weights(memory: PredictMemory, hosta_model: HostaModel, verbose :int) -> bool:
     """
     Load weights if they exist.
     """
     if memory.weights.exist:
-        print(" 1.1 Loading weights")
+
+        if verbose == 2:
+            print(f"[\033[92mWeights\033[0m] found at {memory.weights.path}")
         hosta_model.init_weights(memory.weights.path)
         return True
-    print(" 1.2 Weights not found")
-    print(memory.weights.path)
+
+    if verbose == 2:
+        print(f"[\033[92mWeights\033[0m] not found generate new ones")
     return False 
 
 
-def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
+def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: int) -> None:
     """
     Prepare the data and train the model.
     """
     if memory.data.exist:
-        print("2.1 Data exist")
+        if verbose == 2:
+            print(f"[\033[92mData\033[0m] found at {memory.data.path}")
         train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_set_size=0.8, verbose=verbose) # verbose will prcess all the example and add it to val_set
     else:
-        print("2.2 Data not found")
+        if verbose == 2:
+            print(f"[\033[93mData\033[0m] not processed, preparing data")
         train_set, val_set = prepare_dataset(config, memory, dataset, func, oracle, verbose)
     
-    # print(type(train_set))
-    # print(f"Type of architecture.training: {type(model)}")
-    # print(f"Type of architecture.training: {type(model.training)}")
-    model.trainer(train_set, epochs=100) # verif le model epochs....
+    model.trainer(train_set, epochs=100) #TODO: config.epochs
     
-    if verbose:
-        model.eval(val_set) # or directly in the training method at the end idk me fuck
+    # if verbose:
+    #     model.eval(val_set) # or directly in the training method at the end idk me fuck
     
     model.save_weights(memory.weights.path)
 
 
-def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> tuple:
+def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: int) -> tuple:
     """
     Prepare the dataset for training.
     """
     if config.dataset_path is not None:
-        print("3.1 Data from CSV file ")
+        if verbose == 2:
+            print(f"[\033[92mDataset\033[0m] found at {config.dataset_path}")
         dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
     else :
-        print("GENE DATA")
+        if verbose == 2:
+            print(f"[\033[93mDataset\033[0m]] not found, generate data")
         dataset = generate_data(memory, func, oracle, verbose)
         dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
-    print("Encode data")
+        if verbose == 2:
+            print(f"[\033[92mDataset\033[0m] generated!")
+
     dataset.encode(max_tokens=10)
-    # print("FINISH")
-    # print(dataset.data)
-    
-    # return "FINISH"
-    # if model.normalize:
-        # dataset.normalize()
-    # print("tensorise")
-    # print('to data')
     dataset.tensorify()
     dataset.save_data(memory.data.path)
     train_set, val_set = dataset.convert_data(batch_size=config.batch_size, shuffle=True, train_set_size=0.8)
+
+    if verbose == 2:
+        print(f"[\033[92mDataset\033[0m] processed and saved at {memory.data.path}")
     return train_set, val_set
 
 

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Literal, get_origin
 import typing
 from torch import nn
 from torch import optim
@@ -266,7 +266,7 @@ def type_size(data, tokens_size=10):
         return sum(type_size(k) + type_size(v) for k, v in data.items())
     elif isinstance(data, str):
         return tokens_size
-    elif getattr(data, '__origin__', None) is typing.Literal:
+    elif get_origin(data) == typing.Literal:
         return len(data.__args__)
     else:
         raise TypeError(f'Unsupported data type: {type(data)}')

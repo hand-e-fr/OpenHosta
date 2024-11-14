@@ -66,32 +66,6 @@ class PredictMemory(HostaMemory):
             exists = os.path.exists(path) and os.path.getsize(path) > 0
             self.files[file_type] = File(exist=exists, path=path)
 
-    # def update(self, file_type: PredictFileType, content: Any) -> None:
-    #     """
-    #     Met à jour un fichier avec un nouveau contenu.
-    #     Process:
-    #     1. Récupère le chemin du fichier
-    #     2. Écrit le contenu selon le type:
-    #        - Binaire pour weights
-    #        - JSON pour model
-    #        - Texte pour les autres
-    #     3. Met à jour l'état du fichier
-    #     """
-    #     path = self.paths[file_type]
-    #     try:
-    #         if file_type in [PredictFileType.WEIGHTS]:
-    #             with open(path, 'wb') as f:
-    #                 f.write(content)
-    #         else:
-    #             with open(path, 'w') as f:
-    #                 if file_type == PredictFileType.ARCHITECTURE:
-    #                     json.dump(content, f, indent=4)
-    #                 else:
-    #                     f.write(str(content))
-    #         self.files[file_type] = File(exist=True, path=path)
-    #     except Exception as e:
-    #         print(f"Error updating {file_type.value}: {str(e)}")
-
     @property
     def architecture(self) -> File: return self.files[PredictFileType.ARCHITECTURE]
 
