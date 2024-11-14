@@ -52,14 +52,16 @@ def predict(
     return prediction
 
 
-def get_hosta_model(architecture_file: File, func: Func, model: Optional[ConfigModel] = None, verbose: int = 2) -> HostaModel:
+def get_hosta_model(architecture_file: File, func: Func, model: Optional[ConfigModel] = None, verbose: int = 0) -> HostaModel:
     """
     Load or create a new model.
     """
     if verbose > 0:
         print("Loading model")
     architecture: Optional[NeuralNetwork] = None
+
     if architecture_file.exist:
+        print("architecure exist")
         with open(architecture_file.path, "r") as file:
             json = file.read()
         architecture = NeuralNetwork.from_json(json)
@@ -93,7 +95,10 @@ def train_model(model: ConfigModel, memory: PredictMemory, architecture: HostaMo
     else:
         train_set, val_set = prepare_dataset(model, memory, dataset, func, oracle, verbose)
     
-    architecture.training(train_set, epochs=model.epochs) # verif le model epochs....
+    print(type(train_set))
+    print(f"Type of architecture.training: {type(architecture)}")
+    print(f"Type of architecture.training: {type(architecture.training)}")
+    architecture.training(train_set, epochs=10) # verif le model epochs....
     
     if verbose:
         architecture.eval(val_set) # or directly in the training method at the end idk me fuck

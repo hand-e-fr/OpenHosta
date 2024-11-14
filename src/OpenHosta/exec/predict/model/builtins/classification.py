@@ -14,7 +14,7 @@ class Classification(HostaModel):
 
         self.complexity = complexity
         self.num_classes = num_classes
-
+        self.verbose = True
         self.layers = []
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
             transition_value = int(((input_size * output_size) / 2) * self.complexity)
@@ -57,7 +57,7 @@ class Classification(HostaModel):
         self.to(self.device)
 
 
-    def training(self, train_set, epochs, verbose=False):
+    def training(self, train_set, epochs):
         self.train()
 
         for epoch in range(epochs):
@@ -94,7 +94,7 @@ class Classification(HostaModel):
                 total += labels.size(0)
 
             accuracy = correct / total
-            if verbose:
+            if self.verbose:
                 print(f"Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(train_set):.4f}, Accuracy: {accuracy * 100:.2f}%")
 
     def validate(self, validation_set):

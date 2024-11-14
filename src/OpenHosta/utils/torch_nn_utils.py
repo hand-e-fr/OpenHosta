@@ -1,5 +1,5 @@
-from typing import Union, Type
-
+from typing import Union
+import typing
 from torch import nn
 from torch import optim
 
@@ -271,5 +271,7 @@ def type_size(data):
     elif isinstance(data, str):
         # Each character in a string is treated as a single element
         return len(data)
+    elif getattr(data, '__origin__', None) is typing.Literal:
+        return len(data.__args__)
     else:
         raise TypeError(f'Unsupported data type: {type(data)}')
