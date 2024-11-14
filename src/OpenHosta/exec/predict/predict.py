@@ -98,7 +98,7 @@ def train_model(model: PredictConfig, memory: PredictMemory, architecture: Hosta
     print(type(train_set))
     print(f"Type of architecture.training: {type(architecture)}")
     print(f"Type of architecture.training: {type(architecture.training)}")
-    architecture.trainer(train_set, epochs=10) # verif le model epochs....
+    architecture.trainer(train_set, epochs=100) # verif le model epochs....
     
     if verbose:
         architecture.eval(val_set) # or directly in the training method at the end idk me fuck

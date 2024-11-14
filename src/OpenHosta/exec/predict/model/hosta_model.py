@@ -17,7 +17,7 @@ class HostaModel(ABC, nn.Module):
         pass
 
     def forward(self, x):
-        print("mon x", x)
+        # print("mon x", x)
         for layer in self.layers:
             x = layer(x)
         return x

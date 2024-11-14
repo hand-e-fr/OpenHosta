@@ -37,7 +37,7 @@ class LinearRegression(HostaModel):
 
         # Set the loss function
         if neural_network is None or neural_network.loss_function is None:
-            self.loss = nn.CrossEntropyLoss()
+            self.loss = nn.MSELoss()
         else:
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
 
@@ -64,8 +64,11 @@ class LinearRegression(HostaModel):
 
                 # Forward pass
                 outputs = self(inputs)
-
+                # print("outputs", outputs)
+                # print("labels", labels)
                 # Compute loss
+                # labels = labels.long() # convert for cross entropy loss
+                # print("labels after long", labels)
                 loss = self.loss(outputs, labels)
 
                 # Backward pass and update
@@ -73,8 +76,8 @@ class LinearRegression(HostaModel):
                 self.optimizer.step()
 
                 running_loss += loss.item()
-            if verbose:
-                print(f"Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(train_set)}")
+            # if verbose:
+            print(f"Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(train_set)}")
 
     def validate(self, validation_set):
         """Validate the model on a given validation set."""
