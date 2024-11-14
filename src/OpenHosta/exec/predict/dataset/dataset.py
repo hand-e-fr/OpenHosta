@@ -122,47 +122,71 @@ class HostaDataset:
     #     """Helper method for normalization/denormalization"""
     #     return new_min + (x - old_min) * (new_max - new_min) / (old_max - old_min)
 
-    def to_data(self, batch_size: int, shuffle: bool, train_set_size: float = 0.8):
+    def convert_data(self, batch_size: int, shuffle: bool, train_set_size: float = 0.8) -> tuple:
         """
-        Crée les DataLoaders pour l'entraînement et la validation
+        Save the dataset to a file in the specified format and convert it into dataloader for training.
         """
-        # S'assurer que les données sont en tenseurs
         if not isinstance(self.data[0]._input, torch.Tensor):
             self.tensorify()
         
-        # Empiler tous les tenseurs
         inputs = torch.stack([sample._input for sample in self.data])
-        
-        # Vérifier si nous avons des outputs
-        has_outputs = all(sample._output is not None for sample in self.data)
-        
-        if has_outputs:
+        if all(sample._output is not None for sample in self.data):
             outputs = torch.stack([sample._output for sample in self.data])
             dataset = torch.utils.data.TensorDataset(inputs, outputs)
         else:
             dataset = torch.utils.data.TensorDataset(inputs)
         
-        # Calculer la taille du train set
+        return self._create_dataloaders(dataset, batch_size, shuffle, train_set_size)
+
+    def save_data(self, file_path: str):
+        """
+        Sauvegarde le dataset au format JSON
+        """
+        data_to_save = {
+            'data': [
+                {
+                    'input': sample._input.tolist() if isinstance(sample._input, torch.Tensor) else sample._input,
+                    'output': sample._output.tolist() if isinstance(sample._output, torch.Tensor) else sample._output
+                }
+                for sample in self.data
+            ]
+        }
+        with open(file_path, 'w') as f:
+            json.dump(data_to_save, f)
+
+    def load_data(self, file_path: str):
+        """
+        Charge un dataset depuis un fichier JSON
+        """
+        with open(file_path, 'r') as f:
+            data_dict = json.load(f)
+        
+        for sample_dict in data_dict['data']:
+            self.add(Sample(sample_dict))
+        
+
+    @staticmethod
+    def from_data(data_path: str, batch_size: int, shuffle: bool, train_set_size: float = 0.8, verbose: int = 1) -> tuple:
+        """
+        Load a dataset from a file and convert it into dataloader for training.
+        """
+        dataset = HostaDataset(verbose)
+        dataset.load_data(data_path)
+        return dataset.convert_data(batch_size, shuffle, train_set_size)
+
+    def _create_dataloaders(self, dataset, batch_size: int, shuffle: bool, train_set_size: float):
+        """
+        Méthode utilitaire pour créer les dataloaders
+        """
         train_size = int(train_set_size * len(dataset))
         
-        # Split into train and validation
         train_dataset = torch.utils.data.Subset(dataset, range(train_size))
         val_dataset = torch.utils.data.Subset(dataset, range(train_size, len(dataset)))
         
-        # Create dataloaders
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=batch_size,
-            shuffle=shuffle
+        return (
+            torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),
+            torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
         )
-        
-        val_loader = torch.utils.data.DataLoader(
-            val_dataset,
-            batch_size=batch_size,
-            shuffle=False
-        )
-        
-        return train_loader, val_loader
 
     def save(self, path: str, source_type: SourceType = SourceType.CSV, elements: Optional[List[Sample]] = None):
         """

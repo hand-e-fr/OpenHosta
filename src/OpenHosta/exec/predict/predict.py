@@ -59,7 +59,7 @@ def get_hosta_model(architecture_file: File, func: Func, config: Optional[Predic
     architecture: Optional[NeuralNetwork] = None
 
     if architecture_file.exist:
-        print("architecure exist")
+        print("0.1 Architecture exist")
         with open(architecture_file.path, "r") as file:
             json = file.read()
         architecture = NeuralNetwork.from_json(json)
@@ -75,10 +75,10 @@ def load_weights(memory: PredictMemory, hosta_model: HostaModel) -> bool:
     Load weights if they exist.
     """
     if memory.weights.exist:
-        print("Loading weights")
+        print(" 1.1 Loading weights")
         hosta_model.init_weights(memory.weights.path)
         return True
-    print("Weights not found")
+    print(" 1.2 Weights not found")
     print(memory.weights.path)
     return False 
 
@@ -88,13 +88,15 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     Prepare the data and train the model.
     """
     if memory.data.exist:
-        train_set, val_set = HostaDataset.from_data(memory.data.path, verbose) # verbose will prcess all the example and add it to val_set
+        print("2.1 Data exist")
+        train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_set_size=0.8, verbose=verbose) # verbose will prcess all the example and add it to val_set
     else:
+        print("2.2 Data not found")
         train_set, val_set = prepare_dataset(config, memory, dataset, func, oracle, verbose)
     
-    print(type(train_set))
-    print(f"Type of architecture.training: {type(model)}")
-    print(f"Type of architecture.training: {type(model.training)}")
+    # print(type(train_set))
+    # print(f"Type of architecture.training: {type(model)}")
+    # print(f"Type of architecture.training: {type(model.training)}")
     model.trainer(train_set, epochs=100) # verif le model epochs....
     
     if verbose:
@@ -108,23 +110,24 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
     Prepare the dataset for training.
     """
     if config.dataset_path is not None:
-        print("LOAD DATA")
+        print("3.1 Data from CSV file ")
         dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
     else :
-        print("GENE DATA")
-        dataset = generate_data(memory, func, oracle, verbose) 
-    print("Encode data")
+        print("3.2 Generate Data")
+        dataset = generate_data(memory, func, oracle, verbose)
+    # print("Encode data")
     dataset.encode(max_tokens=10, inference=False)
-    print("FINISH")
+    # print("FINISH")
     # print(dataset.data)
     
     # return "FINISH"
     # if model.normalize:
         # dataset.normalize()
-    print("tensorise")
+    # print("tensorise")
+    # print('to data')
     dataset.tensorify()
-    print('to data')
-    train_set, val_set = dataset.to_data(batch_size=config.batch_size, shuffle=True, train_set_size=0.8)
+    dataset.save_data(memory.data.path)
+    train_set, val_set = dataset.convert_data(batch_size=config.batch_size, shuffle=True, train_set_size=0.8)
     return train_set, val_set
 
 
