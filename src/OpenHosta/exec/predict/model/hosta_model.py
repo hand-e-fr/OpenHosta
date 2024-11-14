@@ -28,8 +28,9 @@ class HostaModel(ABC, nn.Module):
     def predict(self, test_set):
         pass
 
-    def init_weights(self):
-        pass
+    def init_weights(self, path: str):
+        self.load_state_dict(torch.load(path, weights_only=True, map_location=self.device))
+        self.eval()
 
-    def save_architecture(self, memory: PredictMemory):
-        pass
+    def save_weights(self, path: str):
+        torch.save(self.state_dict(), path)

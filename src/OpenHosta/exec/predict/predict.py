@@ -1,8 +1,6 @@
 import os
 from typing import Union, Optional
 
-import torch
-
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
 from .model import HostaModel
@@ -78,15 +76,14 @@ def load_weights(memory: PredictMemory, hosta_model: HostaModel) -> bool:
     """
     if memory.weights.exist:
         print("Loading weights")
-        hosta_model.load_state_dict(torch.load(memory.weights.path, weights_only=True, map_location=hosta_model.device))
-        hosta_model.eval()
+        hosta_model.init_weights(memory.weights.path)
         return True
     print("Weights not found")
     print(memory.weights.path)
     return False 
 
 
-def train_model(config: PredictConfig, memory: PredictMemory, architecture: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
+def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
     """
     Prepare the data and train the model.
     """
@@ -96,14 +93,14 @@ def train_model(config: PredictConfig, memory: PredictMemory, architecture: Host
         train_set, val_set = prepare_dataset(config, memory, dataset, func, oracle, verbose)
     
     print(type(train_set))
-    print(f"Type of architecture.training: {type(architecture)}")
-    print(f"Type of architecture.training: {type(architecture.training)}")
-    architecture.trainer(train_set, epochs=100) # verif le model epochs....
+    print(f"Type of architecture.training: {type(model)}")
+    print(f"Type of architecture.training: {type(model.training)}")
+    model.trainer(train_set, epochs=100) # verif le model epochs....
     
     if verbose:
-        architecture.eval(val_set) # or directly in the training method at the end idk me fuck
+        model.eval(val_set) # or directly in the training method at the end idk me fuck
     
-    architecture.save_weights(memory.weights.path)
+    model.save_weights(memory.weights.path)
 
 
 def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> tuple:
