@@ -75,8 +75,26 @@ class FuncAnalizer:
         Returns:
             The string representing the function's definition.
         """
-        source = inspect.getsource(self.func)
-        definition = f"```python\n{source}\n```"
+        func_name = self.func.__name__
+        func_params = ", ".join(
+            [
+                (
+                    f"{param_name}: {param.annotation.__name__}"
+                    if param.annotation != inspect.Parameter.empty
+                    else param_name
+                )
+                for param_name, param in self.sig.parameters.items()
+            ]
+        )
+        func_return = (
+            f" -> {self.sig.return_annotation.__name__}"
+            if self.sig.return_annotation != inspect.Signature.empty
+            else ""
+        )
+        definition = (
+            f"```python\ndef {func_name}({func_params}):{func_return}\n"
+            f"    \"\"\"\n\t{self.func.__doc__}\n    \"\"\"\n```"
+        )
         return definition
 
     @property
@@ -242,6 +260,10 @@ class FuncAnalizer:
             return {"type": "number"}
         if tp is str or tp is AnyStr:
             return {"type": "string"}
+        if tp is list:
+            return {"type": "list"}
+        if tp is dict:
+            return {"type": "dict"}
         if tp is bool:
             return {"type": "boolean"}
         if tp is NoneType or tp is None:
