@@ -102,6 +102,12 @@ class Hosta(HostaInspector):
         self._infos.f_locals, self._infos.f_self = analizer.func_locals
         self._infos.f_schema = analizer.func_schema
         self._infos.f_sig = analizer.sig
+        
+    def _update_call(self):
+        analizer = FuncAnalizer(self._obj[0], self._obj[1])
+        self._infos.f_call, self._infos.f_args = analizer.func_call
+        return self
+        
 
     def _bdy_add(self, key: MemKey, value: MemValue) -> None:
         """
