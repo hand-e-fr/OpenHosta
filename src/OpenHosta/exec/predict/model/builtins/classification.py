@@ -79,6 +79,8 @@ class Classification(HostaModel):
                     preds = torch.argmax(outputs, dim=1)
 
                 # Compute Loss
+                print(f"labels: {labels}")
+                print(f"outputs: {outputs}")
                 loss = self.loss(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
@@ -128,6 +130,7 @@ class Classification(HostaModel):
         print(f"Validation Loss: {avg_val_loss:.4f}, Accuracy: {accuracy * 100:.2f}%")
 
         return avg_val_loss, accuracy
+
 
     def inference(self, x):
         """Make prediction on a input inference the model"""

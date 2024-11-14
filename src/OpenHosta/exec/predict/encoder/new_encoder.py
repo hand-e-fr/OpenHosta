@@ -54,15 +54,6 @@ class StringEncoder(BaseEncoder):
         if self.max_tokens is None:
             raise ValueError("max_tokens must be set before encoding")
 
-        # Pour la classification (output), on garde le comportement original
-        if not self.inference_mode and isinstance(value, str) and len(value.split()) == 1:
-            value = value.lower().strip()
-            if value not in self.word_to_id:
-                self.word_to_id[value] = self.next_id
-                self.id_to_word[self.next_id] = value
-                self.next_id += 1
-            return [self.word_to_id[value]]  # Return single ID for classification
-
         # Pour les features d'entrée (tokenization)
         words = str(value).lower().strip().split()
         encoded = []
@@ -74,7 +65,6 @@ class StringEncoder(BaseEncoder):
                 self.next_id += 1
             encoded.append(self.word_to_id.get(word, 0))
 
-        # Pad or truncate to max_tokens
         if len(encoded) > self.max_tokens:
             return encoded[:self.max_tokens]
         return encoded + [0] * (self.max_tokens - len(encoded))
@@ -83,11 +73,9 @@ class StringEncoder(BaseEncoder):
         """
         Decode either a single integer (classification) or list of integers (features)
         """
-        # Pour la classification (output)
         if isinstance(encoded_value, (int, float)):
             return self.id_to_word.get(int(encoded_value), '<UNK>')
 
-        # Pour les features
         words = []
         for idx in encoded_value:
             if idx != 0:  # Skip padding
@@ -111,11 +99,10 @@ class EnhancedEncoder:
         encoded_samples = []
         for sample in samples:
             encoded_input = []
-            for idx, value in enumerate(sample.input):
+            for idx, value in enumerate(sample._input):
                 encoder = self.encoders[type(value)]
                 self.feature_types[idx] = type(value)
                 encoded_value = encoder.encode(value)
-                # Extend input list if string encoder returns a list
                 if isinstance(encoded_value, list):
                     encoded_input.extend(encoded_value)
                 else:
@@ -123,10 +110,12 @@ class EnhancedEncoder:
 
             encoded_output = None
             if sample.output is not None:
-                output_idx = len(sample.input)
-                encoder = self.encoders[type(sample.output)]
-                self.feature_types[output_idx] = type(sample.output)
-                encoded_output = encoder.encode(sample.output)
+                if isinstance(sample._output, str):
+                    print("STR PAS TROP SUPPORTÉ POUR L'INST")
+                output_idx = len(sample._input)
+                encoder = self.encoders[type(sample._output)]
+                self.feature_types[output_idx] = type(sample._output)
+                encoded_output = encoder.encode(sample._output)
                 # Si c'est une liste (string), prendre le premier élément pour la classification
                 if isinstance(encoded_output, list):
                     encoded_output = encoded_output[0]
