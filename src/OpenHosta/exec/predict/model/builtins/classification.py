@@ -1,3 +1,5 @@
+### NOT IMPLEMENTED YET ###
+
 from typing import Optional
 import torch
 from torch import nn
@@ -6,8 +8,9 @@ from torch import optim
 from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
+from .....utils.deprecated import deprecated
 
-
+@deprecated("This class is deprecated cause not correctly implemented yet")
 class Classification(HostaModel):
     def __init__(self, neural_network: Optional[NeuralNetwork], input_size: int, output_size: int, complexity: int, num_classes: int, device: Optional[str] = None):
         super().__init__(device)
@@ -120,7 +123,7 @@ class Classification(HostaModel):
                     correct += (preds == labels).sum().item()
                 else:
                     # Multi-class classification: Use argmax to get class labels
-                    preds = torch.argmax(outputs, dim=1)
+                    preds = torch.softmax(outputs, dim=1)
                     correct += (preds == labels.argmax(dim=1)).sum().item()
 
                 total += labels.size(0)
@@ -141,5 +144,6 @@ class Classification(HostaModel):
             if self.num_classes == 2:
                 prediction = (torch.sigmoid(outputs) > 0.5).float()
             else:
-                prediction = torch.argmax(outputs, dim=1)
+                print(f"outputs: {outputs}")
+                prediction = torch.softmax(outputs, dim=1)
             return prediction.cpu()

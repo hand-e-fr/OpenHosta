@@ -137,7 +137,8 @@ class NeuralNetwork:
                 nn_layer = pytorch_layer_to_custom(layer)
                 network.add_layer(nn_layer)
             except ValueError as e:
-                print(f"Skipping unsupported layer: {e}")
+                # print(f"Skipping unsupported layer: {e}")
+                pass
 
         # Set loss function and optimizer if specified
         if loss_fn is not None:

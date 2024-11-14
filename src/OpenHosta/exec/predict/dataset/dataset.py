@@ -3,9 +3,10 @@ import json
 import os
 from enum import Enum
 from typing import List, Optional, Any, Dict, Literal, get_origin
+import typing
 
 from .sample_type import Sample
-from ..encoder.new_encoder import EnhancedEncoder
+from ..encoder.simple_encoder import EnhancedEncoder
 import torch # Dependances
 
 class SourceType(Enum):
@@ -264,11 +265,8 @@ class HostaDataset:
         Prépare les données d'inférence en les encodant et les convertissant en tenseurs
         """
         self.inference = Sample(inference_data)
-        print(self.inference)
         self.encode_inference()
-        print(self.inference)
         self.tensorify_inference()
-        print(self.inference)
 
     @staticmethod
     def from_input(inference_data: dict, verbose: int = 0) -> 'HostaDataset':
@@ -277,8 +275,6 @@ class HostaDataset:
         """
         dataset = HostaDataset(verbose)
         dataset.prepare_inference(inference_data)
-        print("ok la")
-        print(dataset.inference)
         return dataset
 
     def decode(self, predictions: List[Any], func_f_type: Any) -> List[Any]:
@@ -289,11 +285,14 @@ class HostaDataset:
             raise ValueError("Dataset must be encoded before decoding")
         
         # Check if func_f_type is a typing.Literal
-        if get_origin(func_f_type) is Literal:
+        if isinstance(func_f_type, typing._GenericAlias) and get_origin() is Literal:
+            print("IN THE DECODE Literal")
+
+        # if get_origin(func_f_type) is Literal:
             # Return decoded predictions using the encoder
             return [self._encoder.decode_prediction(pred) for pred in predictions]
         else:
-            # Detach predictions, move to CPU, and convert to expected type
+            print("IN THE DECODE")
             decoded_predictions = []
             for pred in predictions:
                 pred_value = pred.detach().cpu().numpy()
