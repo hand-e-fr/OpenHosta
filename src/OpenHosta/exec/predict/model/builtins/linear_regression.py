@@ -1,4 +1,5 @@
 from typing import Optional
+
 import torch
 from torch import nn
 from torch import optim
@@ -56,7 +57,7 @@ class LinearRegression(HostaModel):
         for epoch in range(epochs):
             running_loss = 0.0
             for inputs, labels in train_set:
-                # Move inputs and labels to the right device
+                # Move _inputs and labels to the right device
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
 
                 # Zero the parameter gradients

@@ -2,12 +2,13 @@ import csv
 import json
 import os
 from enum import Enum
-from typing import List, Optional, Any, Dict, Literal, get_origin
-import typing
+from typing import List, Optional, Any, Dict
+
+import torch
 
 from .sample_type import Sample
-from ..encoder.simple_encoder import EnhancedEncoder
-import torch # Dependances
+from ..encoder.simple_encoder import SimpleEncoder
+
 
 class SourceType(Enum):
     """
@@ -23,7 +24,7 @@ class HostaDataset:
         self.dictionary: Dict[str, int] = {}  # Dictionary for mapping str to id
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
         self.verbose: int = verbose  # Verbose level for debugging
-        self._encoder: Optional[EnhancedEncoder] = None  # Will store the encoder instance
+        self._encoder: Optional[SimpleEncoder] = None  # Will store the encoder instance
 
     def add(self, sample: Sample):
         """
@@ -34,12 +35,12 @@ class HostaDataset:
         """
         Save the dataset to a file in the specified format and convert it into dataloader for training.
         """
-        if not isinstance(self.data[0]._input, torch.Tensor):
+        if not isinstance(self.data[0].input, torch.Tensor):
             self.tensorify()
         
-        inputs = torch.stack([sample._input for sample in self.data])
-        if all(sample._output is not None for sample in self.data):
-            outputs = torch.stack([sample._output for sample in self.data])
+        inputs = torch.stack([sample.input for sample in self.data])
+        if all(sample.output is not None for sample in self.data):
+            outputs = torch.stack([sample.output for sample in self.data])
             dataset = torch.utils.data.TensorDataset(inputs, outputs)
         else:
             dataset = torch.utils.data.TensorDataset(inputs)
@@ -53,8 +54,8 @@ class HostaDataset:
         data_to_save = {
             'data': [
                 {
-                    'input': sample._input.tolist() if isinstance(sample._input, torch.Tensor) else sample._input,
-                    'output': sample._output.tolist() if isinstance(sample._output, torch.Tensor) else sample._output
+                    '_inputs': sample.input.tolist() if isinstance(sample.input, torch.Tensor) else sample.input,
+                    '_outputs': sample.output.tolist() if isinstance(sample.output, torch.Tensor) else sample.output
                 }
                 for sample in self.data
             ]
@@ -117,7 +118,7 @@ class HostaDataset:
             for i, input_value in enumerate(sample.input):
                 sample_dict[f'input_{i}'] = input_value
             if sample.output is not None:
-                sample_dict['output'] = sample.output
+                sample_dict['_outputs'] = sample.output
             dict_data.append(sample_dict)
 
         if source_type == SourceType.CSV:
@@ -190,10 +191,10 @@ class HostaDataset:
         Create a dataset from a list.
 
         Args:
-            data: List of dictionaries or tuples/lists representing Sample input and output.
+            data: List of dictionaries or tuples/lists representing Sample _inputs and _outputs.
                   Each item should either be:
-                  - a dict with keys for input (e.g., 'input_0', 'input_1', ...) and optional 'output', or
-                  - a tuple/list where the first part is input(s) and the last item is output (optional).
+                  - a dict with keys for _inputs (e.g., 'input_0', 'input_1', ...) and optional '_outputs', or
+                  - a tuple/list where the first part is _inputs(s) and the last item is _outputs (optional).
 
         Returns:
             HostaDataset instance
@@ -204,12 +205,12 @@ class HostaDataset:
                 # If the entry is already a dictionary, let's assume it has the keys in the right structure
                 self.add(Sample(entry))
             elif isinstance(entry, (list, tuple)):
-                # If it's a list or tuple, we assume it's structured as (inputs..., [output])
-                inputs = list(entry[:-1])  # All but last element are inputs
-                output = entry[-1] if len(entry) > 1 else None  # Last element could be output if present
+                # If it's a list or tuple, we assume it's structured as (_inputs..., [_outputs])
+                inputs = list(entry[:-1])  # All but last element are _inputs
+                output = entry[-1] if len(entry) > 1 else None  # Last element could be _outputs if present
                 sample_dict = {f'input_{i}': input_value for i, input_value in enumerate(inputs)}
                 if output is not None:
-                    sample_dict['output'] = output
+                    sample_dict['_outputs'] = output
                 self.add(Sample(sample_dict))
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
@@ -219,7 +220,7 @@ class HostaDataset:
         Encode le dataset d'entraînement et crée le dictionnaire
         """
         if self._encoder is None:
-            self._encoder = EnhancedEncoder()
+            self._encoder = SimpleEncoder()
         self.data = self._encoder.encode(self.data, max_tokens=max_tokens)
         self.dictionary = self._encoder.dictionary
 
@@ -230,7 +231,7 @@ class HostaDataset:
         if self.dictionary is None:
             raise ValueError("No dictionary available. Call encode() first on training data")
         
-        self._encoder = EnhancedEncoder(existing_dict=self.dictionary)
+        self._encoder = SimpleEncoder(existing_dict=self.dictionary)
         self.inference = self._encoder.encode([self.inference], max_tokens=10)[0]
 
     def tensorify(self, dtype=None) -> None:
@@ -241,14 +242,14 @@ class HostaDataset:
             dtype = torch.float32
             
         for sample in self.data:
-            if not isinstance(sample._input, torch.Tensor):
-                sample._input = torch.tensor(sample._input, dtype=dtype)
+            if not isinstance(sample.input, torch.Tensor):
+                sample._inputs = torch.tensor(sample.input, dtype=dtype)
             
-            if sample._output is not None and not isinstance(sample._output, torch.Tensor):
-                if isinstance(sample._output, (int, float)):
-                    sample._output = torch.tensor(sample._output, dtype=dtype)
+            if sample.output is not None and not isinstance(sample.output, torch.Tensor):
+                if isinstance(sample.output, (int, float)):
+                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
                 else:
-                    sample._output = torch.tensor(sample._output, dtype=dtype)
+                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
 
     def tensorify_inference(self, dtype=None) -> None:
         """
@@ -257,8 +258,8 @@ class HostaDataset:
         if dtype is None:
             dtype = torch.float32
         
-        if not isinstance(self.inference._input, torch.Tensor):
-            self.inference._input = torch.tensor(self.inference._input, dtype=dtype)
+        if not isinstance(self.inference.input, torch.Tensor):
+            self.inference._inputs = torch.tensor(self.inference.input, dtype=dtype)
 
     def prepare_inference(self, inference_data: dict) -> None:
         """
@@ -285,31 +286,29 @@ class HostaDataset:
             raise ValueError("Dataset must be encoded before decoding")
         
         # Check if func_f_type is a typing.Literal
-        if isinstance(func_f_type, typing._GenericAlias) and get_origin() is Literal:
-            print("IN THE DECODE Literal")
+        # if isinstance(func_f_type, typing._GenericAlias) and get_origin() is Literal:
 
         # if get_origin(func_f_type) is Literal:
             # Return decoded predictions using the encoder
-            return [self._encoder.decode_prediction(pred) for pred in predictions]
-        else:
-            print("IN THE DECODE")
-            decoded_predictions = []
-            for pred in predictions:
-                pred_value = pred.detach().cpu().numpy()
-                # Convert pred_value to the expected type
-                # Handle scalar and array predictions
-                if pred_value.size == 1:
-                    pred_scalar = pred_value.item()
-                else:
-                    pred_scalar = pred_value
-                try:
-                    converted_pred = func_f_type(pred_scalar)
-                except (TypeError, ValueError):
-                    converted_pred = pred_scalar  # Return as is if conversion fails
-                decoded_predictions.append(converted_pred)
-                if func_f_type != list:
-                    decoded_predictions = decoded_predictions[0]
-            return decoded_predictions
+            # return [self._encoder.decode_prediction(pred) for pred in predictions]
+        # else:
+        decoded_predictions = []
+        for pred in predictions:
+            pred_value = pred.detach().cpu().numpy()
+            # Convert pred_value to the expected type
+            # Handle scalar and array predictions
+            if pred_value.size == 1:
+                pred_scalar = pred_value.item()
+            else:
+                pred_scalar = pred_value
+            try:
+                converted_pred = func_f_type(pred_scalar)
+            except (TypeError, ValueError):
+                converted_pred = pred_scalar  # Return as is if conversion fails
+            decoded_predictions.append(converted_pred)
+            if func_f_type != list:
+                decoded_predictions = decoded_predictions[0]
+        return decoded_predictions
         
     @staticmethod
     def from_files(path: str, source_type: Optional[SourceType], verbose: int = 1) -> 'HostaDataset':
@@ -336,36 +335,3 @@ class HostaDataset:
 
     def __iter__(self):
         return iter(self.data)
-
-
-# #TODO important
-# # Ajouter un self.verbose dans chaque init de classe pour le debug
-# # A chaque fois ça change le self.data du coup ?, 
-
-# # Générateur de dataset
-# HostaDataset.from_files("path.data.csv", SourceType.CSV) #from_source -> from_file
-# HostaDataset.from_files("path.data.jsonl", SourceType.JSONL)
-# HostaDataset.from_list([{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}])
-# HostaDataset.from_input({"a": 1, "b": 2, "c": 3}) # predict commence par ça et donc pas bien on init hosta_dataset à l'endroit ou l'on en à besoin
-# # Les from sont des staticmethod des func convert_files, convert_list, convert_input commme ça on peut les utiliser dans le process 
-
-
-# HostaDataset.save("path.data.csv", SourceType.CSV) # permet de save le dataset en dur si besoin
-# # peut être le déplacer dans le generator de data du coup 
-
-# #TODO
-# train_set, val_set = HostaDataset.from_process_data("path_to_data_ready") # uque en static method lui
-
-# HostaDataset.encode(encoder=SimpleEncoder(), tokenizer=None, max_tokens=100, architecture=Architecure) # peut être hardcode le simpleencoder au début
-# HostaDataset.normalize(min=0, max=1)
-# HostaDataset.tensorise(dtype="float32")
-# train_set, val_set = HostaDataset.to_data(batch_size=32, shuffle=True, test_size=0.8) # test_size = 1 par défaut
-# # from_data aussi alors
-# HostaDataset.prepare_input(inference_data={"a": 1, "b": 2, "c": 3}) # permet de préparer l'inférence
-#     #convert_input
-#     #encode
-#     #normalize
-#     #tensorise
-
-# #Later
-# HostaDataset.from_dict({{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}})

@@ -29,5 +29,4 @@ class HostaMemory:
     def _ensure_directory_exists(self, directory) -> None:
         """Creates the base directory if necessary"""
         if not os.path.exists(directory):
-            print(f"Creating directory {directory}")
             os.makedirs(directory)

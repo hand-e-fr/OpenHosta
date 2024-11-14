@@ -1,6 +1,7 @@
 ### NOT IMPLEMENTED YET ###
 
 from typing import Optional
+
 import torch
 from torch import nn
 from torch import optim
@@ -8,9 +9,8 @@ from torch import optim
 from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
-from .....utils.deprecated import deprecated
 
-@deprecated("This class is deprecated cause not correctly implemented yet")
+
 class Classification(HostaModel):
     def __init__(self, neural_network: Optional[NeuralNetwork], input_size: int, output_size: int, complexity: int, num_classes: int, device: Optional[str] = None):
         super().__init__(device)
@@ -82,8 +82,6 @@ class Classification(HostaModel):
                     preds = torch.argmax(outputs, dim=1)
 
                 # Compute Loss
-                print(f"labels: {labels}")
-                print(f"outputs: {outputs}")
                 loss = self.loss(outputs, labels)
                 loss.backward()
                 self.optimizer.step()
@@ -136,7 +134,7 @@ class Classification(HostaModel):
 
 
     def inference(self, x):
-        """Make prediction on a input inference the model"""
+        """Make prediction on a _inputs inference the model"""
         self.eval()
         with torch.no_grad():
             x = x.to(self.device)
@@ -144,6 +142,5 @@ class Classification(HostaModel):
             if self.num_classes == 2:
                 prediction = (torch.sigmoid(outputs) > 0.5).float()
             else:
-                print(f"outputs: {outputs}")
                 prediction = torch.softmax(outputs, dim=1)
             return prediction.cpu()

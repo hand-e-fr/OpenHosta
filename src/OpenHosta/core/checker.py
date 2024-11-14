@@ -11,15 +11,15 @@ T = TypeVar('T')
 
 class HostaChecker:
     """
-    A class used to check and convert the output of a Language Model (LLM) to the type specified in a function's annotation.
+    A class used to check and convert the _outputs of a Language Model (LLM) to the type specified in a function's annotation.
 
     Args:
-        func (Func): A function object that contains the type annotations for the LLM output.
-        data (dict): A dictionary containing the LLM output data to be checked and converted.
+        func (Func): A function object that contains the type annotations for the LLM _outputs.
+        data (dict): A dictionary containing the LLM _outputs data to be checked and converted.
 
     Attributes:
-        func (Func): The function object containing the type annotations for the LLM output.
-        data (dict): The LLM output data to be checked and converted.
+        func (Func): The function object containing the type annotations for the LLM _outputs.
+        data (dict): The LLM _outputs data to be checked and converted.
         checked (Any): The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         is_passed (bool): A flag indicating whether the checked data should be converted or not. It is set to True if `data` contains a "return" key.
     """
@@ -36,13 +36,13 @@ class HostaChecker:
 
     def _default(self, x: Any) -> Any:
         """
-        A default conversion function that returns the input as is.
+        A default conversion function that returns the _inputs as is.
 
         Args:
-            x (Any): The input data to be converted.
+            x (Any): The _inputs data to be converted.
 
         Returns:
-            Any: The input data as is.
+            Any: The _inputs data as is.
         """
         return x
 
@@ -97,7 +97,7 @@ class HostaChecker:
 
     def check(self) -> Any:
         """
-        A method to check and convert the input data based on the function's type annotations and Pydantic model annotations.
+        A method to check and convert the _inputs data based on the function's type annotations and Pydantic model annotations.
 
             Returns:
                 Any: The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.

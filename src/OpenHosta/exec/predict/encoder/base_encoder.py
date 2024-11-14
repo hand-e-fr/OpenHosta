@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Union,Any
+from typing import Union,Any
 
 class BaseEncoder(ABC):
     @abstractmethod

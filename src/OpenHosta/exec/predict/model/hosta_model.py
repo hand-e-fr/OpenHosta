@@ -4,8 +4,6 @@ from typing import Optional
 import torch
 from torch import nn
 
-from ..predict_memory import PredictMemory
-
 
 class HostaModel(ABC, nn.Module):
     def __init__(self, device: Optional[str]):
@@ -22,9 +20,6 @@ class HostaModel(ABC, nn.Module):
         return x
 
     def validate(self, validation_set):
-        pass
-
-    def predict(self, test_set):
         pass
 
     def inference(self, x):

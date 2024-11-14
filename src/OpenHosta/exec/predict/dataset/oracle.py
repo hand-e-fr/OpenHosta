@@ -1,8 +1,6 @@
 import inspect
-from collections import Counter
 from typing import Optional, Dict, Any, List, Type, Union, get_args, Literal
 
-from .dataset import HostaDataset, SourceType
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
 from ....utils.prompt import PromptManager
@@ -76,7 +74,7 @@ class LLMSyntheticDataGenerator:
     @staticmethod
     def _format_example(input_val: Any, output_val: Any) -> str:
         """
-        Format a single example based on input/output types.
+        Format a single example based on _inputs/_outputs types.
         """
         if isinstance(input_val, (list, tuple)):
             input_str = ','.join(map(str, input_val))
@@ -104,15 +102,15 @@ class LLMSyntheticDataGenerator:
             for input_val, output_val in examples.items():
                 user_prompt += f"{LLMSyntheticDataGenerator._format_example(input_val, output_val)}\n"
 
-        user_prompt += f"\n\nGenerate {examples_in_req} new DIVERSE input-output pairs, one per line, in CSV format"
+        user_prompt += f"\n\nGenerate {examples_in_req} new DIVERSE _inputs-_outputs pairs, one per line, in CSV format"
         if output_type == str:
-            user_prompt += " (remember to enclose string outputs in quotes ex: \"output\")"
+            user_prompt += " (remember to enclose string _outputs in quotes ex: \"_outputs\")"
         user_prompt += ":\n"
 
-        user_prompt += f"{','.join(func.f_sig.parameters.keys())},output"
+        user_prompt += f"{','.join(func.f_sig.parameters.keys())},_outputs"
         user_prompt += f"\n{','.join([str(f"\n- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}")\
                                       for a, b in func.f_sig.parameters.items()])}\n"
-        user_prompt += f"- output is type {output_type.__name__}\n"
+        user_prompt += f"- _outputs is type {output_type.__name__}\n"
 
         return user_prompt
 
@@ -134,7 +132,7 @@ class LLMSyntheticDataGenerator:
                 to_append = {}
                 for i, key in enumerate(input_types.keys()):
                     to_append[key] = ex_inputes[i]
-                to_append["output"] = ex_output
+                to_append["_outputs"] = ex_output
 
         if not model:
             model = DefaultManager.get_default_model()
@@ -156,7 +154,6 @@ class LLMSyntheticDataGenerator:
         )
         prompt += LLMSyntheticDataGenerator._build_user_prompt(examples, func, output_type, examples_in_req)
 
-        # TODO: Implement data generation logic
         generated_data: List = []
         result: List[Dict] = []
         conversation_history: List = []
@@ -204,7 +201,7 @@ class LLMSyntheticDataGenerator:
                     if cleaned_row:
                         if cleaned_row not in generated_data:
                             dictrow = dict(zip(input_types.keys(), cleaned_row[:-1]))
-                            dictrow["output"] = cleaned_row[-1]
+                            dictrow["_outputs"] = cleaned_row[-1]
                             result.append(dictrow)
                             generated_data.append(cleaned_row)
 
