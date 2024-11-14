@@ -37,8 +37,9 @@ class LLMSyntheticDataGenerator:
             # Convert numeric inputs to proper format
             for i in range(len(values) - 1):  # All except last value
                 try:
+                    # if the value is a float, convert it to float
                     num = float(values[i])
-                    values[i] = str(int(num) if num.is_integer() else num)
+                    values[i] = num
                 except ValueError:
                     pass
 
@@ -48,7 +49,7 @@ class LLMSyntheticDataGenerator:
             elif return_type in (int, float):
                 try:
                     num = float(values[-1])
-                    values[-1] = str(int(num) if num.is_integer() else num)
+                    values[-1] = num
                 except ValueError:
                     return None
 

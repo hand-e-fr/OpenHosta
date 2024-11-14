@@ -73,55 +73,6 @@ class HostaDataset:
         
         return self
 
-    # def normalize(self, min_val=0.0, max_val=1.0, inference=False):
-    #     """
-    #     Normalize the data after tensorification
-    #     Args:
-    #         min_val: desired minimum value (default: 0.0)
-    #         max_val: desired maximum value (default: 1.0)
-    #         inference: whether to normalize inference data
-    #     """
-    #     if not inference:
-    #         # Training data normalization
-    #         if not isinstance(self.data[0].input, torch.Tensor):
-    #             self.tensorify()
-
-    #         # Stack all inputs and outputs to calculate ranges
-    #         inputs = torch.stack([sample.input for sample in self.data])
-    #         outputs = torch.stack([sample.output for sample in self.data if sample.output is not None])
-            
-    #         # Calculate and store normalization parameters
-    #         self.input_min = inputs.min(dim=0).values
-    #         self.input_max = inputs.max(dim=0).values
-    #         self.output_min = outputs.min(dim=0).values
-    #         self.output_max = outputs.max(dim=0).values
-            
-    #         # Normalize inputs and outputs
-    #         for sample in self.data:
-    #             sample.input = self._normalize_tensor(sample.input, self.input_min, self.input_max, min_val, max_val)
-    #             if sample.output is not None:
-    #                 sample.output = self._normalize_tensor(sample.output, self.output_min, self.output_max, min_val, max_val)
-        
-    #     else:
-    #         # Inference data normalization
-    #         if not hasattr(self, 'input_min'):
-    #             raise ValueError("Must normalize training data before inference data")
-    #         self.inference.input = self._normalize_tensor(self.inference.input, self.input_min, self.input_max, min_val, max_val)
-        
-    #     return self
-
-    # def denormalize_output(self, output, min_val=0.0, max_val=1.0):
-    #     """
-    #     Denormalize model predictions back to original scale
-    #     """
-    #     if not hasattr(self, 'output_min'):
-    #         raise ValueError("Dataset must be normalized before denormalization")
-    #     return self._normalize_tensor(output, min_val, max_val, self.output_min, self.output_max)
-
-    # def _normalize_tensor(self, x, old_min, old_max, new_min, new_max):
-    #     """Helper method for normalization/denormalization"""
-    #     return new_min + (x - old_min) * (new_max - new_min) / (old_max - old_min)
-
     def convert_data(self, batch_size: int, shuffle: bool, train_set_size: float = 0.8) -> tuple:
         """
         Save the dataset to a file in the specified format and convert it into dataloader for training.
@@ -228,7 +179,7 @@ class HostaDataset:
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
 
-    def convert_files(self, path: str, source_type: Optional[SourceType] = None,):
+    def convert_files(self, path: str, source_type: Optional[SourceType] = None):
         """
         Load dataset from a file and convert each row to a Sample object.
 
@@ -316,7 +267,7 @@ class HostaDataset:
         return dataset
 
     @staticmethod
-    def from_files(path: str, source_type: SourceType, verbose: int) -> 'HostaDataset':
+    def from_files(path: str, source_type: Optional[SourceType] = None, verbose: int = 1) -> 'HostaDataset':
         """
         Load a dataset from a file.
         """
@@ -340,36 +291,3 @@ class HostaDataset:
 
     def __iter__(self):
         return iter(self.data)
-
-
-# #TODO important
-# # Ajouter un self.verbose dans chaque init de classe pour le debug
-# # A chaque fois ça change le self.data du coup ?, 
-
-# # Générateur de dataset
-# HostaDataset.from_files("path.data.csv", SourceType.CSV) #from_source -> from_file
-# HostaDataset.from_files("path.data.jsonl", SourceType.JSONL)
-# HostaDataset.from_list([{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}])
-# HostaDataset.from_input({"a": 1, "b": 2, "c": 3}) # predict commence par ça et donc pas bien on init hosta_dataset à l'endroit ou l'on en à besoin
-# # Les from sont des staticmethod des func convert_files, convert_list, convert_input commme ça on peut les utiliser dans le process 
-
-
-# HostaDataset.save("path.data.csv", SourceType.CSV) # permet de save le dataset en dur si besoin
-# # peut être le déplacer dans le generator de data du coup 
-
-# #TODO
-# train_set, val_set = HostaDataset.from_process_data("path_to_data_ready") # uque en static method lui
-
-# HostaDataset.encode(encoder=SimpleEncoder(), tokenizer=None, max_tokens=100, architecture=Architecure) # peut être hardcode le simpleencoder au début
-# HostaDataset.normalize(min=0, max=1)
-# HostaDataset.tensorise(dtype="float32")
-# train_set, val_set = HostaDataset.to_data(batch_size=32, shuffle=True, test_size=0.8) # test_size = 1 par défaut
-# # from_data aussi alors
-# HostaDataset.prepare_input(inference_data={"a": 1, "b": 2, "c": 3}) # permet de préparer l'inférence
-#     #convert_input
-#     #encode
-#     #normalize
-#     #tensorise
-
-# #Later
-# HostaDataset.from_dict({{"input_0": 1, "input_1": 2, "output": 3}, {"input_0": 4, "input_1": 5, "output": 6}})
