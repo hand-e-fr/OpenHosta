@@ -22,6 +22,16 @@ DefaultManager.set_default_model(
           api_key=os.getenv("OPENAI_API_KEY") or None)
 )
 
+from .core import config
+from .exec.emulate import emulate
+from .exec.example import example
+from .exec.thought import thought
+from .exec.thinkof import thinkof
+from .utils.prompt import PromptManager
+from .exec.predict.predict import predict
+from .exec.predict.predict_config import PredictConfig
+from .exec.predict.model import ArchitectureType
+from .exec.ask import ask
 
 all = (
     "config",
