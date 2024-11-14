@@ -94,7 +94,7 @@ class Layer:
     """
     def __init__(
         self,
-        layer_type,
+        layer_type: LayerType,
         in_features: Optional[int] = None,
         out_features: Optional[int] = None,
         kernel_size: Optional[Union[int, tuple[int, int]]] = None,

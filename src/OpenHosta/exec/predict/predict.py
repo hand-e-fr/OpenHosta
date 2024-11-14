@@ -43,7 +43,7 @@ def predict(
         train_model(model, memory, hosta_model, dataset, oracle, func, verbose)
     
     if dataset is None:
-        inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionnary
+        inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionary
     else:
         inference = dataset.prepare_input(func.f_args)
     

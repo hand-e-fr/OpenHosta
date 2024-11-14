@@ -11,7 +11,7 @@ class PredictFileType(Enum):
     """Enumaration for different types of files in the prediction memory."""
     ARCHITECTURE = "model.json"
     WEIGHTS = "weights.pth"
-    DICTIONNARY = "dictionnary.txt"
+    DICTIONARY = "dictionary.txt"
     DATA = "data."
     SUMMARY = "summary.txt"
 
@@ -105,4 +105,4 @@ class PredictMemory(HostaMemory):
     def summary(self) -> File: return self.files[PredictFileType.SUMMARY]
 
     @property
-    def dictionnary(self) -> File: return self.files[PredictFileType.DICTIONNARY]
+    def dictionary(self) -> File: return self.files[PredictFileType.DICTIONARY]
