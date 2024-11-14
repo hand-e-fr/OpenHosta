@@ -82,7 +82,6 @@ Let's **get started**! First here's the **table of contents** to help you naviga
   - [`thinkof` Function](#thinkof-function)
   - [`ask` function](#ask-function)
   - [Advanced configuration](#advanced-configuration)
-    - [Introduction](#introduction-1)
     - [Models](#models)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
       - [Custom LLM Call Function](#custom-llm-call-function)
@@ -391,13 +390,49 @@ print(x._return_type) # int
 
 ## `ask` function
 
+The function `ask` is a sort of a *side* function In OpenHosta. Its only use is to make a simple LLM call without the OpenHosta's meta-prompt. It simplies the process af an API call.
+
+```python
+from OpenHosta import ask, Model
+
+print(
+    ask(
+        system="You're a helpful assistant."
+        user="Write me a cool story."
+        max_tokens=200
+    )
+)
+```
+
+The "traditional" would be like this:
+
+```python
+import openai
+
+openai.api_key = "your-api-key-here"
+
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Write me a cool story."}
+]
+
+response = openai.ChatCompletion.create(
+    model="gpt-4o",
+    messages=messages
+)
+
+print(response['choices'][0]['message']['content'])
+```
+
+As seen above takes 2 or more argument. The two first arguments are mandatory. `system` correspond to the system prompt to the LLM, same as the `user` parameter. You can also set the `model` parameter to a custom Model instance. It also handle all LLM parmaters (`max_tokens`, `n`, `top_p`...).
+
+**Note** : ***this feature uses the default model.***
+
 ## Advanced configuration
 
-### Introduction
+### Models
 
 This section explains how to customize the program to make its own LLM call and response handling functions. This can be useful if you need a specific functionality that is not provided by the standard library, or to enable compatibility with a specific LLM. 
-
-### Models
 
 #### Inheriting from the Model Class
 
@@ -503,6 +538,8 @@ print(ret)
 ```
 
 ### Prompts
+
+`emulate` works by putting the emulated function's parsed data in a meta-prompt designed to give the best performance and ensure a
 
 ---
 
