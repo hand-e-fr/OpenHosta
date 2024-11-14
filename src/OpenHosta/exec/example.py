@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, get_args
 
 from ..core.hosta import Hosta, ExampleType
 
@@ -10,7 +10,9 @@ def example(*args, hosta_out: Any = None, **kwargs):
     if args != ():
         raise ValueError(
             "[example] The arguments in example function must keyword only arguments, with keywords matching with the name of the calling function's arguments")
-    if type(hosta_out) != x._infos.f_type[1]:
+    if type(hosta_out) != x._infos.f_type[1] \
+    and hosta_out not in get_args(x._infos.f_type[1]) \
+    and type(hosta_out) not in get_args(x._infos.f_type[1]):
         raise ValueError("[example] hosta_out's type doesn't match with the calling function's return type:\n\t{} instead of {}.".format(
             type(hosta_out),
             x._infos.f_type[1]
