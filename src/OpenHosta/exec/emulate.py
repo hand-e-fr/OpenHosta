@@ -38,12 +38,12 @@ def _build_user_prompt(
 
 
 def emulate(
+        _infos: Optional[Func] = None,
         *,
         model: Optional[Model] = None,
         use_locals_as_ctx: bool = False,
         use_self_as_ctx: bool = False,
         post_callback: Optional[Callable] = None,
-        _infos: Optional[Func] = None,
         **llm_args
 ) -> Any:
     x = None
