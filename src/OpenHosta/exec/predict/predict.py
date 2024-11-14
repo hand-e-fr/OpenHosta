@@ -36,17 +36,21 @@ def predict(
     dataset: Optional[HostaDataset] = None
     
     hosta_model: HostaModel = get_hosta_model(memory.architecture, func, config)
-    architecture = None
+    # architecture = None
     if not load_weights(memory, hosta_model):
         train_model(config, memory, hosta_model, dataset, oracle, func, verbose)
     
     if dataset is None:
-        inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionary
+        print("10.1 Dataset is None")
+        dataset = HostaDataset.from_input(func.f_args, verbose) # Pour le dictionnaire on envoie memory.dictionary
+        print("et puis ici")
+        print(dataset.inference)
     else:
-        inference = dataset.prepare_input(func.f_args)
-    
-    prediction = architecture.inference(inference)
-
+        print("10.2 Dataset is not None")
+        dataset.prepare_inference(func.f_args)
+    print("10.3 Inference")
+    torch_prediction = hosta_model.inference(dataset.inference._input)
+    prediction = dataset.decode(torch_prediction, func_f_type=func.f_type[1])
     return prediction
 
 
@@ -117,7 +121,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
         dataset = generate_data(memory, func, oracle, verbose)
         dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
     print("Encode data")
-    dataset.encode(max_tokens=10, inference=False)
+    dataset.encode(max_tokens=10)
     # print("FINISH")
     # print(dataset.data)
     

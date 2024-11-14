@@ -28,6 +28,9 @@ class HostaModel(ABC, nn.Module):
     def predict(self, test_set):
         pass
 
+    def inference(self, x):
+        pass
+
     def init_weights(self, path: str):
         self.load_state_dict(torch.load(path, weights_only=True, map_location=self.device))
         self.eval()

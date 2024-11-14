@@ -91,13 +91,10 @@ class LinearRegression(HostaModel):
                 validation_loss += loss.item()
         return validation_loss / len(validation_set)
 
-    def predict(self, test_set):
+    def inference(self, x):
         """Make predictions for the given test set."""
         self.eval()  # Set model to eval mode for inference
-        predictions = []
         with torch.no_grad():
-            for inputs in test_set:
-                inputs = inputs.to(self.device)
-                outputs = self(inputs)
-                predictions.append(outputs.cpu())  # Move predictions to CPU if they are on GPU
-        return predictions
+            x = x.to(self.device)
+            outputs = self(x)
+            return outputs
