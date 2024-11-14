@@ -3,7 +3,7 @@ from typing import Optional
 from .model.neural_network_types import ArchitectureType
 
 
-class ConfigModel:
+class PredictConfig:
     def __init__(self,
                  model_type: ArchitectureType = None,
                  name: str = None,
@@ -48,7 +48,7 @@ class ConfigModel:
     def from_json(json_str: str):
         import json
         data = json.loads(json_str)
-        return ConfigModel(
+        return PredictConfig(
             name=data["name"],
             model_type=ArchitectureType(data["model_type"]),
             path=data["path"],
