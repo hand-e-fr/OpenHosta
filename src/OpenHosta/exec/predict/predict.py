@@ -33,7 +33,7 @@ def predict(
 
     func: Func = getattr(Hosta(), "_infos")
 
-    name = config.name if config and config.name else str(func.f_name + str(Hosta.hash_func(func)))
+    name = config.name if config and config.name else str(func.f_name)
     base_path = config.path if config and config.path else os.getcwd()
     memory: PredictMemory = PredictMemory.load(base_path=base_path, name=name)
 
