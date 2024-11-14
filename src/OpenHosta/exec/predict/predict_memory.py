@@ -12,7 +12,7 @@ class PredictFileType(Enum):
     ARCHITECTURE = "model.json"
     WEIGHTS = "weights.pth"
     DICTIONARY = "dictionary.txt"
-    DATA = "data."
+    DATA = "data.json"
     SUMMARY = "summary.txt"
 
 class PredictMemory(HostaMemory):
