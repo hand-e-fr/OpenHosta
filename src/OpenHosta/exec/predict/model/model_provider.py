@@ -7,7 +7,7 @@ from .builtins.linear_regression import LinearRegression
 from .hosta_model import HostaModel
 from .neural_network_types import ArchitectureType
 from .neural_network import NeuralNetwork
-from ..config_model import ConfigModel
+from ..predict_config import PredictConfig
 from ..predict_memory import PredictMemory, File
 from ....core.hosta import Func
 from ....utils.torch_nn_utils import type_size
@@ -15,7 +15,7 @@ from ....utils.torch_nn_utils import type_size
 
 class HostaModelProvider:
     @staticmethod
-    def from_hosta_func(func: Func, model: Optional[ConfigModel], architecture: Optional[NeuralNetwork], path: str, verbose: int) -> Optional[HostaModel]:
+    def from_hosta_func(func: Func, model: Optional[PredictConfig], architecture: Optional[NeuralNetwork], path: str, verbose: int) -> Optional[HostaModel]:
         input_size = type_size(func.f_type[0])
         output_size = type_size(func.f_type[1])
         hosta_model: Optional[HostaModel] = None
