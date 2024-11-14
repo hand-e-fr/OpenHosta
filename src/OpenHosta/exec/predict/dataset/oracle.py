@@ -1,6 +1,6 @@
 import inspect
 from collections import Counter
-from typing import Optional, Dict, Any, List, Type, Union
+from typing import Optional, Dict, Any, List, Type, Union, get_args, Literal
 
 from .dataset import HostaDataset, SourceType
 from ....core.config import Model, DefaultManager
@@ -25,10 +25,13 @@ class LLMSyntheticDataGenerator:
             for value, expected_type in zip(values, expected_fields):
                 if expected_type == str:
                     result.append(value)
+
                 elif expected_type == float:
                     result.append(float(value))
+
                 elif expected_type == int:
-                    result.append(float(value))
+                    result.append(float(value))  # Convert to integer
+
                 elif expected_type == bool:
                     if value.lower() == "true":
                         result.append(True)
@@ -36,11 +39,38 @@ class LLMSyntheticDataGenerator:
                         result.append(False)
                     else:
                         return None
+
+                elif getattr(expected_type, '__origin__', None) is Literal:
+                    valid_literals = get_args(expected_type)
+                    if value in valid_literals:
+                        result.append(value)
+                    else:
+                        return None  # Invalid Literal
+
+                elif getattr(expected_type, '__origin__', None) is Union and type(None) in get_args(expected_type):
+                    non_none_types = [t for t in get_args(expected_type) if t is not type(None)]
+                    for t in non_none_types:
+                        if t == int:
+                            try:
+                                result.append(int(value))
+                                break
+                            except ValueError:
+                                continue
+                        elif t == float:
+                            try:
+                                result.append(float(value))
+                                break
+                            except ValueError:
+                                continue
+                        elif t == str:
+                            result.append(value)
+                            break
+                    else:
+                        return None
                 else:
                     return None
-
             return result
-        except (ValueError, TypeError):  # Catch conversion errors
+        except (ValueError, TypeError):
             return None
 
     @staticmethod
