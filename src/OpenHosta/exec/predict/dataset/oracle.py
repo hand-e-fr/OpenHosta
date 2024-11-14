@@ -3,7 +3,9 @@ from typing import Optional, Dict, Any, List, Type, Union, get_args, Literal
 
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
-from ....utils.prompt import PromptManager
+
+_PROMPT = "{func_name}{signature}:\n    \"\"\"{docstring}\"\"\"\n\nIMPORTANT RULES:\n1. Input values should respect the type hints\n2. Output values MUST be diverse - avoid generating the same output repeatedly\n3. Each row must be in CSV format\n4. For text outputs, enclose them in double quotes\n5. NO MORE THAN 20% of outputs should be the same value\n6. Generate inputs across the entire possible range\n7. Ensure proper formatting for {return_type} output type"
+
 
 
 class LLMSyntheticDataGenerator:
@@ -147,7 +149,7 @@ class LLMSyntheticDataGenerator:
             raise ValueError(f"Invalid parameters: {e}")
 
         prompt: str = (
-            PromptManager().get_prompt("synthetic_data_generator")
+            _PROMPT
             .replace("{func_name}", func.f_name)
             .replace("{signature}", str(func.f_sig))
             .replace("{docstring}", func.f_doc)

@@ -11,31 +11,17 @@ T = TypeVar('T')
 
 class HostaChecker:
     """
-<<<<<<< HEAD
-    A class used to check and convert the output of a Language Model (LLM) 
-    to the type specified in a function's annotation.
-=======
     A class used to check and convert the _outputs of a Language Model (LLM) to the type specified in a function's annotation.
->>>>>>> refactor/predict
 
     Args:
         func (Func): A function object that contains the type annotations for the LLM _outputs.
         data (dict): A dictionary containing the LLM _outputs data to be checked and converted.
 
     Attributes:
-<<<<<<< HEAD
-        func (Func): The function object containing the type annotations for the LLM output.
-        data (dict): The LLM output data to be checked and converted.
-        checked (Any): The checked and converted data. If `data` contains a "return" key, 
-        its value is used as the checked data. Otherwise, `data` is used as the checked data.
-        is_passed (bool): A flag indicating whether the checked data should be converted or not. 
-        It is set to True if `data` contains a "return" key.
-=======
         func (Func): The function object containing the type annotations for the LLM _outputs.
         data (dict): The LLM _outputs data to be checked and converted.
         checked (Any): The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         is_passed (bool): A flag indicating whether the checked data should be converted or not. It is set to True if `data` contains a "return" key.
->>>>>>> refactor/predict
     """
 
     def __init__(self, func: Func, data: dict):
@@ -68,10 +54,8 @@ class HostaChecker:
             typ (Type[T]): The type for which a conversion function needs to be created.
 
         Returns:
-            Dict[Type[T], Optional[Callable[[Any], T]]]: A dictionary mapping types 
-            to their corresponding conversion functions.
+            Dict[Type[T], Optional[Callable[[Any], T]]]: A dictionary mapping types to their corresponding conversion functions.
         """
-# pylint: disable=unnecessary-lambda
         convertMap = {
             NoneType: lambda x: None,
             str: lambda x: str(x),
@@ -86,7 +70,6 @@ class HostaChecker:
             complex: lambda x: complex(x),
             bytes: lambda x: bytes(x),
         }
-# pylint: enable=unnecessary-lambda
         if typ not in convertMap.keys():
             return self._default.__func__
         return convertMap[typ]
@@ -114,16 +97,10 @@ class HostaChecker:
 
     def check(self) -> Any:
         """
-<<<<<<< HEAD
-        A method to check and convert the input data based on the function's type 
-        annotations and Pydantic model annotations.
-=======
         A method to check and convert the _inputs data based on the function's type annotations and Pydantic model annotations.
->>>>>>> refactor/predict
 
             Returns:
-                Any: The checked and converted data. If `data` contains a "return" key, 
-                its value is used as the checked data. Otherwise, `data` is used as the checked data.
+                Any: The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         """
         if self.checked == "None" or self.checked is None:
             return None
@@ -133,6 +110,5 @@ class HostaChecker:
             if is_pydantic:
                 from .pydantic_usage import convert_pydantic
 
-                self.checked = convert_pydantic(
-                    self.func.f_type[1], self.checked)
+                self.checked = convert_pydantic(self.func.f_type[1], self.checked)
         return self.checked

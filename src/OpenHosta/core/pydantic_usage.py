@@ -9,6 +9,7 @@ from ..utils.import_handler import is_pydantic
 if is_pydantic:
     from pydantic import BaseModel, Field, ConfigDict, create_model
 
+
     def convert_pydantic(caller, checked) -> Optional[BaseModel]:
         """
         A method to convert the checked data based on the Pydantic model annotations of the function.
@@ -23,6 +24,7 @@ if is_pydantic:
         except:
             return checked
 
+
     class Func(BaseModel):
         """
         Func is a Pydantic model representing a function's metadata.
@@ -30,26 +32,6 @@ if is_pydantic:
         """
         model_config = ConfigDict(arbitrary_types_allowed=True)
         f_obj: Optional[object] = Field(default=None)
-<<<<<<< HEAD
-        f_def: str = Field(
-            default="", description="Simple definition of the function, e.g., 'def func(a:int, b:str)->int:'")
-        f_name: str = Field(
-            default="", description="Name of the function, e.g., 'func'")
-        f_doc: str = Field(
-            default="", description="Documentation of the function, e.g., 'This function returns the sum of two integers.'")
-        f_call: str = Field(
-            default="", description="Actual call of the function, e.g., 'func(1, 'hello')'")
-        f_args: Dict[str, Any] = Field(
-            default_factory=dict, description="Arguments of the function, e.g., {'a': 1, 'b': 'hello'}")
-        f_type: Tuple[List[Any], Any] = Field(default_factory=lambda: (
-            [], None), description="Desired type of the input and output of the function")
-        f_schema: Dict[str, Any] = Field(
-            default_factory=dict, description="Dictionary describing the function's return type (in case of pydantic).")
-        f_sig: Optional[inspect.Signature] = Field(
-            default=None, description="Signature of the function")
-        f_locals: Optional[Dict[str, Any]] = Field(
-            default=None, description="Local variables within the function's scope")
-=======
         f_def: str = Field(default="", description="Simple definition of the function, e.g., 'def func(a:int, b:str)->int:'")
         f_name: str = Field(default="", description="Name of the function, e.g., 'func'")
         f_doc: str = Field(default="", description="Documentation of the function, e.g., 'This function returns the sum of two integers.'")
@@ -59,10 +41,9 @@ if is_pydantic:
         f_schema: Dict[str, Any] = Field(default_factory=dict, description="Dictionary describing the function's return type (in case of pydantic).")
         f_sig: Optional[inspect.Signature] = Field(default=None, description="Signature of the function")
         f_locals: Optional[Dict[str, Any]] = Field(default=None, description="Local variables within the function's scope")
->>>>>>> refactor/predict
         f_self: Optional[Dict[str, Any]] = Field(default=None)
-        f_mem: Optional[List[MemoryNode]] = Field(
-            default=None, description="Memory nodes associated with the function, contains examples, chain of thought...")
+        f_mem: Optional[List[MemoryNode]] = Field(default=None, description="Memory nodes associated with the function, contains examples, chain of thought...")
+
 
     def get_pydantic_schema(return_caller) -> Optional[Dict[str, Any]]:
         """
