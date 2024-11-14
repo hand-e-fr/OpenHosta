@@ -1,5 +1,5 @@
-from typing import Union, Literal, get_origin
-import typing
+from typing import Union
+
 from torch import nn
 from torch import optim
 

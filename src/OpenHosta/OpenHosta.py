@@ -1,7 +1,7 @@
 from __future__ import annotations
 from .exec.ask import ask
-from .exec.predict.architecture.builtins import ArchitectureType
-from .exec.predict.model_schema import ConfigModel
+from .exec.predict.model import ArchitectureType
+from .exec.predict.predict_config import PredictConfig
 from .exec.predict.predict import predict
 from .utils.meta_prompt import EMULATE_PROMPT
 from .exec.thinkof import thinkof
@@ -27,7 +27,6 @@ from .exec.emulate import emulate
 from .exec.example import example
 from .exec.thought import thought
 from .exec.thinkof import thinkof
-from .utils.prompt import PromptManager
 from .exec.predict.predict import predict
 from .exec.predict.predict_config import PredictConfig
 from .exec.predict.model import ArchitectureType
