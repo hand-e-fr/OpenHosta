@@ -1,33 +1,31 @@
 from typing import Optional
 
-from .architecture.builtins import ArchitectureType
+from .model.neural_network_types import ArchitectureType
 
 
-class ConfigModel:
+class PredictConfig:
     def __init__(self,
-                 model_type: ArchitectureType = ArchitectureType.LINEAR_REGRESSION,
-                 name: str = "",
-                 weight_path: str = "",
-                 version: str = "",
-                 complexity: Optional[float] = None,
+                 model_type: ArchitectureType = None,
+                 name: str = None,
+                 path: str = None,
+                 version: str = None,
+                 complexity: int = 4,
+                 max_tokens: int = 10,
                  epochs: Optional[int] = None,
                  batch_size: Optional[int] = None,
                  learning_rate: Optional[float] = None,
                  get_loss: Optional[float] = None,
-                 dataset_path: Optional[str] = None,
-                 ):
+                 dataset_path: Optional[str] = None
+             ):
         self.model_type: ArchitectureType = model_type
 
         self.name: str = name
-        self.weight_path: str = weight_path
+        self.path: str = path
         self.version: str = version
 
-        self.complexity: float = complexity
+        self.complexity: int = complexity
+        self.max_tokens: int = max_tokens
 
-        # if batch_size is None:
-        #     self.batch_size: int = int(0.05 * len(train)) if 0.05 * len(train) > 1 else len(train) # 5% of the dataset or len(train) if len(train) <= 1
-        # else:
-        #     self.batch_size: int = batch_size
         self.batch_size: int = batch_size
         self.epochs: int = epochs
         self.learning_rate: float = learning_rate
@@ -38,30 +36,31 @@ class ConfigModel:
         return f"""{{
             "name": "{self.name}",
             "model_type": "{self.model_type}",
-            "weight_path": "{self.weight_path}",
+            "weight_path": "{self.path}",
             "version": "{self.version}",
             "complexity": {self.complexity},
+            "max_tokens": {self.max_tokens},
             "epochs": {self.epochs},
             "batch_size": {self.batch_size},
             "learning_rate": {self.learning_rate},
             "get_loss": {self.get_loss},
-            "dataset_path": "{self.dataset_path}"
+            "dataset_path": "{self.dataset_path}",
         }}"""
 
     @staticmethod
     def from_json(json_str: str):
         import json
         data = json.loads(json_str)
-        return ConfigModel(
+        return PredictConfig(
             name=data["name"],
             model_type=ArchitectureType(data["model_type"]),
-            weight_path=data["weight_path"],
+            path=data["path"],
             version=data["version"],
             complexity=data["complexity"],
+            max_tokens=data["max_tokens"],
             epochs=data["epochs"],
             batch_size=data["batch_size"],
             learning_rate=data["learning_rate"],
             get_loss=data["get_loss"],
-            dataset_path=data["dataset_path"]
-
+            dataset_path=data["dataset_path"],
         )
