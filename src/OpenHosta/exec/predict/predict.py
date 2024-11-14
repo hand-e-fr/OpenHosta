@@ -14,7 +14,7 @@ from ...core.config import Model, DefaultModel
 from ...core.hosta import Hosta, Func
 
 def predict(
-    model: PredictConfig = None,
+    config: PredictConfig = None,
     oracle: Optional[Union[Model, HostaDataset]] = None, #TODO: function for creating data (call a subclass of oracle ?)
     verbose: bool = False
 ) -> Union[int, float, bool, str]:
@@ -22,7 +22,7 @@ def predict(
     Predicts a result using an existing model or by creating a new one.
     
     Args:
-        model: Model configuration
+        config: Model configuration
         oracle: Reference model or dataset for data generation
         verbose: Enables detailed logging
     
@@ -31,16 +31,16 @@ def predict(
     """
     func: Func = getattr(Hosta(), "_infos")
 
-    name = model.name if model and model.name else func.f_name #TODO: add hash of args into the name of the func
-    base_path = model.path if model and model.path else os.getcwd()
+    name = config.name if config and config.name else func.f_name #TODO: add hash of args into the name of the func
+    base_path = config.path if config and config.path else os.getcwd()
     memory : PredictMemory = PredictMemory.load(base_path=base_path, name=name)
 
     dataset : HostaDataset = None
     
-    hosta_model : HostaModel = get_hosta_model(memory.architecture, func, model)
+    hosta_model : HostaModel = get_hosta_model(memory.architecture, func, config)
     architecture = None
     if not load_weights(memory, hosta_model):
-        train_model(model, memory, hosta_model, dataset, oracle, func, verbose)
+        train_model(config, memory, hosta_model, dataset, oracle, func, verbose)
     
     if dataset is None:
         inference = HostaDataset.from_input(func.f_args, memory, verbose) # Pour le dictionnaire on envoie memory.dictionary
@@ -52,7 +52,7 @@ def predict(
     return prediction
 
 
-def get_hosta_model(architecture_file: File, func: Func, model: Optional[PredictConfig] = None, verbose: int = 0) -> HostaModel:
+def get_hosta_model(architecture_file: File, func: Func, config: Optional[PredictConfig] = None, verbose: int = 0) -> HostaModel:
     """
     Load or create a new model.
     """
@@ -69,7 +69,7 @@ def get_hosta_model(architecture_file: File, func: Func, model: Optional[Predict
             print(f"Model loaded from {architecture_file.path}")
         if verbose > 1:
             architecture.summary()
-    return HostaModelProvider.from_hosta_func(func, model, architecture, architecture_file.path, verbose)
+    return HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, verbose)
 
 
 def load_weights(memory: PredictMemory, hosta_model: HostaModel) -> bool:
@@ -86,14 +86,14 @@ def load_weights(memory: PredictMemory, hosta_model: HostaModel) -> bool:
     return False 
 
 
-def train_model(model: PredictConfig, memory: PredictMemory, architecture: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
+def train_model(config: PredictConfig, memory: PredictMemory, architecture: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
     """
     Prepare the data and train the model.
     """
     if memory.data.exist:
         train_set, val_set = HostaDataset.from_data(memory.data.path, verbose) # verbose will prcess all the example and add it to val_set
     else:
-        train_set, val_set = prepare_dataset(model, memory, dataset, func, oracle, verbose)
+        train_set, val_set = prepare_dataset(config, memory, dataset, func, oracle, verbose)
     
     print(type(train_set))
     print(f"Type of architecture.training: {type(architecture)}")
@@ -106,13 +106,13 @@ def train_model(model: PredictConfig, memory: PredictMemory, architecture: Hosta
     architecture.save_weights(memory.weights.path)
 
 
-def prepare_dataset(model: PredictConfig, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> tuple:
+def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> tuple:
     """
     Prepare the dataset for training.
     """
-    if model.dataset_path is not None:
+    if config.dataset_path is not None:
         print("LOAD DATA")
-        dataset = HostaDataset.from_files(model.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
+        dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
     else :
         print("GENE DATA")
         dataset = generate_data(memory, func, oracle, verbose) 
@@ -127,7 +127,7 @@ def prepare_dataset(model: PredictConfig, memory: PredictMemory, dataset: HostaD
     print("tensorise")
     dataset.tensorify()
     print('to data')
-    train_set, val_set = dataset.to_data(batch_size=model.batch_size, shuffle=True, train_set_size=0.8)
+    train_set, val_set = dataset.to_data(batch_size=config.batch_size, shuffle=True, train_set_size=0.8)
     return train_set, val_set
 
 

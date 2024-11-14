@@ -240,7 +240,7 @@ def custom_optimizer_to_pytorch(optimizer_algorithm: OptimizerAlgorithm, model: 
         return _OPTIMIZER_MAP[optimizer_algorithm](model.parameters(), **kwargs)
     return None
 
-def type_size(data):
+def type_size(data, tokens_size=10):
     """
     Calculate the input/output size based on the type of the input data.
 
@@ -257,20 +257,15 @@ def type_size(data):
     elif isinstance(data, float):
         return 1
     elif isinstance(data, list):
-        # If data is a list, calculate the size recursively for all elements.
         return len(data) * type_size(data[0]) if data else 0
     elif isinstance(data, tuple):
-        # If data is a tuple, calculate the size for each element.
         return sum(type_size(item) for item in data)
     elif isinstance(data, set):
-        # Calculate size for set items (similar approach to list/tuple)
         return sum(type_size(item) for item in data)
     elif isinstance(data, dict):
-        # Count both keys and values
         return sum(type_size(k) + type_size(v) for k, v in data.items())
     elif isinstance(data, str):
-        # Each character in a string is treated as a single element
-        return len(data)
+        return tokens_size
     elif getattr(data, '__origin__', None) is typing.Literal:
         return len(data.__args__)
     else:

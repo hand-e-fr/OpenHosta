@@ -15,17 +15,16 @@ from ....utils.torch_nn_utils import type_size
 
 class HostaModelProvider:
     @staticmethod
-    def from_hosta_func(func: Func, model: Optional[PredictConfig], architecture: Optional[NeuralNetwork], path: str, verbose: int) -> Optional[HostaModel]:
-        input_size = type_size(func.f_type[0])
-        output_size = type_size(func.f_type[1])
+    def from_hosta_func(func: Func, config: Optional[PredictConfig], architecture: Optional[NeuralNetwork], path: str, verbose: int) -> Optional[HostaModel]:
+        input_size = type_size(func.f_type[0], config.max_tokens)
+        output_size = type_size(func.f_type[1], config.max_tokens)
         hosta_model: Optional[HostaModel] = None
-        complexity: int = model.complexity if model is not None and model.complexity is not None else 4
         print("here 1 ")
-        if model is not None and model.model_type is not None:
-            if model.model_type == ArchitectureType.LINEAR_REGRESSION:
+        if config is not None and config.model_type is not None:
+            if config.model_type == ArchitectureType.LINEAR_REGRESSION:
                 hosta_model = LinearRegression(architecture, input_size, output_size, complexity)
                 print("here 1.1")
-            elif model.model_type == ArchitectureType.CLASSIFICATION:
+            elif config.model_type == ArchitectureType.CLASSIFICATION:
                 print("here 1.2")
                 hosta_model = Classification(architecture, input_size, output_size, complexity, 1)
             print("here 2")
