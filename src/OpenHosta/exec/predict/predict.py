@@ -12,7 +12,7 @@ from ...core.config import Model, DefaultModel
 from ...core.hosta import Hosta, Func
 
 def predict(
-    config: PredictConfig = None,
+    config: PredictConfig = PredictConfig(),
     oracle: Optional[Union[Model, HostaDataset]] = None, #TODO: function for creating data (call a subclass of oracle ?)
     verbose: bool = False
 ) -> Union[int, float, bool, str]:
@@ -31,11 +31,11 @@ def predict(
 
     name = config.name if config and config.name else func.f_name #TODO: add hash of args into the name of the func
     base_path = config.path if config and config.path else os.getcwd()
-    memory : PredictMemory = PredictMemory.load(base_path=base_path, name=name)
+    memory: PredictMemory = PredictMemory.load(base_path=base_path, name=name)
 
-    dataset : HostaDataset = None
+    dataset: Optional[HostaDataset] = None
     
-    hosta_model : HostaModel = get_hosta_model(memory.architecture, func, config)
+    hosta_model: HostaModel = get_hosta_model(memory.architecture, func, config)
     architecture = None
     if not load_weights(memory, hosta_model):
         train_model(config, memory, hosta_model, dataset, oracle, func, verbose)
@@ -113,9 +113,10 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
         print("3.1 Data from CSV file ")
         dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
     else :
-        print("3.2 Generate Data")
+        print("GENE DATA")
         dataset = generate_data(memory, func, oracle, verbose)
-    # print("Encode data")
+        dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
+    print("Encode data")
     dataset.encode(max_tokens=10, inference=False)
     # print("FINISH")
     # print(dataset.data)
