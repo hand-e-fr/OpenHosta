@@ -250,23 +250,23 @@ def type_size(data, tokens_size=10):
     Returns:
         The size (number of elements) of the given data.
     """
-    if isinstance(data, type):
-        return 1
-    if isinstance(data, int):
-        return 1
-    elif isinstance(data, float):
-        return 1
-    elif isinstance(data, list):
-        return len(data) * type_size(data[0]) if data else 0
-    elif isinstance(data, tuple):
-        return sum(type_size(item) for item in data)
-    elif isinstance(data, set):
-        return sum(type_size(item) for item in data)
-    elif isinstance(data, dict):
-        return sum(type_size(k) + type_size(v) for k, v in data.items())
-    elif isinstance(data, str):
+    if data is str:
         return tokens_size
-    elif get_origin(data) == typing.Literal:
+    elif data is int:
+        return 1
+    elif data is float:
+        return 1
+    elif data is bool:
+        return 1
+    elif data is list:
+        return len(data) * type_size(data[0]) if data else 0
+    elif data is tuple:
+        return sum(type_size(item) for item in data)
+    elif data is set:
+        return sum(type_size(item) for item in data)
+    elif data is dict:
+        return sum(type_size(k) + type_size(v) for k, v in data.items())
+    elif data is Literal:
         return len(data.__args__)
     else:
         raise TypeError(f'Unsupported data type: {type(data)}')
