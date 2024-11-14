@@ -13,7 +13,7 @@ class HostaModel(ABC, nn.Module):
         self.layers = []
         super().__init__()
 
-    def training(self, train_set, epochs, verbose):
+    def training(self, train_set, epochs):
         pass
 
     def forward(self, x):

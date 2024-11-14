@@ -5,10 +5,10 @@ from .model.neural_network_types import ArchitectureType
 
 class ConfigModel:
     def __init__(self,
-                 model_type: ArchitectureType = ArchitectureType.LINEAR_REGRESSION,
-                 name: str = "",
-                 path: str = "",
-                 version: str = "",
+                 model_type: ArchitectureType = None,
+                 name: str = None,
+                 path: str = None,
+                 version: str = None,
                  complexity: Optional[float] = None,
                  epochs: Optional[int] = None,
                  batch_size: Optional[int] = None,

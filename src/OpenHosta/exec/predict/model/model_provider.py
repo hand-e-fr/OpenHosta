@@ -1,5 +1,5 @@
-from typing import Optional
-
+from typing import Optional, Literal
+import typing
 from numpy.ma.extras import mr_class
 
 from .builtins.classification import Classification
@@ -19,15 +19,24 @@ class HostaModelProvider:
         input_size = type_size(func.f_type[0])
         output_size = type_size(func.f_type[1])
         hosta_model: Optional[HostaModel] = None
-        complexity: int = 44
-
+        complexity: int = model.complexity if model is not None and model.complexity is not None else 4
+        print("here 1 ")
         if model is not None and model.model_type is not None:
             if model.model_type == ArchitectureType.LINEAR_REGRESSION:
                 hosta_model = LinearRegression(architecture, input_size, output_size, complexity)
+                print("here 1.1")
             elif model.model_type == ArchitectureType.CLASSIFICATION:
-                hosta_model = Classification(architecture, input_size, output_size, complexity, 2)
+                print("here 1.2")
+                hosta_model = Classification(architecture, input_size, output_size, complexity, 1)
+            print("here 2")
         else:
-            hosta_model = LinearRegression(architecture, input_size, output_size, complexity)
+            print(f"Model type is : {type(func.f_type[1])}")
+            if getattr(func.f_type[1], '__origin__', None) is typing.Literal :
+                print("Output type is Literal, defaulting to classification")
+                hosta_model = Classification(architecture, input_size, output_size, complexity, 1)
+            else:
+                print("Output type is not Literal, defaulting to linear regression")
+                hosta_model = LinearRegression(architecture, input_size, output_size, complexity)
 
         with open(path, 'w') as file:
             file.write(NeuralNetwork.from_torch_nn(hosta_model).to_json())
