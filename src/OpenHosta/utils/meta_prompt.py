@@ -1,7 +1,17 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Callable
 
+def print_last_prompt(func:Callable):
+    if hasattr(func, "_last_request"):
+        if "sys_prompt" in func._last_request:
+            print("[SYSTEM PROMPT]")
+            print(func._last_request["sys_prompt"])
+        if "user_prompt" in func._last_request:
+            print("[USER PROMPT]")
+            print(func._last_request["user_prompt"])
+    else:
+        print("No prompt found for this function.")
 
 class MetaPrompt:
 

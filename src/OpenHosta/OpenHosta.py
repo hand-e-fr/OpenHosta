@@ -10,12 +10,9 @@ from .exec.example import example
 from .exec.emulate import emulate
 from .core import config
 from .core.config import Model, DefaultManager
+from .utils.meta_prompt import print_last_prompt
 
 import os
-
-HOSTAPATH = "./"
-PROMPTPATH = "src/prompt.json"
-
 
 DefaultManager.set_default_model(
     Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions",
@@ -34,4 +31,5 @@ all = (
     "predict",
     "ModelSchema",
     "ArchitectureType",
+    "print_last_prompt"
 )
