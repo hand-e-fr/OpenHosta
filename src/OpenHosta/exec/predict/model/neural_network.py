@@ -22,7 +22,7 @@ class NeuralNetwork:
 
         :param layer: The layer to be added.
         :type layer: Layer
-        :raises TypeError: If the input is not an instance of Layer.
+        :raises TypeError: If the _inputs is not an instance of Layer.
         """
         if not isinstance(layer, Layer):
             raise TypeError("Expected a Layer instance")
@@ -66,10 +66,8 @@ class NeuralNetwork:
                 for layer in self.layers
             ]
         }
-        print(f"loss_function: {self.loss_function}")
         if self.loss_function is not None:
             network_dict["loss_function"] = self.loss_function.name
-        print(f"optimizer: {self.optimizer}")
         if self.optimizer is not None:
             network_dict["optimizer"] = self.optimizer.name
         return json.dumps(network_dict, indent=2)

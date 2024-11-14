@@ -28,7 +28,7 @@ def _build_user_prompt(
     if x:
         user_prompt = (
                 user_prompt
-                + filler("Here are some examples of expected input and output:", x.example)
+                + filler("Here are some examples of expected _inputs and _outputs:", x.example)
                 + filler("To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:", x.cot)
         )
     user_prompt = (user_prompt + "---\n")

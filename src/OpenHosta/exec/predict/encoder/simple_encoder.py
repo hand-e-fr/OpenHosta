@@ -1,9 +1,8 @@
-from abc import ABC, abstractmethod
 from typing import List, Any, Dict, Union
 
+from .base_encoder import BaseEncoder
 from ..dataset.sample_type import Sample
 
-from .base_encoder import BaseEncoder
 
 class NumericEncoder(BaseEncoder):
     def encode(self, value: Union[int, float]) -> float:
@@ -38,8 +37,8 @@ class StringEncoder(BaseEncoder):
     def encode(self, value: str) -> List[int]:
         """
         Encode a string into a list of integers.
-        For classification (output), returns a single integer.
-        For input features, returns a list of integers of length max_tokens.
+        For classification (_outputs), returns a single integer.
+        For _inputs features, returns a list of integers of length max_tokens.
         """
         if self.max_tokens is None:
             raise ValueError("max_tokens must be set before encoding")
@@ -88,7 +87,7 @@ class SimpleEncoder:
         encoded_samples = []
         for sample in samples:
             encoded_input = []
-            for idx, value in enumerate(sample._input):
+            for idx, value in enumerate(sample.input):
                 encoder = self.encoders[type(value)]
                 self.feature_types[idx] = type(value)
                 encoded_value = encoder.encode(value)
@@ -99,19 +98,19 @@ class SimpleEncoder:
 
             encoded_output = None
             if sample.output is not None:
-                if isinstance(sample._output, str):
-                    print("\033[93mWarning: Multiple string output not supported, only using the first word will be used for output\033[0m")
-                output_idx = len(sample._input)
-                encoder = self.encoders[type(sample._output)]
-                self.feature_types[output_idx] = type(sample._output)
-                encoded_output = encoder.encode(sample._output)
-                # Like multiple str output not supported only use the first str output
+                if isinstance(sample.output, str):
+                    print("\033[93mWarning: Multiple string _outputs not supported, only using the first word will be used for _outputs\033[0m")
+                output_idx = len(sample.input)
+                encoder = self.encoders[type(sample.output)]
+                self.feature_types[output_idx] = type(sample.output)
+                encoded_output = encoder.encode(sample.output)
+                # Like multiple str _outputs not supported only use the first str _outputs
                 if isinstance(encoded_output, list):
                     encoded_output = encoded_output[0]
 
             encoded_samples.append(Sample({
-                'input': encoded_input,
-                'output': encoded_output
+                '_inputs': encoded_input,
+                '_outputs': encoded_output
             }))
 
         return encoded_samples

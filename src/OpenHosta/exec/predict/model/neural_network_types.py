@@ -85,11 +85,11 @@ class Layer:
     Initialize a Layer object.
 
     :param layer_type: The type of the layer.
-    :param in_features: Number of input features or channels.
-    :param out_features: Number of output features or channels.
+    :param in_features: Number of _inputs features or channels.
+    :param out_features: Number of _outputs features or channels.
     :param kernel_size: Size of the kernel/filter.
     :param stride: Stride of the kernel/filter.
-    :param padding: Padding added to the input.
+    :param padding: Padding added to the _inputs.
     :param dropout: Dropout rate.
     """
     def __init__(
