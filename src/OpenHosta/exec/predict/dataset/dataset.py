@@ -120,7 +120,7 @@ class HostaDataset:
             dict_data.append(sample_dict)
 
         if source_type == SourceType.CSV:
-            with open(path, 'w', newline='') as f:
+            with open(path, 'w', newline='', encoding='utf-8') as f:
                 if not dict_data:
                     return
                 writer = csv.DictWriter(f, fieldnames=dict_data[0].keys())
@@ -128,7 +128,7 @@ class HostaDataset:
                 writer.writerows(dict_data)
 
         elif source_type == SourceType.JSONL:
-            with open(path, 'w') as f:
+            with open(path, 'w', encoding='utf-8') as f:
                 for row in dict_data:
                     json.dump(row, f)
                     f.write('\n')

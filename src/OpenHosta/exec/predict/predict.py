@@ -1,5 +1,5 @@
 import os
-from typing import Union, Optional
+from typing import Union, Optional, List, Any
 
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
@@ -27,8 +27,8 @@ def predict(
     Returns:
         Model prediction
     """
-    assert config != None, "Please provide a valid configuration not None"
-    assert verbose != None and verbose >= 0 and verbose <= 2, "Please provide a valid verbose level (0, 1 or 2)"
+    assert config is not None, "Please provide a valid configuration not None"
+    assert verbose is not None and 0 <= verbose <= 2, "Please provide a valid verbose level (0, 1 or 2)"
 
     func: Func = getattr(Hosta(), "_infos")
 
@@ -51,7 +51,7 @@ def predict(
         dataset.prepare_inference(func.f_args)
     torch_prediction = hosta_model.inference(dataset.inference._input)
     prediction = dataset.decode(torch_prediction, func_f_type=func.f_type[1])
-    return prediction
+    return prediction[0] if len(prediction) == 1 else prediction
 
 
 def get_hosta_model(architecture_file: File, func: Func, config: Optional[PredictConfig] = None, verbose: int = 0) -> HostaModel:
@@ -125,11 +125,16 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
         dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
         if verbose == 2:
             print(f"[\033[92mDataset\033[0m] generated!")
-
+    print(dataset.data)
+    print(("*-"*50))
     dataset.encode(max_tokens=10)
+    print(dataset.data)
     dataset.tensorify()
+    print(dataset.data)
     dataset.save_data(memory.data.path)
+    print(dataset.data)
     train_set, val_set = dataset.convert_data(batch_size=config.batch_size, shuffle=True, train_set_size=0.8)
+    print(dataset.data)
 
     if verbose == 2:
         print(f"[\033[92mDataset\033[0m] processed and saved at {memory.data.path}")
