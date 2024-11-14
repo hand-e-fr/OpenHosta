@@ -2,7 +2,7 @@ import csv
 import json
 import os
 from enum import Enum
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 
 from .sample_type import Sample
 from ..encoder.new_encoder import EnhancedEncoder
@@ -16,13 +16,13 @@ class SourceType(Enum):
     JSONL = "jsonl"
     JSON = "json"
 class HostaDataset:
-    def __init__(self, verbose: int = 0):
-        self.path = None  # Path to the file
+    def __init__(self, verbose: int = 1):
+        self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
-        self.dictionnary = {}  # Dictionnary for mapping str to id
-        self.inference: Sample = None  # Inference data for understanding the data
-        self.verbose = verbose  # Verbose level for debugging
-        self._encoder = None  # Will store the encoder instance
+        self.dictionary: Dict[str, int] = {}  # Dictionary for mapping str to id
+        self.inference: Optional[Sample] = None  # Inference data for understanding the data
+        self.verbose: int = verbose  # Verbose level for debugging
+        self._encoder: Optional[EnhancedEncoder] = None  # Will store the encoder instance
     def add(self, sample: Sample):
         """
         Add a Sample object to the dataset.
