@@ -1,7 +1,8 @@
 import inspect
 from collections import Counter
-from typing import Optional, Dict, Any, List, Type
+from typing import Optional, Dict, Any, List, Type, Union
 
+from .dataset import HostaDataset, SourceType
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
 from ....utils.prompt import PromptManager
@@ -12,49 +13,34 @@ class LLMSyntheticDataGenerator:
 
 
     @staticmethod
-    def _validate_row(row: str, expected_fields: int, return_type: Type) -> Optional[List[str]]:
+    def _validate_row(row: str, expected_fields: List[Type]) -> Optional[List[Union[str, float]]]:
         try:
-            values = []
-            in_quotes = False
-            current_value = []
+            values = row.strip().split(',')
 
-            for char in row.strip():
-                if char == '"':
-                    in_quotes = not in_quotes
-                elif char == ',' and not in_quotes:
-                    values.append(''.join(current_value))
-                    current_value = []
-                else:
-                    current_value.append(char)
-            values.append(''.join(current_value))
-
-            # Clean up the values
-            values = [v.strip().strip('"') for v in values]
-
-            if len(values) != expected_fields:
+            if len(values) != len(expected_fields):
                 return None
 
-            # Convert numeric inputs to proper format
-            for i in range(len(values) - 1):  # All except last value
-                try:
-                    # if the value is a float, convert it to float
-                    num = float(values[i])
-                    values[i] = num
-                except ValueError:
-                    pass
+            result = []
 
-            # Handle the output value based on return type
-            if return_type == str:
-                values[-1] = f'"{values[-1]}"'
-            elif return_type in (int, float):
-                try:
-                    num = float(values[-1])
-                    values[-1] = num
-                except ValueError:
+            for value, expected_type in zip(values, expected_fields):
+                if expected_type == str:
+                    result.append(value)
+                elif expected_type == float:
+                    result.append(float(value))
+                elif expected_type == int:
+                    result.append(float(value))
+                elif expected_type == bool:
+                    if value.lower() == "true":
+                        result.append(True)
+                    elif value.lower() == "false":
+                        result.append(False)
+                    else:
+                        return None
+                else:
                     return None
 
-            return values
-        except Any as _:
+            return result
+        except (ValueError, TypeError):  # Catch conversion errors
             return None
 
     @staticmethod
@@ -73,19 +59,6 @@ class LLMSyntheticDataGenerator:
             output_str = str(output_val)
 
         return f"{input_str},{output_str}"
-
-    @staticmethod
-    def _is_diverse_enough(data: List[List[str]], new_row: List[str]) -> bool:
-        if not data:
-            return True
-
-        outputs = [row[-1] for row in data]
-        output_counts = Counter(outputs)
-        new_output = new_row[-1]
-        current_count = output_counts.get(new_output, 0)
-        max_frequency = 0.2
-
-        return (current_count / (len(outputs) + 1)) < max_frequency
 
     @staticmethod
     def _build_user_prompt(
@@ -173,7 +146,7 @@ class LLMSyntheticDataGenerator:
                 if generated_data:
                     already_generated = "\nAlready generated data (please avoid these exact combinations):\n"
                     for row in generated_data:
-                        already_generated += f"{','.join(row)}\n"
+                        already_generated += f"{','.join(map(str, row))}\n"
                     content += already_generated
 
                 # Add the user message to conversation history
@@ -197,9 +170,8 @@ class LLMSyntheticDataGenerator:
                 rows = response["choices"][0]["message"]["content"].strip().split('\n')
 
                 for row in rows:
-                    cleaned_row = LLMSyntheticDataGenerator._validate_row(row, expected_fields, output_type)
-                    if cleaned_row and LLMSyntheticDataGenerator._is_diverse_enough(generated_data, cleaned_row):
-                        # append cleaned_row if it is not already in generated_data
+                    cleaned_row = LLMSyntheticDataGenerator._validate_row(row, list(input_types.values()) + [output_type])
+                    if cleaned_row:
                         if cleaned_row not in generated_data:
                             dictrow = dict(zip(input_types.keys(), cleaned_row[:-1]))
                             dictrow["output"] = cleaned_row[-1]
@@ -212,7 +184,7 @@ class LLMSyntheticDataGenerator:
                     conversation_history = [conversation_history[0]] + conversation_history[-9:]
 
             except Exception as e:
-                print(f"Error during generation: {e}")
+                print(f"Error during generation: {e} line {e.__traceback__.tb_lineno}")
 
             attempts += 1
 
