@@ -111,7 +111,7 @@ For example, if you're a contributor, it might be useful to install `dev` and `t
 ```sh
 pip install .[dev, tests]
 ```
-Note that the `pydantic` and `predict` package are the same as `all`.
+Note that the `pydantic` and `predict` packages combined are the same as `all`.
 
 ## API Key Setup
 
