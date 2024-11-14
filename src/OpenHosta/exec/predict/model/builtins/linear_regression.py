@@ -64,11 +64,7 @@ class LinearRegression(HostaModel):
 
                 # Forward pass
                 outputs = self(inputs)
-                # print("outputs", outputs)
-                # print("labels", labels)
-                # Compute loss
-                # labels = labels.long() # convert for cross entropy loss
-                # print("labels after long", labels)
+                
                 loss = self.loss(outputs, labels)
 
                 # Backward pass and update
@@ -93,7 +89,7 @@ class LinearRegression(HostaModel):
 
     def inference(self, x):
         """Make predictions for the given test set."""
-        self.eval()  # Set model to eval mode for inference
+        self.eval()
         with torch.no_grad():
             x = x.to(self.device)
             outputs = self(x)

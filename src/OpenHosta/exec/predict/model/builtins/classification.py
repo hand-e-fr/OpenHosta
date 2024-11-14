@@ -128,23 +128,6 @@ class Classification(HostaModel):
         print(f"Validation Loss: {avg_val_loss:.4f}, Accuracy: {accuracy * 100:.2f}%")
 
         return avg_val_loss, accuracy
-        # """Make predictions on test data"""
-        # self.eval()  # Set model to eval mode for inference
-        # predictions = []
-        # with torch.no_grad():
-        #     for inputs in test_set:
-        #         inputs = inputs.to(self.device)
-        #         outputs = self(inputs)
-
-        #         if self.num_classes == 2:
-        #             # If it's a binary classification, apply sigmoid and threshold
-        #             preds = (torch.sigmoid(outputs) > 0.5).float()
-        #         else:
-        #             # For multi-class classification, apply argmax
-        #             preds = torch.argmax(outputs, dim=1)
-
-        #         predictions.append(preds.cpu())  # Move predictions to CPU if they are on GPU
-        # return predictions
 
     def inference(self, x):
         """Make prediction on a input inference the model"""
