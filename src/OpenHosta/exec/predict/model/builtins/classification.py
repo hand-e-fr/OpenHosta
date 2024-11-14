@@ -57,7 +57,7 @@ class Classification(HostaModel):
         self.to(self.device)
 
 
-    def training(self, train_set, epochs):
+    def trainer(self, train_set, epochs):
         self.train()
 
         for epoch in range(epochs):
