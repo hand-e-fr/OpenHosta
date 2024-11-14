@@ -25,6 +25,9 @@ classifiers = [
     "Natural Language :: French",
     "Topic :: Software Development :: Code Generators"
 ]
+dependencies = [
+    "requests>=2.32.3"
+]
 
 [project.optional-dependencies]
 all = [
