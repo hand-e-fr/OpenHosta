@@ -12,7 +12,7 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
 - [OpenHosta](#openhosta)
   - [Table of Content](#table-of-content)
   - [How to install OpenHosta ?](#how-to-install-openhosta-)
-    - [Example](#example)
+  - [Example](#example)
   - [Further information](#further-information)
     - [Contributing](#contributing)
     - [License](#license)
@@ -36,7 +36,7 @@ git clone git@github.com:hand-e-fr/OpenHosta.git
 
 **See the full installation guide [here](docs/installation.md)**
 
-### Example
+## Example
 
 ```python
 from OpenHosta import emulate, config
