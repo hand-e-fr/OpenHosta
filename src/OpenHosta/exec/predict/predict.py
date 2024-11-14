@@ -7,14 +7,14 @@ from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
 from .model import HostaModel
 from .model.model_provider import HostaModelProvider
-from .config_model import ConfigModel
+from .predict_config import PredictConfig
 from .predict_memory import PredictMemory, File
 from .model.neural_network import NeuralNetwork
 from ...core.config import Model, DefaultModel
 from ...core.hosta import Hosta, Func
 
 def predict(
-    model: ConfigModel = None,
+    model: PredictConfig = None,
     oracle: Optional[Union[Model, HostaDataset]] = None, #TODO: function for creating data (call a subclass of oracle ?)
     verbose: bool = False
 ) -> Union[int, float, bool, str]:
@@ -52,7 +52,7 @@ def predict(
     return prediction
 
 
-def get_hosta_model(architecture_file: File, func: Func, model: Optional[ConfigModel] = None, verbose: int = 0) -> HostaModel:
+def get_hosta_model(architecture_file: File, func: Func, model: Optional[PredictConfig] = None, verbose: int = 0) -> HostaModel:
     """
     Load or create a new model.
     """
@@ -86,7 +86,7 @@ def load_weights(memory: PredictMemory, hosta_model: HostaModel) -> bool:
     return False 
 
 
-def train_model(model: ConfigModel, memory: PredictMemory, architecture: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
+def train_model(model: PredictConfig, memory: PredictMemory, architecture: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: bool) -> None:
     """
     Prepare the data and train the model.
     """
@@ -106,7 +106,7 @@ def train_model(model: ConfigModel, memory: PredictMemory, architecture: HostaMo
     architecture.save_weights(memory.weights.path)
 
 
-def prepare_dataset(model: ConfigModel, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> tuple:
+def prepare_dataset(model: PredictConfig, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: bool) -> tuple:
     """
     Prepare the dataset for training.
     """
