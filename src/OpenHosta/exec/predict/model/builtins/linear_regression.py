@@ -50,7 +50,7 @@ class LinearRegression(HostaModel):
         # Move model to the selected device (CPU or GPU)
         self.to(self.device)
 
-    def training(self, train_set, epochs, verbose=False):
+    def trainer(self, train_set, epochs, verbose=False):
         self.train()
 
         for epoch in range(epochs):

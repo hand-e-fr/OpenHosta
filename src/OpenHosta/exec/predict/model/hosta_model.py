@@ -13,10 +13,11 @@ class HostaModel(ABC, nn.Module):
         self.layers = []
         super().__init__()
 
-    def training(self, train_set, epochs):
+    def trainer(self, train_set, epochs):
         pass
 
     def forward(self, x):
+        print("mon x", x)
         for layer in self.layers:
             x = layer(x)
         return x
