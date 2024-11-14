@@ -1,140 +1,129 @@
-from typing import List, Any, Dict, Union, Tuple
+from abc import ABC, abstractmethod
+from typing import List, Any, Dict, Union
+
+from ..dataset.sample_type import Sample
 
 from .base_encoder import BaseEncoder
 
+class NumericEncoder(BaseEncoder):
+    def encode(self, value: Union[int, float]) -> float:
+        return float(value)
 
-class StringEncoder(BaseEncoder):
-    """
-    Encoder for string values. Create a Optimized little w2v fo each words present in the dataset.
-    Example:
-        - 'hello' -> 1
-        - 'world' -> 2
-        - 'hello' -> 1 (same as first time) 
-    """
-    def __init__(self) -> None:
-        self.word_to_id: Dict[str, int] = {'<UNK>': 0}
-        self.id_to_word: Dict[int, str] = {0: '<UNK>'}
-        self.next_word_id: int = 1
-
-    def encode(self, value: str) -> int:
-        value = value.lower().strip()
-        if value not in self.word_to_id:
-            self.word_to_id[value] = self.next_word_id
-            self.id_to_word[self.next_word_id] = value
-            self.next_word_id += 1
-        return self.word_to_id[value]
-
-    def decode(self, encoded_value: List[int]) -> str:
-        return self.id_to_word.get(encoded_value, '<UNK>')
-
-
-    def vocabulary(self, word: str) -> List[int]:
-        return [self.word_to_id.get(word, 0)]
-
-    @property
-    def get_vocabulary(self) -> Dict[str, int]:
-        return self.word_to_id
-    
-
-class IntEncoder(BaseEncoder):
-    """
-    Encoder for integer values. No encoding is done, the value is returned as is.
-    """
-    def encode(self, value: int) -> int:
-        return value
-
-    def decode(self, encoded_value: float) -> int:
-        return int(encoded_value)
-
-class FloatEncoder(BaseEncoder):
-    def encode(self, value: float) -> float:
-        return value
-
-    def decode(self, encoded_value: float) -> float:
+    def decode(self, encoded_value: float) -> Union[int, float]:
         return encoded_value
 
-class BoolEncoder(BaseEncoder):
+class BooleanEncoder(BaseEncoder):
     def encode(self, value: bool) -> int:
-        return 1 if value else 0
+        return int(value)
 
     def decode(self, encoded_value: int) -> bool:
         return bool(encoded_value)
 
+class StringEncoder(BaseEncoder):
+    def __init__(self, existing_dict: Dict[str, int] = None):
+        """
+        Initialize with optional existing dictionary.
+        If existing_dict is provided, we're in inference mode.
+        """
+        self.inference_mode = existing_dict is not None
+        self.word_to_id = {'<UNK>': 0} if existing_dict is None else existing_dict
+        self.id_to_word = {v: k for k, v in self.word_to_id.items()}
+        self.next_id = max(self.word_to_id.values()) + 1 if self.word_to_id else 1
+        self.max_tokens = None
+
+    def set_max_tokens(self, max_tokens: int):
+        """Set maximum length for encoded sequences"""
+        self.max_tokens = max_tokens
+
+    def encode(self, value: str) -> List[int]:
+        """
+        Encode a string into a list of integers.
+        For classification (output), returns a single integer.
+        For input features, returns a list of integers of length max_tokens.
+        """
+        if self.max_tokens is None:
+            raise ValueError("max_tokens must be set before encoding")
+
+        words = str(value).lower().strip().split()
+        encoded = []
+
+        for word in words:
+            if not self.inference_mode and word not in self.word_to_id:
+                self.word_to_id[word] = self.next_id
+                self.id_to_word[self.next_id] = word
+                self.next_id += 1
+            encoded.append(self.word_to_id.get(word, 0))
+
+        if len(encoded) > self.max_tokens:
+            return encoded[:self.max_tokens]
+        return encoded + [0] * (self.max_tokens - len(encoded))
+
+    def decode(self, encoded_value: Union[int, List[int]]) -> str:
+        """
+        Decode either a single integer (classification) or list of integers (features)
+        """
+        if isinstance(encoded_value, (int, float)):
+            return self.id_to_word.get(int(encoded_value), '<UNK>')
+
+        words = []
+        for idx in encoded_value:
+            if idx != 0:  # Skip padding
+                words.append(self.id_to_word.get(idx, '<UNK>'))
+        return ' '.join(words)
+
 class SimpleEncoder:
-    def __init__(self):
-        self._encoders = {
-            str: StringEncoder(),
-            int: IntEncoder(),
-            float: FloatEncoder(),
-            bool: BoolEncoder()
+    def __init__(self, existing_dict: Dict[str, int] = None):
+        self.string_encoder = StringEncoder(existing_dict)
+        self.feature_types = {}
+        self.encoders = {
+            str: self.string_encoder,
+            int: NumericEncoder(),
+            float: NumericEncoder(),
+            bool: BooleanEncoder()
         }
 
-    def encode_dataset(self, data: List[List[Any]]) -> Tuple[List[List[Union[int, float]]], List[int]]:
-        if not data:
-            return [], []
-
-        features_list = []
-        targets_list = []
-
-        for sample in data:
-            features, target = sample[:-1], sample[-1]
-            encoded_features = []
-
-            for value in features:
-                encoder = self._encoders[type(value)]
-                encoded_features.append(encoder.encode(value))
-            
-            features_list.append(encoded_features)
-            
-            target_encoder = self._encoders[type(target)]
-            targets_list.append(target_encoder.encode(target))
-
-        return features_list, targets_list
-
-    def decode_dataset(self, features_list: List[List[Union[int, float]]], targets_list: List[int], 
-                      feature_types: List[type], target_type: type) -> List[List[Any]]:
-        decoded_data = []
+    def encode(self, samples: List[Sample], max_tokens: int) -> List[Sample]:
+        self.string_encoder.set_max_tokens(max_tokens)
         
-        for features, target in zip(features_list, targets_list):
-            decoded_features = []
-            for value, dtype in zip(features, feature_types):
-                encoder = self._encoders[dtype]
-                decoded_features.append(encoder.decode(value))
-                
-            target_encoder = self._encoders[target_type]
-            decoded_target = target_encoder.decode(target)
-            
-            decoded_data.append(decoded_features + [decoded_target])
-            
-        return decoded_data
+        encoded_samples = []
+        for sample in samples:
+            encoded_input = []
+            for idx, value in enumerate(sample._input):
+                encoder = self.encoders[type(value)]
+                self.feature_types[idx] = type(value)
+                encoded_value = encoder.encode(value)
+                if isinstance(encoded_value, list):
+                    encoded_input.extend(encoded_value)
+                else:
+                    encoded_input.append(encoded_value)
 
-# Exemple d'utilisation
-# if __name__ == "__main__":
-#     encoders = SimpleEncoder()
-    
-#     data = [
-#         ['hello', 10, 10.5, True, 'world'],
-#         ['world', 20, 20.5, False, 'hello']
-#     ]
+            encoded_output = None
+            if sample.output is not None:
+                if isinstance(sample._output, str):
+                    print("\033[93mWarning: Multiple string output not supported, only using the first word will be used for output\033[0m")
+                output_idx = len(sample._input)
+                encoder = self.encoders[type(sample._output)]
+                self.feature_types[output_idx] = type(sample._output)
+                encoded_output = encoder.encode(sample._output)
+                # Like multiple str output not supported only use the first str output
+                if isinstance(encoded_output, list):
+                    encoded_output = encoded_output[0]
 
-#     data_2 = [
-#         [['hello', 10, 10.5, True], ['world']],
-#         [['world', 20, 20.5], ['hello']]
-#     ]
+            encoded_samples.append(Sample({
+                'input': encoded_input,
+                'output': encoded_output
+            }))
 
-#     # Encodage
-#     features_list, targets_list = encoders.encode_dataset(data)
-#     print("Features de base:", data[0][:-1], data[1][:-1])
-#     print("Features encodées:", features_list)
-#     print("Target de base:", [data[0][-1]], [data[1][-1]])
-#     print("Targets encodées:", targets_list)
+        return encoded_samples
 
-#     # Pour voir le vocabulaire des strings
-#     string_encoder = encoders._encoders[str]
-#     print("Vocabulaire:", string_encoder.word_to_id)
-    
-#     # Décodage (si nécessaire)
-#     feature_types = [str, int, float, bool]
-#     target_type = str
-#     decoded_data = encoders.decode_dataset(features_list, targets_list, feature_types, target_type)
-#     print("Données décodées:", decoded_data)
+    def decode_prediction(self, prediction: Any, position: int) -> Any:
+        if position not in self.feature_types:
+            raise ValueError(f"Unknown feature position: {position}")
+
+        return self.encoders[self.feature_types[position]].decode(prediction)
+
+    @property
+    def dictionary(self) -> Dict[str, int]:
+        return self.string_encoder.word_to_id
+
+

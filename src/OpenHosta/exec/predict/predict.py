@@ -28,11 +28,11 @@ def predict(
         Model prediction
     """
     assert config is not None, "Please provide a valid configuration not None"
-    assert verbose is not None and 0 <= verbose <= 2, "Please provide a valid verbose level (0, 1 or 2)"
+    assert verbose is not None and 0 <= verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 0"
 
     func: Func = getattr(Hosta(), "_infos")
 
-    name = config.name if config and config.name else func.f_name #TODO: add hash of args into the name of the func
+    name = config.name if config and config.name else str(func.f_name + str(Hosta.hash_func(func)))
     base_path = config.path if config and config.path else os.getcwd()
     memory: PredictMemory = PredictMemory.load(base_path=base_path, name=name)
 
@@ -51,7 +51,6 @@ def predict(
         dataset.prepare_inference(func.f_args)
     torch_prediction = hosta_model.inference(dataset.inference._input)
     prediction = dataset.decode(torch_prediction, func_f_type=func.f_type[1])
-    print(f"Prediction : {prediction}")
     if predict is list:
         return prediction[0]
     else:
@@ -70,7 +69,7 @@ def get_hosta_model(architecture_file: File, func: Func, config: Optional[Predic
         architecture = NeuralNetwork.from_json(json)
         if verbose == 2:
             print(f"[\033[92mArchitecture\033[0m] found at {architecture_file.path}")
-            # architecture.summary() # TODO: summary
+            architecture.summary() # TODO: summary
     else:
         if verbose == 2:
             print(f"[\033[93mArchitecture\033[0m] not found, creating one")
