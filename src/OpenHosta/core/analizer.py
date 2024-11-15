@@ -277,10 +277,7 @@ class FuncAnalizer:
             return {"type": "null"}
         if tp is bytes or tp is bytearray or tp is ByteString:
             return {"type": "string", "format": "binary"}
-        if tp is complex:
-            raise ValueError(f"Complex numbers are not supported please check here to see the supported types : https://github.com/hand-e-fr/OpenHosta/blob/dev/docs/doc.md#:~:text=bool.%20The-,complex,-type%20is%20not")
-
-        raise ValueError(f"[_get_type_schema] Unsupported type: {tp}")
+        raise ValueError(f"{tp} type is not supported please check here to see the supported types : https://github.com/hand-e-fr/OpenHosta/blob/dev/docs/doc.md#:~:text=bool.%20The-,complex,-type%20is%20not")
 
     @property
     def func_schema(self) -> Dict[str, Any]:
