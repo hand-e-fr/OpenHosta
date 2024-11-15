@@ -1,4 +1,4 @@
-# Installation
+# Installation Guide
 
 The `OpenHosta` python package contains multiple features which you can install via PyPI or GitHub. However, you may need to install other packages depending on how you use `OpenHosta`. Indeed, some `OpenHosta` features require additional dependencies to be used. You'll also need to set up your API key for easier use.
 All this will be detailed in this document.
