@@ -1,5 +1,5 @@
 # OpenHosta 
-v1.2.1 - Opensource Project
+v2.0-beta2 - Opensource Project
 
 **- The future of development is human -**
 
@@ -12,11 +12,7 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
 - [OpenHosta](#openhosta)
   - [Table of Content](#table-of-content)
   - [How to install OpenHosta ?](#how-to-install-openhosta-)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-      - [Via pip](#via-pip)
-      - [Via git (Developper version)](#via-git-developper-version)
-    - [Example](#example)
+  - [Example](#example)
   - [Further information](#further-information)
     - [Contributing](#contributing)
     - [License](#license)
@@ -26,81 +22,21 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
 
 ## How to install OpenHosta ?
 
-### Prerequisites
-
-1. **Python 3.10 | 3.11 | 3.12**
-   - Download and install Python from [python.org](https://www.python.org/downloads/).
-
-2. **pip**
-   - pip is generally included with Python. Verify its installation with:
-     ```sh
-     pip --version
-     ```
-
-3. **Git**
-   - Download and install Git from [git-scm.com](https://git-scm.com/downloads).
-
-4. **Virtual Environment (optional)**
-   - Create and activate a virtual environment:
-     ```bash
-     python -m venv env
-     ```
-   - Activate the virtual environement:
-      ```bash
-      .\env\Scripts\activate # Windows
-      source env/bin/activate # macOS/Linux
-      ```
-
-5. **API Key**
-   - **API Key**: Log in to your OpenAI account from [openai.com](https://openai.com/), then create your API key. For further information, you can check this [tuto](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key).
-
-### Installation
-
-#### Via pip
-
-1. Run the following command to install OpenHosta directly:
- 
-```sh
-pip install openhosta
-```
-
-2. After the installation, you can verify that OpenHosta is installed correctly by running:
+You can install OpenHosta either via pip or via GitHub.
 
 ```sh
-pip show openhosta
+pip install OpenHosta[all]
 ```
 
-#### Via git (Developper version)
+or
 
-1. Clone the **Git repository** to your local machine using the following command:
-
-```bash
+```sh
 git clone git@github.com:hand-e-fr/OpenHosta.git
 ```
 
-2. Navigate to the **directory** of the cloned project:
+**See the full installation guide [here](docs/installation.md)**
 
-```bash
-cd OpenHosta
-```
-
-3. Ensure you have installed the necessary **dependencies** before starting.
-
-```bash
-pip install .
-```
-
-4. Check that you have the correct version from Python. 
-
-```python
-import OpenHosta
-
-OpenHosta.__version__
-```
-
-This way you have all the documentation and source code to understand our project
-
-### Example
+## Example
 
 ```python
 from OpenHosta import emulate, config
@@ -116,7 +52,7 @@ def translate(text:str, language:str)->str:
 result = translate("Hello World!", "French")
 print(result)
 ```
-You check OpenHosta's [documentation](doc/Docs.md) for more detailled informations or exemple
+You check OpenHosta's [documentation](docs/doc.md) for more detailled informations or exemple
 
 ## Further information
 
