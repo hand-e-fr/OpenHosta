@@ -26,9 +26,8 @@ def ask(
     )
 
     try:
-        data = response.json()
-        res = data["choices"][0]["message"]["content"]
-        setattr(ask, "_last_tokens", data["usage"]["total_tokens"])
+        res = response["choices"][0]["message"]["content"]
+        setattr(ask, "_last_tokens", response["usage"]["total_tokens"])
         return res
     except Exception as e:
         raise RequestError(f"[ask] Request failed:\n{e}")
