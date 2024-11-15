@@ -68,7 +68,7 @@ class HostaChecker:
             bool: lambda x: bool(x),
             dict: lambda x: dict(x),
             complex: lambda x: complex(x),
-            bytes: lambda x: bytes(x),
+            bytes: lambda x: bytes(x, encoding='utf-8') if isinstance(x, str) else bytes(x),
         }
         if typ not in convertMap.keys():
             return self._default.__func__
