@@ -42,11 +42,12 @@ def thinkof(key):
             setattr(inner_func, "_return_type", guess_type(key, *args))
 
         _infos.f_def = key
-        _infos.f_call = str(*args)
-        _infos.f_type = ([], inner_func._return_type)
+        _infos.f_call = str([str(arg) for arg in args])
+        _infos.f_type = ([type(arg) for arg in args], inner_func._return_type)
 
         try:
             result = emulate(_infos=_infos)
+            setattr(inner_func, "_last_response", result)
         except Exception as e:
             raise RequestError(f"[thinkof] Cannot emulate the function.\n{e}")
         return result
