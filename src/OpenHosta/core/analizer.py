@@ -75,11 +75,11 @@ class FuncAnalizer:
         Returns:
             The string representing the function's definition.
         """
-        func_name = self.func.__name__
+        func_name = getattr(self.func, "__name__")
         func_params = ", ".join(
             [
                 (
-                    f"{param_name}: {param.annotation.__name__}"
+                    f"{param_name}: {getattr(param.annotation, "__name__")}"
                     if param.annotation != inspect.Parameter.empty
                     else param_name
                 )
@@ -178,26 +178,23 @@ class FuncAnalizer:
                 }
             return {"anyOf": [self._get_type_schema(arg) for arg in args]}
 
-        if origin in (List, Sequence, Collection):
+        if origin in (list, Sequence, Collection):
             return {
                 "type": "array",
                 "items": self._get_type_schema(args[0]) if args else {"type": "any"}
             }
 
-        if origin in (Dict, Mapping):
+        if origin in (dict, Mapping):
             return {
                 "type": "object",
                 "additionalProperties": self._get_type_schema(args[1]) if args else {"type": "any"}
             }
 
-        if origin is Final:
+        if origin is (Final, ClassVar):
             return self._get_type_schema(args[0]) if args else {"type": "any"}
 
         if origin is Type:
             return {"type": "object", "format": "type"}
-
-        if origin is ClassVar:
-            return self._get_type_schema(args[0]) if args else {"type": "any"}
 
         if origin is Annotated:
             return self._get_type_schema(args[0])
@@ -205,15 +202,14 @@ class FuncAnalizer:
         if origin is Literal:
             return {"enum": list(args)}
 
-        if origin is Tuple:
-            print("hello")
+        if origin is tuple:
             if len(args) == 2 and args[1] is ...:
                 return {
-                    "type": "array",
+                    "type": "tuple",
                     "items": self._get_type_schema(args[0])
                 }
             return {
-                "type": "array",
+                "type": "tuple",
                 "prefixItems": [self._get_type_schema(arg) for arg in args],
                 "items": False
             }
