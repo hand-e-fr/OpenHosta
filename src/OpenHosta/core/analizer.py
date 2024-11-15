@@ -178,13 +178,13 @@ class FuncAnalizer:
                 }
             return {"anyOf": [self._get_type_schema(arg) for arg in args]}
 
-        if origin in (list, List, Sequence, Collection):
+        if origin in (List, Sequence, Collection):
             return {
                 "type": "array",
                 "items": self._get_type_schema(args[0]) if args else {"type": "any"}
             }
 
-        if origin in (dict, Dict, Mapping):
+        if origin in (Dict, Mapping):
             return {
                 "type": "object",
                 "additionalProperties": self._get_type_schema(args[1]) if args else {"type": "any"}
@@ -205,7 +205,8 @@ class FuncAnalizer:
         if origin is Literal:
             return {"enum": list(args)}
 
-        if origin in (tuple, Tuple):
+        if origin is Tuple:
+            print("hello")
             if len(args) == 2 and args[1] is ...:
                 return {
                     "type": "array",
@@ -217,7 +218,7 @@ class FuncAnalizer:
                 "items": False
             }
 
-        if origin in (set, Set, frozenset, FrozenSet, AbstractSet):
+        if origin in (Set, FrozenSet, AbstractSet):
             return {
                 "type": "array",
                 "uniqueItems": True,
@@ -264,12 +265,18 @@ class FuncAnalizer:
             return {"type": "list"}
         if tp is dict:
             return {"type": "dict"}
+        if tp is tuple:
+            return {"type": "tuple"}
+        if tp is set:
+            return {"type": "set"}
+        if tp is frozenset:
+            return {"type": "frozenset"}
         if tp is bool:
             return {"type": "boolean"}
         if tp is NoneType or tp is None:
             return {"type": "null"}
         if tp is bytes or tp is bytearray or tp is ByteString:
-            return {"type": "string", "format": "binary"}
+            return {"type": "binary"}
 
         raise ValueError(f"[_get_type_schema] Unsupported type: {tp}")
 
