@@ -9,7 +9,7 @@ def example(*args, hosta_out: Any = None, **kwargs):
     x = Hosta()
     if args != ():
         raise ValueError(
-            "[example] The arguments in example function must keyword only arguments, with keywords matching with the name of the calling function's arguments"
+            "[example] The arguments in example function must be keyword only arguments, with keywords matching with the name of the calling function's arguments"
         )
 
     expected_return_type = x._infos.f_type[1]
