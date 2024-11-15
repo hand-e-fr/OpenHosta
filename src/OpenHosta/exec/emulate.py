@@ -66,10 +66,11 @@ def emulate(
 
     try:
         if x:
-            _infos.f_obj._last_request = {
+            x._attach(_infos.f_obj, {"_last_request": {
                     'sys_prompt':f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
-                    'user_prompt':_infos.f_call} | llm_args
-        
+                    'user_prompt':_infos.f_call
+                } | llm_args}
+            )
         response = model.simple_api_call(
             sys_prompt=f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
             user_prompt=_infos.f_call,
@@ -77,7 +78,7 @@ def emulate(
         )
 
         if x:
-            _infos.f_obj._last_response=response
+            x._attach(_infos.f_obj, {"_last_response": response})
         
         l_ret = model.request_handler(response, _infos)
         if post_callback is not None:

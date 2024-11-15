@@ -34,7 +34,7 @@ class HostaChecker:
             self.checked = self.data
             self.is_passed = False
 
-    def _default(self, x: Any) -> Any:
+    def _default(x: Any) -> Any:
         """
         A default conversion function that returns the _inputs as is.
 
