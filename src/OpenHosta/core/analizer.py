@@ -75,11 +75,11 @@ class FuncAnalizer:
         Returns:
             The string representing the function's definition.
         """
-        func_name = self.func.__name__
+        func_name = getattr(self.func, "__name__")
         func_params = ", ".join(
             [
                 (
-                    f"{param_name}: {param.annotation.__name__}"
+                    f"{param_name}: {getattr(param.annotation, "__name__")}"
                     if param.annotation != inspect.Parameter.empty
                     else param_name
                 )
@@ -178,26 +178,23 @@ class FuncAnalizer:
                 }
             return {"anyOf": [self._get_type_schema(arg) for arg in args]}
 
-        if origin in (list, List, Sequence, Collection):
+        if origin in (list, Sequence, Collection):
             return {
                 "type": "array",
                 "items": self._get_type_schema(args[0]) if args else {"type": "any"}
             }
 
-        if origin in (dict, Dict, Mapping):
+        if origin in (dict, Mapping):
             return {
                 "type": "object",
                 "additionalProperties": self._get_type_schema(args[1]) if args else {"type": "any"}
             }
 
-        if origin is Final:
+        if origin is (Final, ClassVar):
             return self._get_type_schema(args[0]) if args else {"type": "any"}
 
         if origin is Type:
             return {"type": "object", "format": "type"}
-
-        if origin is ClassVar:
-            return self._get_type_schema(args[0]) if args else {"type": "any"}
 
         if origin is Annotated:
             return self._get_type_schema(args[0])
@@ -205,19 +202,19 @@ class FuncAnalizer:
         if origin is Literal:
             return {"enum": list(args)}
 
-        if origin in (tuple, Tuple):
+        if origin is tuple:
             if len(args) == 2 and args[1] is ...:
                 return {
-                    "type": "array",
+                    "type": "tuple",
                     "items": self._get_type_schema(args[0])
                 }
             return {
-                "type": "array",
+                "type": "tuple",
                 "prefixItems": [self._get_type_schema(arg) for arg in args],
                 "items": False
             }
 
-        if origin in (set, Set, frozenset, FrozenSet, AbstractSet):
+        if origin in (Set, FrozenSet, AbstractSet):
             return {
                 "type": "array",
                 "uniqueItems": True,
@@ -264,14 +261,19 @@ class FuncAnalizer:
             return {"type": "list"}
         if tp is dict:
             return {"type": "dict"}
+        if tp is tuple:
+            return {"type": "tuple"}
+        if tp is set:
+            return {"type": "set"}
+        if tp is frozenset:
+            return {"type": "frozenset"}
         if tp is bool:
             return {"type": "boolean"}
         if tp is NoneType or tp is None:
             return {"type": "null"}
         if tp is bytes or tp is bytearray or tp is ByteString:
             return {"type": "string", "format": "binary"}
-
-        raise ValueError(f"[_get_type_schema] Unsupported type: {tp}")
+        raise ValueError(f"{tp} type is not supported please check here to see the supported types : https://github.com/hand-e-fr/OpenHosta/blob/dev/docs/doc.md#:~:text=bool.%20The-,complex,-type%20is%20not")
 
     @property
     def func_schema(self) -> Dict[str, Any]:

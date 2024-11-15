@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.0.0**
+Documentation for version: **2.0.1**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -204,6 +204,9 @@ def find_name_age(sentence:str, id:dict)->dict:
         If the information is not found, fill with the values with “None”.
     """
     return emulate(model=my_model)
+
+ret = find_name_age("l'âge du capitaine est d'un an de plus que celui du mousse qui a lui 22 ans", {"capitaine": 0, "mousse": 0})
+print(ret)
 ```
 
 Note that, as seen above, you can pass a previously configured model as an emulate parameter.
@@ -399,8 +402,8 @@ from OpenHosta import ask, Model
 
 print(
     ask(
-        system="You're a helpful assistant."
-        user="Write me a cool story."
+        system="You're a helpful assistant.",
+        user="Write me a cool story.",
         max_tokens=200
     )
 )
@@ -600,7 +603,7 @@ print_last_prompt(multiply)
 
 ---
 
-We hope you find all the information you need. We are proud to present the first version of this project. 
+We hope you find all the information you need. We are proud to present the new version of this project. 
 The OpenHosta team. :)
 
 ---
