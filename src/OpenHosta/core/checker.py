@@ -34,7 +34,7 @@ class HostaChecker:
             self.checked = self.data
             self.is_passed = False
 
-    def _default(self, x: Any) -> Any:
+    def _default(x: Any) -> Any:
         """
         A default conversion function that returns the _inputs as is.
 
@@ -68,7 +68,7 @@ class HostaChecker:
             bool: lambda x: bool(x),
             dict: lambda x: dict(x),
             complex: lambda x: complex(x),
-            bytes: lambda x: bytes(x),
+            bytes: lambda x: bytes(x, encoding='utf-8') if isinstance(x, str) else bytes(x),
         }
         if typ not in convertMap.keys():
             return self._default.__func__
