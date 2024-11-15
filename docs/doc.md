@@ -204,6 +204,9 @@ def find_name_age(sentence:str, id:dict)->dict:
         If the information is not found, fill with the values with “None”.
     """
     return emulate(model=my_model)
+
+ret = find_name_age("l'âge du capitaine est d'un an de plus que celui du mousse qui a lui 22 ans", {"capitaine": 0, "mousse": 0})
+print(ret)
 ```
 
 Note that, as seen above, you can pass a previously configured model as an emulate parameter.
@@ -600,7 +603,7 @@ print_last_prompt(multiply)
 
 ---
 
-We hope you find all the information you need. We are proud to present the first version of this project. 
+We hope you find all the information you need. We are proud to present the new version of this project. 
 The OpenHosta team. :)
 
 ---
