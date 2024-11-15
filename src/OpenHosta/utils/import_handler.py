@@ -2,6 +2,7 @@ from __future__ import annotations
 
 all = (
     "is_pydantic"
+    "is_torch"
 )
 
 is_pydantic = False
