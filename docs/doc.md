@@ -399,8 +399,8 @@ from OpenHosta import ask, Model
 
 print(
     ask(
-        system="You're a helpful assistant."
-        user="Write me a cool story."
+        system="You're a helpful assistant.",
+        user="Write me a cool story.",
         max_tokens=200
     )
 )
