@@ -47,9 +47,9 @@ def predict(
         train_model(config, memory, hosta_model, dataset, oracle, func, verbose)
     
     if dataset is None:
-        dataset = HostaDataset.from_input(func.f_args, verbose)
+        dataset = HostaDataset.from_input(func.f_args, verbose, config.max_tokens, func, memory.dictionary.path)
     else:
-        dataset.prepare_inference(func.f_args)
+        dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
     torch_prediction = hosta_model.inference(dataset.inference.input)
     prediction = dataset.decode(torch_prediction, func_f_type=func.f_type[1])
     if predict is list:
@@ -132,8 +132,9 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
         dataset = generate_data(func, oracle, verbose)
         dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
         if verbose == 2:
-            print(f"[\033[92mDataset\033[0m] generated!")
-    dataset.encode(max_tokens=10)
+            print(f"[\033[92mData\033[0m] generated!")
+        
+    dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
     dataset.tensorify()
     dataset.save_data(memory.data.path)
 
@@ -153,7 +154,7 @@ def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], verb
     data = LLMSyntheticDataGenerator.generate_synthetic_data(
         func=func,
         request_amounts=3,  # TODO: make it a parameter
-        examples_in_req=80,  # TODO: make it a parameter
+        examples_in_req=10,  # TODO: make it a parameter
         model=oracle if oracle is not None else DefaultModel().get_default_model()
     )
     return HostaDataset.from_list(data, verbose)
