@@ -11,7 +11,7 @@ class PredictFileType(Enum):
     """Enumaration for different types of files in the prediction memory."""
     ARCHITECTURE = "model.json"
     WEIGHTS = "weights.pth"
-    DICTIONARY = "dictionary.txt"
+    DICTIONARY = "dictionary.json"
     DATA = "data.json"
     SUMMARY = "summary.txt"
 

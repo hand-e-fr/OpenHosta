@@ -2,13 +2,13 @@ import csv
 import json
 import os
 from enum import Enum
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Literal, get_args, get_origin
 
 import torch
 
 from .sample_type import Sample
 from ..encoder.simple_encoder import SimpleEncoder
-
+from ....core.hosta import Func
 
 class SourceType(Enum):
     """
@@ -21,10 +21,9 @@ class HostaDataset:
     def __init__(self, verbose: int = 1):
         self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
-        self.dictionary: Dict[str, int] = {}  # Dictionary for mapping str to id
+        self.dictionary: Dict[int, str] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
         self.verbose: int = verbose  # Verbose level for debugging
-        self._encoder: Optional[SimpleEncoder] = None  # Will store the encoder instance
 
     def add(self, sample: Sample):
         """
@@ -215,24 +214,102 @@ class HostaDataset:
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
 
-    def encode(self, max_tokens: int) -> None:
+    # def _encode(self, max_tokens: int) -> None:
+    #     """
+    #     Encode le dataset d'entraînement et crée le dictionnaire
+    #     """
+    #     if self._encoder is None:
+    #         self._encoder = SimpleEncoder()
+    #     self.data = self._encoder.encode(self.data, max_tokens=max_tokens)
+    #     self.dictionary = self._encoder.dictionary
+
+    # def encode(self, max_tokens: int, dataset: Optional[List[Sample]] = None) -> None:
+    #     """
+    #     Encode le dataset d'entraînement et crée le dictionnaire
+    #     """
+    #     if dataset is not None:
+    #         self.data = dataset
+    #     self._encode
+
+    # def encode_inference(self) -> None:
+    #     """
+    #     Encode les données d'inférence avec le dictionnaire existant
+    #     """
+    #     if self.dictionary is None:
+    #         raise ValueError("No dictionary available. Call encode() first on training data")
+        
+    #     self._encoder = SimpleEncoder(existing_dict=self.dictionary)
+    #     self.inference = self._encoder.encode([self.inference], max_tokens=10)[0]
+
+
+    def generate_mapping_dict(self, out) -> dict:
+        """
+        Generate a mapping dictionary for the output type.
+        Parameters:
+            out: A Literal type containing the possible values
+        Returns:
+            dict: A dictionary mapping each value to a unique integer (starting from 0)
+        """
+        mapping_dict = {}
+        
+        unique_values = list(get_args(out))
+        mapping_dict = {value: idx for idx, value in enumerate(unique_values)}
+        
+        return mapping_dict
+
+    def from_dictionary (self, dictionary_path: str) -> None:
+        """
+        Load the dictionary from a file
+        """
+        if not os.path.exists(dictionary_path):
+            self.dictionary = {}
+        else:
+            with open(dictionary_path, 'r') as f:
+                loaded_dict = json.load(f)
+                self.dictionary = loaded_dict if loaded_dict else {}
+
+    def save_dictionary(self, dictionary_path: str) -> None:
+        """
+        Save the dictionary to a file
+        Parameters:
+            dictionary_path: Path where to save the dictionary
+        """
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(dictionary_path), exist_ok=True) # TODO: Check if it's necessary like make it everything from start 
+        
+        with open(dictionary_path, 'w') as f:
+            json.dump(self.dictionary, f, indent=2, sort_keys=True)
+
+
+    def encode(self, max_tokens: int, dataset: Optional[List[Sample]] = None,
+                    inference_data: Optional[Sample] = None, inference : bool = False, func : Func = None, dictionary_path: str = None) -> List[Sample]:
         """
         Encode le dataset d'entraînement et crée le dictionnaire
         """
-        if self._encoder is None:
-            self._encoder = SimpleEncoder()
-        self.data = self._encoder.encode(self.data, max_tokens=max_tokens)
-        self.dictionary = self._encoder.dictionary
+        assert func is not None, "Func attribut must be provided for encoding"
+        mapping_dict : Dict[Any, int] = None
 
-    def encode_inference(self) -> None:
-        """
-        Encode les données d'inférence avec le dictionnaire existant
-        """
-        if self.dictionary is None:
-            raise ValueError("No dictionary available. Call encode() first on training data")
-        
-        self._encoder = SimpleEncoder(existing_dict=self.dictionary)
-        self.inference = self._encoder.encode([self.inference], max_tokens=10)[0]
+
+        output_type = func.f_type[1]
+        if hasattr(output_type, '__origin__') and output_type.__origin__ is Literal:
+            mapping_dict = self.generate_mapping_dict(output_type)
+            print("Mapping dict : ", mapping_dict)
+
+        self.from_dictionary(dictionary_path)
+        print("Dictionary : ", self.dictionary)
+        encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
+
+        if inference:
+            inference_data = inference_data if inference_data is not None else self.inference
+            data_encoded = encoder.encode([inference_data])
+        else:
+            dataset = dataset if dataset is not None else self.data
+            data_encoded = encoder.encode(dataset)
+
+        print ("data_encoded : ", data_encoded)
+        return data_encoded
+
+
 
     def tensorify(self, dtype=None) -> None:
         """
@@ -261,29 +338,29 @@ class HostaDataset:
         if not isinstance(self.inference.input, torch.Tensor):
             self.inference._inputs = torch.tensor(self.inference.input, dtype=dtype)
 
-    def prepare_inference(self, inference_data: dict) -> None:
+    def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
         """
         Prépare les données d'inférence en les encodant et les convertissant en tenseurs
         """
         self.inference = Sample(inference_data)
-        self.encode_inference()
+        self.encode(max_tokens=max_tokens, func=func, dictionary_path=dictionary_path, inference=True)
         self.tensorify_inference()
 
     @staticmethod
-    def from_input(inference_data: dict, verbose: int = 0) -> 'HostaDataset':
+    def from_input(inference_data: dict, verbose: int, max_tokens : int, func: Func, dictionary_path : str) -> 'HostaDataset':
         """
         Crée un dataset à partir de données d'inférence
         """
         dataset = HostaDataset(verbose)
-        dataset.prepare_inference(inference_data)
+        dataset.prepare_inference(inference_data, max_tokens, func, dictionary_path)
         return dataset
 
     def decode(self, predictions: List[Any], func_f_type: Any) -> List[Any]:
         """
         Decode the model predictions based on the function's return type.
         """
-        if self._encoder is None:
-            raise ValueError("Dataset must be encoded before decoding")
+        # if self.encoder is None:
+        #     raise ValueError("Dataset must be encoded before decoding")
         
         # Check if func_f_type is a typing.Literal
         # if isinstance(func_f_type, typing._GenericAlias) and get_origin() is Literal:
