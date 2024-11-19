@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Union, TypedDict
+from typing import Any, Literal, Union
+from typing_extensions import TypedDict
 
 
 class ExampleType(TypedDict):
