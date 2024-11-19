@@ -14,7 +14,6 @@ from typing import (
     Literal,
     Final,
     Type,
-    Annotated,
     ClassVar,
     Protocol,
     AnyStr,
@@ -202,9 +201,6 @@ class FuncAnalizer:
 
         if origin is Type:
             return {"type": "object", "format": "type"}
-
-        if origin is Annotated:
-            return self._get_type_schema(args[0])
 
         if origin is Literal:
             return {"enum": list(args)}
