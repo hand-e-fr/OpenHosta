@@ -1,5 +1,5 @@
 import os
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
@@ -15,7 +15,7 @@ from ...core.hosta import Hosta, Func
 def predict(
     config: PredictConfig = PredictConfig(),
     oracle: Optional[Union[Model, HostaDataset]] = None,
-    verbose: int = 0 
+    verbose: Union[Literal[1, 2, 3], bool] = 2
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
@@ -28,6 +28,11 @@ def predict(
     Returns:
         Model prediction
     """
+
+    # if verbose is True, set it to 2
+    if verbose is True:
+        verbose = 2
+
     assert config is not None, "Please provide a valid configuration not None"
     assert verbose is not None and 0 <= verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 0"
 
@@ -125,6 +130,15 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
     """
     Prepare the dataset for training.
     """
+
+    if config.dataset_path is None:
+        # if we found a "generated_data.csv" file we will load it
+        generated_data_path = os.path.join(memory.predict_dir, "generated_data.csv")
+        if os.path.exists(generated_data_path) and os.path.getsize(generated_data_path) > 0:
+            if verbose == 2:
+                print(f"[\033[92mDataset\033[0m] no data.json found, but found generated_data.csv, loading it")
+            config.dataset_path = generated_data_path
+
     if config.dataset_path is not None:
         if verbose == 2:
             print(f"[\033[92mDataset\033[0m] found at {config.dataset_path}")
@@ -135,8 +149,8 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
         dataset = generate_data(func, oracle, verbose)
         dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
         if verbose == 2:
-            print(f"[\033[92mData\033[0m] generated!")
-        
+            print(f"[\033[92mDataset\033[0m] generated and saved at {memory.predict_dir.join('generated_data.csv')}")
+
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
     dataset.tensorify()
     dataset.save_data(memory.data.path)
