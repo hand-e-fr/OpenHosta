@@ -31,9 +31,7 @@ from typing import (
     TypedDict
 )
 
-from OpenHosta import config, emulate
-
-config.set_default_apiKey("")
+from OpenHosta import emulate
 
 class TestTypes:
     
@@ -62,7 +60,7 @@ class TestTypes:
             """
             return emulate()
         
-        with pytest.raises(ValueError, match=re.escape(f"[_get_type_schema] Unsupported type: <class 'complex'>")):
+        with pytest.raises(ValueError, match=re.escape(f"<class 'complex'> type is not supported please check here to see the supported types : https://github.com/hand-e-fr/OpenHosta/blob/dev/docs/doc.md#:~:text=bool.%20The-,complex,-type%20is%20not")):
             complex_func(complex(1))
         
     def test_NativeNumericalBool(self):
@@ -108,7 +106,7 @@ class TestTypes:
             """
             return emulate()
         
-        with pytest.raises(ValueError, match=re.escape(f"[_get_type_schema] Unsupported type: <class 'range'>")):
+        with pytest.raises(ValueError, match=re.escape(f"<class 'range'> type is not supported please check here to see the supported types : https://github.com/hand-e-fr/OpenHosta/blob/dev/docs/doc.md#:~:text=bool.%20The-,complex,-type%20is%20not")):
             range_func(range(1))
             
     def test_NativeMappinDict(self):
@@ -157,13 +155,13 @@ class TestTypes:
         assert type(return_byte(bytearray("hi mom", encoding='utf-8'))) == str
         
     def test_NativeNone(self):
-        def return_none(a:None)->None:
+        def return_none():
             """
             This function returns None
             """   
             return emulate()
         
-        assert return_none(None) is None
+        assert return_none() is None
         
     def test_TypingList(self):
         def return_int_list(a: List[int]) -> List[int]:
