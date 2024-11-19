@@ -1,5 +1,5 @@
 import os
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
@@ -15,7 +15,7 @@ from ...core.hosta import Hosta, Func
 def predict(
     config: PredictConfig = PredictConfig(),
     oracle: Optional[Union[Model, HostaDataset]] = None,
-    verbose: Union[int, bool] = 0
+    verbose: Union[Literal[1, 2, 3], bool] = 2
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
