@@ -15,7 +15,8 @@ class PredictConfig:
                  batch_size: Optional[int] = 1, # fix this idk  it's none i change to 1
                  learning_rate: Optional[float] = None,
                  get_loss: Optional[float] = None,
-                 dataset_path: Optional[str] = None
+                 dataset_path: Optional[str] = None,
+                 generated_data: Optional[int] = 200,
              ):
         self.model_type: ArchitectureType = model_type
 
@@ -31,6 +32,7 @@ class PredictConfig:
         self.learning_rate: float = learning_rate
         self.get_loss: float = get_loss
         self.dataset_path: str = dataset_path
+        self.generated_data: int = generated_data
 
     def to_json(self):
         return f"""{{
@@ -45,6 +47,7 @@ class PredictConfig:
             "learning_rate": {self.learning_rate},
             "get_loss": {self.get_loss},
             "dataset_path": "{self.dataset_path}",
+            "generated_data": {self.generated_data}
         }}"""
 
     @staticmethod
@@ -63,4 +66,5 @@ class PredictConfig:
             learning_rate=data["learning_rate"],
             get_loss=data["get_loss"],
             dataset_path=data["dataset_path"],
+            generated_data=data["generated_data"]
         )
