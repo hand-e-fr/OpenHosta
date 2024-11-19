@@ -12,7 +12,7 @@ class PredictConfig:
                  complexity: int = 4,
                  max_tokens: int = 10,
                  epochs: Optional[int] = None,
-                 batch_size: Optional[int] = None,
+                 batch_size: Optional[int] = 1, # fix this idk  it's none i change to 1
                  learning_rate: Optional[float] = None,
                  get_loss: Optional[float] = None,
                  dataset_path: Optional[str] = None

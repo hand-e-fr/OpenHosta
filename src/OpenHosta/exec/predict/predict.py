@@ -106,6 +106,9 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
         train_set, val_set = prepare_dataset(config, memory, dataset, func, oracle, verbose)
 
     if config.epochs is None:
+        print(f"config.epochs is None")
+        print(f"len(train_set.dataset) : {len(train_set.dataset)}")
+        print(f"config.batch_size : {config.batch_size}")
         config.epochs = int(2 * len(train_set.dataset) / config.batch_size if config.batch_size != len(train_set.dataset)\
                                 else 2 * len(train_set.dataset))
         assert config.epochs > 0, f"epochs must be greater than 0 now it's {config.epochs}"

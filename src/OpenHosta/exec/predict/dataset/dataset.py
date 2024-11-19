@@ -296,17 +296,20 @@ class HostaDataset:
             print("Mapping dict : ", mapping_dict)
 
         self.from_dictionary(dictionary_path)
-        print("Dictionary : ", self.dictionary)
+        # print("Dictionary : ", self.dictionary)
         encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
 
         if inference:
             inference_data = inference_data if inference_data is not None else self.inference
             data_encoded = encoder.encode([inference_data])
+            self.inference = data_encoded[0]
         else:
             dataset = dataset if dataset is not None else self.data
             data_encoded = encoder.encode(dataset)
+            self.data = data_encoded
 
-        print ("data_encoded : ", data_encoded)
+        # print ("data_encoded : ", data_encoded)
+        # self.data = data_encoded
         return data_encoded
 
 
@@ -319,14 +322,17 @@ class HostaDataset:
             dtype = torch.float32
             
         for sample in self.data:
+            print("*"*50)
+            print("Sample : ", sample)
+            print("*"*50)
             if not isinstance(sample.input, torch.Tensor):
                 sample._inputs = torch.tensor(sample.input, dtype=dtype)
             
             if sample.output is not None and not isinstance(sample.output, torch.Tensor):
                 if isinstance(sample.output, (int, float)):
-                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
+                    sample._outputs = torch.tensor(sample.output, dtype=torch.long)
                 else:
-                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
+                    sample._outputs = torch.tensor(sample.output, dtype=torch.long)
 
     def tensorify_inference(self, dtype=None) -> None:
         """
@@ -366,26 +372,30 @@ class HostaDataset:
         # if isinstance(func_f_type, typing._GenericAlias) and get_origin() is Literal:
 
         # if get_origin(func_f_type) is Literal:
-            # Return decoded predictions using the encoder
-            # return [self._encoder.decode_prediction(pred) for pred in predictions]
+        #     Return decoded predictions using the encoder
+        #     return [self._encoder.decode_prediction(pred) for pred in predictions]
         # else:
-        decoded_predictions = []
-        for pred in predictions:
-            pred_value = pred.detach().cpu().numpy()
+        # decoded_predictions = []
+        # for pred in predictions:
+        #     pred_value = pred.detach().cpu().numpy()
             # Convert pred_value to the expected type
             # Handle scalar and array predictions
-            if pred_value.size == 1:
-                pred_scalar = pred_value.item()
-            else:
-                pred_scalar = pred_value
-            try:
-                converted_pred = func_f_type(pred_scalar)
-            except (TypeError, ValueError):
-                converted_pred = pred_scalar  # Return as is if conversion fails
-            decoded_predictions.append(converted_pred)
-            if func_f_type != list:
-                decoded_predictions = decoded_predictions[0]
-        return decoded_predictions
+            # if pred_value.size == 1:
+        #         pred_scalar = pred_value.item()
+        #     else:
+        #         pred_scalar = pred_value
+        #     try:
+        #         converted_pred = func_f_type(pred_scalar)
+        #     except (TypeError, ValueError):
+        #         converted_pred = pred_scalar  # Return as is if conversion fails
+        #     decoded_predictions.append(converted_pred)
+        #     if func_f_type != list:
+        #         decoded_predictions = decoded_predictions[0]
+        # return decoded_p
+        # redictions$
+        print("Predictions : ", predictions)
+        
+        return predictions
         
     @staticmethod
     def from_files(path: str, source_type: Optional[SourceType], verbose: int = 1) -> 'HostaDataset':
