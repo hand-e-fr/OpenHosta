@@ -19,7 +19,7 @@ All this will be detailed in this document.
 ### **Install using `pip`**:
   1. Install the package
   ```sh
-  pip install -U OpenHosta[all]
+  pip install -U OpenHosta
   ```
   2. Verify installation
   ```sh
@@ -41,7 +41,7 @@ All this will be detailed in this document.
   3. Install the package.
 
   ```sh
-  pip install .[all]
+  pip install .
   ```
 
   4. Verify installation
@@ -56,15 +56,12 @@ Installing OpenHosta with GitHub gives you access to all the source code, allowi
 
 You can install additional dependencies to use deeper features of `OpenHosta`. You'll need to add the following options.
 
-> **Note**
-> `OpenHosta` base features are "Pure Python". This means that it contains 0 dependencies. It include the `emulate` function and all its related functionalities (`config`, `example`, `thought`), the `thinkof` function and the `ask` function. 
-> However, you don't have access to `predict` and the `pydantic` compatibility.
 ```sh
-pip install -U OpenHosta # With pip
+pip install -U OpenHosta[all] # With pip
 ```
 *or* 
 ```sh
-pip install . # With GitHub
+pip install .[all] # With GitHub
 ```
 
 ### `predict`
