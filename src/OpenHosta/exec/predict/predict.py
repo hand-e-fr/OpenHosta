@@ -146,7 +146,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
     else :
         if verbose == 2:
             print(f"[\033[93mDataset\033[0m] not found, generate data")
-        dataset = generate_data(func, oracle, verbose)
+        dataset = generate_data(func, oracle, config, verbose)
         dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
         if verbose == 2:
             print(f"[\033[92mDataset\033[0m] generated and saved at {memory.predict_dir.join('generated_data.csv')}")
@@ -164,14 +164,16 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
     return train_set, val_set
 
 
-def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: int) -> HostaDataset:
+def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, verbose: int) -> HostaDataset:
     """
     Generate data for training.
     """
+    request_amounts = int(config.generated_data / 100) if config.generated_data > 100 else 1
+
     data = LLMSyntheticDataGenerator.generate_synthetic_data(
         func=func,
-        request_amounts=3,  # TODO: make it a parameter
-        examples_in_req=10,  # TODO: make it a parameter
+        request_amounts=request_amounts,
+        examples_in_req=int(config.generated_data / request_amounts),
         model=oracle if oracle is not None else DefaultModel().get_default_model()
     )
     return HostaDataset.from_list(data, verbose)
