@@ -79,7 +79,7 @@ class FuncAnalizer:
         func_params = ", ".join(
             [
                 (
-                    f"{param_name}: {getattr(param.annotation, "__name__")}"
+                    f"{param_name}: {getattr(param.annotation, '__name__')}"
                     if param.annotation != inspect.Parameter.empty
                     else param_name
                 )
