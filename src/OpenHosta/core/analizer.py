@@ -92,10 +92,11 @@ class FuncAnalizer:
                 for param_name, param in self.sig.parameters.items()
             ]
         )
+        
         func_return = (
-            f" -> {self.sig.return_annotation.__name__}"
-            if self.sig.return_annotation != inspect.Signature.empty
-            else ""
+            f" -> {getattr(self.sig.return_annotation, '__name__')}"
+            if hasattr(self.sig.return_annotation, '__name__') and self.sig.return_annotation != inspect.Signature.empty
+            else f" -> {self.sig.return_annotation}"
         )
         definition = (
             f"```python\ndef {func_name}({func_params}):{func_return}\n"

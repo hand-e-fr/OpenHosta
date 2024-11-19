@@ -101,7 +101,7 @@ For each part, you'll find functional examples to illustrate the features. If yo
 ### OpenHosta Example
 
 ```python
-from OpenHosta import emulate, config
+from OpenHosta import emulate
 
 def translate(text:str, language:str)->str:
     """
