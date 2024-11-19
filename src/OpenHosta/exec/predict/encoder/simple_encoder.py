@@ -31,22 +31,24 @@ class StringEncoder(BaseEncoder):
         self.dictionary = dictionary
         self.max_tokens = max_tokens
         self.inference = inference
-        self.next_id = max(self.dictionary.keys()) + 1 if self.dictionary else 1
+        self.next_id = max(self.dictionary.values()) + 1 if self.dictionary else 1
 
     def encode(self, data: str) -> int:
         words = data.lower().strip().split()
-
         encoded = []
+
         for word in words:
             if self.inference:
-                encoded.append(self.dictionary.get(word, 0))                
-
-            elif not self.inference and word not in self.dictionary:
-                self.dictionary[self.next_id] = word
-                encoded.append(self.next_id)
-                self.next_id += 1
-            elif not self.inference and word in self.dictionary:
-                encoded.append(self.dictionary[word])
+                encoded.append(self.dictionary.get(word, 0))
+            else:  # Training mode
+                if word not in self.dictionary:
+                    # Use word as key and next_id as value
+                    self.dictionary[word] = self.next_id
+                    encoded.append(self.next_id)
+                    self.next_id += 1
+                else:
+                    # Word exists, get its ID
+                    encoded.append(self.dictionary[word])
 
         if len(encoded) > self.max_tokens:
             return encoded[:self.max_tokens]

@@ -69,6 +69,7 @@ class Classification(HostaModel):
             total = 0
             for inputs, labels in train_set:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
+                labels = labels.long()  # Assure-toi que les labels sont en Long
 
                 # Zero parameter gradients
                 self.optimizer.zero_grad()
@@ -92,16 +93,17 @@ class Classification(HostaModel):
                 if self.num_classes == 2:
                     correct += (preds == labels).sum().item()
                 else:
-                    correct += (preds == labels.argmax(dim=1)).sum().item()
+                    # Modifie cette ligne car labels est déjà l'indice
+                    correct += (preds == labels).sum().item()  # Retire .argmax(dim=1)
 
                 total += labels.size(0)
 
             accuracy = correct / total
             if self.verbose:
                 print(f"Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(train_set):.4f}, Accuracy: {accuracy * 100:.2f}%")
-
     def validate(self, validation_set):
         """Validate the model's performance"""
+        return None
         self.eval()  # Set model to evaluation mode
         validation_loss = 0.0
         correct = 0
@@ -132,15 +134,34 @@ class Classification(HostaModel):
 
         return avg_val_loss, accuracy
 
-
     def inference(self, x):
-        """Make prediction on a _inputs inference the model"""
+        """Make prediction on a _inputs using the model
+        Returns:
+            predicted class index for multi-class
+            or binary prediction (0 or 1) for binary classification
+        """
         self.eval()
         with torch.no_grad():
             x = x.to(self.device)
+            
+            # Add batch dimension if needed
+            if len(x.shape) == 1:
+                x = x.unsqueeze(0)
+            elif len(x.shape) == 2:
+                if x.shape[0] != 1:
+                    x = x.unsqueeze(0)
+                    
             outputs = self(x)
+            
+            # Add batch dimension to outputs if needed
+            if len(outputs.shape) == 1:
+                outputs = outputs.unsqueeze(0)
+                
             if self.num_classes == 2:
+                # Binary classification
                 prediction = (torch.sigmoid(outputs) > 0.5).float()
             else:
-                prediction = torch.softmax(outputs, dim=1)
+                # Multi-class classification
+                prediction = torch.argmax(outputs, dim=1)  # Retourne l'indice de la classe prédite
+                
             return prediction.cpu()
