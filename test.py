@@ -6,4 +6,4 @@ def multiply(a:int, b:int)->int:
     """
     return emulate()
 
-print(emulate(5, 6))
+print(multiply(5, 6))

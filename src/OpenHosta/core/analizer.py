@@ -27,12 +27,18 @@ from typing import (
     OrderedDict,
     TypeVar
 )
-from types import MethodType, NoneType
+from sys import version_info
+from types import MethodType
 import inspect
 from types import FrameType
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 
 from ..utils.import_handler import is_pydantic
+
+if version_info.major == 3 and version_info.minor > 9:
+    from types import NoneType
+else:
+    NoneType = type(None)
 
 all = (
     "FuncAnalizer"
