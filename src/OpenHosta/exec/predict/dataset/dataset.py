@@ -263,7 +263,7 @@ class HostaDataset:
 
 
         output_type = func.f_type[1]
-        if hasattr(output_type, '__origin__') and output_type.__origin__ is Literal:
+        if get_origin(output_type) is Literal:
             mapping_dict = self.generate_mapping_dict(output_type)
             print("Mapping dict : ", mapping_dict)
 
