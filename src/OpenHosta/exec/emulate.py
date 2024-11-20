@@ -69,7 +69,8 @@ def emulate(
             x._attach(_infos.f_obj, {"_last_request": {
                     'sys_prompt':f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
                     'user_prompt':_infos.f_call
-                } | llm_args}
+                    }
+                }
             )
         response = model.simple_api_call(
             sys_prompt=f"{EMULATE_PROMPT!r}\n{func_prompt}\n",

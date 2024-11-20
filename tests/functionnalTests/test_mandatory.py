@@ -1,12 +1,9 @@
 import pytest
+import os
 from pydantic import BaseModel
 from typing import Callable
 
 from OpenHosta import config, emulate, thinkof
-
-g_apiKey = ""
-
-config.set_default_apiKey(g_apiKey)
 
 def emulate_1arg_str(arg)->str:
     """ Docstring """
@@ -34,12 +31,10 @@ class User(BaseModel):
 class TestEmulate:
        
     def test_FeatureModelInParameter(self):
-        global g_apiKey
-        
         abracadabra = config.Model(
             model="gpt-4o-mini",
             base_url="https://api.openai.com/v1/chat/completions",
-            api_key=g_apiKey
+            api_key=os.getenv("OPENAI_API_KEY")
         )
         
         def randomSentence()->str:

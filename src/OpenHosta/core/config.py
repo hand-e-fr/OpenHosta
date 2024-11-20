@@ -77,9 +77,9 @@ class Model:
         }
         
         if "azure.com" in self.base_url:
-            headers |= {"api-key": f"{self.api_key}"}
+            headers["api-key"] = f"{self.api_key}"
         else:
-            headers |= {"Authorization": f"Bearer {self.api_key}"}
+            headers["Authorization"] = f"Bearer {self.api_key}"
  
         if json_form:
             l_body["response_format"] = {"type": "json_object"}

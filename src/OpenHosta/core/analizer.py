@@ -14,7 +14,6 @@ from typing import (
     Literal,
     Final,
     Type,
-    Annotated,
     ClassVar,
     Protocol,
     AnyStr,
@@ -27,12 +26,18 @@ from typing import (
     OrderedDict,
     TypeVar
 )
-from types import MethodType, NoneType
+from sys import version_info
+from types import MethodType
 import inspect
 from types import FrameType
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 
 from ..utils.import_handler import is_pydantic
+
+if version_info.major == 3 and version_info.minor > 9:
+    from types import NoneType
+else:
+    NoneType = type(None)
 
 all = (
     "FuncAnalizer"
@@ -79,17 +84,18 @@ class FuncAnalizer:
         func_params = ", ".join(
             [
                 (
-                    f"{param_name}: {getattr(param.annotation, "__name__")}"
+                    f"{param_name}: {getattr(param.annotation, '__name__')}"
                     if param.annotation != inspect.Parameter.empty
                     else param_name
                 )
                 for param_name, param in self.sig.parameters.items()
             ]
         )
+        
         func_return = (
-            f" -> {self.sig.return_annotation.__name__}"
-            if self.sig.return_annotation != inspect.Signature.empty
-            else ""
+            f" -> {getattr(self.sig.return_annotation, '__name__')}"
+            if hasattr(self.sig.return_annotation, '__name__') and self.sig.return_annotation != inspect.Signature.empty
+            else f" -> {self.sig.return_annotation}"
         )
         definition = (
             f"```python\ndef {func_name}({func_params}):{func_return}\n"
@@ -195,9 +201,6 @@ class FuncAnalizer:
 
         if origin is Type:
             return {"type": "object", "format": "type"}
-
-        if origin is Annotated:
-            return self._get_type_schema(args[0])
 
         if origin is Literal:
             return {"enum": list(args)}
