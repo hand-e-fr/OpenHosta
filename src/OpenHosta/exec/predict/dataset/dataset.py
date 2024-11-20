@@ -2,13 +2,14 @@ import csv
 import json
 import os
 from enum import Enum
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Literal, get_args, get_origin, Union
 
 import torch
 
 from .sample_type import Sample
 from ..encoder.simple_encoder import SimpleEncoder
-
+from ....core.hosta import Func
+from ....core.logger import Logger, ANSIColor
 
 class SourceType(Enum):
     """
@@ -17,20 +18,22 @@ class SourceType(Enum):
     CSV = "csv"
     JSONL = "jsonl"
     JSON = "json"
+
 class HostaDataset:
-    def __init__(self, verbose: int = 1):
+    def __init__(self, logger: Logger):
+        self.encoder = None
         self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
-        self.dictionary: Dict[str, int] = {}  # Dictionary for mapping str to id
+        self.dictionary: Dict[int, str] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
-        self.verbose: int = verbose  # Verbose level for debugging
-        self._encoder: Optional[SimpleEncoder] = None  # Will store the encoder instance
+        self.logger = logger # Logger for logging the data
 
     def add(self, sample: Sample):
         """
         Add a Sample object to the dataset.
         """
         self.data.append(sample)
+
     def convert_data(self, batch_size: int, shuffle: bool, train_set_size: float = 0.8) -> tuple:
         """
         Save the dataset to a file in the specified format and convert it into dataloader for training.
@@ -89,11 +92,11 @@ class HostaDataset:
 
 
     @staticmethod
-    def from_data(data_path: str, batch_size: int, shuffle: bool, train_set_size: float = 0.8, verbose: int = 1) -> tuple:
+    def from_data(data_path: str, batch_size: int, shuffle: bool, logger: Logger, train_set_size: float = 0.8) -> tuple:
         """
         Load a dataset from a file and convert it into dataloader for training.
         """
-        dataset = HostaDataset(verbose)
+        dataset = HostaDataset(logger)
         dataset.load_data(data_path)
         return dataset.convert_data(batch_size, shuffle, train_set_size)
 
@@ -165,7 +168,6 @@ class HostaDataset:
             with open(path, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    # Convert string numbers to float if possible
                     processed_row = {}
                     for key, value in row.items():
                         try:
@@ -215,24 +217,73 @@ class HostaDataset:
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
 
-    def encode(self, max_tokens: int) -> None:
+    def generate_mapping_dict(self, out) -> dict:
+        """
+        Generate a mapping dictionary for the output type.
+        Parameters:
+            out: A Literal type containing the possible values
+        Returns:
+            dict: A dictionary mapping each value to a unique integer (starting from 0)
+        """
+        mapping_dict = {}
+        
+        unique_values = list(get_args(out))
+        mapping_dict = {value: idx for idx, value in enumerate(unique_values)}
+        
+        return mapping_dict
+
+    def from_dictionary (self, dictionary_path: str) -> None:
+        """
+        Load the dictionary from a file
+        """
+        if not os.path.exists(dictionary_path):
+            self.dictionary = {}
+        else:
+            with open(dictionary_path, 'r') as f:
+                loaded_dict = json.load(f)
+                self.dictionary = loaded_dict if loaded_dict else {}
+
+    def save_dictionary(self, dictionary_path: str) -> None:
+        """
+        Save the dictionary to a file
+        Parameters:
+            dictionary_path: Path where to save the dictionary
+        """
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(dictionary_path), exist_ok=True) # TODO: Check if it's necessary like make it everything from start 
+        
+        with open(dictionary_path, 'w') as f:
+            json.dump(self.dictionary, f, indent=2, sort_keys=True)
+
+
+    def encode(self, max_tokens: int, dataset: Optional[List[Sample]] = None,
+                    inference_data: Optional[Sample] = None, inference : bool = False, func : Func = None, dictionary_path: str = None) -> List[Sample]:
         """
         Encode le dataset d'entraînement et crée le dictionnaire
         """
-        if self._encoder is None:
-            self._encoder = SimpleEncoder()
-        self.data = self._encoder.encode(self.data, max_tokens=max_tokens)
-        self.dictionary = self._encoder.dictionary
+        assert func is not None, "Func attribut must be provided for encoding"
+        mapping_dict : Dict[Any, int] = None
 
-    def encode_inference(self) -> None:
-        """
-        Encode les données d'inférence avec le dictionnaire existant
-        """
-        if self.dictionary is None:
-            raise ValueError("No dictionary available. Call encode() first on training data")
-        
-        self._encoder = SimpleEncoder(existing_dict=self.dictionary)
-        self.inference = self._encoder.encode([self.inference], max_tokens=10)[0]
+
+        output_type = func.f_type[1]
+        if get_origin(output_type) is Literal:
+            mapping_dict = self.generate_mapping_dict(output_type)
+
+        self.from_dictionary(dictionary_path)
+        self.encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
+
+        if inference:
+            inference_data = inference_data if inference_data is not None else self.inference
+            data_encoded = self.encoder.encode([inference_data])
+            self.inference = data_encoded[0]
+        else:
+            dataset = dataset if dataset is not None else self.data
+            data_encoded = self.encoder.encode(dataset)
+            self.data = data_encoded
+
+        return data_encoded
+
+
 
     def tensorify(self, dtype=None) -> None:
         """
@@ -249,7 +300,7 @@ class HostaDataset:
                 if isinstance(sample.output, (int, float)):
                     sample._outputs = torch.tensor(sample.output, dtype=dtype)
                 else:
-                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
+                    sample._outputs = torch.tensor(sample.output, dtype=torch.long)
 
     def tensorify_inference(self, dtype=None) -> None:
         """
@@ -261,70 +312,46 @@ class HostaDataset:
         if not isinstance(self.inference.input, torch.Tensor):
             self.inference._inputs = torch.tensor(self.inference.input, dtype=dtype)
 
-    def prepare_inference(self, inference_data: dict) -> None:
+    def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
         """
         Prépare les données d'inférence en les encodant et les convertissant en tenseurs
         """
         self.inference = Sample(inference_data)
-        self.encode_inference()
+        self.encode(max_tokens=max_tokens, func=func, dictionary_path=dictionary_path, inference=True)
         self.tensorify_inference()
 
     @staticmethod
-    def from_input(inference_data: dict, verbose: int = 0) -> 'HostaDataset':
+    def from_input(inference_data: dict, logger: Logger, max_tokens : int, func: Func, dictionary_path : str) -> 'HostaDataset':
         """
         Crée un dataset à partir de données d'inférence
         """
-        dataset = HostaDataset(verbose)
-        dataset.prepare_inference(inference_data)
+        dataset = HostaDataset(logger)
+        dataset.prepare_inference(inference_data, max_tokens, func, dictionary_path)
         return dataset
 
-    def decode(self, predictions: List[Any], func_f_type: Any) -> List[Any]:
+    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> List[Any]:
         """
         Decode the model predictions based on the function's return type.
         """
-        if self._encoder is None:
-            raise ValueError("Dataset must be encoded before decoding")
-        
-        # Check if func_f_type is a typing.Literal
-        # if isinstance(func_f_type, typing._GenericAlias) and get_origin() is Literal:
-
-        # if get_origin(func_f_type) is Literal:
-            # Return decoded predictions using the encoder
-            # return [self._encoder.decode_prediction(pred) for pred in predictions]
-        # else:
-        decoded_predictions = []
-        for pred in predictions:
-            pred_value = pred.detach().cpu().numpy()
-            # Convert pred_value to the expected type
-            # Handle scalar and array predictions
-            if pred_value.size == 1:
-                pred_scalar = pred_value.item()
-            else:
-                pred_scalar = pred_value
-            try:
-                converted_pred = func_f_type(pred_scalar)
-            except (TypeError, ValueError):
-                converted_pred = pred_scalar  # Return as is if conversion fails
-            decoded_predictions.append(converted_pred)
-            if func_f_type != list:
-                decoded_predictions = decoded_predictions[0]
-        return decoded_predictions
+        output_type = func_f_type[1]
+        output = self.encoder.decode(predictions, output_type)
+        return output, predictions
         
     @staticmethod
-    def from_files(path: str, source_type: Optional[SourceType], verbose: int = 1) -> 'HostaDataset':
+    def from_files(path: str, source_type: Optional[SourceType], logger: Logger) -> 'HostaDataset':
         """
         Load a dataset from a file.
         """
-        dataset = HostaDataset(verbose)
+        dataset = HostaDataset(logger)
         dataset.convert_files(path, source_type)
         return dataset
     
     @staticmethod
-    def from_list(data: list, verbose: int) -> 'HostaDataset':
+    def from_list(data: list, logger: Logger) -> 'HostaDataset':
         """
         Create a dataset from a list.
         """
-        dataset = HostaDataset(verbose)
+        dataset = HostaDataset(logger)
         dataset.convert_list(data)
         return dataset
 
