@@ -2,7 +2,7 @@ import csv
 import json
 import os
 from enum import Enum
-from typing import List, Optional, Any, Dict, Literal, get_args, get_origin
+from typing import List, Optional, Any, Dict, Literal, get_args, get_origin, Union
 
 import torch
 
@@ -30,6 +30,7 @@ class HostaDataset:
         Add a Sample object to the dataset.
         """
         self.data.append(sample)
+
     def convert_data(self, batch_size: int, shuffle: bool, train_set_size: float = 0.8) -> tuple:
         """
         Save the dataset to a file in the specified format and convert it into dataloader for training.
@@ -164,7 +165,6 @@ class HostaDataset:
             with open(path, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    # Convert string numbers to float if possible
                     processed_row = {}
                     for key, value in row.items():
                         try:
@@ -213,34 +213,6 @@ class HostaDataset:
                 self.add(Sample(sample_dict))
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
-
-    # def _encode(self, max_tokens: int) -> None:
-    #     """
-    #     Encode le dataset d'entraînement et crée le dictionnaire
-    #     """
-    #     if self._encoder is None:
-    #         self._encoder = SimpleEncoder()
-    #     self.data = self._encoder.encode(self.data, max_tokens=max_tokens)
-    #     self.dictionary = self._encoder.dictionary
-
-    # def encode(self, max_tokens: int, dataset: Optional[List[Sample]] = None) -> None:
-    #     """
-    #     Encode le dataset d'entraînement et crée le dictionnaire
-    #     """
-    #     if dataset is not None:
-    #         self.data = dataset
-    #     self._encode
-
-    # def encode_inference(self) -> None:
-    #     """
-    #     Encode les données d'inférence avec le dictionnaire existant
-    #     """
-    #     if self.dictionary is None:
-    #         raise ValueError("No dictionary available. Call encode() first on training data")
-        
-    #     self._encoder = SimpleEncoder(existing_dict=self.dictionary)
-    #     self.inference = self._encoder.encode([self.inference], max_tokens=10)[0]
-
 
     def generate_mapping_dict(self, out) -> dict:
         """
@@ -296,20 +268,17 @@ class HostaDataset:
             print("Mapping dict : ", mapping_dict)
 
         self.from_dictionary(dictionary_path)
-        # print("Dictionary : ", self.dictionary)
-        encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
+        self.encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
 
         if inference:
             inference_data = inference_data if inference_data is not None else self.inference
-            data_encoded = encoder.encode([inference_data])
+            data_encoded = self.encoder.encode([inference_data])
             self.inference = data_encoded[0]
         else:
             dataset = dataset if dataset is not None else self.data
-            data_encoded = encoder.encode(dataset)
+            data_encoded = self.encoder.encode(dataset)
             self.data = data_encoded
 
-        # print ("data_encoded : ", data_encoded)
-        # self.data = data_encoded
         return data_encoded
 
 
@@ -322,15 +291,12 @@ class HostaDataset:
             dtype = torch.float32
             
         for sample in self.data:
-            print("*"*50)
-            print("Sample : ", sample)
-            print("*"*50)
             if not isinstance(sample.input, torch.Tensor):
                 sample._inputs = torch.tensor(sample.input, dtype=dtype)
             
             if sample.output is not None and not isinstance(sample.output, torch.Tensor):
                 if isinstance(sample.output, (int, float)):
-                    sample._outputs = torch.tensor(sample.output, dtype=torch.long)
+                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
                 else:
                     sample._outputs = torch.tensor(sample.output, dtype=torch.long)
 
@@ -361,41 +327,13 @@ class HostaDataset:
         dataset.prepare_inference(inference_data, max_tokens, func, dictionary_path)
         return dataset
 
-    def decode(self, predictions: List[Any], func_f_type: Any) -> List[Any]:
+    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> List[Any]:
         """
         Decode the model predictions based on the function's return type.
         """
-        # if self.encoder is None:
-        #     raise ValueError("Dataset must be encoded before decoding")
-        
-        # Check if func_f_type is a typing.Literal
-        # if isinstance(func_f_type, typing._GenericAlias) and get_origin() is Literal:
-
-        # if get_origin(func_f_type) is Literal:
-        #     Return decoded predictions using the encoder
-        #     return [self._encoder.decode_prediction(pred) for pred in predictions]
-        # else:
-        # decoded_predictions = []
-        # for pred in predictions:
-        #     pred_value = pred.detach().cpu().numpy()
-            # Convert pred_value to the expected type
-            # Handle scalar and array predictions
-            # if pred_value.size == 1:
-        #         pred_scalar = pred_value.item()
-        #     else:
-        #         pred_scalar = pred_value
-        #     try:
-        #         converted_pred = func_f_type(pred_scalar)
-        #     except (TypeError, ValueError):
-        #         converted_pred = pred_scalar  # Return as is if conversion fails
-        #     decoded_predictions.append(converted_pred)
-        #     if func_f_type != list:
-        #         decoded_predictions = decoded_predictions[0]
-        # return decoded_p
-        # redictions$
-        print("Predictions : ", predictions)
-        
-        return predictions
+        output_type = func_f_type[1]
+        output = self.encoder.decode(predictions, output_type)
+        return output, predictions
         
     @staticmethod
     def from_files(path: str, source_type: Optional[SourceType], verbose: int = 1) -> 'HostaDataset':

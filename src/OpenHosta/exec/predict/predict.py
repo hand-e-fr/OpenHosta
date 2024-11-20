@@ -15,7 +15,7 @@ from ...core.hosta import Hosta, Func
 def predict(
     config: PredictConfig = PredictConfig(),
     oracle: Optional[Union[Model, HostaDataset]] = None,
-    verbose: Union[Literal[1, 2, 3], bool] = 2
+    verbose: Union[Literal[0, 1, 2], bool] = 2
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
@@ -56,11 +56,9 @@ def predict(
     else:
         dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
     torch_prediction = hosta_model.inference(dataset.inference.input)
-    prediction = dataset.decode(torch_prediction, func_f_type=func.f_type[1])
-    if predict is list:
-        return prediction[0]
-    else:
-        return prediction
+    output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
+    print(f"[\033[92mPrediction\033[0m] {prediction} -> {output}")
+    return output
 
 
 def get_hosta_model(architecture_file: File, func: Func, config: Optional[PredictConfig] = None, verbose: int = 0) -> HostaModel:
@@ -104,16 +102,13 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     if memory.data.exist:
         if verbose == 2:
             print(f"[\033[92mData\033[0m] found at {memory.data.path}")
-        train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_set_size=0.8, verbose=verbose) # verbose will prcess all the example and add it to val_set
+        train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_set_size=0.8, verbose=verbose)
     else:
         if verbose == 2:
             print(f"[\033[93mData\033[0m] not processed, preparing data")
         train_set, val_set = prepare_dataset(config, memory, dataset, func, oracle, verbose)
 
     if config.epochs is None:
-        print(f"config.epochs is None")
-        print(f"len(train_set.dataset) : {len(train_set.dataset)}")
-        print(f"config.batch_size : {config.batch_size}")
         config.epochs = int(2 * len(train_set.dataset) / config.batch_size if config.batch_size != len(train_set.dataset)\
                                 else 2 * len(train_set.dataset))
         assert config.epochs > 0, f"epochs must be greater than 0 now it's {config.epochs}"
@@ -132,7 +127,6 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
     """
 
     if config.dataset_path is None:
-        # if we found a "generated_data.csv" file we will load it
         generated_data_path = os.path.join(memory.predict_dir, "generated_data.csv")
         if os.path.exists(generated_data_path) and os.path.getsize(generated_data_path) > 0:
             if verbose == 2:

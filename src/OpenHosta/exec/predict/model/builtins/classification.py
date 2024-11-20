@@ -17,7 +17,7 @@ class Classification(HostaModel):
 
         self.complexity = complexity
         self.num_classes = num_classes
-        self.verbose = True
+        self.verbose = True #TODO: change her
         self.layers = []
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
             transition_value = int(((input_size * output_size) / 2) * self.complexity)
@@ -28,117 +28,109 @@ class Classification(HostaModel):
             else:
                 hidden_layer_1 = transition_value
 
-            # Define simple fully connected architecture
             self.layers.append(nn.Linear(input_size, input_layer))
-            self.layers.append(nn.ReLU())  # Apply ReLU after first layer
+            self.layers.append(nn.ReLU())
             self.layers.append(nn.Linear(input_layer, hidden_layer_1))
-            self.layers.append(nn.ReLU())  # Apply ReLU after second layer
+            self.layers.append(nn.ReLU())
             self.layers.append(nn.Linear(hidden_layer_1, output_size))
         else:
-            # Use custom user-defined layers from neural network definition if available
             self.layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
 
         for i, layer in enumerate(self.layers):
             setattr(self, f'fc{i + 1}', layer)
 
-        # Set the loss function for classification
         if neural_network is None or neural_network.loss_function is None:
             if num_classes == 2:
-                self.loss = nn.BCEWithLogitsLoss()  # For binary classification
+                self.loss = nn.BCEWithLogitsLoss()
             else:
-                self.loss = nn.CrossEntropyLoss()  # For multi-class classification
+                self.loss = nn.CrossEntropyLoss()
         else:
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
 
-        # Set the optimizer
         if neural_network is None or neural_network.optimizer is None:
             self.optimizer = optim.Adam(self.parameters(), lr=0.001)
         else:
-            self.optimizer = custom_optimizer_to_pytorch(neural_network.optimizer, self, lr=0.001)
+            self.optimizer = custom_optimizer_to_pytorch(neural_network.optimizer, self, lr=0.001) # TODO: Add learning rate parameter
 
-        # Move model to the selected device (CPU or GPU)
         self.to(self.device)
 
 
     def trainer(self, train_set, epochs):
+        """
+        Train the model on the training set
+        """
         self.train()
 
         for epoch in range(epochs):
+
             running_loss = 0.0
-            correct = 0
-            total = 0
+            correct_predictions = 0
+            total_samples = 0
+    
             for inputs, labels in train_set:
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
-                labels = labels.long()  # Assure-toi que les labels sont en Long
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device).long() # Ensure it's long for cross entropy loss ! 
+                batch_size = inputs.size(0)
 
-                # Zero parameter gradients
                 self.optimizer.zero_grad()
-
-                # Forward pass
                 outputs = self(inputs)
-
-                if self.num_classes == 2:
-                    preds = (torch.sigmoid(outputs) > 0.5).float()
-                else:
-                    preds = torch.argmax(outputs, dim=1)
-
-                # Compute Loss
                 loss = self.loss(outputs, labels)
+
                 loss.backward()
                 self.optimizer.step()
 
                 running_loss += loss.item()
 
-                # Calculate accuracy
                 if self.num_classes == 2:
-                    correct += (preds == labels).sum().item()
+                    predicted_classes = (torch.sigmoid(outputs) > 0.5).float()
                 else:
-                    # Modifie cette ligne car labels est déjà l'indice
-                    correct += (preds == labels).sum().item()  # Retire .argmax(dim=1)
+                    predicted_classes = torch.argmax(outputs, dim=1)
 
-                total += labels.size(0)
+                correct_predictions += (predicted_classes == labels).sum().item()
+                total_samples += batch_size
 
-            accuracy = correct / total
-            if self.verbose:
-                print(f"Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(train_set):.4f}, Accuracy: {accuracy * 100:.2f}%")
+            epoch_loss = running_loss / len(train_set)
+            epoch_accuracy = (correct_predictions / total_samples) * 100
+
+            print(f"Epoch {epoch + 1}/{epochs} | Loss: {epoch_loss:.4f} | Accuracy: {epoch_accuracy:.2f}%")
+
     def validate(self, validation_set):
         """Validate the model's performance"""
         return None
-        self.eval()  # Set model to evaluation mode
-        validation_loss = 0.0
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for inputs, labels in validation_set:
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
-                outputs = self(inputs)
+        # self.eval()  # Set model to evaluation mode
+        # validation_loss = 0.0
+        # correct = 0
+        # total = 0
+        # with torch.no_grad():
+        #     for inputs, labels in validation_set:
+        #         inputs, labels = inputs.to(self.device), labels.to(self.device)
+        #         outputs = self(inputs)
 
-                loss = self.loss(outputs, labels)
-                validation_loss += loss.item()
+        #         loss = self.loss(outputs, labels)
+        #         validation_loss += loss.item()
 
-                # For Classification Metrics (like binary or multi-class accuracy)
-                if self.num_classes == 2:
-                    # Binary classification: Apply sigmoid and threshold at 0.5
-                    preds = (torch.sigmoid(outputs) > 0.5).float()
-                    correct += (preds == labels).sum().item()
-                else:
-                    # Multi-class classification: Use argmax to get class labels
-                    preds = torch.softmax(outputs, dim=1)
-                    correct += (preds == labels.argmax(dim=1)).sum().item()
+        #         # For Classification Metrics (like binary or multi-class accuracy)
+        #         if self.num_classes == 2:
+        #             # Binary classification: Apply sigmoid and threshold at 0.5
+        #             preds = (torch.sigmoid(outputs) > 0.5).float()
+        #             correct += (preds == labels).sum().item()
+        #         else:
+        #             # Multi-class classification: Use argmax to get class labels
+        #             preds = torch.softmax(outputs, dim=1)
+        #             correct += (preds == labels.argmax(dim=1)).sum().item()
 
-                total += labels.size(0)
+        #         total += labels.size(0)
 
-        avg_val_loss = validation_loss / len(validation_set)
-        accuracy = correct / total
-        print(f"Validation Loss: {avg_val_loss:.4f}, Accuracy: {accuracy * 100:.2f}%")
+        # avg_val_loss = validation_loss / len(validation_set)
+        # accuracy = correct / total
+        # print(f"Validation Loss: {avg_val_loss:.4f}, Accuracy: {accuracy * 100:.2f}%")
 
-        return avg_val_loss, accuracy
+        # return avg_val_loss, accuracy
 
     def inference(self, x):
-        """Make prediction on a _inputs using the model
+        """Make prediction on inputs using the model
         Returns:
-            predicted class index for multi-class
-            or binary prediction (0 or 1) for binary classification
+            probability distribution for each class (softmax)
         """
         self.eval()
         with torch.no_grad():
@@ -152,16 +144,6 @@ class Classification(HostaModel):
                     x = x.unsqueeze(0)
                     
             outputs = self(x)
-            
-            # Add batch dimension to outputs if needed
-            if len(outputs.shape) == 1:
-                outputs = outputs.unsqueeze(0)
-                
-            if self.num_classes == 2:
-                # Binary classification
-                prediction = (torch.sigmoid(outputs) > 0.5).float()
-            else:
-                # Multi-class classification
-                prediction = torch.argmax(outputs, dim=1)  # Retourne l'indice de la classe prédite
-                
-            return prediction.cpu()
+
+            probabilities = torch.softmax(outputs, dim=1)
+            return probabilities.cpu()
