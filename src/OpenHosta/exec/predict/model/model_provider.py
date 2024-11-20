@@ -24,7 +24,7 @@ class HostaModelProvider:
             elif config.model_type == ArchitectureType.CLASSIFICATION:
                 hosta_model = Classification(architecture, input_size, output_size, config.complexity, 1)
         else:
-            if get_origin(func.f_type[1]) == Literal:
+            if get_origin(func.f_type[1]) is Literal:
                 hosta_model = Classification(architecture, input_size, output_size, config.complexity, 1)
             else:
                 hosta_model = LinearRegression(architecture, input_size, output_size, config.complexity)

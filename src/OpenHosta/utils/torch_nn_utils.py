@@ -267,7 +267,7 @@ def type_size(data, tokens_size=10):
         return sum(type_size(item) for item in data)
     elif data is dict:
         return sum(type_size(k) + type_size(v) for k, v in data.items())
-    elif isinstance(data, typing._GenericAlias) and get_origin(data) is Literal:
+    elif get_origin(data) is Literal:
         return len(data.__args__)
     else:
         raise TypeError(f'Unsupported data type: {type(data)}')

@@ -1,5 +1,5 @@
 import inspect
-from typing import Optional, Dict, Any, List, Type, Union, get_args, Literal
+from typing import Optional, Dict, Any, List, Type, Union, Literal,  get_args, get_origin
 
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
@@ -40,14 +40,14 @@ class LLMSyntheticDataGenerator:
                     else:
                         return None
 
-                elif getattr(expected_type, '__origin__', None) is Literal:
+                elif get_origin(expected_type) is Literal:
                     valid_literals = get_args(expected_type)
                     if value.strip('"') in valid_literals:
                         result.append(value.strip('"'))
                     else:
                         return None
 
-                elif getattr(expected_type, '__origin__', None) is Union and type(None) in get_args(expected_type):
+                elif get_origin(expected_type) is Union and type(None) in get_args(expected_type):
                     non_none_types = [t for t in get_args(expected_type) if t is not type(None)]
                     for t in non_none_types:
                         if t == int:
