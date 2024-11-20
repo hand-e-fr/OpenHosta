@@ -1,5 +1,5 @@
 # OpenHosta 
-v2.0.1 - Opensource Project
+v2.0.2 - Opensource Project
 
 **- The future of development is human -**
 
@@ -25,7 +25,7 @@ For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ens
 You can install OpenHosta either via pip or via GitHub.
 
 ```sh
-pip install OpenHosta[all]
+pip install OpenHosta
 ```
 
 or

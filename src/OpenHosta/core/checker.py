@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from types import NoneType
+from sys import version_info
 from typing import Type, Any, Dict, Optional, Callable, TypeVar
 
 from .hosta import Func
@@ -8,6 +8,10 @@ from ..utils.import_handler import is_pydantic
 
 T = TypeVar('T')
 
+if version_info.major == 3 and version_info.minor > 9:
+    from types import NoneType
+else:
+    NoneType = type(None)
 
 class HostaChecker:
     """

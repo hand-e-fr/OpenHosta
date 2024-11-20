@@ -1,0 +1,146 @@
+version: '3'
+
+services:
+  python_debian_38:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: debian:bullseye
+        PYTHON_VERSION: 3.8
+    container_name: python_3.8_on_debian
+
+  python_debian_39:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: debian:bullseye
+        PYTHON_VERSION: 3.9
+    container_name: python_3.9_on_debian
+
+  python_debian_310:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: debian:bullseye
+        PYTHON_VERSION: 3.10
+    container_name: python_3.10_on_debian
+
+  python_debian_311:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: debian:bullseye
+        PYTHON_VERSION: 3.11
+    container_name: python_3.11_on_debian
+
+  python_debian_312:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: debian:bullseye
+        PYTHON_VERSION: 3.12
+    container_name: python_3.12_on_debian
+
+  python_debian_313:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: debian:bullseye
+        PYTHON_VERSION: 3.13
+    container_name: python_3.13_on_debian
+
+  python_ubuntu_38:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: ubuntu:20.04
+        PYTHON_VERSION: 3.8
+    container_name: python_3.8_on_ubuntu
+
+  python_ubuntu_39:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: ubuntu:20.04
+        PYTHON_VERSION: 3.9
+    container_name: python_3.9_on_ubuntu
+
+  python_ubuntu_310:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: ubuntu:20.04
+        PYTHON_VERSION: 3.10
+    container_name: python_3.10_on_ubuntu
+
+  python_ubuntu_311:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: ubuntu:20.04
+        PYTHON_VERSION: 3.11
+    container_name: python_3.11_on_ubuntu
+
+  python_ubuntu_312:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: ubuntu:20.04
+        PYTHON_VERSION: 3.12
+    container_name: python_3.12_on_ubuntu
+
+  python_ubuntu_313:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: ubuntu:20.04
+        PYTHON_VERSION: 3.13
+    container_name: python_3.13_on_ubuntu
+
+  python_fedora_38:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: fedora:latest
+        PYTHON_VERSION: 3.8
+    container_name: python_3.8_on_fedora
+
+  python_fedora_39:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: fedora:latest
+        PYTHON_VERSION: 3.9
+    container_name: python_3.9_on_fedora
+
+  python_fedora_310:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: fedora:latest
+        PYTHON_VERSION: 3.10
+    container_name: python_3.10_on_fedora
+
+  python_fedora_311:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: fedora:latest
+        PYTHON_VERSION: 3.11
+    container_name: python_3.11_on_fedora
+
+  python_fedora_312:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: fedora:latest
+        PYTHON_VERSION: 3.12
+    container_name: python_3.12_on_fedora
+
+  python_fedora_313:
+    build:
+      context: .
+      args:
+        BASE_DISTRO: fedora:latest
+        PYTHON_VERSION: 3.13
+    container_name: python_3.13_on_fedora
