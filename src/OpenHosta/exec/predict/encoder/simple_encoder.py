@@ -1,19 +1,32 @@
-from typing import List, Any, Dict, Union
+from typing import List, Any, Dict, Union, Optional, Literal
+import typing
+
+import torch
 import json
 
 from .base_encoder import BaseEncoder
 from ..dataset.sample_type import Sample
 
 
-class NumericEncoder(BaseEncoder):
+class IntegerEncoder(BaseEncoder):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def encode(self, value: int) -> int:
+        return int(value)
+
+    def decode(self, encoded_value: float) -> int:
+        return int(encoded_value)
+
+class FloatEncoder(BaseEncoder):
     def __init__(self) -> None:
         super().__init__()
     
-    def encode(self, value: Union[int, float]) -> float:
+    def encode(self, value: float) -> float:
         return float(value)
 
-    def decode(self, encoded_value: float) -> Union[int, float]:
-        return encoded_value
+    def decode(self, encoded_value: float) -> float:
+        return float(encoded_value)
 
 class BooleanEncoder(BaseEncoder):
     def __init__(self) -> None:
@@ -40,14 +53,12 @@ class StringEncoder(BaseEncoder):
         for word in words:
             if self.inference:
                 encoded.append(self.dictionary.get(word, 0))
-            else:  # Training mode
+            else:
                 if word not in self.dictionary:
-                    # Use word as key and next_id as value
                     self.dictionary[word] = self.next_id
                     encoded.append(self.next_id)
                     self.next_id += 1
                 else:
-                    # Word exists, get its ID
                     encoded.append(self.dictionary[word])
 
         if len(encoded) > self.max_tokens:
@@ -61,8 +72,6 @@ class StringEncoder(BaseEncoder):
     @property
     def get_dictionnary(self) -> Dict[int, str]:
         return self.dictionary
-                
-  
 
 class MappingEncoder(BaseEncoder):
     def __init__(self, mapping_dict: Dict[int, Any]) -> None:
@@ -81,8 +90,8 @@ class SimpleEncoder:
     def __init__(self, max_tokens: int, dictionary: Dict[int, str], dictionary_path : str ,mapping_dict: Dict[int, Any], inference : bool) -> None:
         self.encoders = {
             str: StringEncoder(dictionary, max_tokens, inference),
-            int: NumericEncoder(),
-            float: NumericEncoder(),
+            int: IntegerEncoder(),
+            float: FloatEncoder(),
             bool: BooleanEncoder()
         }
         self.mapping_dict = mapping_dict
@@ -131,6 +140,24 @@ class SimpleEncoder:
                 '_outputs': encoded_output
             }))
 
-        self.save_dictionary(self.encoders[str].get_dictionnary) # Save the dictionary
+        self.save_dictionary(self.encoders[str].get_dictionnary)
         return encoded_samples
+    
+    def decode(self, predictions: Union[Optional[List[torch.Tensor]], torch.Tensor], output_type: Any) -> Any:
+
+        predictions = predictions.cpu().detach().numpy()
+        if predictions is None:
+            return None
+
+        if self.mapping_dict is None:
+            predictions = predictions[0]
+            if output_type not in self.encoders:
+                raise ValueError(f"Unknown output type in decoder: {output_type}")
+            encoder_out = self.encoders[output_type]
+            return encoder_out.decode(predictions)
+        else:
+            value = predictions.argmax()
+            encoder_out = MappingEncoder(self.mapping_dict)
+            return encoder_out.decode(value)
+
 
