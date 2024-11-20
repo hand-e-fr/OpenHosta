@@ -25,9 +25,9 @@ class HostaModelProvider:
                 hosta_model = Classification(architecture, input_size, output_size, config.complexity, 1)
         else:
             if get_origin(func.f_type[1]) == Literal:
-                hosta_model = Classification(architecture, input_size, output_size, 4, 1)
+                hosta_model = Classification(architecture, input_size, output_size, config.complexity, 1)
             else:
-                hosta_model = LinearRegression(architecture, input_size, output_size, 4)
+                hosta_model = LinearRegression(architecture, input_size, output_size, config.complexity)
 
         with open(path, 'w') as file:
             file.write(NeuralNetwork.from_torch_nn(hosta_model).to_json())
