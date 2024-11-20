@@ -9,7 +9,7 @@ TAG := "-==[OpenHosta]==- \>\>\>"
 ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
     NULL_DEVICE := NUL
-    PYTHON := python
+    PYTHON := py -3.12
     PIP := pip
     L_SHELL := powershell -Command
     PYTEST := & C:\\Users\\Merlin\\AppData\\Roaming\\Python\\Python312\\Scripts\\pytest.exe
