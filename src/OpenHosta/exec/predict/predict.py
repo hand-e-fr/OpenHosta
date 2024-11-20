@@ -141,9 +141,10 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
         if verbose == 2:
             print(f"[\033[93mDataset\033[0m] not found, generate data")
         dataset = generate_data(func, oracle, config, verbose)
-        dataset.save(os.path.join(memory.predict_dir, "generated_data.csv"), SourceType.CSV)
+        save_path = os.path.join(memory.predict_dir, "generated_data.csv")
+        dataset.save(save_path, SourceType.CSV)
         if verbose == 2:
-            print(f"[\033[92mDataset\033[0m] generated and saved at {memory.predict_dir.join('generated_data.csv')}")
+            print(f"[\033[92mDataset\033[0m] generated and saved at {save_path}")
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
     dataset.tensorify()
