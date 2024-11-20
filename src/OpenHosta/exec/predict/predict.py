@@ -10,6 +10,7 @@ from .predict_config import PredictConfig
 from .predict_memory import PredictMemory, File
 from ...core.config import Model, DefaultModel
 from ...core.hosta import Hosta, Func
+from ...core.logger import Logger, ANSIColor
 
 
 def predict(
@@ -29,12 +30,7 @@ def predict(
         Model prediction
     """
 
-    # if verbose is True, set it to 2
-    if verbose is True:
-        verbose = 2
-
     assert config is not None, "Please provide a valid configuration not None"
-    assert verbose is not None and 0 <= verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 0"
 
     func: Func = getattr(Hosta(), "_infos")
 
@@ -42,26 +38,27 @@ def predict(
     base_path = config.path if config and config.path else os.getcwd()
     memory: PredictMemory = PredictMemory.load(base_path=base_path, name=name)
 
+    logger: Logger = Logger(log_file_path=memory.summary.path, verbose=verbose)
+
     dataset: Optional[HostaDataset] = None
     
-    hosta_model: HostaModel = get_hosta_model(memory.architecture, func, config, verbose)
-    if verbose == 2:
-        print(f"[\033[92mArchitecture\033[0m] loaded, type : {type(hosta_model).__name__}")
-        
-    if not load_weights(memory, hosta_model, verbose):
-        train_model(config, memory, hosta_model, dataset, oracle, func, verbose)
+    hosta_model: HostaModel = get_hosta_model(memory.architecture, func, logger, config)
+    logger.log_custom("Architecture", f"loaded, type : {type(hosta_model).__name__}", color=ANSIColor.BRIGHT_GREEN)
+
+    if not load_weights(memory, hosta_model, logger):
+        train_model(config, memory, hosta_model, dataset, oracle, func, logger)
     
     if dataset is None:
-        dataset = HostaDataset.from_input(func.f_args, verbose, config.max_tokens, func, memory.dictionary.path)
+        dataset = HostaDataset.from_input(func.f_args, logger, config.max_tokens, func, memory.dictionary.path)
     else:
         dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
     torch_prediction = hosta_model.inference(dataset.inference.input)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
-    print(f"[\033[92mPrediction\033[0m] {prediction} -> {output}")
+    logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BRIGHT_GREEN)
     return output
 
 
-def get_hosta_model(architecture_file: File, func: Func, config: Optional[PredictConfig] = None, verbose: int = 0) -> HostaModel:
+def get_hosta_model(architecture_file: File, func: Func, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
     """
     Load or create a new model.
     """
@@ -71,42 +68,35 @@ def get_hosta_model(architecture_file: File, func: Func, config: Optional[Predic
         with open(architecture_file.path, "r") as file:
             json = file.read()
         architecture = NeuralNetwork.from_json(json)
-        if verbose == 2:
-            print(f"[\033[92mArchitecture\033[0m] found at {architecture_file.path}")
+        logger.log_custom("Architecture", f"found at {architecture_file.path}", color=ANSIColor.BRIGHT_GREEN)
     else:
-        if verbose == 2:
-            print(f"[\033[93mArchitecture\033[0m] not found, creating one")
-    return HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, verbose)
+        logger.log_custom("Architecture", "not found", color=ANSIColor.BRIGHT_YELLOW)
+    return HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
 
 
-def load_weights(memory: PredictMemory, hosta_model: HostaModel, verbose :int) -> bool:
+def load_weights(memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
     """
     Load weights if they exist.
     """
     if memory.weights.exist:
-
-        if verbose == 2:
-            print(f"[\033[92mWeights\033[0m] found at {memory.weights.path}")
+        logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN)
         hosta_model.init_weights(memory.weights.path)
         return True
 
-    if verbose == 2:
-        print(f"[\033[92mWeights\033[0m] not found generate new ones")
-    return False 
+    logger.log_custom("Weights", "not found", color=ANSIColor.BRIGHT_YELLOW)
+    return False
 
 
-def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, verbose: int) -> None:
+def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, logger: Logger) -> None:
     """
     Prepare the data and train the model.
     """
     if memory.data.exist:
-        if verbose == 2:
-            print(f"[\033[92mData\033[0m] found at {memory.data.path}")
+        logger.log_custom("Data", f"found at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN)
         train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_set_size=0.8, verbose=verbose)
     else:
-        if verbose == 2:
-            print(f"[\033[93mData\033[0m] not processed, preparing data")
-        train_set, val_set = prepare_dataset(config, memory, dataset, func, oracle, verbose)
+        logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW)
+        train_set, val_set = prepare_dataset(config, memory, func, oracle, logger)
 
     if config.epochs is None:
         config.epochs = int(2 * len(train_set.dataset) / config.batch_size if config.batch_size != len(train_set.dataset)\
@@ -114,14 +104,10 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
         assert config.epochs > 0, f"epochs must be greater than 0 now it's {config.epochs}"
 
     model.trainer(train_set, epochs=config.epochs)
-
-    if verbose > 0:
-        model.validate(val_set)
-    
     model.save_weights(memory.weights.path)
 
 
-def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: HostaDataset, func: Func, oracle: Optional[Union[Model, HostaDataset]], verbose: int) -> tuple:
+def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, oracle: Optional[Union[Model, HostaDataset]], logger: Logger) -> tuple:
     """
     Prepare the dataset for training.
     """
@@ -129,22 +115,18 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
     if config.dataset_path is None:
         generated_data_path = os.path.join(memory.predict_dir, "generated_data.csv")
         if os.path.exists(generated_data_path) and os.path.getsize(generated_data_path) > 0:
-            if verbose == 2:
-                print(f"[\033[92mDataset\033[0m] no data.json found, but found generated_data.csv, loading it")
+            logger.log_custom("Dataset", "no data.json found, but found generated_data.csv, loading it", color=ANSIColor.BRIGHT_GREEN)
             config.dataset_path = generated_data_path
 
     if config.dataset_path is not None:
-        if verbose == 2:
-            print(f"[\033[92mDataset\033[0m] found at {config.dataset_path}")
-        dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, verbose) # or JSONL jsp comment faire la détection la
+        logger.log_custom("Dataset", f"found at {config.dataset_path}", color=ANSIColor.BRIGHT_GREEN)
+        dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, logger) # or JSONL jsp comment faire la détection la
     else :
-        if verbose == 2:
-            print(f"[\033[93mDataset\033[0m] not found, generate data")
-        dataset = generate_data(func, oracle, config, verbose)
+        logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW)
+        dataset = generate_data(func, oracle, config, logger)
         save_path = os.path.join(memory.predict_dir, "generated_data.csv")
         dataset.save(save_path, SourceType.CSV)
-        if verbose == 2:
-            print(f"[\033[92mDataset\033[0m] generated and saved at {save_path}")
+        logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN)
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
     dataset.tensorify()
@@ -154,12 +136,11 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, dataset: Hosta
         config.batch_size = int(0.05 * len(dataset.data)) if 0.05 * len(dataset.data) > 1 else len(dataset.data)
     train_set, val_set = dataset.convert_data(batch_size=config.batch_size, shuffle=True, train_set_size=0.8)
 
-    if verbose == 2:
-        print(f"[\033[92mDataset\033[0m] processed and saved at {memory.data.path}")
+    logger.log_custom("Dataset", f"processed and saved at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN)
     return train_set, val_set
 
 
-def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, verbose: int) -> HostaDataset:
+def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, logger: Logger) -> HostaDataset:
     """
     Generate data for training.
     """
@@ -171,5 +152,5 @@ def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], conf
         examples_in_req=int(config.generated_data / request_amounts),
         model=oracle if oracle is not None else DefaultModel().get_default_model()
     )
-    return HostaDataset.from_list(data, verbose)
+    return HostaDataset.from_list(data, logger)
 

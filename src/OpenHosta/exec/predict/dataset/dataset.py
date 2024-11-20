@@ -9,6 +9,7 @@ import torch
 from .sample_type import Sample
 from ..encoder.simple_encoder import SimpleEncoder
 from ....core.hosta import Func
+from ....core.logger import Logger, ANSIColor
 
 class SourceType(Enum):
     """
@@ -17,13 +18,15 @@ class SourceType(Enum):
     CSV = "csv"
     JSONL = "jsonl"
     JSON = "json"
+
 class HostaDataset:
-    def __init__(self, verbose: int = 1):
+    def __init__(self, logger: Logger):
+        self.encoder = None
         self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
         self.dictionary: Dict[int, str] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
-        self.verbose: int = verbose  # Verbose level for debugging
+        self.logger = logger # Logger for logging the data
 
     def add(self, sample: Sample):
         """
@@ -89,11 +92,11 @@ class HostaDataset:
 
 
     @staticmethod
-    def from_data(data_path: str, batch_size: int, shuffle: bool, train_set_size: float = 0.8, verbose: int = 1) -> tuple:
+    def from_data(data_path: str, batch_size: int, shuffle: bool, logger: Logger, train_set_size: float = 0.8) -> tuple:
         """
         Load a dataset from a file and convert it into dataloader for training.
         """
-        dataset = HostaDataset(verbose)
+        dataset = HostaDataset(logger)
         dataset.load_data(data_path)
         return dataset.convert_data(batch_size, shuffle, train_set_size)
 
@@ -265,7 +268,6 @@ class HostaDataset:
         output_type = func.f_type[1]
         if get_origin(output_type) is Literal:
             mapping_dict = self.generate_mapping_dict(output_type)
-            print("Mapping dict : ", mapping_dict)
 
         self.from_dictionary(dictionary_path)
         self.encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
@@ -319,11 +321,11 @@ class HostaDataset:
         self.tensorify_inference()
 
     @staticmethod
-    def from_input(inference_data: dict, verbose: int, max_tokens : int, func: Func, dictionary_path : str) -> 'HostaDataset':
+    def from_input(inference_data: dict, logger: Logger, max_tokens : int, func: Func, dictionary_path : str) -> 'HostaDataset':
         """
         Crée un dataset à partir de données d'inférence
         """
-        dataset = HostaDataset(verbose)
+        dataset = HostaDataset(logger)
         dataset.prepare_inference(inference_data, max_tokens, func, dictionary_path)
         return dataset
 
@@ -336,20 +338,20 @@ class HostaDataset:
         return output, predictions
         
     @staticmethod
-    def from_files(path: str, source_type: Optional[SourceType], verbose: int = 1) -> 'HostaDataset':
+    def from_files(path: str, source_type: Optional[SourceType], logger: Logger) -> 'HostaDataset':
         """
         Load a dataset from a file.
         """
-        dataset = HostaDataset(verbose)
+        dataset = HostaDataset(logger)
         dataset.convert_files(path, source_type)
         return dataset
     
     @staticmethod
-    def from_list(data: list, verbose: int) -> 'HostaDataset':
+    def from_list(data: list, logger: Logger) -> 'HostaDataset':
         """
         Create a dataset from a list.
         """
-        dataset = HostaDataset(verbose)
+        dataset = HostaDataset(logger)
         dataset.convert_list(data)
         return dataset
 
