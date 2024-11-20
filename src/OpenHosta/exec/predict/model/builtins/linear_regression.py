@@ -7,14 +7,23 @@ from torch import optim
 from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
+from .....core.logger import Logger, ANSIColor
 
 
 class LinearRegression(HostaModel):
-    def __init__(self, neural_network: Optional[NeuralNetwork], input_size: int, output_size: int, complexity: int, device: Optional[str] = None):
+    def __init__(
+            self,
+            neural_network: Optional[NeuralNetwork],
+            input_size: int,
+            output_size: int,
+            complexity: int,
+            logger: Logger,
+            device: Optional[str] = None
+    ):
         super().__init__(device)
 
         self.complexity = complexity
-        self.verbose = True #TODO: change here 
+        self.logger = logger
         self.layers = []
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
             transition_value = int(((input_size * output_size) / 2) * self.complexity)
@@ -83,7 +92,7 @@ class LinearRegression(HostaModel):
             epoch_loss = running_loss / len(train_set)
             epochs_accuracy = (correct_predictions / total_samples) * 100
 
-            print(f"Epoch {epoch + 1}/{epochs} | Loss: {epoch_loss:.4f} | Accuracy: {epochs_accuracy:.2f}%")
+            self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}", color=ANSIColor.BRIGHT_YELLOW)
 
             # Learning rate scheduling to check later
             # if self.scheduler:
