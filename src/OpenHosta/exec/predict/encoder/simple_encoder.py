@@ -2,6 +2,7 @@ from typing import List, Any, Dict, Union, Optional
 
 import torch
 import json
+import re
 
 from .base_encoder import BaseEncoder
 from ..dataset.sample_type import Sample
@@ -45,8 +46,13 @@ class StringEncoder(BaseEncoder):
         self.inference = inference
         self.next_id = max(self.dictionary.values()) + 1 if self.dictionary else 1
 
+    @staticmethod
+    def string_to_list(input_string):
+        tokens = re.findall(r'[a-zA-Zà-ÿ]+|[^a-zA-Zà-ÿ\s]', input_string.lower())
+        return tokens
+
     def encode(self, data: str) -> int:
-        words = data.lower().strip().split()
+        words = self.string_to_list(data)
         encoded = []
 
         for word in words:
