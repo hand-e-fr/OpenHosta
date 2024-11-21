@@ -497,8 +497,14 @@ dataset: HostaDataset = generate_data(detect_mood, 50)
 dataset.save_data("detect_mood.csv", SourceType.CSV)
 
 # Print each input-output pair in the dataset
-for data in dataset:
-    print(f"Input: {data.input}, Expected Output: {data.output}")
+correct = 0
+
+for data in dataset.data:
+    print(f"{data.input[0].strip('"')} expected {data.output} got {detect_mood(data.input[0].strip('"'))}")
+    if data.output == detect_mood(data.input[0].strip('"')):
+        correct += 1
+
+print(f"Accuracy: {correct}/{len(dataset.data)}, {correct/len(dataset.data)*100}%")
 ```
 
 ### How It Works
