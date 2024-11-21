@@ -91,7 +91,7 @@ class Classification(HostaModel):
             epoch_loss = running_loss / len(train_set)
             epoch_accuracy = (correct_predictions / total_samples) * 100
 
-            self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}", color=ANSIColor.BRIGHT_YELLOW)
+            self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN)
 
     def validate(self, validation_set):
         """Validate the model's performance"""

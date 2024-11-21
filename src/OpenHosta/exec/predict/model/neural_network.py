@@ -15,6 +15,7 @@ class NeuralNetwork:
         self.layers: list[Layer] = []
         self.loss_function: Optional[LossFunction] = None
         self.optimizer: Optional[OptimizerAlgorithm] = None
+        self._type = "UNDEFINED"
 
     def add_layer(self, layer: Layer):
         """
@@ -61,6 +62,7 @@ class NeuralNetwork:
         :rtype: str
         """
         network_dict = {
+            "type": self._type,
             "layers": [
                 layer.to_json()
                 for layer in self.layers
