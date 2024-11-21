@@ -32,7 +32,8 @@ def predict(
 
     assert config is not None, "Please provide a valid configuration not None"
 
-    func: Func = getattr(Hosta(), "_infos")
+    x = Hosta()
+    func: Func = getattr(x, "_infos")
 
     name = config.name if config and config.name else str(func.f_name)
     base_path = config.path if config and config.path else os.getcwd()
@@ -40,16 +41,16 @@ def predict(
 
     logger: Logger = Logger(log_file_path=memory.summary.path, verbose=verbose)
 
-    dataset: Optional[HostaDataset] = getattr(func, "_dataset", None)
+    dataset: Optional[HostaDataset] = getattr(func.f_obj, "_dataset", None)
 
-    hosta_model: HostaModel = get_hosta_model(memory.architecture, func, logger, config)
+    hosta_model: HostaModel = get_hosta_model(x, func, memory.architecture, logger, config)
 
-    if not load_weights(memory, hosta_model, logger):
+    if not load_weights(x, memory, hosta_model, logger):
         train_model(config, memory, hosta_model, dataset, oracle, func, logger)
     
     if dataset is None:
         dataset = HostaDataset.from_input(func.f_args, logger, config.max_tokens, func, memory.dictionary.path)
-        setattr(func, "_dataset", dataset)
+        x._attach(func.f_obj, {"_dataset": dataset})
     else:
         dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
 
@@ -59,12 +60,12 @@ def predict(
     return output
 
 
-def get_hosta_model(architecture_file: File, func: Func, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
+def get_hosta_model(x: Hosta, func: Func, architecture_file: File, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
     """
     Load or create a new model.
     """
-    if hasattr(func, "_model"):
-        return getattr(func, "_model")
+    if hasattr(func.f_obj, "_model"):
+        return getattr(func.f_obj, "_model")
 
     architecture: Optional[NeuralNetwork] = None
 
@@ -77,21 +78,21 @@ def get_hosta_model(architecture_file: File, func: Func, logger: Logger, config:
         logger.log_custom("Architecture", "not found", color=ANSIColor.BRIGHT_YELLOW)
     result = HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
     logger.log_custom("Architecture", f"loaded, type : {type(result).__name__}", color=ANSIColor.BRIGHT_GREEN)
-    setattr(func, "_model", result)
+    x._attach(func.f_obj, {"_model": result})
     return result
 
 
-def load_weights(memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
+def load_weights(x: Hosta, memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
     """
     Load weights if they exist.
     """
-    if hasattr(hosta_model, "_weights_loaded"):
+    if hasattr(x._infos.f_obj, "_weights_loaded"):
         return True
 
     if memory.weights.exist:
         logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN)
         hosta_model.init_weights(memory.weights.path)
-        setattr(hosta_model, "_weights_loaded", True)
+        x._attach(x._infos.f_obj, {"_weights_loaded": True})
         return True
 
     logger.log_custom("Weights", "not found", color=ANSIColor.BRIGHT_YELLOW)
