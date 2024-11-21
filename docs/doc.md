@@ -84,7 +84,9 @@ Let's **get started**! First here's the **table of contents** to help you naviga
   - [`generate_data` func](#generate_data-func)
     - [Parameters](#parameters)
     - [Returns](#returns)
+    - [Raises](#raises)
     - [Example](#example)
+    - [How It Works](#how-it-works)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
@@ -439,35 +441,74 @@ As seen above takes 2 or more argument. The two first arguments are mandatory. `
 
 ## `generate_data` func
 
-Generate a dataset based on a given function and the number of samples.
+Generate a dataset based on a given function and the number of samples. This function uses a synthetic data generator to create realistic input-output pairs for a given callable Python function based on its defined parameters, examples, and return type.
 
 ### Parameters
 
-- `func` (`Callable`): The function used to generate the dataset. This function should take inputs and return outputs that will be used to create the dataset.
-- `num_samples` (`int`): The number of samples to generate.
+- **`func`** (`Callable`):  
+  The target function used to generate the dataset. This function must take specific inputs and return outputs to be used for creating the dataset.  
+  Proper type annotations and a clear docstring for the `func` are recommended to enhance the quality of generated data.
+
+- **`num_samples`** (`int`):  
+  The number of samples to generate. If the number exceeds 100, the function intelligently splits the data requests into manageable chunks.
+
+- **`oracle`** (`Optional[Model]`, Optional):  
+  The model or "oracle" used to assist with generating synthetic data.  
+  By default, the function uses the system's predefined default model.
+
+- **`verbose`** (`Union[Literal[0, 1, 2], bool]`, default=`2`):  
+  Defines the verbosity level for logging the data generation process:  
+  - `0` or `False`: No logging.
+  - `1`: Minimal logging.
+  - `2` or `True`: Detailed logging, providing insights during data generation.
 
 ### Returns
 
-- `HostaDataset`: An instance of `HostaDataset` containing the generated samples.
+- **`HostaDataset`**:  
+  An instance of `HostaDataset`, representing the generated dataset. This dataset can be saved to disk (CSV, JSON, JSONL) or iterated over for input-output pairs.
+
+### Raises
+
+- **`TypeError`**:  
+  Raised if the provided `func` is not callable or lacks sufficient information to generate data (such as missing type annotations).
 
 ### Example
 
+The following example demonstrates how to define a function, generate synthetic data using `generate_data`, and save the resulting dataset.
+
 ```python
 from typing import Literal
-from OpenHosta import generate_data, HostaDataset
+from OpenHosta import generate_data, HostaDataset, example, emulate, SourceType
 
 def detect_mood(message: str) -> Literal["positive", "negative", "neutral"]:
     """
-    This function analyzes whether the message is positive, negative, or neutral.
+    Analyze the mood conveyed in a text message.
     """
+    # Provide pre-defined examples to guide synthetic data generation
     example(message="I feel lonely...", hosta_out="negative")
     example(message="I am happy!", hosta_out="positive")
     example(message="I have a cat", hosta_out="neutral")
     return emulate()
 
+# Generate a dataset with 50 examples
 dataset: HostaDataset = generate_data(detect_mood, 50)
-print(dataset)
+
+# Save the dataset as a CSV file
+dataset.save_data("detect_mood.csv", SourceType.CSV)
+
+# Print each input-output pair in the dataset
+for data in dataset:
+    print(f"Input: {data.input}, Expected Output: {data.output}")
 ```
+
+### How It Works
+
+- **Define the Function**:  
+  The target function (`detect_mood` in the example) must be well-defined, preferably with type annotations and examples to guide the data generation process.
+- **Generate Synthetic Data**:
+  Use `generate_data` to produce a dataset by specifying the number of samples and optionally overriding the default model with a custom `oracle`.
+- **Save or Process Dataset**:  
+  The returned dataset (`HostaDataset` instance) provides methods to save it in various formats (CSV, JSON, JSONL) or iterate over its contents for further analysis.
 
 ## Advanced configuration
 
