@@ -134,7 +134,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, logger) # or JSONL jsp comment faire la détection la
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW)
-        dataset = generate_data(func, oracle, config, logger)
+        dataset = _generate_data(func, oracle, config, logger)
         save_path = os.path.join(memory.predict_dir, "generated_data.csv")
         dataset.save(save_path, SourceType.CSV)
         logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN)
@@ -151,7 +151,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
     return train_set, val_set
 
 
-def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, logger: Logger) -> HostaDataset:
+def _generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, logger: Logger) -> HostaDataset:
     """
     Generate data for training.
     """
