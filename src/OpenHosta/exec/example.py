@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, get_args
+from typing import Any, get_args, get_origin, Literal
 
 from ..core.hosta import Hosta, ExampleType
 
@@ -15,6 +15,7 @@ def example(*args, hosta_out: Any = None, **kwargs):
     expected_return_type = x._infos.f_type[1]
 
     if not (
+        get_origin(expected_return_type) is Literal or
         isinstance(hosta_out, expected_return_type) or
         (expected_return_type == float and isinstance(hosta_out, int)) or
         hosta_out in get_args(expected_return_type) or

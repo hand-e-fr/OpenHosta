@@ -90,9 +90,9 @@ class LinearRegression(HostaModel):
                 total_samples += batch_size
 
             epoch_loss = running_loss / len(train_set)
-            epochs_accuracy = (correct_predictions / total_samples) * 100
+            epoch_accuracy = (correct_predictions / total_samples) * 100
 
-            self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}", color=ANSIColor.BRIGHT_YELLOW)
+            self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN)
 
             # Learning rate scheduling to check later
             # if self.scheduler:
