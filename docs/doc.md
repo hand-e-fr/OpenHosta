@@ -81,6 +81,10 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [`Thought`](#thought)
   - [`thinkof` Function](#thinkof-function)
   - [`ask` function](#ask-function)
+  - [`generate_data` func](#generate_data-func)
+    - [Parameters](#parameters)
+    - [Returns](#returns)
+    - [Example](#example)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
@@ -432,6 +436,38 @@ print(response['choices'][0]['message']['content'])
 As seen above takes 2 or more argument. The two first arguments are mandatory. `system` correspond to the system prompt to the LLM, same as the `user` parameter. You can also set the `model` parameter to a custom Model instance. It also handle all LLM parmaters (`max_tokens`, `n`, `top_p`...).
 
 **Note** : ***this feature uses the default model.***
+
+## `generate_data` func
+
+Generate a dataset based on a given function and the number of samples.
+
+### Parameters
+
+- `func` (`Callable`): The function used to generate the dataset. This function should take inputs and return outputs that will be used to create the dataset.
+- `num_samples` (`int`): The number of samples to generate.
+
+### Returns
+
+- `HostaDataset`: An instance of `HostaDataset` containing the generated samples.
+
+### Example
+
+```python
+from typing import Literal
+from OpenHosta import generate_data, HostaDataset
+
+def detect_mood(message: str) -> Literal["positive", "negative", "neutral"]:
+    """
+    This function analyzes whether the message is positive, negative, or neutral.
+    """
+    example(message="I feel lonely...", hosta_out="negative")
+    example(message="I am happy!", hosta_out="positive")
+    example(message="I have a cat", hosta_out="neutral")
+    return emulate()
+
+dataset: HostaDataset = generate_data(detect_mood, 50)
+print(dataset)
+```
 
 ## Advanced configuration
 
