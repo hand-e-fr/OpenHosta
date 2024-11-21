@@ -131,7 +131,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
 
     if config.dataset_path is not None:
         logger.log_custom("Dataset", f"found at {config.dataset_path}", color=ANSIColor.BRIGHT_GREEN)
-        dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, logger) # or JSONL jsp comment faire la détection la
+        dataset = HostaDataset.from_files(config.dataset_path, logger)
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW)
         dataset = generate_data(func, oracle, config, logger)
