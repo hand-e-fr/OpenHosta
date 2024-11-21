@@ -30,10 +30,11 @@ class Model:
 
     _SYS_PROMPT = ""
 
-    def __init__(self, model: str = None, base_url: str = None, api_key: str = None):
+    def __init__(self, model: str = None, base_url: str = None, api_key: str = None, timeout: int = 30):
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
+        self.timeout = timeout
         self._last_request = None
         self._used_tokens = 0
         self._nb_requests = 0
@@ -86,7 +87,7 @@ class Model:
         for key, value in llm_args.items():
             l_body[key] = value
         try:
-            response = requests.post(self.base_url, headers=headers, json=l_body, timeout=30)
+            response = requests.post(self.base_url, headers=headers, json=l_body, timeout=self.timeout)
 
             if response.status_code  != 200:
                 response_text = response.text

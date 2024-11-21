@@ -1,6 +1,7 @@
 import inspect
 from typing import Optional, Dict, Any, List, Type, Union, Literal,  get_args, get_origin
 
+from ....core.logger import Logger
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
 
@@ -120,6 +121,7 @@ class LLMSyntheticDataGenerator:
     @staticmethod
     def generate_synthetic_data(
             func: Func, # The function to generate data for
+            logger: Logger, # Logger to use for logging
             request_amounts: int = 3, # Amount of requests to the model
             examples_in_req: int = 50, # Examples amount in each request
             model: Optional[Model] = None # Model to use for data generation
@@ -213,7 +215,7 @@ class LLMSyntheticDataGenerator:
                     conversation_history = [conversation_history[0]] + conversation_history[-9:]
 
             except Exception as e:
-                print(f"Error during generation: {e} line {e.__traceback__.tb_lineno}")
+                logger.log_custom("Data Generation", f"Error during generation: {e} line {e.__traceback__.tb_lineno}")
 
             attempts += 1
 
