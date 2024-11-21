@@ -159,6 +159,7 @@ def _generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], con
 
     data = LLMSyntheticDataGenerator.generate_synthetic_data(
         func=func,
+        logger=logger,
         request_amounts=request_amounts,
         examples_in_req=int(config.generated_data / request_amounts),
         model=oracle if oracle is not None else DefaultModel().get_default_model()

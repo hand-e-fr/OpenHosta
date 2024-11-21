@@ -48,6 +48,7 @@ def generate_data(
     logger.log_custom("Data Generation", f"Generating {ammount} examples for function {func.__name__}")
     data = LLMSyntheticDataGenerator.generate_synthetic_data(
         func=_analyze_function(func),
+        logger=logger,
         request_amounts=request_amounts,
         examples_in_req=int(ammount / request_amounts),
         model=oracle if oracle is not None else DefaultModel().get_default_model()

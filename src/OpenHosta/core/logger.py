@@ -44,24 +44,24 @@ class Logger:
         self.verbose = verbose if isinstance(verbose, int) else 2 if verbose else 0
         assert self.verbose is not None and 0 <= self.verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 0"
 
-    def _log(self, prefix: str, message: str, level: int = 1, color: ANSIColor = ANSIColor.BRIGHT_GREEN):
+    def _log(self, prefix: str, message: str, level: int = 1, color: ANSIColor = ANSIColor.BRIGHT_GREEN, text_color: ANSIColor = ANSIColor.RESET):
         if level <= self.verbose:
-            print(f"{ANSIColor.RESET.value}[{color.value}{prefix}{ANSIColor.RESET.value}] {message}")
+            print(f"{ANSIColor.RESET.value}[{color.value}{prefix}{ANSIColor.RESET.value}] {text_color.value}{message}{ANSIColor.RESET.value}")
         if self.log_file_path:
             with open(self.log_file_path, "a") as log_file:
                 log_file.write(f"[{prefix}] {message}" + "\n")
 
     def log_error(self, message: str, level: int = 1):
-        self._log("Error", message, level, ANSIColor.BRIGHT_RED)
+        self._log("Error", message, level, ANSIColor.BRIGHT_RED, ANSIColor.BRIGHT_RED)
 
     def log_critical(self, message: str, level: int = 1):
-        self._log("Critical", message, level, ANSIColor.RED)
+        self._log("Critical", message, level, ANSIColor.RED, ANSIColor.BRIGHT_RED)
 
     def log_exception(self, exception: Exception, level: int = 1):
-        self._log("Exception", str(exception), level, ANSIColor.BRIGHT_RED)
+        self._log("Exception", str(exception), level, ANSIColor.BRIGHT_RED, ANSIColor.BRIGHT_RED)
 
     def log_warning(self, message: str, level: int = 1):
-        self._log("Warning", message, level, ANSIColor.BRIGHT_YELLOW)
+        self._log("Warning", message, level, ANSIColor.BRIGHT_YELLOW, ANSIColor.BRIGHT_YELLOW)
 
     def log_info(self, message: str, level: int = 1):
         self._log("Info", message, level, ANSIColor.BRIGHT_BLUE)
@@ -75,5 +75,5 @@ class Logger:
     def log_verbose(self, message: str, level: int = 2):
         self._log("Verbose", message, level, ANSIColor.BRIGHT_CYAN)
 
-    def log_custom(self, prefix: str, message: str, level: int = 1, color: ANSIColor = ANSIColor.BRIGHT_GREEN):
-        self._log(prefix, message, level, color)
+    def log_custom(self, prefix: str, message: str, level: int = 1, color: ANSIColor = ANSIColor.BRIGHT_GREEN, text_color: ANSIColor = ANSIColor.RESET):
+        self._log(prefix, message, level, color, text_color)
