@@ -1,15 +1,17 @@
-import csv
-import json
-import os
-from enum import Enum
-from typing import List, Optional, Any, Dict, Literal, get_args, get_origin, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, get_origin, get_args
+from typing_extensions import Literal
 
+import os
+import csv, json
 import torch
+from torch.utils.data import DataLoader, TensorDataset, random_split
+
+from enum import Enum
 
 from .sample_type import Sample
 from ..encoder.simple_encoder import SimpleEncoder
 from ....core.hosta import Func
-from ....core.logger import Logger, ANSIColor
+from ....core.logger import Logger
 
 class SourceType(Enum):
     """
@@ -20,36 +22,237 @@ class SourceType(Enum):
     JSON = "json"
 
 class HostaDataset:
-    def __init__(self, logger: Logger):
-        self.encoder = None
+    """
+    class for managing datasets in Hosta
+    """
+    def __init__(self, verbose: int = 1):
         self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
         self.dictionary: Dict[int, str] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
-        self.logger = logger # Logger for logging the data
+        self.verbose: int = verbose  # Verbose level for debugging
 
-    def add(self, sample: Sample):
+    ########################################################
+    ### Managing data ###
+    def add(self, data : Any, dataset : Optional[List[Sample]] = None) -> None:
         """
-        Add a Sample object to the dataset.
+        Add data to the dataset
         """
-        self.data.append(sample)
-
-    def convert_data(self, batch_size: int, shuffle: bool, train_set_size: float = 0.8) -> tuple:
-        """
-        Save the dataset to a file in the specified format and convert it into dataloader for training.
-        """
-        if not isinstance(self.data[0].input, torch.Tensor):
-            self.tensorify()
+        if dataset is None:
+            dataset = self.data
         
-        inputs = torch.stack([sample.input for sample in self.data])
-        if all(sample.output is not None for sample in self.data):
-            outputs = torch.stack([sample.output for sample in self.data])
-            dataset = torch.utils.data.TensorDataset(inputs, outputs)
+        data_sampled = Sample(data)
+        dataset.append(data_sampled)
+        return None
+
+
+    ########################################################
+    ### Preparation of the data ###
+    def encode(self, max_tokens: int, dataset: Optional[List[Sample]] = None, inference_data: Optional[Sample] = None,
+               func : Func = None, dictionary_path : str = None ,inference : bool = False) -> List[Sample]:
+        """
+        Encode data with a token limit for str values.
+        """
+        assert func is not None, "Func attribut must be provided for encoding"
+        mapping_dict : Dict[Any, int] = None
+
+
+        output_type = func.f_type[1]
+        if get_origin(output_type) is Literal:
+            mapping_dict = self._generate_mapping_dict(output_type)
+            # print("Mapping dict : ", mapping_dict)
+
+        self.get_dictionary(dictionary_path)
+        self.encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
+
+        if inference:
+            inference_data = inference_data if inference_data is not None else self.inference
+            data_encoded = self.encoder.encode([inference_data])
+            self.inference = data_encoded[0]
         else:
-            dataset = torch.utils.data.TensorDataset(inputs)
-        
-        return self._create_dataloaders(dataset, batch_size, shuffle, train_set_size)
+            dataset = dataset if dataset is not None else self.data
+            data_encoded = self.encoder.encode(dataset)
+            self.data = data_encoded
 
+        return data_encoded
+
+
+    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> List[Any]:
+        """
+        Decode the model predictions based on the function's return type.
+        """
+        output_type = func_f_type[1]
+        output = self.encoder.decode(predictions, output_type)
+        return output, predictions
+
+
+    def tensorize(self, value: Optional[Union[List[Sample], Sample]] = None, dtype: torch.dtype = None) -> List[Sample]:
+        """
+        Convert data to tensors for training.
+        
+        Args:
+            value: Optional data to tensorize (defaults to self.data)
+            dtype: Tensor dtype (defaults to torch.float32)
+        
+        Returns:
+            List of tensorized Samples
+        """
+        dtype = dtype if dtype is not None else torch.float32
+
+        if value is None:
+            value = self.data
+        elif isinstance(value, Sample):
+            value = [value]
+
+        for sample in value:
+            sample._inputs = torch.tensor(sample.input, dtype=dtype)
+
+            if sample.output is not None:
+                if isinstance(sample.output, (int, float)):
+                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
+                else:
+                    sample._outputs = torch.tensor(sample.output, dtype=torch.long)
+        
+        # Update appropriate attribute
+        if value[0].output is None:
+            self.inference = value[0]
+        else:
+            self.data = value
+
+        return value
+
+    def to_dataloaders(self,  batch_size: int, data: Optional[List[Sample]] = None,
+                    train_ratio: float = 0.8, shuffle: bool = True) -> Tuple[DataLoader, DataLoader]:
+        """
+        Process the data into DataLoader objects.
+        """
+        assert train_ratio > 0 and train_ratio < 1, "Train ratio must be between 0 and 1"
+        assert batch_size > 0, "Batch size must be greater than 0"
+
+        data = data if data is not None else self.data
+
+        # Tensorize if needed
+        if not isinstance(data[0]._inputs, torch.Tensor):
+            data = self.tensorize(data)
+
+        # Stack tensors
+        inputs = torch.stack([sample._inputs for sample in data])
+
+        if all(sample._outputs is not None for sample in data):
+            outputs = torch.stack([sample._outputs for sample in data])
+        else:
+            raise ValueError("Output data is missing in the dataset at least for one sample")
+
+        dataset = TensorDataset(inputs, outputs)
+
+        train_size = int(train_ratio * len(dataset))
+        val_size = len(dataset) - train_size
+
+        train_set, val_set = random_split(dataset, [train_size, val_size])
+
+        train_loader = DataLoader(train_set, batch_size=190, shuffle=shuffle)
+        val_loader = DataLoader(val_set, batch_size=190, shuffle=shuffle)
+
+        return train_loader, val_loader
+
+
+    def normalize_data(data: List[Sample]) -> List[Sample]:
+        """Applique une normalisation sur les données."""
+        pass
+
+    def manage_example():
+        pass
+
+    def examples_to_eval():
+        pass
+
+
+    ########################################################
+    ### Internal function process ###
+    def _generate_mapping_dict(self, literal) -> dict:
+        """
+        Generate a mapping dictionary for the output type.
+        Parameters:
+            out: A Literal type containing the possible values
+        Returns:
+            dict: A dictionary mapping each value to a unique integer (starting from 0)
+        """
+        if get_origin(literal) is not Literal:
+            raise ValueError("The literal arg must be a Literal type")
+
+        unique_values = list(get_args(literal))
+        mapping_dict = {value: idx for idx, value in enumerate(unique_values)}
+        return mapping_dict
+    
+    def get_dictionary (self, dictionary_path: str) -> None:
+        """
+        Load the tokenizer dictionary from a file
+        """
+        if not os.path.exists(dictionary_path):
+            self.dictionary = {}
+        else:
+            with open(dictionary_path, 'r') as f:
+                loaded_dict = json.load(f)
+                self.dictionary = loaded_dict if loaded_dict else {}
+
+    def save_dictionary(self, dictionary_path: str) -> None:
+        """
+        Save the tokenizer dictionary of mapping to a file
+        """
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(dictionary_path), exist_ok=True)
+
+        with open(dictionary_path, 'w') as f:
+            json.dump(self.dictionary, f, indent=2, sort_keys=True)
+
+    def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
+            """
+            Prepare the inference data for the model.
+            """
+            self.inference = Sample(inference_data)
+            self.encode(max_tokens=max_tokens, inference_data=self.inference, func=func, dictionary_path=dictionary_path, inference=True)
+            self.tensorize(self.inference)
+
+    def save(self, path: str, source_type: SourceType = SourceType.CSV, elements: Optional[List[Sample]] = None):
+            """
+            Save the dataset or specific elements to a file in the specified format.
+            Converts Sample objects back to dictionaries for storage.
+
+            Args:
+                path: Path where to save the file
+                source_type: Type of file format to save (CSV, JSONL, or PICKLE)
+                elements: Optional list of Sample objects to save. If None, saves entire dataset
+            """
+            self.path = path
+            data_to_save = elements if elements is not None else self.data
+
+            # Convert Samples to dictionaries for saving
+            dict_data = []
+            for sample in data_to_save:
+                sample_dict = {}
+                for i, input_value in enumerate(sample.input):
+                    sample_dict[f'input_{i}'] = input_value
+                if sample.output is not None:
+                    sample_dict['_outputs'] = sample.output
+                dict_data.append(sample_dict)
+
+            if source_type == SourceType.CSV:
+                with open(path, 'w', newline='', encoding='utf-8') as f:
+                    if not dict_data:
+                        return
+                    writer = csv.DictWriter(f, fieldnames=dict_data[0].keys())
+                    writer.writeheader()
+                    writer.writerows(dict_data)
+
+            elif source_type == SourceType.JSONL:
+                with open(path, 'w', encoding='utf-8') as f:
+                    for row in dict_data:
+                        json.dump(row, f)
+                        f.write('\n')
+
+            else:
+                raise ValueError(f"Unsupported source type: {source_type}")
+            
     def save_data(self, file_path: str):
         """
         Sauvegarde le dataset au format JSON
@@ -74,73 +277,11 @@ class HostaDataset:
             data_dict = json.load(f)
         
         for sample_dict in data_dict['data']:
-            self.add(Sample(sample_dict))
-        
-    def _create_dataloaders(self, dataset, batch_size: int, shuffle: bool, train_set_size: float):
-        """
-        Méthode utilitaire pour créer les dataloaders
-        """
-        train_size = int(train_set_size * len(dataset))
-        
-        train_dataset = torch.utils.data.Subset(dataset, range(train_size))
-        val_dataset = torch.utils.data.Subset(dataset, range(train_size, len(dataset)))
-        
-        return (
-            torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle),
-            torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-        )
+            print(sample_dict)
+            self.add(sample_dict)
 
-
-    @staticmethod
-    def from_data(data_path: str, batch_size: int, shuffle: bool, logger: Logger, train_set_size: float = 0.8) -> tuple:
-        """
-        Load a dataset from a file and convert it into dataloader for training.
-        """
-        dataset = HostaDataset(logger)
-        dataset.load_data(data_path)
-        return dataset.convert_data(batch_size, shuffle, train_set_size)
-
-
-    def save(self, path: str, source_type: SourceType = SourceType.CSV, elements: Optional[List[Sample]] = None):
-        """
-        Save the dataset or specific elements to a file in the specified format.
-        Converts Sample objects back to dictionaries for storage.
-
-        Args:
-            path: Path where to save the file
-            source_type: Type of file format to save (CSV, JSONL, or PICKLE)
-            elements: Optional list of Sample objects to save. If None, saves entire dataset
-        """
-        self.path = path
-        data_to_save = elements if elements is not None else self.data
-
-        # Convert Samples to dictionaries for saving
-        dict_data = []
-        for sample in data_to_save:
-            sample_dict = {}
-            for i, input_value in enumerate(sample.input):
-                sample_dict[f'input_{i}'] = input_value
-            if sample.output is not None:
-                sample_dict['_outputs'] = sample.output
-            dict_data.append(sample_dict)
-
-        if source_type == SourceType.CSV:
-            with open(path, 'w', newline='', encoding='utf-8') as f:
-                if not dict_data:
-                    return
-                writer = csv.DictWriter(f, fieldnames=dict_data[0].keys())
-                writer.writeheader()
-                writer.writerows(dict_data)
-
-        elif source_type == SourceType.JSONL:
-            with open(path, 'w', encoding='utf-8') as f:
-                for row in dict_data:
-                    json.dump(row, f)
-                    f.write('\n')
-
-        else:
-            raise ValueError(f"Unsupported source type: {source_type}")
-
+    ########################################################
+    ### Conversion ##
     def convert_files(self, path: str, source_type: Optional[SourceType] = None) -> List[Sample]:
         """
         Load dataset from a file and convert each row to a Sample object.
@@ -161,6 +302,8 @@ class HostaDataset:
                 source_type = SourceType.CSV
             elif path.endswith('.jsonl'):
                 source_type = SourceType.JSONL
+            elif path.endswith('.json'):
+                source_type = SourceType.JSON
             else:
                 raise ValueError(f"Please specify the source type for the file: {path}")
 
@@ -184,28 +327,31 @@ class HostaDataset:
                         record = {'input_0': record}
                     self.data.append(Sample(record))
 
+        elif source_type == SourceType.JSON:
+            with open(path, 'r') as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    self.convert_dict(data)
+                elif isinstance(data, list):
+                    self.convert_list(data)
+                else:
+                    raise ValueError(f"Unsupported data format in JSON file: {path}")
+
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
         return self.data
 
-    def convert_list(self, data: list) -> List[Sample]:
+
+    def convert_list(self, data: list = None) -> List[Sample]:
         """
-        Create a dataset from a list.
-
-        Args:
-            data: List of dictionaries or tuples/lists representing Sample _inputs and _outputs.
-                  Each item should either be:
-                  - a dict with keys for _inputs (e.g., 'input_0', 'input_1', ...) and optional '_outputs', or
-                  - a tuple/list where the first part is _inputs(s) and the last item is _outputs (optional).
-
-        Returns:
-            HostaDataset instance
+        Convert a dataset from a list.
         """
-
+        data = data if data is not None else self.data
+        output_data = []
         for entry in data:
             if isinstance(entry, dict):
                 # If the entry is already a dictionary, let's assume it has the keys in the right structure
-                self.add(Sample(entry))
+                output_data.append(Sample(entry))
             elif isinstance(entry, (list, tuple)):
                 # If it's a list or tuple, we assume it's structured as (_inputs..., [_outputs])
                 inputs = list(entry[:-1])  # All but last element are _inputs
@@ -213,130 +359,31 @@ class HostaDataset:
                 sample_dict = {f'input_{i}': input_value for i, input_value in enumerate(inputs)}
                 if output is not None:
                     sample_dict['_outputs'] = output
-                self.add(Sample(sample_dict))
+                output_data.append(Sample(sample_dict))
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
 
-    def generate_mapping_dict(self, out) -> dict:
-        """
-        Generate a mapping dictionary for the output type.
-        Parameters:
-            out: A Literal type containing the possible values
-        Returns:
-            dict: A dictionary mapping each value to a unique integer (starting from 0)
-        """
-        mapping_dict = {}
-        
-        unique_values = list(get_args(out))
-        mapping_dict = {value: idx for idx, value in enumerate(unique_values)}
-        
-        return mapping_dict
-
-    def from_dictionary (self, dictionary_path: str) -> None:
-        """
-        Load the dictionary from a file
-        """
-        if not os.path.exists(dictionary_path):
-            self.dictionary = {}
-        else:
-            with open(dictionary_path, 'r') as f:
-                loaded_dict = json.load(f)
-                self.dictionary = loaded_dict if loaded_dict else {}
-
-    def save_dictionary(self, dictionary_path: str) -> None:
-        """
-        Save the dictionary to a file
-        Parameters:
-            dictionary_path: Path where to save the dictionary
-        """
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(dictionary_path), exist_ok=True) # TODO: Check if it's necessary like make it everything from start 
-        
-        with open(dictionary_path, 'w') as f:
-            json.dump(self.dictionary, f, indent=2, sort_keys=True)
+        self.data = output_data
+        return self.data
 
 
-    def encode(self, max_tokens: int, dataset: Optional[List[Sample]] = None,
-                    inference_data: Optional[Sample] = None, inference : bool = False, func : Func = None, dictionary_path: str = None) -> List[Sample]:
+    def convert_dict(self, data: dict) -> List[Sample]:
         """
-        Encode le dataset d'entraînement et crée le dictionnaire
+        Convert a dataset from a dict.
         """
-        assert func is not None, "Func attribut must be provided for encoding"
-        mapping_dict : Dict[Any, int] = None
+        data = data if data is not None else self.data
+        output_data = []
+        for key, value in data.items():
+            if not isinstance(value, dict):
+                value = {'_outputs': value}
+            value['_outputs'] = value.pop(key, None)
+            output_data.append(Sample(value))
+        self.data = output_data
+        return self.data
 
 
-        output_type = func.f_type[1]
-        if get_origin(output_type) is Literal:
-            mapping_dict = self.generate_mapping_dict(output_type)
-
-        self.from_dictionary(dictionary_path)
-        self.encoder = SimpleEncoder.init_encoder(max_tokens, self.dictionary, dictionary_path, mapping_dict, inference) #TODO: Future, we will can choose our own encoder
-
-        if inference:
-            inference_data = inference_data if inference_data is not None else self.inference
-            data_encoded = self.encoder.encode([inference_data])
-            self.inference = data_encoded[0]
-        else:
-            dataset = dataset if dataset is not None else self.data
-            data_encoded = self.encoder.encode(dataset)
-            self.data = data_encoded
-
-        return data_encoded
-
-
-
-    def tensorify(self, dtype=None) -> None:
-        """
-        Convertit le dataset d'entraînement en tenseurs
-        """
-        if dtype is None:
-            dtype = torch.float32
-            
-        for sample in self.data:
-            if not isinstance(sample.input, torch.Tensor):
-                sample._inputs = torch.tensor(sample.input, dtype=dtype)
-            
-            if sample.output is not None and not isinstance(sample.output, torch.Tensor):
-                if isinstance(sample.output, (int, float)):
-                    sample._outputs = torch.tensor(sample.output, dtype=dtype)
-                else:
-                    sample._outputs = torch.tensor(sample.output, dtype=torch.long)
-
-    def tensorify_inference(self, dtype=None) -> None:
-        """
-        Convertit les données d'inférence en tenseurs
-        """
-        if dtype is None:
-            dtype = torch.float32
-        
-        if not isinstance(self.inference.input, torch.Tensor):
-            self.inference._inputs = torch.tensor(self.inference.input, dtype=dtype)
-
-    def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
-        """
-        Prépare les données d'inférence en les encodant et les convertissant en tenseurs
-        """
-        self.inference = Sample(inference_data)
-        self.encode(max_tokens=max_tokens, func=func, dictionary_path=dictionary_path, inference=True)
-        self.tensorify_inference()
-
-    @staticmethod
-    def from_input(inference_data: dict, logger: Logger, max_tokens : int, func: Func, dictionary_path : str) -> 'HostaDataset':
-        """
-        Crée un dataset à partir de données d'inférence
-        """
-        dataset = HostaDataset(logger)
-        dataset.prepare_inference(inference_data, max_tokens, func, dictionary_path)
-        return dataset
-
-    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> List[Any]:
-        """
-        Decode the model predictions based on the function's return type.
-        """
-        output_type = func_f_type[1]
-        output = self.encoder.decode(predictions, output_type)
-        return output, predictions
-        
+    ########################################################
+    ### Class Generator ###
     @staticmethod
     def from_files(path: str, source_type: Optional[SourceType], logger: Logger) -> 'HostaDataset':
         """
@@ -354,11 +401,42 @@ class HostaDataset:
         dataset = HostaDataset(logger)
         dataset.convert_list(data)
         return dataset
-
+    
+    @staticmethod
+    def from_input(inference_data: dict, logger: Logger, max_tokens : int, func: Func, dictionary_path : str) -> 'HostaDataset':
+        """
+        Crée un dataset à partir de données d'inférence
+        """
+        dataset = HostaDataset(logger)
+        dataset.prepare_inference(inference_data, max_tokens, func, dictionary_path)
+        return dataset
 
     @staticmethod
+    def from_data(data_path: str, batch_size: int, shuffle: bool, logger: Logger, train_ratio: float = 0.8) -> tuple:
+        """
+        Load a dataset from a file and convert it into dataloader for training.
+        """
+        dataset = HostaDataset(logger)
+        dataset.load_data(data_path)
+        return dataset.to_dataloaders(batch_size=batch_size, shuffle=shuffle, train_ratio=train_ratio)
+
     def __len__(self):
         return len(self.data)
 
     def __iter__(self):
         return iter(self.data)
+    
+
+
+
+
+if __name__ == "__main__":
+    logger = Logger()
+    dataset = HostaDataset(logger)
+
+    dataset.convert_files("data.csv", SourceType.CSV)
+    print(dataset.data)
+
+    dataset.encode(...)
+    dataset.tensorize()
+    train, val = dataset.to_dataloaders(32)
