@@ -104,7 +104,7 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     """
     if memory.data.exist:
         logger.log_custom("Data", f"found at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN)
-        train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_set_size=0.8, logger=logger)
+        train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_ratio=0.8, logger=logger)
     else:
         logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW)
         train_set, val_set = prepare_dataset(config, memory, func, oracle, logger)
@@ -131,7 +131,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
 
     if config.dataset_path is not None:
         logger.log_custom("Dataset", f"found at {config.dataset_path}", color=ANSIColor.BRIGHT_GREEN)
-        dataset = HostaDataset.from_files(config.dataset_path, SourceType.CSV, logger) # or JSONL jsp comment faire la détection la
+        dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None,logger=logger)
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW)
         dataset = _generate_data(func, oracle, config, logger)
@@ -140,12 +140,12 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN)
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
-    dataset.tensorify()
+    dataset.tensorize()
     dataset.save_data(memory.data.path)
 
     if config.batch_size is None:
         config.batch_size = int(0.05 * len(dataset.data)) if 0.05 * len(dataset.data) > 1 else len(dataset.data)
-    train_set, val_set = dataset.convert_data(batch_size=config.batch_size, shuffle=True, train_set_size=0.8)
+    train_set, val_set = dataset.to_dataloaders(batch_size=config.batch_size, shuffle=True, train_ratio=0.8)
 
     logger.log_custom("Dataset", f"processed and saved at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN)
     return train_set, val_set
