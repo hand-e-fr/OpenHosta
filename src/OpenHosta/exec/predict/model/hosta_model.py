@@ -15,9 +15,10 @@ class HostaModel(ABC, nn.Module):
         pass
 
     def forward(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x
+        # for layer in self.layers:
+        #     x = layer(x)
+        # return x
+        pass
 
     def validate(self, validation_set):
         pass
@@ -30,4 +31,4 @@ class HostaModel(ABC, nn.Module):
         self.eval()
 
     def save_weights(self, path: str):
-        torch.save(self.state_dict(), path, )
+        torch.save(self.state_dict(), path)

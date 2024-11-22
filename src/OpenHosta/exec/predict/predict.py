@@ -32,8 +32,9 @@ def predict(
 
     assert config is not None, "Please provide a valid configuration not None"
 
-    func: Func = getattr(Hosta(), "_infos")
-
+    x = Hosta()
+    func: Func = getattr(x._update_call(), "_infos")
+    
     name = config.name if config and config.name else str(func.f_name)
     base_path = config.path if config and config.path else os.getcwd()
     memory: PredictMemory = PredictMemory.load(base_path=base_path, name=name)
@@ -52,7 +53,6 @@ def predict(
         setattr(func, "_dataset", dataset)
     else:
         dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
-
     torch_prediction = hosta_model.inference(dataset.inference.input)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BRIGHT_GREEN)
@@ -66,20 +66,26 @@ def get_hosta_model(architecture_file: File, func: Func, logger: Logger, config:
     if hasattr(func, "_model"):
         return getattr(func, "_model")
 
-    architecture: Optional[NeuralNetwork] = None
+    architecture: Union[NeuralNetwork, None] = load_architecure(architecture_file, logger)
 
+    model = HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
+    # print(model)
+    setattr(func, "_model", model)
+    return model
+
+
+def load_architecure(architecture_file: File, logger: Logger) -> Union[NeuralNetwork, None]:
+    """
+    Load the architecture if it exists.
+    """
     if architecture_file.exist:
         with open(architecture_file.path, "r") as file:
             json = file.read()
-        architecture = NeuralNetwork.from_json(json)
         logger.log_custom("Architecture", f"found at {architecture_file.path}", color=ANSIColor.BRIGHT_GREEN)
-    else:
+        return NeuralNetwork.from_json(json)
+    else :
         logger.log_custom("Architecture", "not found", color=ANSIColor.BRIGHT_YELLOW)
-    result = HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
-    logger.log_custom("Architecture", f"loaded, type : {type(result).__name__}", color=ANSIColor.BRIGHT_GREEN)
-    setattr(func, "_model", result)
-    return result
-
+        return None
 
 def load_weights(memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
     """
