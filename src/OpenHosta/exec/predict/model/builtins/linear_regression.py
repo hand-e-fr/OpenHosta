@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from torch import optim
 
+from .algo_architecture import get_algo_architecture
 from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
@@ -24,26 +25,30 @@ class LinearRegression(HostaModel):
 
         self.complexity = complexity
         self.logger = logger
-        self.layers = []
+        self.device = device
+
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
-            transition_value = int(((input_size * output_size) / 2) * self.complexity)
 
-            input_layer = int(input_size * (2 * self.complexity))
-            if input_size > output_size:
-                hidden_layer_1 = int(transition_value / output_size)
-            else:
-                hidden_layer_1 = transition_value
+            growth_rate = 1.5
+            max_layer_coefficent = 100
+            layer_size : list = get_algo_architecture(input_size, output_size, complexity, growth_rate, max_layer_coefficent)
+        
+            layers = []
+            for i in range(len(layer_size) - 1):
+                in_features = layer_size[i]
+                out_features = layer_size[i + 1]
 
-            self.layers.append(nn.Linear(input_size, input_layer))
-            self.layers.append(nn.ReLU())
-            self.layers.append(nn.Linear(input_layer, hidden_layer_1))
-            self.layers.append(nn.ReLU())
-            self.layers.append(nn.Linear(hidden_layer_1, output_size))
+                linear_layer = nn.Linear(in_features, out_features)
+                layers.append(linear_layer)
+
+                if i < len(layer_size) - 2:
+                    activation = nn.ReLU()
+                    layers.append(activation)
+            self.model = nn.Sequential(*layers)
         else:
-            self.layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
-
-        for i, layer in enumerate(self.layers):
-            setattr(self, f'fc{i + 1}', layer)
+            layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
+            self.model = nn.Sequential(*layers)
+        
 
         if neural_network is None or neural_network.loss_function is None:
             self.loss = nn.MSELoss()
@@ -77,7 +82,7 @@ class LinearRegression(HostaModel):
                 batch_size = labels.size(0)
 
                 self.optimizer.zero_grad()
-                outputs = self(inputs)
+                outputs = self.model(inputs)
 
                 loss = self.loss(outputs, labels)
 
@@ -120,6 +125,6 @@ class LinearRegression(HostaModel):
         with torch.no_grad():
             x = x.to(self.device)
 
-            outputs = self(x)
+            outputs = self.model(x)
 
             return outputs
