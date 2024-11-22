@@ -7,16 +7,6 @@ from typing import get_origin, Literal, Union
 from ..exec.predict.model.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
 
 
-def custom_layer_to_pytorch(layer: Layer) -> Union[nn.Module, None]:
-    if layer.layer_type == LayerType.LINEAR:
-        return nn.Linear(layer.in_features, layer.out_features)
-    elif layer.layer_type == LayerType.RELU:
-        return nn.ReLU()
-    # Add other layer types as needed
-    else:
-        return None
-
-
 def pytorch_layer_to_custom(layer) -> Layer:
     """
     Maps a PyTorch layer instance to a custom Layer representation.
