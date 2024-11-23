@@ -28,8 +28,7 @@ class LinearRegression(HostaModel):
         self.device = device
 
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
-
-            growth_rate = 1.5
+            growth_rate = 2.0
             max_layer_coefficent = 100
             layer_size : list = get_algo_architecture(input_size, output_size, complexity, growth_rate, max_layer_coefficent)
         
@@ -64,10 +63,7 @@ class LinearRegression(HostaModel):
 
     def trainer(self, train_set, epochs):
         """
-        Training loop for regression model
-        Args:
-            train_set: DataLoader containing training data
-            epochs: Number of training epochs
+        Training loop for regression models.
         """
         self.train()
         
@@ -83,7 +79,6 @@ class LinearRegression(HostaModel):
 
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
-
                 loss = self.loss(outputs, labels)
 
                 loss.backward()
@@ -96,9 +91,11 @@ class LinearRegression(HostaModel):
 
             epoch_loss = running_loss / len(train_set)
             epoch_accuracy = (correct_predictions / total_samples) * 100
-
-            self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN)
-
+            if epoch == epochs - 1:
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=False)
+            else :    
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=True)
+    
             # Learning rate scheduling to check later
             # if self.scheduler:
             #     self.scheduler.step()
@@ -106,24 +103,45 @@ class LinearRegression(HostaModel):
 
 
     def validate(self, validation_set):
-        """Validate the model on a given validation set."""
-        return None #TODO: add example !
-        # self.eval()  # Set model to eval mode (disable dropout, etc.)
-        # validation_loss = 0.0
-        # with torch.no_grad():  # No need to track gradients during validation
-        #     for inputs, labels in validation_set:
-        #         inputs, labels = inputs.to(self.device), labels.to(self.device)
-        #         outputs = self(inputs)
-        #         loss = self.loss(outputs, labels)
-        #         validation_loss += loss.item()
-        # return validation_loss / len(validation_set)
+        """
+        Validate the model on a given validation set for linear regression task.
+        """
+        self.eval()
+        validation_loss = 0.0
+        correct_predictions = 0
+        total_samples = 0
+
+        with torch.no_grad():
+            inputs, labels = validation_set
+            inputs = inputs.to(self.device)
+            labels = labels.to(self.device).float()
+            batch_size = labels.size(0)
+
+            outputs = self.model(inputs)
+            loss = self.loss(outputs, labels)
+            validation_loss += loss.item() * batch_size
+
+            correct_predictions = (outputs == labels).sum().item()
+            total_samples += batch_size
+
+        avg_val_loss = validation_loss / len(validation_set)
+        accuracy = (correct_predictions / total_samples) * 100
+
+        self.logger.log_custom("Validation", f"Loss: {avg_val_loss:.4f}, Accuracy: {accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=False)
+
+        return #Nothing to return for now
 
 
     def inference(self, x):
-        """Make predictions for the given test set."""
+        """
+        Make predictions on a given input for linear regression task.
+        """
         self.eval()
         with torch.no_grad():
             x = x.to(self.device)
+
+            if x.dim() == 1:
+                x = x.unsqueeze(0)
 
             outputs = self.model(x)
 
