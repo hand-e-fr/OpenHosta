@@ -21,13 +21,13 @@ class HostaModelProvider:
             input_size += type_size(arg, config.max_tokens)
 
         output_size = type_size(func.f_type[1], config.max_tokens)
-        logger.log_debug(f"Creating model with input size {input_size} and output size {output_size}", 2)
+        logger.log_debug(f"Model with input size {input_size} and output size {output_size}", level=2)
 
         hosta_model: Optional[HostaModel] = None
         model_type = determine_model_type(func, config)
 
         if model_type == ArchitectureType.LINEAR_REGRESSION:
-            hosta_model = LinearRegression(architecture, input_size, output_size, config.complexity)
+            hosta_model = LinearRegression(architecture, input_size, output_size, config.complexity, logger)
 
         elif model_type == ArchitectureType.CLASSIFICATION:
             num_classes = 2 if output_size == 2 else 1
@@ -35,7 +35,7 @@ class HostaModelProvider:
         else:
             raise ValueError(f"Model type {model_type} not supported")
 
-        logger.log_custom("Model", f"created, type : {type(hosta_model).__name__}", color=ANSIColor.BRIGHT_GREEN)
+        logger.log_custom("Model", f"Type : {type(hosta_model).__name__}", color=ANSIColor.BLUE_BOLD)
 
 
         if architecture is None:
@@ -59,4 +59,4 @@ def save_architecture(hosta_model: HostaModel, path: str, logger : Logger):
     architecture = NeuralNetwork.from_torch_nn(hosta_model)
     with open(path, 'w') as file:
         file.write(architecture.to_json())
-    logger.log_custom("Architecture", f"saved to {path}", color=ANSIColor.BRIGHT_GREEN)
+    logger.log_custom("Architecture", f"saved to {path}", color=ANSIColor.BRIGHT_GREEN, level=2)
