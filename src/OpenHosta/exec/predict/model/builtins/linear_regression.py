@@ -3,6 +3,7 @@ from typing import Optional
 import torch
 from torch import nn
 from torch import optim
+from torch.optim.lr_scheduler import StepLR
 
 from .algo_architecture import get_algo_architecture
 from ..hosta_model import HostaModel
@@ -50,14 +51,16 @@ class LinearRegression(HostaModel):
         
 
         if neural_network is None or neural_network.loss_function is None:
-            self.loss = nn.MSELoss()
+            self.loss = nn.SmoothL1Loss()
         else:
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
 
         if neural_network is None or neural_network.optimizer is None:
-            self.optimizer = optim.Adam(self.parameters(), lr=0.001)
+            self.optimizer = optim.AdamW(self.parameters(), lr=0.01, weight_decay=1e-2)
         else:
             self.optimizer = custom_optimizer_to_pytorch(neural_network.optimizer, self, lr=0.001)
+
+        self.scheduler = StepLR(self.optimizer, step_size=10, gamma=0.1)
 
         self.to(self.device)
 
@@ -88,13 +91,16 @@ class LinearRegression(HostaModel):
                 
                 correct_predictions = (outputs == labels).sum().item()
                 total_samples += batch_size
+            
+            self.scheduler.step()
+            current_lr = self.optimizer.param_groups[0]['lr']
 
             epoch_loss = running_loss / len(train_set)
             epoch_accuracy = (correct_predictions / total_samples) * 100
             if epoch == epochs - 1:
-                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=False)
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%, LR: {current_lr:.6f}", color=ANSIColor.CYAN, level=1, one_line=False)
             else :    
-                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=True)
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%, LR: {current_lr:.6f}", color=ANSIColor.CYAN, level=1, one_line=True)
     
             # Learning rate scheduling to check later
             # if self.scheduler:
@@ -114,7 +120,7 @@ class LinearRegression(HostaModel):
         with torch.no_grad():
             for inputs, labels in validation_set :
                 inputs = inputs.to(self.device)
-                labels = labels.to(self.device).float()
+                labels = labels.to(self.device).float().view(-1, 1)
                 batch_size = labels.size(0)
 
                 outputs = self.model(inputs)

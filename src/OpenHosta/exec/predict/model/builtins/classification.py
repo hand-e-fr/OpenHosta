@@ -3,6 +3,7 @@ from typing import Optional
 import torch
 from torch import nn
 from torch import optim
+from torch.optim.lr_scheduler import StepLR
 
 from .algo_architecture import get_algo_architecture
 from ..hosta_model import HostaModel
@@ -59,9 +60,11 @@ class Classification(HostaModel):
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
 
         if neural_network is None or neural_network.optimizer is None:
-            self.optimizer = optim.Adam(self.parameters(), lr=0.001)
+            self.optimizer = optim.AdamW(self.parameters(), lr=0.001)
         else:
             self.optimizer = custom_optimizer_to_pytorch(neural_network.optimizer, self, lr=0.001) # TODO: Add learning rate parameter
+
+        self.scheduler = StepLR(self.optimizer, step_size=10, gamma=0.1)
 
         self.to(self.device)
 
@@ -99,13 +102,16 @@ class Classification(HostaModel):
 
                 correct_predictions += (predicted_classes == labels).sum().item()
                 total_samples += batch_size
+            
+            self.scheduler.step()
+            current_lr = self.optimizer.param_groups[0]['lr']
 
             epoch_loss = running_loss / len(train_set)
             epoch_accuracy = (correct_predictions / total_samples) * 100
             if epoch == epochs - 1:
-                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=False)
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%, LR: {current_lr:.6f}", color=ANSIColor.CYAN, level=1, one_line=False)
             else :    
-                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=True)
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%, LR: {current_lr:.6f}", color=ANSIColor.CYAN, level=1, one_line=True)
     
     def validate(self, validation_set):
         """
