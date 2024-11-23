@@ -74,7 +74,7 @@ class LinearRegression(HostaModel):
             
             for inputs, labels in train_set:
                 inputs = inputs.to(self.device)
-                labels = labels.to(self.device).float()  # Ensure float type for regression
+                labels = labels.to(self.device).float().view(-1, 1) # Ensure float type for regression and in a good format
                 batch_size = labels.size(0)
 
                 self.optimizer.zero_grad()
@@ -112,22 +112,22 @@ class LinearRegression(HostaModel):
         total_samples = 0
 
         with torch.no_grad():
-            inputs, labels = validation_set
-            inputs = inputs.to(self.device)
-            labels = labels.to(self.device).float()
-            batch_size = labels.size(0)
+            for inputs, labels in validation_set :
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device).float()
+                batch_size = labels.size(0)
 
-            outputs = self.model(inputs)
-            loss = self.loss(outputs, labels)
-            validation_loss += loss.item() * batch_size
+                outputs = self.model(inputs)
+                loss = self.loss(outputs, labels)
+                validation_loss += loss.item() * batch_size
 
-            correct_predictions = (outputs == labels).sum().item()
-            total_samples += batch_size
+                correct_predictions = (outputs == labels).sum().item()
+                total_samples += batch_size
 
-        avg_val_loss = validation_loss / len(validation_set)
-        accuracy = (correct_predictions / total_samples) * 100
+            avg_val_loss = validation_loss / len(validation_set)
+            accuracy = (correct_predictions / total_samples) * 100
 
-        self.logger.log_custom("Validation", f"Loss: {avg_val_loss:.4f}, Accuracy: {accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=False)
+            self.logger.log_custom("Validation", f"Loss: {avg_val_loss:.4f}, Accuracy: {accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=False)
 
         return #Nothing to return for now
 
