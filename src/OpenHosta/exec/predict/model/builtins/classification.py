@@ -12,7 +12,16 @@ from .....core.logger import Logger, ANSIColor
 
 
 class Classification(HostaModel):
-    def __init__(self, neural_network: Optional[NeuralNetwork], input_size: int, output_size: int, complexity: int, num_classes: int, logger: Logger, device: Optional[str] = None):
+    def __init__(
+            self,
+            neural_network: Optional[NeuralNetwork],
+            input_size: int,
+            output_size: int,
+            complexity: int,
+            num_classes: int,
+            logger: Logger,
+            device: Optional[str] = None
+    ):
         super().__init__(device)
 
         self.complexity = complexity
@@ -23,7 +32,7 @@ class Classification(HostaModel):
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
             growth_rate = 1.5
             max_layer_coefficent = 150
-            layer_size = get_algo_architecture(input_size, output_size, complexity, growth_rate, max_layer_coefficent)
+            layer_size : list = get_algo_architecture(input_size, output_size, complexity, growth_rate, max_layer_coefficent)
 
             layers = []
             for i in range(len(layer_size) - 1):
@@ -40,9 +49,6 @@ class Classification(HostaModel):
         else:
             layers = [custom_layer_to_pytorch(layer) for layer in neural_network.layers]
             self.model = nn.Sequential(*layers)
-
-        # for i, layer in enumerate(self.model):
-        #     setattr(self, f'fc{i + 1}', layer)
 
         if neural_network is None or neural_network.loss_function is None:
             if num_classes == 2:
@@ -62,7 +68,7 @@ class Classification(HostaModel):
 
     def trainer(self, train_set, epochs):
         """
-        Train the model on the training set
+        Train the model on the training set for a classification task
         """
         self.train()
 
@@ -96,59 +102,62 @@ class Classification(HostaModel):
 
             epoch_loss = running_loss / len(train_set)
             epoch_accuracy = (correct_predictions / total_samples) * 100
-
-            self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN)
-
+            if epoch == epochs - 1:
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=False)
+            else :    
+                self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%", color=ANSIColor.CYAN, level=1, one_line=True)
+    
     def validate(self, validation_set):
-        """Validate the model's performance"""
-        return None
-        # self.eval()  # Set model to evaluation mode
-        # validation_loss = 0.0
-        # correct = 0
-        # total = 0
-        # with torch.no_grad():
-        #     for inputs, labels in validation_set:
-        #         inputs, labels = inputs.to(self.device), labels.to(self.device)
-        #         outputs = self(inputs)
+        """
+        Validate the model on the validation set for a classification task.
+        """
+        self.eval()
+        validation_loss = 0.0
+        correct_predictions = 0
+        total_samples = 0
 
-        #         loss = self.loss(outputs, labels)
-        #         validation_loss += loss.item()
+        with torch.no_grad():
+            for inputs, labels in validation_set:
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device).long() # Ensure that is long for loss
+                batch_size = inputs.size(0)
 
-        #         # For Classification Metrics (like binary or multi-class accuracy)
-        #         if self.num_classes == 2:
-        #             # Binary classification: Apply sigmoid and threshold at 0.5
-        #             preds = (torch.sigmoid(outputs) > 0.5).float()
-        #             correct += (preds == labels).sum().item()
-        #         else:
-        #             # Multi-class classification: Use argmax to get class labels
-        #             preds = torch.softmax(outputs, dim=1)
-        #             correct += (preds == labels.argmax(dim=1)).sum().item()
+                outputs = self.model(inputs)
+                loss = self.loss(outputs, labels)
+                validation_loss += loss.item() * batch_size
 
-        #         total += labels.size(0)
+                if self.num_classes == 2:
+                    predicted_classes = (torch.sigmoid(outputs) > 0.5).long()
+                else :
+                    predicted_classes = torch.argmax(outputs, dim=1)
 
-        # avg_val_loss = validation_loss / len(validation_set)
-        # accuracy = correct / total
-        # print(f"Validation Loss: {avg_val_loss:.4f}, Accuracy: {accuracy * 100:.2f}%")
+                correct_predictions += (predicted_classes == labels).sum().item()
+                total_samples += labels.size(0)
 
-        # return avg_val_loss, accuracy
+            avg_val_loss = validation_loss / total_samples
+            accuracy = (correct_predictions / total_samples) * 100
+
+            self.logger.log_custom("Validation", f"Loss: {avg_val_loss:.4f}, Accuracy: {accuracy:.2f}%", color=ANSIColor.CYAN, level=1)
+
+            return # Don't need to return something for now
 
     def inference(self, x):
-        """Make prediction on inputs using the model
-        Returns:
-            probability distribution for each class (softmax)
+        """
+        Make prediction on inputs using the model.
         """
         self.eval()
         with torch.no_grad():
             x = x.to(self.device)
             
             # Add batch dimension if needed
-            if len(x.shape) == 1:
+            if x.dim() == 1:
                 x = x.unsqueeze(0)
-            elif len(x.shape) == 2:
-                if x.shape[0] != 1:
-                    x = x.unsqueeze(0)
                     
             outputs = self.model(x)
 
-            probabilities = torch.softmax(outputs, dim=1)
+            if self.num_classes == 2:
+                probabilities = torch.sigmoid(outputs)
+            else :
+                probabilities = torch.softmax(outputs, dim=1)
+
             return probabilities.cpu()
