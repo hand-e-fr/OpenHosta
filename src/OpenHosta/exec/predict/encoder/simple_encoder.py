@@ -134,10 +134,6 @@ class SimpleEncoder:
                 else:
                     encoder_out = MappingEncoder(self.mapping_dict)
                     encoded_value_out = encoder_out.encode(sample.output)
-                # if isinstance(encoded_value_out, list):
-                #     encoded_output = encoded_value_out[0] # Like multiple str _outputs not supported only use the first str outputs
-                # else:
-                #     encoded_output = encoded_value_out
                 encoded_output = encoded_value_out
             
             encoded_samples.append(Sample({
