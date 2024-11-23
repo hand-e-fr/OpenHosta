@@ -55,7 +55,7 @@ def predict(
         dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
     torch_prediction = hosta_model.inference(dataset.inference.input)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
-    logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BRIGHT_GREEN)
+    logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
     return output
 
 
@@ -81,10 +81,10 @@ def load_architecure(architecture_file: File, logger: Logger) -> Union[NeuralNet
     if architecture_file.exist:
         with open(architecture_file.path, "r") as file:
             json = file.read()
-        logger.log_custom("Architecture", f"found at {architecture_file.path}", color=ANSIColor.BRIGHT_GREEN)
+        logger.log_custom("Architecture", f"found at {architecture_file.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         return NeuralNetwork.from_json(json)
     else :
-        logger.log_custom("Architecture", "not found", color=ANSIColor.BRIGHT_YELLOW)
+        logger.log_custom("Architecture", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
         return None
 
 def load_weights(memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
@@ -95,12 +95,12 @@ def load_weights(memory: PredictMemory, hosta_model: HostaModel, logger: Logger)
         return True
 
     if memory.weights.exist:
-        logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN)
+        logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         hosta_model.init_weights(memory.weights.path)
         setattr(hosta_model, "_weights_loaded", True)
         return True
 
-    logger.log_custom("Weights", "not found", color=ANSIColor.BRIGHT_YELLOW)
+    logger.log_custom("Weights", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
     return False
 
 
@@ -109,10 +109,10 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     Prepare the data and train the model.
     """
     if memory.data.exist:
-        logger.log_custom("Data", f"found at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN)
+        logger.log_custom("Data", f"found at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_ratio=0.8, logger=logger)
     else:
-        logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW)
+        logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
         train_set, val_set = prepare_dataset(config, memory, func, oracle, logger)
 
     if config.epochs is None:
@@ -121,6 +121,11 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
         assert config.epochs > 0, f"epochs must be greater than 0 now it's {config.epochs}"
 
     model.trainer(train_set, epochs=config.epochs)
+
+    if logger.verbose >= 1:
+        model.validate(val_set)
+
+
     model.save_weights(memory.weights.path)
 
 
@@ -139,11 +144,11 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         logger.log_custom("Dataset", f"found at {config.dataset_path}", color=ANSIColor.BRIGHT_GREEN)
         dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None,logger=logger)
     else :
-        logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW)
+        logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW, level=2)
         dataset = generate_data(func, oracle, config, logger)
         save_path = os.path.join(memory.predict_dir, "generated_data.csv")
         dataset.save(save_path, SourceType.CSV)
-        logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN)
+        logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN, level=2)
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
     dataset.tensorize()
