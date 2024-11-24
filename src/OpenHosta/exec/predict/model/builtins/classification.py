@@ -52,10 +52,10 @@ class Classification(HostaModel):
             self.model = nn.Sequential(*layers)
 
         if neural_network is None or neural_network.loss_function is None:
-            if num_classes == 2:
-                self.loss = nn.BCEWithLogitsLoss()
-            else:
-                self.loss = nn.CrossEntropyLoss()
+        # if num_classes == 2:
+        #     self.loss = nn.BCEWithLogitsLoss()
+        # else:
+            self.loss = nn.CrossEntropyLoss()
         else:
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
 
@@ -95,10 +95,10 @@ class Classification(HostaModel):
 
                 running_loss += loss.item()
 
-                if self.num_classes == 2:
-                    predicted_classes = (torch.sigmoid(outputs) > 0.5).float()
-                else:
-                    predicted_classes = torch.argmax(outputs, dim=1)
+                # if self.num_classes == 2:
+                #     predicted_classes = (torch.sigmoid(outputs) > 0.5).float()
+                # else:
+                predicted_classes = torch.argmax(outputs, dim=1)
 
                 correct_predictions += (predicted_classes == labels).sum().item()
                 total_samples += batch_size
@@ -132,10 +132,10 @@ class Classification(HostaModel):
                 loss = self.loss(outputs, labels)
                 validation_loss += loss.item() * batch_size
 
-                if self.num_classes == 2:
-                    predicted_classes = (torch.sigmoid(outputs) > 0.5).long()
-                else :
-                    predicted_classes = torch.argmax(outputs, dim=1)
+                # if self.num_classes == 2:
+                #     predicted_classes = (torch.sigmoid(outputs) > 0.5).long()
+                # else :
+                predicted_classes = torch.argmax(outputs, dim=1)
 
                 correct_predictions += (predicted_classes == labels).sum().item()
                 total_samples += labels.size(0)
@@ -161,9 +161,9 @@ class Classification(HostaModel):
                     
             outputs = self.model(x)
 
-            if self.num_classes == 2:
-                probabilities = torch.sigmoid(outputs)
-            else :
-                probabilities = torch.softmax(outputs, dim=1)
+        # if self.num_classes == 2:
+        #     probabilities = torch.sigmoid(outputs)
+        # else :
+            probabilities = torch.softmax(outputs, dim=1)
 
             return probabilities.cpu()

@@ -137,11 +137,11 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
     if config.dataset_path is None:
         generated_data_path = os.path.join(memory.predict_dir, "generated_data.csv")
         if os.path.exists(generated_data_path) and os.path.getsize(generated_data_path) > 0:
-            logger.log_custom("Dataset", "no data.json found, but found generated_data.csv, loading it", color=ANSIColor.BRIGHT_GREEN)
+            logger.log_custom("Dataset", "no data.json found, but found generated_data.csv, loading it", color=ANSIColor.BRIGHT_GREEN, level=2)
             config.dataset_path = generated_data_path
 
     if config.dataset_path is not None:
-        logger.log_custom("Dataset", f"found at {config.dataset_path}", color=ANSIColor.BRIGHT_GREEN)
+        logger.log_custom("Dataset", f"found at {config.dataset_path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None,logger=logger)
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW, level=2)
@@ -155,10 +155,10 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
     dataset.save_data(memory.data.path)
 
     if config.batch_size is None:
-        config.batch_size = int(0.05 * len(dataset.data)) if 0.05 * len(dataset.data) > 1 else len(dataset.data)
+        config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
     train_set, val_set = dataset.to_dataloaders(batch_size=config.batch_size, shuffle=True, train_ratio=0.8)
 
-    logger.log_custom("Dataset", f"processed and saved at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN)
+    logger.log_custom("Dataset", f"processed and saved at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
     return train_set, val_set
 
 
