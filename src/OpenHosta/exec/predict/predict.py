@@ -119,7 +119,7 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
         config.epochs = int(2 * len(train_set.dataset) / config.batch_size if config.batch_size != len(train_set.dataset)\
                                 else 2 * len(train_set.dataset))
         assert config.epochs > 0, f"epochs must be greater than 0 now it's {config.epochs}"
-
+    logger.log_custom("Training", f"epochs: {config.epochs}, batch_size: {config.batch_size}, train_set size: {len(train_set)}, val_set size: {len(val_set)}", color=ANSIColor.BRIGHT_YELLOW, level=2)
     model.trainer(train_set, epochs=config.epochs)
 
     if logger.verbose >= 1:
