@@ -113,9 +113,8 @@ class HostaDataset:
                 else:
                     sample._outputs = torch.tensor(sample.output, dtype=torch.long)
         
-        # Update appropriate attribute
         if value[0].output is None:
-            self.inference = value[0]
+            self.inference = value[0]  # TODO: fix the error here
         else:
             self.data = value
 
@@ -147,12 +146,14 @@ class HostaDataset:
 
         train_size = int(train_ratio * len(dataset))
         val_size = len(dataset) - train_size
-
+        # print("Train size : ", train_size)
+        # print("Val size : ", val_size)
         train_set, val_set = random_split(dataset, [train_size, val_size])
 
-        train_loader = DataLoader(train_set, batch_size=190, shuffle=shuffle)
-        val_loader = DataLoader(val_set, batch_size=190, shuffle=shuffle)
-
+        train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle)
+        val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=shuffle)
+        # print("Train loader len : ", len(train_loader))
+        # print("Val loader len : ", len(val_loader))
         return train_loader, val_loader
 
 
@@ -277,7 +278,6 @@ class HostaDataset:
             data_dict = json.load(f)
         
         for sample_dict in data_dict['data']:
-            print(sample_dict)
             self.add(sample_dict)
 
     ########################################################
@@ -435,7 +435,6 @@ if __name__ == "__main__":
     dataset = HostaDataset(logger)
 
     dataset.convert_files("data.csv", SourceType.CSV)
-    print(dataset.data)
 
     dataset.encode(...)
     dataset.tensorize()
