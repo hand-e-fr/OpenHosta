@@ -111,8 +111,10 @@ class LLMSyntheticDataGenerator:
         user_prompt += ":\n"
 
         user_prompt += f"{','.join(func.f_sig.parameters.keys())},_outputs"
-        user_prompt += f"\n{','.join([str(f"\n- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}")\
-                                      for a, b in func.f_sig.parameters.items()])}\n"
+        user_prompt += "\n" + "\n".join([
+            f"- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}"
+            for a, b in func.f_sig.parameters.items()
+        ]) + "\n"
         user_prompt += f"- _outputs is type {output_type.__name__}\n"
 
         return user_prompt
