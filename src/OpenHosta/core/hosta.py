@@ -59,7 +59,7 @@ class Hosta(HostaInspector):
                 "[Hosta.__new__] The function {} must be called in a function/method."
                 .format(cls._extend(back_level=2)[0].__name__)
             )
-        if (hasattr(cls._obj[0], "Hosta")):
+        if hasattr(cls._obj[0], "Hosta"):
             return cls._obj[0].Hosta
         instance = super().__new__(cls)
         cls._attach(cls._obj[0], {"Hosta": instance})
