@@ -412,13 +412,18 @@ class HostaDataset:
         return dataset
 
     @staticmethod
-    def from_data(data_path: str, batch_size: int, shuffle: bool, logger: Logger, train_ratio: float = 0.8) -> tuple:
+    def from_data(data_path: str, logger: Logger,) -> 'HostaDataset':
         """
         Load a dataset from a file and convert it into dataloader for training.
         """
         dataset = HostaDataset(logger)
         dataset.load_data(data_path)
-        return dataset.to_dataloaders(batch_size=batch_size, shuffle=shuffle, train_ratio=train_ratio)
+
+        return dataset
+        # if config.batch_size is None:
+        #     config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
+
+        # return dataset.to_dataloaders(batch_size=config.batch_size, shuffle=shuffle, train_ratio=train_ratio)
 
     def __len__(self):
         return len(self.data)
