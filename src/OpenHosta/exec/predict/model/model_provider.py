@@ -1,7 +1,5 @@
 from typing import Optional, Literal, get_origin
 
-from torch.backends.mkl import verbose
-
 from .builtins.classification import Classification
 from .builtins.linear_regression import LinearRegression
 from .hosta_model import HostaModel
@@ -9,8 +7,8 @@ from .neural_network import NeuralNetwork
 from .neural_network_types import ArchitectureType
 from ..predict_config import PredictConfig
 from ....core.hosta import Func
-from ....utils.torch_nn_utils import type_size
 from ....core.logger import Logger, ANSIColor
+from ....utils.torch_nn_utils import type_size
 
 
 class HostaModelProvider:
@@ -46,13 +44,10 @@ class HostaModelProvider:
 
 
 def determine_model_type(func: Func, config : Optional[PredictConfig]) -> ArchitectureType:
-    if config is not None and config.model_type is not None:
-        return config.model_type
+    if get_origin(func.f_type[1]) is Literal:
+        return ArchitectureType.CLASSIFICATION
     else:
-        if get_origin(func.f_type[1]) is Literal:
-            return ArchitectureType.CLASSIFICATION
-        else:
-            return ArchitectureType.LINEAR_REGRESSION
+        return ArchitectureType.LINEAR_REGRESSION
 
 
 def save_architecture(hosta_model: HostaModel, path: str, logger : Logger):

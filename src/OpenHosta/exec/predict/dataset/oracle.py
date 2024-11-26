@@ -1,6 +1,7 @@
 import inspect
 from typing import Optional, Dict, Any, List, Type, Union, Literal,  get_args, get_origin
 
+from ....core.logger import Logger
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
 
@@ -13,7 +14,8 @@ class LLMSyntheticDataGenerator:
 
 
     @staticmethod
-    def _validate_row(row: str, expected_fields: List[Type]) -> Optional[List[Union[str, float]]]:
+    def _validate_row(row: str, expected_fields: List[Type], logger: Logger) -> Optional[List[Union[str, float]]]:
+        logger.log_custom("Data Generation", f"Validating row: {row}", one_line=False)
         try:
             values = row.strip().split(',')
 
@@ -110,8 +112,10 @@ class LLMSyntheticDataGenerator:
         user_prompt += ":\n"
 
         user_prompt += f"{','.join(func.f_sig.parameters.keys())},_outputs"
-        user_prompt += f"\n{','.join([str(f"\n- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}")\
-                                      for a, b in func.f_sig.parameters.items()])}\n"
+        user_prompt += "\n" + "\n".join([
+            f"- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}"
+            for a, b in func.f_sig.parameters.items()
+        ]) + "\n"
         user_prompt += f"- _outputs is type {output_type.__name__}\n"
 
         return user_prompt
@@ -120,6 +124,7 @@ class LLMSyntheticDataGenerator:
     @staticmethod
     def generate_synthetic_data(
             func: Func, # The function to generate data for
+            logger: Logger, # Logger to use for logging
             request_amounts: int = 3, # Amount of requests to the model
             examples_in_req: int = 50, # Examples amount in each request
             model: Optional[Model] = None # Model to use for data generation
@@ -199,7 +204,7 @@ class LLMSyntheticDataGenerator:
                 rows = response["choices"][0]["message"]["content"].strip().split('\n')
 
                 for row in rows:
-                    cleaned_row = LLMSyntheticDataGenerator._validate_row(row, list(input_types.values()) + [output_type])
+                    cleaned_row = LLMSyntheticDataGenerator._validate_row(row, list(input_types.values()) + [output_type], logger)
                     if cleaned_row:
                         if cleaned_row not in generated_data:
                             dictrow = dict(zip(input_types.keys(), cleaned_row[:-1]))
@@ -213,7 +218,7 @@ class LLMSyntheticDataGenerator:
                     conversation_history = [conversation_history[0]] + conversation_history[-9:]
 
             except Exception as e:
-                print(f"Error during generation: {e} line {e.__traceback__.tb_lineno}")
+                logger.log_custom("Data Generation", f"Error during generation: {e} line {e.__traceback__.tb_lineno}")
 
             attempts += 1
 
