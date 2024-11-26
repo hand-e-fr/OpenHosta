@@ -137,8 +137,8 @@ class SimpleEncoder:
                 encoded_output = encoded_value_out
             
             encoded_samples.append(Sample({
-                '_inputs': encoded_input,
-                '_outputs': encoded_output
+                'inputs': encoded_input,
+                'outputs': encoded_output
             }))
 
         self.save_dictionary(self.encoders[str].get_dictionnary)
