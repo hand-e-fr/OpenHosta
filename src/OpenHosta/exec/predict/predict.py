@@ -43,10 +43,10 @@ def predict(
 
     dataset: Optional[HostaDataset] = getattr(func.f_obj, "_dataset", None)
 
-    hosta_model: HostaModel = get_hosta_model(x, func, memory.architecture, logger, config)
+    hosta_model: HostaModel = get_hosta_model(func, memory.architecture, logger, config)
 
     if not load_weights(x, memory, hosta_model, logger):
-        train_model(config, memory, hosta_model, dataset, oracle, func, logger)
+        train_model(config, memory, hosta_model, oracle, func, logger)
     
     if dataset is None:
         dataset = HostaDataset.from_input(func.f_args, logger, config.max_tokens, func, memory.dictionary.path)
@@ -59,7 +59,7 @@ def predict(
     return output
 
 
-def get_hosta_model(x: Hosta, func: Func, architecture_file: File, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
+def get_hosta_model(func: Func, architecture_file: File, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
     """
     Load or create a new model.
     """
@@ -79,7 +79,7 @@ def load_architecure(architecture_file: File, logger: Logger) -> Union[NeuralNet
     Load the architecture if it exists.
     """
     if architecture_file.exist:
-        with open(architecture_file.path, "r") as file:
+        with open(architecture_file.path, 'r', encoding='utf-8') as file:
             json = file.read()
         logger.log_custom("Architecture", f"found at {architecture_file.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         return NeuralNetwork.from_json(json)
@@ -104,7 +104,7 @@ def load_weights(x: Hosta, memory: PredictMemory, hosta_model: HostaModel, logge
     return False
 
 
-def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, dataset: HostaDataset, oracle: Optional[Union[Model, HostaDataset]], func: Func, logger: Logger) -> None:
+def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, oracle: Optional[Union[Model, HostaDataset]], func: Func, logger: Logger) -> None:
     """
     Prepare the data and train the model.
     """
@@ -149,7 +149,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
 
     if config.dataset_path is not None:
         logger.log_custom("Dataset", f"found at {config.dataset_path}", color=ANSIColor.BRIGHT_GREEN, level=2)
-        dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None,logger=logger)
+        dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None, log=logger)
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW, level=2)
         dataset = _generate_data(func, oracle, config, logger)

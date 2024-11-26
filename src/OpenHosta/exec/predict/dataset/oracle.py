@@ -165,7 +165,6 @@ class LLMSyntheticDataGenerator:
         result: List[Dict] = []
         conversation_history: List = []
         attempts = 0
-        expected_fields = len(input_types) + 1
 
         conversation_history.append({
             "role": "system",

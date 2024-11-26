@@ -1,7 +1,5 @@
 from typing import Optional
 
-from .model.neural_network_types import ArchitectureType
-
 
 class PredictConfig:
     def __init__(self,

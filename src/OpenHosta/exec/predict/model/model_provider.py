@@ -53,6 +53,6 @@ def determine_model_type(func: Func) -> ArchitectureType:
 
 def save_architecture(hosta_model: HostaModel, path: str, logger : Logger):
     architecture = NeuralNetwork.from_torch_nn(hosta_model)
-    with open(path, 'w') as file:
+    with open(path, 'w', encoding='utf-8') as file:
         file.write(architecture.to_json())
     logger.log_custom("Architecture", f"saved to {path}", color=ANSIColor.BRIGHT_GREEN, level=2)
