@@ -110,16 +110,23 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     """
     if memory.data.exist:
         logger.log_custom("Data", f"found at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
-        train_set, val_set = HostaDataset.from_data(memory.data.path, batch_size=1, shuffle=True, train_ratio=0.8, logger=logger)
+        dataset = HostaDataset.from_data(memory.data.path, logger=logger)
+        if config.batch_size is None:
+            config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
+
+        train_set, val_set = dataset.to_dataloaders(batch_size=config.batch_size, shuffle=True, train_ratio=0.8)
+
     else:
         logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
         train_set, val_set = prepare_dataset(config, memory, func, oracle, logger)
+
+    logger.log_custom("Training", f"epochs: {config.epochs}, batch_size: {config.batch_size}, train_set size: {len(train_set)}, val_set size: {len(val_set)}", color=ANSIColor.BRIGHT_YELLOW, level=2)
 
     if config.epochs is None:
         config.epochs = int(2 * len(train_set.dataset) / config.batch_size if config.batch_size != len(train_set.dataset)\
                                 else 2 * len(train_set.dataset))
         assert config.epochs > 0, f"epochs must be greater than 0 now it's {config.epochs}"
-    logger.log_custom("Training", f"epochs: {config.epochs}, batch_size: {config.batch_size}, train_set size: {len(train_set)}, val_set size: {len(val_set)}", color=ANSIColor.BRIGHT_YELLOW, level=2)
+    
     model.trainer(train_set, epochs=config.epochs)
 
     if logger.verbose >= 1:
@@ -150,12 +157,14 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         dataset.save(save_path, SourceType.CSV)
         logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN, level=2)
 
+
+    if config.batch_size is None:
+        config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
+
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
     dataset.tensorize()
     dataset.save_data(memory.data.path)
 
-    if config.batch_size is None:
-        config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
     train_set, val_set = dataset.to_dataloaders(batch_size=config.batch_size, shuffle=True, train_ratio=0.8)
 
     logger.log_custom("Dataset", f"processed and saved at {memory.data.path}", color=ANSIColor.BRIGHT_GREEN, level=2)

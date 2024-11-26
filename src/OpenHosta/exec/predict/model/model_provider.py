@@ -18,7 +18,10 @@ class HostaModelProvider:
     def from_hosta_func(func: Func, config: Optional[PredictConfig], architecture: Optional[NeuralNetwork], path: str, logger: Logger) -> Optional[HostaModel]:
         input_size = 0
         for arg in func.f_type[0]:
-            input_size += type_size(arg, config.max_tokens)
+            if get_origin(arg) is Literal:
+                input_size += 1
+            else:
+                input_size += type_size(arg, config.max_tokens)
 
         output_size = type_size(func.f_type[1], config.max_tokens)
         logger.log_debug(f"Model with input size {input_size} and output size {output_size}", level=2)
@@ -27,11 +30,10 @@ class HostaModelProvider:
         model_type = determine_model_type(func, config)
 
         if model_type == ArchitectureType.LINEAR_REGRESSION:
-            hosta_model = LinearRegression(architecture, input_size, output_size, config.complexity, logger)
+            hosta_model = LinearRegression(architecture, input_size, output_size, config, logger)
 
         elif model_type == ArchitectureType.CLASSIFICATION:
-            num_classes = 2 if output_size == 2 else 1
-            hosta_model = Classification(architecture, input_size, output_size, config.complexity, num_classes, logger)
+            hosta_model = Classification(architecture, input_size, output_size, config, logger)
         else:
             raise ValueError(f"Model type {model_type} not supported")
 
@@ -40,19 +42,15 @@ class HostaModelProvider:
 
         if architecture is None:
             save_architecture(hosta_model, path, logger)
-        # with open(path, 'w') as file:
-        #     file.write(NeuralNetwork.from_torch_nn(hosta_model).to_json())
+
         return hosta_model
 
 
-def determine_model_type(func: Func, config : Optional[PredictConfig]) -> ArchitectureType:
-    if config is not None and config.model_type is not None:
-        return config.model_type
+def determine_model_type(func: Func, config : PredictConfig) -> ArchitectureType:
+    if get_origin(func.f_type[1]) is Literal:
+        return ArchitectureType.CLASSIFICATION
     else:
-        if get_origin(func.f_type[1]) is Literal:
-            return ArchitectureType.CLASSIFICATION
-        else:
-            return ArchitectureType.LINEAR_REGRESSION
+        return ArchitectureType.LINEAR_REGRESSION
 
 
 def save_architecture(hosta_model: HostaModel, path: str, logger : Logger):

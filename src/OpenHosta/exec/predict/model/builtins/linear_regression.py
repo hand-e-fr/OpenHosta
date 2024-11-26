@@ -8,6 +8,7 @@ from torch.optim.lr_scheduler import StepLR
 from .algo_architecture import get_algo_architecture
 from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
+from ....predict.predict_config import PredictConfig
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
 from .....core.logger import Logger, ANSIColor
 
@@ -18,21 +19,21 @@ class LinearRegression(HostaModel):
             neural_network: Optional[NeuralNetwork],
             input_size: int,
             output_size: int,
-            complexity: int,
+            config: PredictConfig,
             logger: Logger,
             device: Optional[str] = None
     ):
         super().__init__(device)
 
-        self.complexity = complexity
+        self.complexity = config.complexity
         self.logger = logger
         self.device = device
+        self.growth_rate = config.growth_rate
+        self.max_layer_coefficent = config.coef_layers
 
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
-            growth_rate = 2.0
-            max_layer_coefficent = 100
-            layer_size : list = get_algo_architecture(input_size, output_size, complexity, growth_rate, max_layer_coefficent)
-        
+            layer_size : list = get_algo_architecture(input_size, output_size, self.complexity, self.growth_rate, self.max_layer_coefficent)
+
             layers = []
             for i in range(len(layer_size) - 1):
                 in_features = layer_size[i]

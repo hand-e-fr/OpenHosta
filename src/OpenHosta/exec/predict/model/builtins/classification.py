@@ -8,9 +8,9 @@ from torch.optim.lr_scheduler import StepLR
 from .algo_architecture import get_algo_architecture
 from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
+from ....predict.predict_config import PredictConfig
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
 from .....core.logger import Logger, ANSIColor
-
 
 class Classification(HostaModel):
     def __init__(
@@ -18,22 +18,20 @@ class Classification(HostaModel):
             neural_network: Optional[NeuralNetwork],
             input_size: int,
             output_size: int,
-            complexity: int,
-            num_classes: int,
+            config: PredictConfig,
             logger: Logger,
             device: Optional[str] = None
     ):
         super().__init__(device)
 
-        self.complexity = complexity
-        self.num_classes = num_classes
+        self.complexity = config.complexity
         self.logger = logger
         self.device = device
+        self.growth_rate = config.growth_rate
+        self.max_layer_coefficent = config.coef_layers
 
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
-            growth_rate = 1.5
-            max_layer_coefficent = 150
-            layer_size : list = get_algo_architecture(input_size, output_size, complexity, growth_rate, max_layer_coefficent)
+            layer_size : list = get_algo_architecture(input_size, output_size, self.complexity, self.growth_rate, self.max_layer_coefficent)
 
             layers = []
             for i in range(len(layer_size) - 1):
@@ -52,9 +50,6 @@ class Classification(HostaModel):
             self.model = nn.Sequential(*layers)
 
         if neural_network is None or neural_network.loss_function is None:
-        # if num_classes == 2:
-        #     self.loss = nn.BCEWithLogitsLoss()
-        # else:
             self.loss = nn.CrossEntropyLoss()
         else:
             self.loss = custom_loss_to_pytorch(neural_network.loss_function)
@@ -94,10 +89,6 @@ class Classification(HostaModel):
                 self.optimizer.step()
 
                 running_loss += loss.item()
-
-                # if self.num_classes == 2:
-                #     predicted_classes = (torch.sigmoid(outputs) > 0.5).float()
-                # else:
                 predicted_classes = torch.argmax(outputs, dim=1)
 
                 correct_predictions += (predicted_classes == labels).sum().item()
@@ -132,9 +123,6 @@ class Classification(HostaModel):
                 loss = self.loss(outputs, labels)
                 validation_loss += loss.item() * batch_size
 
-                # if self.num_classes == 2:
-                #     predicted_classes = (torch.sigmoid(outputs) > 0.5).long()
-                # else :
                 predicted_classes = torch.argmax(outputs, dim=1)
 
                 correct_predictions += (predicted_classes == labels).sum().item()
@@ -161,9 +149,9 @@ class Classification(HostaModel):
                     
             outputs = self.model(x)
 
-        # if self.num_classes == 2:
-        #     probabilities = torch.sigmoid(outputs)
-        # else :
             probabilities = torch.softmax(outputs, dim=1)
 
             return probabilities.cpu()
+        
+
+from sklearn.linear_model import LinearRegression
