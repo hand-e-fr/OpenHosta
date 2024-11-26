@@ -41,16 +41,16 @@ def predict(
 
     logger: Logger = Logger(log_file_path=memory.summary.path, verbose=verbose)
 
-    dataset: Optional[HostaDataset] = getattr(func, "_dataset", None)
+    dataset: Optional[HostaDataset] = getattr(func.f_obj, "_dataset", None)
 
-    hosta_model: HostaModel = get_hosta_model(memory.architecture, func, logger, config)
+    hosta_model: HostaModel = get_hosta_model(x, func, memory.architecture, logger, config)
 
-    if not load_weights(memory, hosta_model, logger):
+    if not load_weights(x, memory, hosta_model, logger):
         train_model(config, memory, hosta_model, dataset, oracle, func, logger)
     
     if dataset is None:
         dataset = HostaDataset.from_input(func.f_args, logger, config.max_tokens, func, memory.dictionary.path)
-        setattr(func, "_dataset", dataset)
+        x._attach(func.f_obj, {"_dataset": dataset})
     else:
         dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
     torch_prediction = hosta_model.inference(dataset.inference.input)
@@ -59,12 +59,12 @@ def predict(
     return output
 
 
-def get_hosta_model(architecture_file: File, func: Func, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
+def get_hosta_model(x: Hosta, func: Func, architecture_file: File, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
     """
     Load or create a new model.
     """
-    if hasattr(func, "_model"):
-        return getattr(func, "_model")
+    if hasattr(func.f_obj, "_model"):
+        return getattr(func.f_obj, "_model")
 
     architecture: Union[NeuralNetwork, None] = load_architecure(architecture_file, logger)
 
@@ -87,17 +87,17 @@ def load_architecure(architecture_file: File, logger: Logger) -> Union[NeuralNet
         logger.log_custom("Architecture", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
         return None
 
-def load_weights(memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
+def load_weights(x: Hosta, memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
     """
     Load weights if they exist.
     """
-    if hasattr(hosta_model, "_weights_loaded"):
+    if hasattr(x._infos.f_obj, "_weights_loaded"):
         return True
 
     if memory.weights.exist:
         logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         hosta_model.init_weights(memory.weights.path)
-        setattr(hosta_model, "_weights_loaded", True)
+        x._attach(x._infos.f_obj, {"_weights_loaded": True})
         return True
 
     logger.log_custom("Weights", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
@@ -145,7 +145,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None,logger=logger)
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW, level=2)
-        dataset = generate_data(func, oracle, config, logger)
+        dataset = _generate_data(func, oracle, config, logger)
         save_path = os.path.join(memory.predict_dir, "generated_data.csv")
         dataset.save(save_path, SourceType.CSV)
         logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN, level=2)
@@ -162,7 +162,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
     return train_set, val_set
 
 
-def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, logger: Logger) -> HostaDataset:
+def _generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, logger: Logger) -> HostaDataset:
     """
     Generate data for training.
     """
@@ -170,6 +170,7 @@ def generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], conf
 
     data = LLMSyntheticDataGenerator.generate_synthetic_data(
         func=func,
+        logger=logger,
         request_amounts=request_amounts,
         examples_in_req=int(config.generated_data / request_amounts),
         model=oracle if oracle is not None else DefaultModel().get_default_model()
