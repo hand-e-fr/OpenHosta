@@ -188,7 +188,7 @@ from typing import List
 
 def example_function(a:int, b:str)->List[str]:
 ```
-  - **The doctring** is the other key element. This is where you describe the behavior of the function. Be precise and concise. Describe the input parameters and the nature of the output, as in a docstring. Feel free to try out lots of things, prompt engineering is not a closed science. :)
+  - **The docstring** is the other key element. This is where you describe the behavior of the function. Be precise and concise. Describe the input parameters and the nature of the output, as in a docstring. Feel free to try out lots of things, prompt engineering is not a closed science. :)
 
 ```python
 my_model = config.Model(
@@ -357,6 +357,123 @@ print(car_advice("I would two buy a new car, but I would like an electric becaus
 #####
 # To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
 # [{'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}, {'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}]
+```
+
+## `predict` Function
+
+The `predict` function is the second main feature of OpenHosta ! This function allows you to create **specific neural networks** based on the specifications you provide. Here's a breakdown to help you understand it:
+
+
+
+The `predict` function can be used in function or class method by simply returns it. Its primary goal is to create a model tailored to the function it is called in. Currently, it supports two model types:
+
+- **Linear Regression**: For prediction tasks by simply returns an `int`or a `float` :
+  ```python
+  from Openhosta import predict, config
+
+  config.set...
+  def example_predict() -> int:
+  # TODO 
+  ```
+- **Classification**: For classifying multiple values among predefined categories in a `Literal` from the typing module :
+  ```python
+  from typing import Literal
+  from Openhosta import predict, config
+
+  config.set....
+
+  output = Literal[...]
+  def example_classification() -> output:
+  # TODO
+  ```
+
+
+Additionally, `predict` can generate a dataset if none is provided in the [PredictConfig](#predictconfig-class), allowing users to see how a large language model (LLM) understands the problem and generates relevant data. By default, the data generation uses GPT-4o by OpenAI, the same oracle used in the [emulate](#emulate-function) function .
+
+
+
+### Parameters
+The `predict` function supports the following parameters:
+
+- `verbose`: Controls the level of output information:
+  - `0`: No output.
+  - `1`: Basic output (default).
+  - `2`: Detailed output.
+
+
+
+- `oracle`: Specifies the model used for data generation. If set to `None`, no model will be used to handle missing data generation.
+
+- `config`: Accepts a `Predictconfig` object for advanced configuration of model creation.
+
+## `PredictConfig` class
+
+The `PredictConfig` class provides advanced options for configuring the creation and management of *predict* models. Here’s a detailed breakdown:
+
+```python
+from Openhosta import PredictConfig
+
+model_config = PredictConfig(
+    name="model_test",
+    path="./__hostacache__",
+    complexity=5,
+    growth_rate=1.5,
+    coef_layers=100,
+    epochs=100,
+    batch_size=32,
+    max_tokens=1,
+    dataset_path="./path_to_dataset.csv",
+    generated_data=100,
+)
+```
+
+### Features
+
+#### **Path Management**
+- `path` (`str`): Specifies where data will be stored. Default: `./__hostacache__/`.
+- `name` (`str`): Sets the directory name for storing model-related information. Default: the name of the Hosta-injected function.
+
+#### **Architecture Configuration**
+- `complexity` (`int`): Adjusts the model's complexity by adding or removing layers. Default: `5`.
+- `growth_rate` (`float`): Determines the rate of increase in layer size. Default: `1.5`.
+- `coef_layers` (`int`): Defines the maximum possible layer size based on the highest value between inputs and outputs. Default: `100`.
+
+#### **Training Configuration**
+- `epochs` (`int`): Sets the number of training iterations. Default: calculated based on dataset size and batch size.
+- `batch_size` (`int`): Specifies the number of examples processed before weight updates. Default: 5% of the dataset size if possible.
+
+#### **Dataset Management**
+- `max_tokens` (`int`): Limits the number of words a `str` input can contain, as the model adapts neuron sizes accordingly. Default: `1`.
+  - **Warning**: Current model architectures do not perform well with natural language processing tasks. For such cases, use the *emulate* feature instead. NLP architecture support is coming soon.
+- `dataset_path` (`str`): Provides a custom dataset path. Default: `None`.
+- `generated_data` (`int`): Specifies the target number of data points for LLM generation (approximate). Default: `100`.
+
+---
+
+### Example Usage
+
+```python
+from OpenHosta import predict, Predictconfig
+
+# Configuring the model
+config_predict = Predictconfig(
+    path="./__hostacache__"
+    name="test_openhosta",
+    complexity=5,
+    growth_rate=1.5,
+    layers_coefficien=100,
+    epochs=45,
+    batch_size=64,
+    max_tokens=1,
+    dataset_path="./dataset.csv"
+)
+
+# Using the predict function with the configuration
+def demo_open_hosta(number: int, message: str) -> int
+  """
+  this function is just here for an example :)
+  """
+  return predict(config=config_predict, oracle=None, verbose=2)
 ```
 
 ## `thinkof` Function
