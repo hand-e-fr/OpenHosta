@@ -605,8 +605,8 @@ class MyModel(Model):
         return l_ret
 
 new_model = MyModel(
-    model="model-name"
-    base_url="base-url"
+    model="model-name",
+    base_url="base-url",
     api_key="put-your-api-key-here"
 )
 

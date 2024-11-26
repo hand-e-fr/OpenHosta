@@ -92,7 +92,7 @@ class MappingEncoder(BaseEncoder):
         raise ValueError(f"Unknown value: {encoded_value}")
 
 class SimpleEncoder:
-    def __init__(self, max_tokens: int, dictionary: Dict[str, int], dictionary_path : str, mapping_dict: Dict[int, Any], inference : bool) -> None:
+    def __init__(self, max_tokens: int, dictionary: Dict[str, int], dictionary_path : str, mapping_dict: Dict[str, int], inference : bool) -> None:
         self.encoders = {
             str: StringEncoder(dictionary, max_tokens, inference),
             int: IntegerEncoder(),
@@ -103,14 +103,14 @@ class SimpleEncoder:
         self.dictionary_path = dictionary_path
 
     @staticmethod
-    def init_encoder(max_tokens: int, dictionary: Dict[str, int], dictionary_path : str, mapping_dict: str, inference : bool) -> 'SimpleEncoder':
+    def init_encoder(max_tokens: int, dictionary: Dict[str, int], dictionary_path : str, mapping_dict: Dict[str, int], inference : bool) -> 'SimpleEncoder':
 
         encoder = SimpleEncoder(max_tokens, dictionary, dictionary_path ,mapping_dict, inference)
         return encoder
     
     def save_dictionary(self, dictionary: Dict[int, str]) -> None:
         with open(self.dictionary_path, 'w', encoding='utf-8') as f:
-            json.dump(dictionary, f, indent=2, sort_keys=True)
+            json.dump(dictionary, f, indent=2, sort_keys=True) # type: ignore
 
 
     def encode(self, samples: List[Sample]) -> List[Sample]:
