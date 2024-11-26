@@ -8,10 +8,10 @@ def _get_nb_layer(complexity: int):
     L_up refers to the number of layers in the upward path.
     L_down refers to the number of layers in the downward path.
     """
-    L_total = 2 * complexity + 1
-    L_up = (L_total - 1) // 2
-    L_down = L_total - L_up - 1
-    return L_up, L_down
+    l_total = 2 * complexity + 1
+    l_up = (l_total - 1) // 2
+    l_down = l_total - l_up - 1
+    return l_up, l_down
 
 
 def _round_to_power_of_two(value: float) -> int:
@@ -20,7 +20,7 @@ def _round_to_power_of_two(value: float) -> int:
     """
     return 2 ** int(round(math.log2(value)))
 
-def _get_layers_size(n_in, n_out, n_peak, L_up, L_down, growth_rate, max_layer_size) -> List[int]:
+def _get_layers_size(n_in, n_out, n_peak, l_up, l_down, growth_rate, max_layer_size) -> List[int]:
     """
     this function calculates the size of each layer in a neural network.
     """
@@ -28,7 +28,7 @@ def _get_layers_size(n_in, n_out, n_peak, L_up, L_down, growth_rate, max_layer_s
     current_size = n_in
 
     # Upward Phase
-    for i in range(L_up):
+    for i in range(l_up):
         next_size = current_size * growth_rate
         next_size = min(next_size, n_peak, max_layer_size)
         next_size = _round_to_power_of_two(next_size)
@@ -36,7 +36,7 @@ def _get_layers_size(n_in, n_out, n_peak, L_up, L_down, growth_rate, max_layer_s
         current_size = next_size
 
     # Downward Phase
-    for i in range(L_down):
+    for i in range(l_down):
         next_size = current_size / growth_rate
         next_size = max(next_size, n_out)
         next_size = _round_to_power_of_two(next_size)
@@ -62,13 +62,13 @@ def get_algo_architecture(input_size: int, output_size: int, complexity: int, gr
 
     max_layer_size = max_layer_coefficient * n_max
 
-    L_up, L_down = _get_nb_layer(complexity)
+    l_up, l_down = _get_nb_layer(complexity)
 
-    n_peak = n_in * (growth_rate ** L_up)
+    n_peak = n_in * (growth_rate ** l_up)
     n_peak = min(n_peak, max_layer_size)
     n_peak = _round_to_power_of_two(n_peak)  # Assurer que n_peak est une puissance de 2
 
-    layers_size = _get_layers_size(n_in, n_out, n_peak, L_up, L_down, growth_rate, max_layer_size)
+    layers_size = _get_layers_size(n_in, n_out, n_peak, l_up, l_down, growth_rate, max_layer_size)
 
     return layers_size
 

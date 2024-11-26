@@ -1,8 +1,7 @@
+from typing import get_origin, Literal, Union
+
 from torch import nn
 from torch import optim
-
-import typing
-from typing import get_origin, Literal, Union
 
 from ..exec.predict.model.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
 

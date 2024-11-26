@@ -25,12 +25,12 @@ class HostaDataset:
     """
     class for managing datasets in Hosta
     """
-    def __init__(self, verbose: int = 1):
+    def __init__(self, log: Logger):
         self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
         self.dictionary: Dict[int, str] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
-        self.verbose: int = verbose  # Verbose level for debugging
+        self.log = log # Logger for logging the data
 
     ########################################################
     ### Managing data ###
@@ -54,7 +54,7 @@ class HostaDataset:
         Encode data with a token limit for str values.
         """
         assert func is not None, "Func attribut must be provided for encoding"
-        mapping_dict : Dict[Any, int] = None
+        mapping_dict : Optional[Dict[Any, int]] = None
 
 
         output_type = func.f_type[1]
@@ -157,14 +157,14 @@ class HostaDataset:
         return train_loader, val_loader
 
 
-    def normalize_data(data: List[Sample]) -> List[Sample]:
+    def normalize_data(self, data: List[Sample]) -> List[Sample]:
         """Applique une normalisation sur les données."""
         pass
 
-    def manage_example():
+    def manage_example(self):
         pass
 
-    def examples_to_eval():
+    def examples_to_eval(self):
         pass
 
 
@@ -192,7 +192,7 @@ class HostaDataset:
         if not os.path.exists(dictionary_path):
             self.dictionary = {}
         else:
-            with open(dictionary_path, 'r') as f:
+            with open(dictionary_path, 'r', encoding='utf-8') as f:
                 loaded_dict = json.load(f)
                 self.dictionary = loaded_dict if loaded_dict else {}
 
@@ -203,7 +203,7 @@ class HostaDataset:
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(dictionary_path), exist_ok=True)
 
-        with open(dictionary_path, 'w') as f:
+        with open(dictionary_path, 'w', encoding='utf-8') as f:
             json.dump(self.dictionary, f, indent=2, sort_keys=True)
 
     def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
@@ -267,14 +267,14 @@ class HostaDataset:
                 for sample in self.data
             ]
         }
-        with open(file_path, 'w') as f:
+        with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data_to_save, f)
 
     def load_data(self, file_path: str):
         """
         Charge un dataset depuis un fichier JSON
         """
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             data_dict = json.load(f)
         
         for sample_dict in data_dict['data']:
@@ -308,7 +308,7 @@ class HostaDataset:
                 raise ValueError(f"Please specify the source type for the file: {path}")
 
         if source_type == SourceType.CSV:
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     processed_row = {}
@@ -320,7 +320,7 @@ class HostaDataset:
                     self.data.append(Sample(processed_row))
 
         elif source_type == SourceType.JSONL:
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 for line in f:
                     record = json.loads(line)
                     if not isinstance(record, dict):
@@ -328,7 +328,7 @@ class HostaDataset:
                     self.data.append(Sample(record))
 
         elif source_type == SourceType.JSON:
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 if isinstance(data, dict):
                     self.convert_dict(data)
@@ -385,11 +385,11 @@ class HostaDataset:
     ########################################################
     ### Class Generator ###
     @staticmethod
-    def from_files(path: str, source_type: Optional[SourceType], logger: Logger) -> 'HostaDataset':
+    def from_files(path: str, source_type: Optional[SourceType], log: Logger) -> 'HostaDataset':
         """
         Load a dataset from a file.
         """
-        dataset = HostaDataset(logger)
+        dataset = HostaDataset(log)
         dataset.convert_files(path, source_type)
         return dataset
     

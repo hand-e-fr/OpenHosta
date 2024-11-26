@@ -1,5 +1,8 @@
 from typing import Union, Literal, Optional
 from enum import Enum
+import platform
+
+IS_UNIX = platform.system() != "Windows"
 
 class ANSIColor(Enum):
     RESET = '\033[0m'
@@ -61,12 +64,12 @@ class Logger:
         :param color: The color to use for the prefix
         """
         if level <= self.verbose:
-            if one_line:
+            if one_line and IS_UNIX:
                 print(f"{ANSIColor.RESET.value}[{color.value}{prefix}{ANSIColor.RESET.value}] {text_color.value}{message}", end="\r")
             else:
                 print(f"{ANSIColor.RESET.value}[{color.value}{prefix}{ANSIColor.RESET.value}] {text_color.value}{message}")
         if self.log_file_path:
-            with open(self.log_file_path, "a") as log_file:
+            with open(self.log_file_path, 'a', encoding='utf-8') as log_file:
                 log_file.write(f"[{prefix}] {message}" + "\n")
 
     def log_error(self, message: str, level: int = 1):

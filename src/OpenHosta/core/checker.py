@@ -60,7 +60,7 @@ class HostaChecker:
         Returns:
             Dict[Type[T], Optional[Callable[[Any], T]]]: A dictionary mapping types to their corresponding conversion functions.
         """
-        convertMap = {
+        convert_map = {
             NoneType: lambda x: None,
             str: lambda x: str(x),
             int: lambda x: int(x),
@@ -74,9 +74,9 @@ class HostaChecker:
             complex: lambda x: complex(x),
             bytes: lambda x: bytes(x, encoding='utf-8') if isinstance(x, str) else bytes(x),
         }
-        if typ not in convertMap.keys():
+        if typ not in convert_map.keys():
             return self._default.__func__
-        return convertMap[typ]
+        return convert_map[typ]
 
     def convert_annotated(self) -> Any:
         """
