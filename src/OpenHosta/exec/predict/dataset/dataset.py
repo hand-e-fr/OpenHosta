@@ -236,7 +236,7 @@ class HostaDataset:
                 for i, input_value in enumerate(sample.input):
                     sample_dict[f'input_{i}'] = input_value
                 if sample.output is not None:
-                    sample_dict['_outputs'] = sample.output
+                    sample_dict['outputs'] = sample.output
                 dict_data.append(sample_dict)
 
             if source_type == SourceType.CSV:
@@ -263,8 +263,8 @@ class HostaDataset:
         data_to_save = {
             'data': [
                 {
-                    '_inputs': sample.input.tolist() if isinstance(sample.input, torch.Tensor) else sample.input,
-                    '_outputs': sample.output.tolist() if isinstance(sample.output, torch.Tensor) else sample.output
+                    'inputs': sample.input.tolist() if isinstance(sample.input, torch.Tensor) else sample.input,
+                    'outputs': sample.output.tolist() if isinstance(sample.output, torch.Tensor) else sample.output
                 }
                 for sample in self.data
             ]
@@ -355,12 +355,12 @@ class HostaDataset:
                 # If the entry is already a dictionary, let's assume it has the keys in the right structure
                 output_data.append(Sample(entry))
             elif isinstance(entry, (list, tuple)):
-                # If it's a list or tuple, we assume it's structured as (_inputs..., [_outputs])
-                inputs = list(entry[:-1])  # All but last element are _inputs
-                output = entry[-1] if len(entry) > 1 else None  # Last element could be _outputs if present
+                # If it's a list or tuple, we assume it's structured as (inputs..., [outputs])
+                inputs = list(entry[:-1])  # All but last element are inputs
+                output = entry[-1] if len(entry) > 1 else None  # Last element could be outputs if present
                 sample_dict = {f'input_{i}': input_value for i, input_value in enumerate(inputs)}
                 if output is not None:
-                    sample_dict['_outputs'] = output
+                    sample_dict['outputs'] = output
                 output_data.append(Sample(sample_dict))
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
@@ -377,8 +377,8 @@ class HostaDataset:
         output_data = []
         for key, value in data.items():
             if not isinstance(value, dict):
-                value = {'_outputs': value}
-            value['_outputs'] = value.pop(key, None)
+                value = {'outputs': value}
+            value['outputs'] = value.pop(key, None)
             output_data.append(Sample(value))
         self.data = output_data
         return self.data

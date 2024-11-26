@@ -445,7 +445,8 @@ model_config = PredictConfig(
 #### **Dataset Management**
 - `max_tokens` (`int`): Limits the number of words a `str` input can contain, as the model adapts neuron sizes accordingly. Default: `1`.
   - **Warning**: Current model architectures do not perform well with natural language processing tasks. For such cases, use the *emulate* feature instead. NLP architecture support is coming soon.
-- `dataset_path` (`str`): Provides a custom dataset path. Default: `None`.
+- `dataset_path` (`str`): Provides a custom dataset path. Default: `None`, 
+  - **Warning**: Only `csv` and `jsonl` files are supported for now. For `csv`, please set the prediction columns to `_outputs`. and for `jsonl` please set the last element
 - `generated_data` (`int`): Specifies the target number of data points for LLM generation (approximate). Default: `100`.
 
 ---
