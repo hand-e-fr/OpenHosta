@@ -10,6 +10,9 @@ from .core import config
 from .core.config import Model, DefaultManager
 from .utils.meta_prompt import print_last_prompt
 
+from .exec.predict.predict import predict
+from .exec.predict.predict_config import PredictConfig
+
 import os
 
 DefaultManager.set_default_model(
@@ -22,6 +25,8 @@ all = (
     "emulate",
     "thought",
     "example",
+    "predict",
+    "PredictConfig",
     "thinkof",
     "ask",
     "EMULATE_PROMPT",
