@@ -1,5 +1,8 @@
 from typing import Union, Literal, Optional
 from enum import Enum
+import platform
+
+IS_UNIX = platform.system() != "Windows"
 
 class ANSIColor(Enum):
     RESET = '\033[0m'
@@ -42,13 +45,31 @@ class Logger:
             self.log_file = open(log_file_path, "w")
             self.log_file.close()
         self.verbose = verbose if isinstance(verbose, int) else 2 if verbose else 0
-        assert self.verbose is not None and 0 <= self.verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 0"
+        assert self.verbose is not None and 0 <= self.verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 2"
 
-    def _log(self, prefix: str, message: str, level: int = 1, color: ANSIColor = ANSIColor.BRIGHT_GREEN, text_color: ANSIColor = ANSIColor.RESET):
+    def _log(
+            self,
+            prefix: str,
+            message: str,
+            level: int = 1,
+            color: ANSIColor = ANSIColor.BRIGHT_GREEN,
+            text_color: ANSIColor = ANSIColor.RESET,
+            one_line : bool = False
+    ):
+        """
+        Internal logging method.
+        :param prefix: The prefix for the log message
+        :param message: The message to log
+        :param level: The verbose level (0: Essential, 1: Normal, 2: Debug)
+        :param color: The color to use for the prefix
+        """
         if level <= self.verbose:
-            print(f"{ANSIColor.RESET.value}[{color.value}{prefix}{ANSIColor.RESET.value}] {text_color.value}{message}{ANSIColor.RESET.value}")
+            if one_line and IS_UNIX:
+                print(f"{ANSIColor.RESET.value}[{color.value}{prefix}{ANSIColor.RESET.value}] {text_color.value}{message}", end="\r")
+            else:
+                print(f"{ANSIColor.RESET.value}[{color.value}{prefix}{ANSIColor.RESET.value}] {text_color.value}{message}")
         if self.log_file_path:
-            with open(self.log_file_path, "a") as log_file:
+            with open(self.log_file_path, 'a', encoding='utf-8') as log_file:
                 log_file.write(f"[{prefix}] {message}" + "\n")
 
     def log_error(self, message: str, level: int = 1):
@@ -75,5 +96,13 @@ class Logger:
     def log_verbose(self, message: str, level: int = 2):
         self._log("Verbose", message, level, ANSIColor.BRIGHT_CYAN)
 
-    def log_custom(self, prefix: str, message: str, level: int = 1, color: ANSIColor = ANSIColor.BRIGHT_GREEN, text_color: ANSIColor = ANSIColor.RESET):
-        self._log(prefix, message, level, color, text_color)
+    def log_custom(
+            self,
+            prefix: str,
+            message: str,
+            level: int = 1,
+            color: ANSIColor = ANSIColor.BRIGHT_GREEN,
+            text_color: ANSIColor = ANSIColor.RESET,
+            one_line : bool = False
+    ):
+        self._log(prefix, message, level, color, text_color, one_line)

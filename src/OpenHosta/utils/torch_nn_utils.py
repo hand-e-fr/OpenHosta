@@ -1,8 +1,7 @@
+from typing import get_origin, Literal, Union
+
 from torch import nn
 from torch import optim
-
-import typing
-from typing import get_origin, Literal, Union
 
 from ..exec.predict.model.neural_network_types import LayerType, LossFunction, OptimizerAlgorithm, Layer
 
@@ -243,9 +242,10 @@ def custom_optimizer_to_pytorch(optimizer_algorithm: OptimizerAlgorithm, model: 
 
 def type_size(data, tokens_size=10):
     """
-    Calculate the _inputs/_outputs size based on the type of the _inputs data.
+    Calculate the inputs/outputs size based on the type of the inputs data.
 
     Parameters:
+        tokens_size: The size of the tokens in the _inputs data.
         data: Can be of type int, float, list, tuple, numpy array, PyTorch tensor, set, dict, or string.
 
     Returns:

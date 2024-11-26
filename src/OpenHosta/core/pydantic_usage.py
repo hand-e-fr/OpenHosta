@@ -37,7 +37,7 @@ if is_pydantic:
         f_doc: str = Field(default="", description="Documentation of the function, e.g., 'This function returns the sum of two integers.'")
         f_call: str = Field(default="", description="Actual call of the function, e.g., 'func(1, 'hello')'")
         f_args: Dict[str, Any] = Field(default_factory=dict, description="Arguments of the function, e.g., {'a': 1, 'b': 'hello'}")
-        f_type: Tuple[List[Any], Any] = Field(default_factory=lambda: ([], None), description="Desired type of the _inputs and _outputs of the function")
+        f_type: Tuple[List[Any], Any] = Field(default_factory=lambda: ([], None), description="Desired type of the _inputs and outputs of the function")
         f_schema: Dict[str, Any] = Field(default_factory=dict, description="Dictionary describing the function's return type (in case of pydantic).")
         f_sig: Optional[inspect.Signature] = Field(default=None, description="Signature of the function")
         f_locals: Optional[Dict[str, Any]] = Field(default=None, description="Local variables within the function's scope")

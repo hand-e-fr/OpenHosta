@@ -128,7 +128,7 @@ class HostaInspector:
             raise FrameError(
                 "[HostaInspector._extend] The foud object isn't a callable.")
 
-        return (func, caller)
+        return func, caller
 
     @staticmethod
     def _attach(obj: Callable, attr: Dict[str, Any]) -> Optional[bool]:

@@ -25,12 +25,13 @@ class HostaDataset:
     """
     class for managing datasets in Hosta
     """
-    def __init__(self, verbose: int = 1):
+    def __init__(self, log: Logger):
         self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
-        self.dictionary: Dict[int, str] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
+        self.dictionary: Dict[str, int] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
-        self.verbose: int = verbose  # Verbose level for debugging
+        self.log = log # Logger for logging the data
+        self.encoder: Optional[SimpleEncoder] = None  # Encoder for encoding the data
 
     ########################################################
     ### Managing data ###
@@ -54,7 +55,7 @@ class HostaDataset:
         Encode data with a token limit for str values.
         """
         assert func is not None, "Func attribut must be provided for encoding"
-        mapping_dict : Dict[Any, int] = None
+        mapping_dict: Optional[Dict[str, int]] = None
 
 
         output_type = func.f_type[1]
@@ -77,7 +78,7 @@ class HostaDataset:
         return data_encoded
 
 
-    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> List[Any]:
+    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> Tuple[Any, Any]:
         """
         Decode the model predictions based on the function's return type.
         """
@@ -113,9 +114,8 @@ class HostaDataset:
                 else:
                     sample._outputs = torch.tensor(sample.output, dtype=torch.long)
         
-        # Update appropriate attribute
         if value[0].output is None:
-            self.inference = value[0]
+            self.inference = value[0]  # TODO: fix the error here
         else:
             self.data = value
 
@@ -147,29 +147,32 @@ class HostaDataset:
 
         train_size = int(train_ratio * len(dataset))
         val_size = len(dataset) - train_size
-
+        # print("Train size : ", train_size)
+        # print("Val size : ", val_size)
         train_set, val_set = random_split(dataset, [train_size, val_size])
 
-        train_loader = DataLoader(train_set, batch_size=190, shuffle=shuffle)
-        val_loader = DataLoader(val_set, batch_size=190, shuffle=shuffle)
-
+        train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle)
+        val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=shuffle)
+        # print("Train loader len : ", len(train_loader))
+        # print("Val loader len : ", len(val_loader))
         return train_loader, val_loader
 
 
-    def normalize_data(data: List[Sample]) -> List[Sample]:
+    def normalize_data(self, data: List[Sample]) -> List[Sample]:
         """Applique une normalisation sur les données."""
         pass
 
-    def manage_example():
+    def manage_example(self):
         pass
 
-    def examples_to_eval():
+    def examples_to_eval(self):
         pass
 
 
     ########################################################
     ### Internal function process ###
-    def _generate_mapping_dict(self, literal) -> dict:
+    @staticmethod
+    def _generate_mapping_dict(literal) -> dict[str, int]:
         """
         Generate a mapping dictionary for the output type.
         Parameters:
@@ -191,7 +194,7 @@ class HostaDataset:
         if not os.path.exists(dictionary_path):
             self.dictionary = {}
         else:
-            with open(dictionary_path, 'r') as f:
+            with open(dictionary_path, 'r', encoding='utf-8') as f:
                 loaded_dict = json.load(f)
                 self.dictionary = loaded_dict if loaded_dict else {}
 
@@ -202,8 +205,8 @@ class HostaDataset:
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(dictionary_path), exist_ok=True)
 
-        with open(dictionary_path, 'w') as f:
-            json.dump(self.dictionary, f, indent=2, sort_keys=True)
+        with open(dictionary_path, 'w', encoding='utf-8') as f:
+            json.dump(self.dictionary, f, indent=2, sort_keys=True) # type: ignore
 
     def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
             """
@@ -233,21 +236,21 @@ class HostaDataset:
                 for i, input_value in enumerate(sample.input):
                     sample_dict[f'input_{i}'] = input_value
                 if sample.output is not None:
-                    sample_dict['_outputs'] = sample.output
+                    sample_dict['outputs'] = sample.output
                 dict_data.append(sample_dict)
 
             if source_type == SourceType.CSV:
                 with open(path, 'w', newline='', encoding='utf-8') as f:
                     if not dict_data:
                         return
-                    writer = csv.DictWriter(f, fieldnames=dict_data[0].keys())
+                    writer = csv.DictWriter(f, fieldnames=dict_data[0].keys()) # type: ignore
                     writer.writeheader()
                     writer.writerows(dict_data)
 
             elif source_type == SourceType.JSONL:
                 with open(path, 'w', encoding='utf-8') as f:
                     for row in dict_data:
-                        json.dump(row, f)
+                        json.dump(row, f) # type: ignore
                         f.write('\n')
 
             else:
@@ -260,24 +263,23 @@ class HostaDataset:
         data_to_save = {
             'data': [
                 {
-                    '_inputs': sample.input.tolist() if isinstance(sample.input, torch.Tensor) else sample.input,
-                    '_outputs': sample.output.tolist() if isinstance(sample.output, torch.Tensor) else sample.output
+                    'inputs': sample.input.tolist() if isinstance(sample.input, torch.Tensor) else sample.input,
+                    'outputs': sample.output.tolist() if isinstance(sample.output, torch.Tensor) else sample.output
                 }
                 for sample in self.data
             ]
         }
-        with open(file_path, 'w') as f:
-            json.dump(data_to_save, f)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data_to_save, f) # type: ignore
 
     def load_data(self, file_path: str):
         """
         Charge un dataset depuis un fichier JSON
         """
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             data_dict = json.load(f)
         
         for sample_dict in data_dict['data']:
-            print(sample_dict)
             self.add(sample_dict)
 
     ########################################################
@@ -308,7 +310,7 @@ class HostaDataset:
                 raise ValueError(f"Please specify the source type for the file: {path}")
 
         if source_type == SourceType.CSV:
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     processed_row = {}
@@ -320,7 +322,7 @@ class HostaDataset:
                     self.data.append(Sample(processed_row))
 
         elif source_type == SourceType.JSONL:
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 for line in f:
                     record = json.loads(line)
                     if not isinstance(record, dict):
@@ -328,7 +330,7 @@ class HostaDataset:
                     self.data.append(Sample(record))
 
         elif source_type == SourceType.JSON:
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 if isinstance(data, dict):
                     self.convert_dict(data)
@@ -353,12 +355,12 @@ class HostaDataset:
                 # If the entry is already a dictionary, let's assume it has the keys in the right structure
                 output_data.append(Sample(entry))
             elif isinstance(entry, (list, tuple)):
-                # If it's a list or tuple, we assume it's structured as (_inputs..., [_outputs])
-                inputs = list(entry[:-1])  # All but last element are _inputs
-                output = entry[-1] if len(entry) > 1 else None  # Last element could be _outputs if present
+                # If it's a list or tuple, we assume it's structured as (inputs..., [outputs])
+                inputs = list(entry[:-1])  # All but last element are inputs
+                output = entry[-1] if len(entry) > 1 else None  # Last element could be outputs if present
                 sample_dict = {f'input_{i}': input_value for i, input_value in enumerate(inputs)}
                 if output is not None:
-                    sample_dict['_outputs'] = output
+                    sample_dict['outputs'] = output
                 output_data.append(Sample(sample_dict))
             else:
                 raise ValueError(f"Unsupported data format in list entry: {entry}")
@@ -375,8 +377,8 @@ class HostaDataset:
         output_data = []
         for key, value in data.items():
             if not isinstance(value, dict):
-                value = {'_outputs': value}
-            value['_outputs'] = value.pop(key, None)
+                value = {'outputs': value}
+            value['outputs'] = value.pop(key, None)
             output_data.append(Sample(value))
         self.data = output_data
         return self.data
@@ -385,11 +387,11 @@ class HostaDataset:
     ########################################################
     ### Class Generator ###
     @staticmethod
-    def from_files(path: str, source_type: Optional[SourceType], logger: Logger) -> 'HostaDataset':
+    def from_files(path: str, source_type: Optional[SourceType], log: Logger) -> 'HostaDataset':
         """
         Load a dataset from a file.
         """
-        dataset = HostaDataset(logger)
+        dataset = HostaDataset(log)
         dataset.convert_files(path, source_type)
         return dataset
     
@@ -412,13 +414,18 @@ class HostaDataset:
         return dataset
 
     @staticmethod
-    def from_data(data_path: str, batch_size: int, shuffle: bool, logger: Logger, train_ratio: float = 0.8) -> tuple:
+    def from_data(data_path: str, logger: Logger,) -> 'HostaDataset':
         """
         Load a dataset from a file and convert it into dataloader for training.
         """
         dataset = HostaDataset(logger)
         dataset.load_data(data_path)
-        return dataset.to_dataloaders(batch_size=batch_size, shuffle=shuffle, train_ratio=train_ratio)
+
+        return dataset
+        # if config.batch_size is None:
+        #     config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
+
+        # return dataset.to_dataloaders(batch_size=config.batch_size, shuffle=shuffle, train_ratio=train_ratio)
 
     def __len__(self):
         return len(self.data)
@@ -435,7 +442,6 @@ if __name__ == "__main__":
     dataset = HostaDataset(logger)
 
     dataset.convert_files("data.csv", SourceType.CSV)
-    print(dataset.data)
 
     dataset.encode(...)
     dataset.tensorize()

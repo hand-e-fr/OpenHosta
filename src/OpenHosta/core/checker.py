@@ -15,15 +15,15 @@ else:
 
 class HostaChecker:
     """
-    A class used to check and convert the _outputs of a Language Model (LLM) to the type specified in a function's annotation.
+    A class used to check and convert the outputs of a Language Model (LLM) to the type specified in a function's annotation.
 
     Args:
-        func (Func): A function object that contains the type annotations for the LLM _outputs.
-        data (dict): A dictionary containing the LLM _outputs data to be checked and converted.
+        func (Func): A function object that contains the type annotations for the LLM outputs.
+        data (dict): A dictionary containing the LLM outputs data to be checked and converted.
 
     Attributes:
-        func (Func): The function object containing the type annotations for the LLM _outputs.
-        data (dict): The LLM _outputs data to be checked and converted.
+        func (Func): The function object containing the type annotations for the LLM outputs.
+        data (dict): The LLM outputs data to be checked and converted.
         checked (Any): The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         is_passed (bool): A flag indicating whether the checked data should be converted or not. It is set to True if `data` contains a "return" key.
     """
@@ -50,7 +50,7 @@ class HostaChecker:
         """
         return x
 
-    def convert(self, typ: Type[T]) -> Dict[Type[T], Optional[Callable[[Any], T]]]:
+    def convert(self, typ: Type[T]) -> Callable[[Any], T]:
         """
         A method to create a conversion function for a given type.
 
@@ -58,25 +58,23 @@ class HostaChecker:
             typ (Type[T]): The type for which a conversion function needs to be created.
 
         Returns:
-            Dict[Type[T], Optional[Callable[[Any], T]]]: A dictionary mapping types to their corresponding conversion functions.
+            Callable[[Any], T]: A conversion function for the given type.
         """
-        convertMap = {
+        convert_map = {
             NoneType: lambda x: None,
-            str: lambda x: str(x),
-            int: lambda x: int(x),
-            float: lambda x: float(x),
-            list: lambda x: list(x),
-            set: lambda x: set(x),
-            frozenset: lambda x: frozenset(x),
-            tuple: lambda x: tuple(x),
-            bool: lambda x: bool(x),
-            dict: lambda x: dict(x),
-            complex: lambda x: complex(x),
+            str: str,
+            int: int,
+            float: float,
+            list: list,
+            set: set,
+            frozenset: frozenset,
+            tuple: tuple,
+            bool: bool,
+            dict: dict,
+            complex: complex,
             bytes: lambda x: bytes(x, encoding='utf-8') if isinstance(x, str) else bytes(x),
         }
-        if typ not in convertMap.keys():
-            return self._default.__func__
-        return convertMap[typ]
+        return convert_map.get(typ, self._default.__func__)
 
     def convert_annotated(self) -> Any:
         """
