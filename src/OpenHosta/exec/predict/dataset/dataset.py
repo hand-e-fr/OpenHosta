@@ -28,9 +28,10 @@ class HostaDataset:
     def __init__(self, log: Logger):
         self.path: Optional[str] = None  # Path to the file
         self.data: List[Sample] = []  # List of Sample objects
-        self.dictionary: Dict[int, str] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
+        self.dictionary: Dict[str, int] = {}  # Dictionary for mapping str to id for encoding (for simple encoder -> Mini word2vec)
         self.inference: Optional[Sample] = None  # Inference data for understanding the data
         self.log = log # Logger for logging the data
+        self.encoder: Optional[SimpleEncoder] = None  # Encoder for encoding the data
 
     ########################################################
     ### Managing data ###
@@ -54,7 +55,7 @@ class HostaDataset:
         Encode data with a token limit for str values.
         """
         assert func is not None, "Func attribut must be provided for encoding"
-        mapping_dict : Optional[Dict[Any, int]] = None
+        mapping_dict: Optional[Dict[str, int]] = None
 
 
         output_type = func.f_type[1]
@@ -77,7 +78,7 @@ class HostaDataset:
         return data_encoded
 
 
-    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> List[Any]:
+    def decode(self, predictions: Optional[Union[List[torch.Tensor], torch.Tensor]], func_f_type: Any) -> Tuple[Any, Any]:
         """
         Decode the model predictions based on the function's return type.
         """
@@ -170,7 +171,8 @@ class HostaDataset:
 
     ########################################################
     ### Internal function process ###
-    def _generate_mapping_dict(self, literal) -> dict:
+    @staticmethod
+    def _generate_mapping_dict(literal) -> dict[str, int]:
         """
         Generate a mapping dictionary for the output type.
         Parameters:
@@ -204,7 +206,7 @@ class HostaDataset:
         os.makedirs(os.path.dirname(dictionary_path), exist_ok=True)
 
         with open(dictionary_path, 'w', encoding='utf-8') as f:
-            json.dump(self.dictionary, f, indent=2, sort_keys=True)
+            json.dump(self.dictionary, f, indent=2, sort_keys=True) # type: ignore
 
     def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
             """
@@ -241,14 +243,14 @@ class HostaDataset:
                 with open(path, 'w', newline='', encoding='utf-8') as f:
                     if not dict_data:
                         return
-                    writer = csv.DictWriter(f, fieldnames=dict_data[0].keys())
+                    writer = csv.DictWriter(f, fieldnames=dict_data[0].keys()) # type: ignore
                     writer.writeheader()
                     writer.writerows(dict_data)
 
             elif source_type == SourceType.JSONL:
                 with open(path, 'w', encoding='utf-8') as f:
                     for row in dict_data:
-                        json.dump(row, f)
+                        json.dump(row, f) # type: ignore
                         f.write('\n')
 
             else:
@@ -268,7 +270,7 @@ class HostaDataset:
             ]
         }
         with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(data_to_save, f)
+            json.dump(data_to_save, f) # type: ignore
 
     def load_data(self, file_path: str):
         """
