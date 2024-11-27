@@ -145,10 +145,10 @@ class FuncAnalizer:
     @property
     def func_type(self) -> Tuple[List[Any], Any]:
         """
-        Get the _inputs and _outputs types of the function.
+        Get the inputs and outputs types of the function.
 
         Returns:
-            A tuple containing the _inputs types and _outputs type.
+            A tuple containing the inputs types and outputs type.
         """
         input_types = [
             param.annotation for param in self.sig.parameters.values()

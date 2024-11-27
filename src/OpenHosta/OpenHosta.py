@@ -6,9 +6,14 @@ from .exec.thinkof import thinkof
 from .exec.thought import thought
 from .exec.example import example
 from .exec.emulate import emulate
+from .exec.generate_data import generate_data
+from .exec.predict.dataset.dataset import HostaDataset, SourceType
 from .core import config
 from .core.config import Model, DefaultManager
 from .utils.meta_prompt import print_last_prompt
+
+from .exec.predict.predict import predict
+from .exec.predict.predict_config import PredictConfig
 
 import os
 
@@ -22,8 +27,13 @@ all = (
     "emulate",
     "thought",
     "example",
+    "predict",
+    "PredictConfig",
     "thinkof",
     "ask",
     "EMULATE_PROMPT",
-    "print_last_prompt"
+    "print_last_prompt",
+    "generate_data",
+    "HostaDataset",
+    "SourceType"
 )

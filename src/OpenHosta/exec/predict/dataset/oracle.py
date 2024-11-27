@@ -1,6 +1,7 @@
 import inspect
-from typing import Optional, Dict, Any, List, Type, Union, get_args, Literal
+from typing import Optional, Dict, Any, List, Type, Union, Literal,  get_args, get_origin
 
+from ....core.logger import Logger
 from ....core.config import Model, DefaultManager
 from ....core.hosta import Func
 
@@ -13,7 +14,8 @@ class LLMSyntheticDataGenerator:
 
 
     @staticmethod
-    def _validate_row(row: str, expected_fields: List[Type]) -> Optional[List[Union[str, float]]]:
+    def _validate_row(row: str, expected_fields: List[Type], logger: Logger) -> Optional[List[Union[str, float]]]:
+        logger.log_custom("Data Generation", f"Validating row: {row}", one_line=False)
         try:
             values = row.strip().split(',')
 
@@ -40,14 +42,14 @@ class LLMSyntheticDataGenerator:
                     else:
                         return None
 
-                elif getattr(expected_type, '__origin__', None) is Literal:
+                elif get_origin(expected_type) is Literal:
                     valid_literals = get_args(expected_type)
-                    if value in valid_literals:
-                        result.append(value)
+                    if value.strip('"') in valid_literals:
+                        result.append(value.strip('"'))
                     else:
-                        return None  # Invalid Literal
+                        return None
 
-                elif getattr(expected_type, '__origin__', None) is Union and type(None) in get_args(expected_type):
+                elif get_origin(expected_type) is Union and type(None) in get_args(expected_type):
                     non_none_types = [t for t in get_args(expected_type) if t is not type(None)]
                     for t in non_none_types:
                         if t == int:
@@ -76,7 +78,7 @@ class LLMSyntheticDataGenerator:
     @staticmethod
     def _format_example(input_val: Any, output_val: Any) -> str:
         """
-        Format a single example based on _inputs/_outputs types.
+        Format a single example based on inputs/outputs types.
         """
         if isinstance(input_val, (list, tuple)):
             input_str = ','.join(map(str, input_val))
@@ -104,15 +106,17 @@ class LLMSyntheticDataGenerator:
             for input_val, output_val in examples.items():
                 user_prompt += f"{LLMSyntheticDataGenerator._format_example(input_val, output_val)}\n"
 
-        user_prompt += f"\n\nGenerate {examples_in_req} new DIVERSE _inputs-_outputs pairs, one per line, in CSV format"
+        user_prompt += f"\n\nGenerate {examples_in_req} new DIVERSE inputs-outputs pairs, one per line, in CSV format"
         if output_type == str:
-            user_prompt += " (remember to enclose string _outputs in quotes ex: \"_outputs\")"
+            user_prompt += " (remember to enclose string outputs in quotes ex: \"outputs\")"
         user_prompt += ":\n"
 
-        user_prompt += f"{','.join(func.f_sig.parameters.keys())},_outputs"
-        user_prompt += f"\n{','.join([str(f"\n- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}")\
-                                      for a, b in func.f_sig.parameters.items()])}\n"
-        user_prompt += f"- _outputs is type {output_type.__name__}\n"
+        user_prompt += f"{','.join(func.f_sig.parameters.keys())},outputs"
+        user_prompt += "\n" + "\n".join([
+            f"- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}"
+            for a, b in func.f_sig.parameters.items()
+        ]) + "\n"
+        user_prompt += f"- outputs is type {output_type.__name__}\n"
 
         return user_prompt
 
@@ -120,6 +124,7 @@ class LLMSyntheticDataGenerator:
     @staticmethod
     def generate_synthetic_data(
             func: Func, # The function to generate data for
+            logger: Logger, # Logger to use for logging
             request_amounts: int = 3, # Amount of requests to the model
             examples_in_req: int = 50, # Examples amount in each request
             model: Optional[Model] = None # Model to use for data generation
@@ -134,7 +139,7 @@ class LLMSyntheticDataGenerator:
                 to_append = {}
                 for i, key in enumerate(input_types.keys()):
                     to_append[key] = ex_inputes[i]
-                to_append["_outputs"] = ex_output
+                to_append["outputs"] = ex_output
 
         if not model:
             model = DefaultManager.get_default_model()
@@ -160,7 +165,6 @@ class LLMSyntheticDataGenerator:
         result: List[Dict] = []
         conversation_history: List = []
         attempts = 0
-        expected_fields = len(input_types) + 1
 
         conversation_history.append({
             "role": "system",
@@ -199,11 +203,11 @@ class LLMSyntheticDataGenerator:
                 rows = response["choices"][0]["message"]["content"].strip().split('\n')
 
                 for row in rows:
-                    cleaned_row = LLMSyntheticDataGenerator._validate_row(row, list(input_types.values()) + [output_type])
+                    cleaned_row = LLMSyntheticDataGenerator._validate_row(row, list(input_types.values()) + [output_type], logger)
                     if cleaned_row:
                         if cleaned_row not in generated_data:
                             dictrow = dict(zip(input_types.keys(), cleaned_row[:-1]))
-                            dictrow["_outputs"] = cleaned_row[-1]
+                            dictrow["outputs"] = cleaned_row[-1]
                             result.append(dictrow)
                             generated_data.append(cleaned_row)
 
@@ -213,7 +217,7 @@ class LLMSyntheticDataGenerator:
                     conversation_history = [conversation_history[0]] + conversation_history[-9:]
 
             except Exception as e:
-                print(f"Error during generation: {e} line {e.__traceback__.tb_lineno}")
+                logger.log_custom("Data Generation", f"Error during generation: {e} line {e.__traceback__.tb_lineno}")
 
             attempts += 1
 

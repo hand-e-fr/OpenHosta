@@ -1,50 +1,45 @@
 from typing import Optional
 
-from .model.neural_network_types import ArchitectureType
-
 
 class PredictConfig:
     def __init__(self,
-                 model_type: ArchitectureType = None,
                  name: str = None,
                  path: str = None,
-                 version: str = None,
-                 complexity: int = 4,
-                 max_tokens: int = 10,
+                 complexity: int = 5,
+                 growth_rate: float = 1.5,
+                 coef_layers : int = 100,
+                 normalize: bool = False,
                  epochs: Optional[int] = None,
                  batch_size: Optional[int] = None,
-                 learning_rate: Optional[float] = None,
-                 get_loss: Optional[float] = None,
-                 dataset_path: Optional[str] = None
-             ):
-        self.model_type: ArchitectureType = model_type
-
+                 max_tokens: int = 1,
+                 dataset_path: Optional[str] = None,
+                 generated_data: Optional[int] = 100,
+                ):
         self.name: str = name
         self.path: str = path
-        self.version: str = version
-
         self.complexity: int = complexity
-        self.max_tokens: int = max_tokens
-
-        self.batch_size: int = batch_size
+        self.growth_rate: float = growth_rate
+        self.coef_layers: int = coef_layers
+        self.normalize: bool = normalize
         self.epochs: int = epochs
-        self.learning_rate: float = learning_rate
-        self.get_loss: float = get_loss
+        self.batch_size: int = batch_size
+        self.max_tokens: int = max_tokens
         self.dataset_path: str = dataset_path
+        self.generated_data: int = generated_data
 
     def to_json(self):
         return f"""{{
             "name": "{self.name}",
-            "model_type": "{self.model_type}",
-            "weight_path": "{self.path}",
-            "version": "{self.version}",
+            "path": "{self.path}",
             "complexity": {self.complexity},
-            "max_tokens": {self.max_tokens},
+            "growth_rate": {self.growth_rate},
+            "coef_layers": {self.coef_layers},
+            "normalize": {self.normalize},
             "epochs": {self.epochs},
             "batch_size": {self.batch_size},
-            "learning_rate": {self.learning_rate},
-            "get_loss": {self.get_loss},
+            "max_tokens": {self.max_tokens},
             "dataset_path": "{self.dataset_path}",
+            "generated_data": {self.generated_data}
         }}"""
 
     @staticmethod
@@ -53,14 +48,14 @@ class PredictConfig:
         data = json.loads(json_str)
         return PredictConfig(
             name=data["name"],
-            model_type=ArchitectureType(data["model_type"]),
             path=data["path"],
-            version=data["version"],
             complexity=data["complexity"],
-            max_tokens=data["max_tokens"],
+            growth_rate=data["growth_rate"],
+            coef_layers=data["coef_layers"],
+            normalize=data["normalize"],
             epochs=data["epochs"],
             batch_size=data["batch_size"],
-            learning_rate=data["learning_rate"],
-            get_loss=data["get_loss"],
+            max_tokens=data["max_tokens"],
             dataset_path=data["dataset_path"],
+            generated_data=data["generated_data"]
         )
