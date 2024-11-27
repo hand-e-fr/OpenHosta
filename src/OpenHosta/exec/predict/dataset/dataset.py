@@ -158,24 +158,26 @@ class HostaDataset:
         # print("Val loader len : ", len(val_loader))
         return train_loader, val_loader
 
-    def normalize_data(self, normalization_file: File, data: Optional[List[Sample]] = None) -> List[Sample]:
+    def normalize_data(self, normalization_file: File, value: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
         """
         Normalize the input and output data column-wise to the range [-1, 1].
         """
-        if data is None:
-            data = self.data
+        if value is None:
+            value = self.data
+        elif isinstance(value, Sample):
+            value = [value]
 
-        if len(data) == 0:
+        if len(value) == 0:
             raise ValueError("No data to normalize.")
 
-        num_columns = len(data[0].input)
+        num_columns = len(value[0].input)
         min_values = [float('inf')] * num_columns
         max_values = [float('-inf')] * num_columns
 
         min_output = float('inf')
         max_output = float('-inf')
 
-        for sample in data:
+        for sample in value:
             for col_idx, value in enumerate(sample.input):
                 if value < min_values[col_idx]:
                     min_values[col_idx] = value
@@ -192,7 +194,7 @@ class HostaDataset:
             'output': {'min': min_output, 'max': max_output}
         }
 
-        for sample in data:
+        for sample in value:
             for col_idx, value in enumerate(sample.input):
                 if max_values[col_idx] == min_values[col_idx]:
                     sample.input[col_idx] = 0
@@ -207,22 +209,51 @@ class HostaDataset:
         with open(normalization_file.path, 'w', encoding='utf-8') as f:
             json.dump(normalization_data, f, indent=2, sort_keys=True)  # type: ignore
 
-        self.data = data
+        self.data = value
         return self.data
 
-
-    def denormalize_data(self, data: List[Sample], min_values: List[float], max_values: List[float]) -> List[Sample]:
+    def denormalize_data(self, normalization_file: File, value: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
         """
-        Denormalize the input data of each Sample based on provided min and max values.
+        Denormalize the input and output data using the normalization stats stored in the given file.
+        The file must contain the min and max for each column in the inputs and output.
+
+        Args:
+            normalization_file (File): Path to the normalization metadata file.
+
+        Returns:
+            List[Sample]: Denormalized samples.
         """
-        if not data:
-            return data
+        if value is None:
+            value = self.data
+        elif isinstance(value, Sample):
+            value = [value]
 
-        for sample in data:
-            for i, value in enumerate(sample.input):
-                sample.input[i] = value * (max_values[i] - min_values[i]) + min_values[i]
 
-        return data
+        if len(value) == 0:
+            raise ValueError("No data to denormalize.")
+
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        input_min = normalization_data['inputs']['min']
+        input_max = normalization_data['inputs']['max']
+        output_min = normalization_data['output']['min']
+        output_max = normalization_data['output']['max']
+
+        for sample in self.data:
+            for col_idx, value in enumerate(sample.input):
+                if input_max[col_idx] != input_min[col_idx]:
+                    sample.input[col_idx] = ((value + 1) / 2) * (input_max[col_idx] - input_min[col_idx]) + input_min[col_idx]
+                else:
+                    sample.input[col_idx] = input_min[col_idx]
+
+            if sample.output is not None:
+                if output_max != output_min:
+                    sample.output = ((sample.output + 1) / 2) * (output_max - output_min) + output_min
+                else:
+                    sample.output = output_min
+
+        return self.data
 
     def manage_example(self):
         pass

@@ -60,6 +60,7 @@ def predict(
     torch_prediction = hosta_model.inference(dataset.inference.input)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
+
     return output
 
 
