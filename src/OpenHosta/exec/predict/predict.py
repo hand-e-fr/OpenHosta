@@ -126,7 +126,7 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
 
     else:
         logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
-        train_set, val_set = prepare_dataset(config, memory, func, oracle, logger)
+        train_set, val_set = prepare_dataset(config, memory, func, oracle, model, logger)
 
     logger.log_custom("Training", f"epochs: {config.epochs}, batch_size: {config.batch_size}, train_set size: {len(train_set)}, val_set size: {len(val_set)}", color=ANSIColor.BRIGHT_YELLOW, level=2)
 
@@ -144,7 +144,7 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     model.save_weights(memory.weights.path)
 
 
-def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, oracle: Optional[Union[Model, HostaDataset]], logger: Logger) -> tuple:
+def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, oracle: Optional[Union[Model, HostaDataset]], model: HostaModel, logger: Logger) -> tuple:
     """
     Prepare the dataset for training.
     """
@@ -170,9 +170,11 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
-    dataset.normalize_data(memory.normalization)
+    if model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.normalize_data(memory.normalization)
     dataset.tensorize()
-    dataset.save_data(memory.data.path)
+    if model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.save_data(memory.data.path)
 
     train_set, val_set = dataset.to_dataloaders(batch_size=config.batch_size, shuffle=True, train_ratio=0.8)
 
