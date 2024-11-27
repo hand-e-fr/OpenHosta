@@ -164,6 +164,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
+    dataset.normalize_data(memory.normalization)
     dataset.tensorize()
     dataset.save_data(memory.data.path)
 

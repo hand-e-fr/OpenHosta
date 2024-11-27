@@ -10,6 +10,7 @@ from enum import Enum
 
 from .sample_type import Sample
 from ..encoder.simple_encoder import SimpleEncoder
+from ..predict_memory import File
 from ....core.hosta import Func
 from ....core.logger import Logger
 
@@ -126,7 +127,7 @@ class HostaDataset:
         """
         Process the data into DataLoader objects.
         """
-        assert train_ratio > 0 and train_ratio < 1, "Train ratio must be between 0 and 1"
+        assert 0 < train_ratio < 1, "Train ratio must be between 0 and 1"
         assert batch_size > 0, "Batch size must be greater than 0"
 
         data = data if data is not None else self.data
@@ -157,10 +158,55 @@ class HostaDataset:
         # print("Val loader len : ", len(val_loader))
         return train_loader, val_loader
 
+    def normalize_data(self, normalization_file: File, data: Optional[List[Sample]] = None) -> List[Sample]:
+        """
+        Normalize the input data column-wise to the range [-1, 1].
+        """
+        if data is None:
+            data = self.data
 
-    def normalize_data(self, data: List[Sample]) -> List[Sample]:
-        """Applique une normalisation sur les données."""
-        pass
+        if len(data) == 0:
+            raise ValueError("No data to normalize.")
+
+        num_columns = len(data[0].input)
+        min_values = [float('inf')] * num_columns
+        max_values = [float('-inf')] * num_columns
+
+        for sample in data:
+            for col_idx, value in enumerate(sample.input):
+                if value < min_values[col_idx]:
+                    min_values[col_idx] = value
+                if value > max_values[col_idx]:
+                    max_values[col_idx] = value
+
+        normalization_data = {'min': min_values, 'max': max_values}
+
+        for sample in data:
+            for col_idx, value in enumerate(sample.input):
+                if max_values[col_idx] == min_values[col_idx]:
+                    sample.input[col_idx] = 0
+                else:
+                    sample.input[col_idx] = 2 * (value - min_values[col_idx]) / (max_values[col_idx] - min_values[col_idx]) - 1
+
+        with open(normalization_file.path, 'w', encoding='utf-8') as f:
+            json.dump(normalization_data, f, indent=2, sort_keys=True)  # type: ignore
+
+        self.data = data
+        return self.data
+
+
+    def denormalize_data(self, data: List[Sample], min_values: List[float], max_values: List[float]) -> List[Sample]:
+        """
+        Denormalize the input data of each Sample based on provided min and max values.
+        """
+        if not data:
+            return data
+
+        for sample in data:
+            for i, value in enumerate(sample.input):
+                sample.input[i] = value * (max_values[i] - min_values[i]) + min_values[i]
+
+        return data
 
     def manage_example(self):
         pass
