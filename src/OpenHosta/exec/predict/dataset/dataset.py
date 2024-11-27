@@ -158,26 +158,33 @@ class HostaDataset:
         # print("Val loader len : ", len(val_loader))
         return train_loader, val_loader
 
-    def normalize_data(self, normalization_file: File, value: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
+    def normalize_data(self, normalization_file: File, data: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
         """
         Normalize the input and output data column-wise to the range [-1, 1].
-        """
-        if value is None:
-            value = self.data
-        elif isinstance(value, Sample):
-            value = [value]
 
-        if len(value) == 0:
+        Args:
+            normalization_file (File): Path to the file where the normalization stats will be saved.
+            data (Optional[Union[List[Sample], Sample]]): Data to normalize. If None, normalizes self.data.
+
+        Returns:
+            List[Sample]: Normalized samples.
+        """
+        if data is None:
+            data = self.data
+        elif isinstance(data, Sample):
+            data = [data]
+
+        if len(data) == 0:
             raise ValueError("No data to normalize.")
 
-        num_columns = len(value[0].input)
+        num_columns = len(data[0].input)
         min_values = [float('inf')] * num_columns
         max_values = [float('-inf')] * num_columns
 
         min_output = float('inf')
         max_output = float('-inf')
 
-        for sample in value:
+        for sample in data:
             for col_idx, value in enumerate(sample.input):
                 if value < min_values[col_idx]:
                     min_values[col_idx] = value
@@ -194,7 +201,7 @@ class HostaDataset:
             'output': {'min': min_output, 'max': max_output}
         }
 
-        for sample in value:
+        for sample in data:
             for col_idx, value in enumerate(sample.input):
                 if max_values[col_idx] == min_values[col_idx]:
                     sample.input[col_idx] = 0
@@ -209,28 +216,28 @@ class HostaDataset:
         with open(normalization_file.path, 'w', encoding='utf-8') as f:
             json.dump(normalization_data, f, indent=2, sort_keys=True)  # type: ignore
 
-        self.data = value
+        self.data = data
         return self.data
 
-    def denormalize_data(self, normalization_file: File, value: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
+    def denormalize_data(self, normalization_file: File, data: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
         """
         Denormalize the input and output data using the normalization stats stored in the given file.
         The file must contain the min and max for each column in the inputs and output.
 
         Args:
             normalization_file (File): Path to the normalization metadata file.
+            data (Optional[Union[List[Sample], Sample]]): Data to denormalize. If None, denormalizes self.data.
 
         Returns:
             List[Sample]: Denormalized samples.
         """
-        if value is None:
-            value = self.data
-        elif isinstance(value, Sample):
-            value = [value]
+        if data is None:
+            data = self.data
+        elif isinstance(data, Sample):
+            data = [data]
 
-
-        if len(value) == 0:
-            raise ValueError("No data to denormalize.")
+        if len(data) == 0:
+            raise ValueError("No data to normalize.")
 
         with open(normalization_file.path, 'r', encoding='utf-8') as f:
             normalization_data = json.load(f)
