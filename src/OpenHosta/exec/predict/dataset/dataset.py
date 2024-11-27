@@ -409,9 +409,6 @@ class HostaDataset:
             json.dump(data_to_save, f) # type: ignore
 
     def load_data(self, file_path: str):
-        """
-        Charge un dataset depuis un fichier JSON
-        """
         with open(file_path, 'r', encoding='utf-8') as f:
             data_dict = json.load(f)
         
