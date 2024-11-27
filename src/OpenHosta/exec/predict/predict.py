@@ -50,9 +50,13 @@ def predict(
     
     if dataset is None:
         dataset = HostaDataset.from_input(func.f_args, logger, config.max_tokens, func, memory.dictionary.path)
-        x._attach(func.f_obj, {"_dataset": dataset})
+        x.attach(func.f_obj, {"_dataset": dataset})
     else:
         dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
+
+    if not hasattr(func.f_obj, "_model"):
+        setattr(func, "_model", hosta_model)
+
     torch_prediction = hosta_model.inference(dataset.inference.input)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
@@ -69,8 +73,6 @@ def get_hosta_model(func: Func, architecture_file: File, logger: Logger, config:
     architecture: Union[NeuralNetwork, None] = load_architecure(architecture_file, logger)
 
     model = HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
-    # print(model)
-    setattr(func, "_model", model)
     return model
 
 
@@ -97,7 +99,7 @@ def load_weights(x: Hosta, memory: PredictMemory, hosta_model: HostaModel, logge
     if memory.weights.exist:
         logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         hosta_model.init_weights(memory.weights.path)
-        x._attach(x._infos.f_obj, {"_weights_loaded": True})
+        x.attach(x._infos.f_obj, {"_weights_loaded": True})
         return True
 
     logger.log_custom("Weights", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
