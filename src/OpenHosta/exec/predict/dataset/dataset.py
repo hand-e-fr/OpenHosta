@@ -219,6 +219,35 @@ class HostaDataset:
         self.data = data
         return self.data
 
+    def normalize_input_inference(self, normalization_file: File):
+        """
+        Normalize the input data column-wise to the range [-1, 1].
+
+        Args:
+            normalization_file (File): Path to the file where the normalization stats are stored.
+
+        Returns:
+            Sample: Normalized input sample.
+        """
+        if self.inference is None:
+            raise ValueError("No data to normalize.")
+
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        input_min = normalization_data['inputs']['min']
+        input_max = normalization_data['inputs']['max']
+
+        for col_idx, value in enumerate(self.inference.input):
+            if input_max[col_idx] != input_min[col_idx]:
+                self.inference.input[col_idx] = 2 * (value - input_min[col_idx]) / (input_max[col_idx] - input_min[col_idx]) - 1
+            else:
+                self.inference.input[col_idx] = 0
+
+        return self.inference
+
+
+
     def denormalize_data(self, normalization_file: File, data: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
         """
         Denormalize the input and output data using the normalization stats stored in the given file.
@@ -262,6 +291,60 @@ class HostaDataset:
 
         self.data = data
         return self.data
+
+    def denormalize_input_inference(self, normalization_file: File):
+        """
+        Denormalize the input data using the normalization stats stored in the given file.
+        The file must contain the min and max for each column in the inputs.
+
+        Args:
+            normalization_file (File): Path to the normalization metadata file.
+
+        Returns:
+            Sample: Denormalized input sample.
+        """
+        if self.inference is None:
+            raise ValueError("No data to denormalize.")
+
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        input_min = normalization_data['inputs']['min']
+        input_max = normalization_data['inputs']['max']
+
+        for col_idx, value in enumerate(self.inference.input):
+            if input_max[col_idx] != input_min[col_idx]:
+                self.inference.input[col_idx] = ((value + 1) / 2) * (input_max[col_idx] - input_min[col_idx]) + input_min[col_idx]
+            else:
+                self.inference.input[col_idx] = input_min[col_idx]
+
+        return self.inference
+
+    @staticmethod
+    def denormalize_output(output: Sample, normalization_file: File):
+        """
+        Denormalize the output data using the normalization stats stored in the given file.
+        The file must contain the min and max for the output.
+
+        Args:
+            output (Sample): Output data to denormalize.
+            normalization_file (File): Path to the normalization metadata file.
+
+        Returns:
+            Sample: Denormalized output sample.
+        """
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        output_min = normalization_data['output']['min']
+        output_max = normalization_data['output']['max']
+
+        if output_max != output_min:
+            output.output = ((output.output + 1) / 2) * (output_max - output_min) + output_min
+        else:
+            output.output = output_min
+
+        return output
 
     def manage_example(self):
         pass
