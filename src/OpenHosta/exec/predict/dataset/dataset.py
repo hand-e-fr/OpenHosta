@@ -160,7 +160,7 @@ class HostaDataset:
 
     def normalize_data(self, normalization_file: File, data: Optional[List[Sample]] = None) -> List[Sample]:
         """
-        Normalize the input data column-wise to the range [-1, 1].
+        Normalize the input and output data column-wise to the range [-1, 1].
         """
         if data is None:
             data = self.data
@@ -172,14 +172,25 @@ class HostaDataset:
         min_values = [float('inf')] * num_columns
         max_values = [float('-inf')] * num_columns
 
+        min_output = float('inf')
+        max_output = float('-inf')
+
         for sample in data:
             for col_idx, value in enumerate(sample.input):
                 if value < min_values[col_idx]:
                     min_values[col_idx] = value
                 if value > max_values[col_idx]:
                     max_values[col_idx] = value
+            if sample.output is not None:
+                if sample.output < min_output:
+                    min_output = sample.output
+                if sample.output > max_output:
+                    max_output = sample.output
 
-        normalization_data = {'min': min_values, 'max': max_values}
+        normalization_data = {
+            'inputs': {'min': min_values, 'max': max_values},
+            'output': {'min': min_output, 'max': max_output}
+        }
 
         for sample in data:
             for col_idx, value in enumerate(sample.input):
@@ -187,6 +198,11 @@ class HostaDataset:
                     sample.input[col_idx] = 0
                 else:
                     sample.input[col_idx] = 2 * (value - min_values[col_idx]) / (max_values[col_idx] - min_values[col_idx]) - 1
+            if sample.output is not None:
+                if max_output == min_output:
+                    sample.output = 0
+                else:
+                    sample.output = 2 * (sample.output - min_output) / (max_output - min_output) - 1
 
         with open(normalization_file.path, 'w', encoding='utf-8') as f:
             json.dump(normalization_data, f, indent=2, sort_keys=True)  # type: ignore
