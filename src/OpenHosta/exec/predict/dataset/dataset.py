@@ -237,7 +237,7 @@ class HostaDataset:
             data = [data]
 
         if len(data) == 0:
-            raise ValueError("No data to normalize.")
+            raise ValueError("No data to denormalize.")
 
         with open(normalization_file.path, 'r', encoding='utf-8') as f:
             normalization_data = json.load(f)
@@ -247,7 +247,7 @@ class HostaDataset:
         output_min = normalization_data['output']['min']
         output_max = normalization_data['output']['max']
 
-        for sample in self.data:
+        for sample in data:
             for col_idx, value in enumerate(sample.input):
                 if input_max[col_idx] != input_min[col_idx]:
                     sample.input[col_idx] = ((value + 1) / 2) * (input_max[col_idx] - input_min[col_idx]) + input_min[col_idx]
@@ -260,6 +260,7 @@ class HostaDataset:
                 else:
                     sample.output = output_min
 
+        self.data = data
         return self.data
 
     def manage_example(self):
