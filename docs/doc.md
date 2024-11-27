@@ -79,6 +79,8 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Body Functions](#body-functions)
       - [`Example`](#example)
       - [`Thought`](#thought)
+  - [`predict` Function](#predict-function)
+    - [PredictConfig](#predictconfig-class)
   - [`thinkof` Function](#thinkof-function)
   - [`ask` function](#ask-function)
   - [`generate_data` func](#generate_data-func)
@@ -211,7 +213,7 @@ def find_name_age(sentence:str, id:dict)->dict:
     """
     return emulate(model=my_model)
 
-ret = find_name_age("l'âge du capitaine est d'un an de plus que celui du mousse qui a lui 22 ans", {"capitaine": 0, "mousse": 0})
+ret = find_name_age("the captain's age is one year more than the cabin boy's, who is 22 years old", {"captain": 0, "cabin boy": 0})
 print(ret)
 ```
 
@@ -371,24 +373,31 @@ The `predict` function can be used in function or class method by simply returns
   ```python
   from Openhosta import predict, config
 
-  config.set...
-  def example_predict() -> int:
-  # TODO 
+  config.set_default_apiKey("put-your-api-key-here")
+  def example_linear_regression(years : int, profession : str) -> float:
+  """
+  this function predict the salary based on the profession years.
+  """
+  return predict(verbose=2)
   ```
 - **Classification**: For classifying multiple values among predefined categories in a `Literal` from the typing module :
   ```python
   from typing import Literal
   from Openhosta import predict, config
 
-  config.set....
+  config.set_default_apiKey("put-your-api-key-here")
 
-  output = Literal[...]
-  def example_classification() -> output:
-  # TODO
+  output = Literal["Good", "Bad"]
+
+  def example_classification(word: str) -> output:
+  """
+  this function detects if a words is good or bad
+  """
+  return predict(verbose=2)
   ```
 
 
-Additionally, `predict` can generate a dataset if none is provided in the [PredictConfig](#predictconfig-class), allowing users to see how a large language model (LLM) understands the problem and generates relevant data. By default, the data generation uses GPT-4o by OpenAI, the same oracle used in the [emulate](#emulate-function) function .
+Additionally like you can see, `predict` can generate a dataset if none is provided in the [PredictConfig](#predictconfig-class), allowing users to see how a large language model (LLM) understands the problem and generates relevant data. By default, the data generation uses GPT-4o by OpenAI, the same oracle used in the [emulate](#emulate-function) function .
 
 
 
@@ -439,6 +448,7 @@ model_config = PredictConfig(
 - `coef_layers` (`int`): Defines the maximum possible layer size based on the highest value between inputs and outputs. Default: `100`.
 
 #### **Training Configuration**
+- `normalize` (`bool`) : Specify if the data for training need to be normalize between -1 and 1. Default False, only possible with **Linear Regression** models
 - `epochs` (`int`): Sets the number of training iterations. Default: calculated based on dataset size and batch size.
 - `batch_size` (`int`): Specifies the number of examples processed before weight updates. Default: 5% of the dataset size if possible.
 
