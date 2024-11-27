@@ -8,6 +8,7 @@ from torch.optim.lr_scheduler import StepLR
 from .algo_architecture import get_algo_architecture
 from ..hosta_model import HostaModel
 from ..neural_network import NeuralNetwork
+from ..neural_network_types import ArchitectureType
 from ....predict.predict_config import PredictConfig
 from .....utils.torch_nn_utils import custom_optimizer_to_pytorch, custom_loss_to_pytorch, custom_layer_to_pytorch
 from .....core.logger import Logger, ANSIColor
@@ -29,6 +30,7 @@ class Classification(HostaModel):
         self.device = device
         self.growth_rate = config.growth_rate
         self.max_layer_coefficent = config.coef_layers
+        self.architecture_type = ArchitectureType.CLASSIFICATION
 
         if neural_network is None or neural_network.layers is None or len(neural_network.layers) == 0:
             layer_size : list = get_algo_architecture(input_size, output_size, self.complexity, self.growth_rate, self.max_layer_coefficent)
