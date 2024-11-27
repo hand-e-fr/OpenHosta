@@ -47,7 +47,6 @@ def emulate(
         **llm_args
 ) -> Any:
     x = None
-    l_ret: Any = None
 
     if _infos is None:
         x = Hosta()
@@ -59,19 +58,19 @@ def emulate(
         model = DefaultManager.get_default_model()
 
     if x:
-        x._attach(_infos.f_obj, {
+        x.attach(_infos.f_obj, { # type: ignore
             "_last_request": None,
             "_last_response": None
         })
 
     try:
         if x:
-            x._attach(_infos.f_obj, {"_last_request": {
+            x.attach(_infos.f_obj, {"_last_request": { # type: ignore
                     'sys_prompt':f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
                     'user_prompt':_infos.f_call
                     }
                 }
-            )
+                     )
         response = model.simple_api_call(
             sys_prompt=f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
             user_prompt=_infos.f_call,
@@ -79,7 +78,7 @@ def emulate(
         )
 
         if x:
-            x._attach(_infos.f_obj, {"_last_response": response})
+            x.attach(_infos.f_obj, {"_last_response": response}) # type: ignore
         
         l_ret = model.request_handler(response, _infos)
         if post_callback is not None:

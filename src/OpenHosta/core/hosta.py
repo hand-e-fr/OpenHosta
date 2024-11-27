@@ -62,7 +62,7 @@ class Hosta(HostaInspector):
         if hasattr(cls._obj[0], "Hosta"):
             return cls._obj[0].Hosta
         instance = super().__new__(cls)
-        cls._attach(cls._obj[0], {"Hosta": instance})
+        cls.attach(cls._obj[0], {"Hosta": instance})
         return instance
 
     def __init__(self, *, caller_analysis: bool = True):
@@ -122,17 +122,16 @@ class Hosta(HostaInspector):
             value (MemValue): The value to be stored in the memory node.
         """
         seen: List[MemKey] = []
-        previous: MemKey = None
 
         if self._infos.f_mem is None:
             self._infos.f_mem = []
-            id = 0
+            mem_id = 0
         else:
-            id = 0
+            mem_id = 0
             for node in self._infos.f_mem:
                 if node.key == key:
-                    id += 1
-        new = MemoryNode(key=key, id=id, value=value)
+                    mem_id += 1
+        new = MemoryNode(key=key, id=mem_id, value=value)
         self._infos.f_mem.append(new)
         previous = new
         for node in self._infos.f_mem:
