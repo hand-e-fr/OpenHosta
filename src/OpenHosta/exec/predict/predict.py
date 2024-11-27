@@ -57,6 +57,9 @@ def predict(
     if not hasattr(func.f_obj, "_model"):
         setattr(func, "_model", hosta_model)
 
+    print(dataset.inference.input)
+    dataset.normalize_data(normalization_file=memory.normalization, data=dataset.inference.input)
+    print(dataset.inference.input)
     torch_prediction = hosta_model.inference(dataset.inference.input)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
