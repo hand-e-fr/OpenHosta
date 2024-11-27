@@ -6,6 +6,7 @@ from .dataset.oracle import LLMSyntheticDataGenerator
 from .model import HostaModel
 from .model.model_provider import HostaModelProvider
 from .model.neural_network import NeuralNetwork
+from .model.neural_network_types import ArchitectureType
 from .predict_config import PredictConfig
 from .predict_memory import PredictMemory, File
 from ...core.config import Model, DefaultModel
@@ -57,9 +58,11 @@ def predict(
     if not hasattr(func.f_obj, "_model"):
         setattr(func, "_model", hosta_model)
 
-    dataset.normalize_input_inference(memory.normalization)
+    if hosta_model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.normalize_input_inference(memory.normalization)
     torch_prediction = hosta_model.inference(dataset.inference.input)
-    dataset.denormalize_input_inference(memory.normalization)
+    if hosta_model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.denormalize_input_inference(memory.normalization)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
 
@@ -73,7 +76,7 @@ def get_hosta_model(func: Func, architecture_file: File, logger: Logger, config:
     if hasattr(func.f_obj, "_model"):
         return getattr(func.f_obj, "_model")
 
-    architecture: Union[NeuralNetwork, None] = load_architecure(architecture_file, logger)
+    architecture: Optional[NeuralNetwork] = load_architecure(architecture_file, logger)
 
     model = HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
     return model
