@@ -6,6 +6,7 @@ from .dataset.oracle import LLMSyntheticDataGenerator
 from .model import HostaModel
 from .model.model_provider import HostaModelProvider
 from .model.neural_network import NeuralNetwork
+from .model.neural_network_types import ArchitectureType
 from .predict_config import PredictConfig
 from .predict_memory import PredictMemory, File
 from ...core.config import Model, DefaultModel
@@ -57,9 +58,14 @@ def predict(
     if not hasattr(func.f_obj, "_model"):
         setattr(func, "_model", hosta_model)
 
+    if hosta_model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.normalize_input_inference(memory.normalization)
     torch_prediction = hosta_model.inference(dataset.inference.input)
+    if hosta_model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.denormalize_input_inference(memory.normalization)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
+
     return output
 
 
@@ -70,7 +76,7 @@ def get_hosta_model(func: Func, architecture_file: File, logger: Logger, config:
     if hasattr(func.f_obj, "_model"):
         return getattr(func.f_obj, "_model")
 
-    architecture: Union[NeuralNetwork, None] = load_architecure(architecture_file, logger)
+    architecture: Optional[NeuralNetwork] = load_architecure(architecture_file, logger)
 
     model = HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
     return model
@@ -120,7 +126,7 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
 
     else:
         logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
-        train_set, val_set = prepare_dataset(config, memory, func, oracle, logger)
+        train_set, val_set = prepare_dataset(config, memory, func, oracle, model, logger)
 
     logger.log_custom("Training", f"epochs: {config.epochs}, batch_size: {config.batch_size}, train_set size: {len(train_set)}, val_set size: {len(val_set)}", color=ANSIColor.BRIGHT_YELLOW, level=2)
 
@@ -138,7 +144,7 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     model.save_weights(memory.weights.path)
 
 
-def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, oracle: Optional[Union[Model, HostaDataset]], logger: Logger) -> tuple:
+def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, oracle: Optional[Union[Model, HostaDataset]], model: HostaModel, logger: Logger) -> tuple:
     """
     Prepare the dataset for training.
     """
@@ -164,8 +170,11 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
+    if model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.normalize_data(memory.normalization)
     dataset.tensorize()
-    dataset.save_data(memory.data.path)
+    if model.architecture_type != ArchitectureType.CLASSIFICATION:
+        dataset.save_data(memory.data.path)
 
     train_set, val_set = dataset.to_dataloaders(batch_size=config.batch_size, shuffle=True, train_ratio=0.8)
 

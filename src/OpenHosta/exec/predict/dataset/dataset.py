@@ -10,6 +10,7 @@ from enum import Enum
 
 from .sample_type import Sample
 from ..encoder.simple_encoder import SimpleEncoder
+from ..predict_memory import File
 from ....core.hosta import Func
 from ....core.logger import Logger
 
@@ -126,7 +127,7 @@ class HostaDataset:
         """
         Process the data into DataLoader objects.
         """
-        assert train_ratio > 0 and train_ratio < 1, "Train ratio must be between 0 and 1"
+        assert 0 < train_ratio < 1, "Train ratio must be between 0 and 1"
         assert batch_size > 0, "Batch size must be greater than 0"
 
         data = data if data is not None else self.data
@@ -157,10 +158,193 @@ class HostaDataset:
         # print("Val loader len : ", len(val_loader))
         return train_loader, val_loader
 
+    def normalize_data(self, normalization_file: File, data: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
+        """
+        Normalize the input and output data column-wise to the range [-1, 1].
 
-    def normalize_data(self, data: List[Sample]) -> List[Sample]:
-        """Applique une normalisation sur les données."""
-        pass
+        Args:
+            normalization_file (File): Path to the file where the normalization stats will be saved.
+            data (Optional[Union[List[Sample], Sample]]): Data to normalize. If None, normalizes self.data.
+
+        Returns:
+            List[Sample]: Normalized samples.
+        """
+        if data is None:
+            data = self.data
+        elif isinstance(data, Sample):
+            data = [data]
+
+        if len(data) == 0:
+            raise ValueError("No data to normalize.")
+
+        num_columns = len(data[0].input)
+        min_values = [float('inf')] * num_columns
+        max_values = [float('-inf')] * num_columns
+
+        min_output = float('inf')
+        max_output = float('-inf')
+
+        for sample in data:
+            for col_idx, value in enumerate(sample.input):
+                if value < min_values[col_idx]:
+                    min_values[col_idx] = value
+                if value > max_values[col_idx]:
+                    max_values[col_idx] = value
+            if sample.output is not None:
+                if sample.output < min_output:
+                    min_output = sample.output
+                if sample.output > max_output:
+                    max_output = sample.output
+
+        normalization_data = {
+            'inputs': {'min': min_values, 'max': max_values},
+            'output': {'min': min_output, 'max': max_output}
+        }
+
+        for sample in data:
+            for col_idx, value in enumerate(sample.input):
+                if max_values[col_idx] == min_values[col_idx]:
+                    sample.input[col_idx] = 0
+                else:
+                    sample.input[col_idx] = 2 * (value - min_values[col_idx]) / (max_values[col_idx] - min_values[col_idx]) - 1
+            if sample.output is not None:
+                if max_output == min_output:
+                    sample.output = 0
+                else:
+                    sample.output = 2 * (sample.output - min_output) / (max_output - min_output) - 1
+
+        with open(normalization_file.path, 'w', encoding='utf-8') as f:
+            json.dump(normalization_data, f, indent=2, sort_keys=True)  # type: ignore
+
+        self.data = data
+        return self.data
+
+    def normalize_input_inference(self, normalization_file: File):
+        """
+        Normalize the input data column-wise to the range [-1, 1].
+
+        Args:
+            normalization_file (File): Path to the file where the normalization stats are stored.
+
+        Returns:
+            Sample: Normalized input sample.
+        """
+        if self.inference is None:
+            raise ValueError("No data to normalize.")
+
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        input_min = normalization_data['inputs']['min']
+        input_max = normalization_data['inputs']['max']
+
+        for col_idx, value in enumerate(self.inference.input):
+            if input_max[col_idx] != input_min[col_idx]:
+                self.inference.input[col_idx] = 2 * (value - input_min[col_idx]) / (input_max[col_idx] - input_min[col_idx]) - 1
+            else:
+                self.inference.input[col_idx] = 0
+
+        return self.inference
+
+
+
+    def denormalize_data(self, normalization_file: File, data: Optional[Union[List[Sample], Sample]] = None) -> List[Sample]:
+        """
+        Denormalize the input and output data using the normalization stats stored in the given file.
+        The file must contain the min and max for each column in the inputs and output.
+
+        Args:
+            normalization_file (File): Path to the normalization metadata file.
+            data (Optional[Union[List[Sample], Sample]]): Data to denormalize. If None, denormalizes self.data.
+
+        Returns:
+            List[Sample]: Denormalized samples.
+        """
+        if data is None:
+            data = self.data
+        elif isinstance(data, Sample):
+            data = [data]
+
+        if len(data) == 0:
+            raise ValueError("No data to denormalize.")
+
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        input_min = normalization_data['inputs']['min']
+        input_max = normalization_data['inputs']['max']
+        output_min = normalization_data['output']['min']
+        output_max = normalization_data['output']['max']
+
+        for sample in data:
+            for col_idx, value in enumerate(sample.input):
+                if input_max[col_idx] != input_min[col_idx]:
+                    sample.input[col_idx] = ((value + 1) / 2) * (input_max[col_idx] - input_min[col_idx]) + input_min[col_idx]
+                else:
+                    sample.input[col_idx] = input_min[col_idx]
+
+            if sample.output is not None:
+                if output_max != output_min:
+                    sample.output = ((sample.output + 1) / 2) * (output_max - output_min) + output_min
+                else:
+                    sample.output = output_min
+
+        self.data = data
+        return self.data
+
+    def denormalize_input_inference(self, normalization_file: File):
+        """
+        Denormalize the input data using the normalization stats stored in the given file.
+        The file must contain the min and max for each column in the inputs.
+
+        Args:
+            normalization_file (File): Path to the normalization metadata file.
+
+        Returns:
+            Sample: Denormalized input sample.
+        """
+        if self.inference is None:
+            raise ValueError("No data to denormalize.")
+
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        input_min = normalization_data['inputs']['min']
+        input_max = normalization_data['inputs']['max']
+
+        for col_idx, value in enumerate(self.inference.input):
+            if input_max[col_idx] != input_min[col_idx]:
+                self.inference.input[col_idx] = ((value + 1) / 2) * (input_max[col_idx] - input_min[col_idx]) + input_min[col_idx]
+            else:
+                self.inference.input[col_idx] = input_min[col_idx]
+
+        return self.inference
+
+    @staticmethod
+    def denormalize_output(output: Sample, normalization_file: File):
+        """
+        Denormalize the output data using the normalization stats stored in the given file.
+        The file must contain the min and max for the output.
+
+        Args:
+            output (Sample): Output data to denormalize.
+            normalization_file (File): Path to the normalization metadata file.
+
+        Returns:
+            Sample: Denormalized output sample.
+        """
+        with open(normalization_file.path, 'r', encoding='utf-8') as f:
+            normalization_data = json.load(f)
+
+        output_min = normalization_data['output']['min']
+        output_max = normalization_data['output']['max']
+
+        if output_max != output_min:
+            output.output = ((output.output + 1) / 2) * (output_max - output_min) + output_min
+        else:
+            output.output = output_min
+
+        return output
 
     def manage_example(self):
         pass
