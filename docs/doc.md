@@ -438,6 +438,7 @@ model_config = PredictConfig(
     max_tokens=1,
     dataset_path="./path_to_dataset.csv",
     generated_data=100,
+    normalize=False
 )
 ```
 
@@ -469,11 +470,11 @@ model_config = PredictConfig(
 ### Example Usage
 
 ```python
-from OpenHosta import predict, Predictconfig
+from OpenHosta import predict, PredictConfig
 
 # Configuring the model
-config_predict = Predictconfig(
-    path="./__hostacache__"
+config_predict = PredictConfig(
+    path="./__hostacache__",
     name="test_openhosta",
     complexity=5,
     growth_rate=1.5,
@@ -486,11 +487,13 @@ config_predict = Predictconfig(
 )
 
 # Using the predict function with the configuration
-def demo_open_hosta(number: int, message: str) -> int
-  """
-  this function is just here for an example :)
-  """
-  return predict(config=config_predict, oracle=None, verbose=2)
+def demo_open_hosta(number: int, message: str) -> int:
+    """
+    this function is just here for an example :)
+    """
+    return predict(config=config_predict, oracle=None, verbose=2)
+
+print(demo_open_hosta(42, "Hello World!"))
 ```
 
 ## `thinkof` Function
