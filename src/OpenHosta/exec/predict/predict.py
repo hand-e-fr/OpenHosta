@@ -61,9 +61,9 @@ def predict(
     if config.normalize:
         dataset.normalize_input_inference(memory.normalization)
     torch_prediction = hosta_model.inference(dataset.inference.input)
-    output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     if config.normalize:
-        dataset.denormalize_output_inference(output, memory.normalization)
+        dataset.denormalize_output_inference(torch_prediction, memory.normalization)
+    output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
     return output
 
