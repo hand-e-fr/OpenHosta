@@ -79,8 +79,16 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Body Functions](#body-functions)
       - [`Example`](#example)
       - [`Thought`](#thought)
+  - [`predict` Function](#predict-function)
+    - [PredictConfig](#predictconfig-class)
   - [`thinkof` Function](#thinkof-function)
   - [`ask` function](#ask-function)
+  - [`generate_data` func](#generate_data-func)
+    - [Parameters](#parameters)
+    - [Returns](#returns)
+    - [Raises](#raises)
+    - [Example](#example)
+    - [How It Works](#how-it-works)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
@@ -182,7 +190,7 @@ from typing import List
 
 def example_function(a:int, b:str)->List[str]:
 ```
-  - **The doctring** is the other key element. This is where you describe the behavior of the function. Be precise and concise. Describe the input parameters and the nature of the output, as in a docstring. Feel free to try out lots of things, prompt engineering is not a closed science. :)
+  - **The docstring** is the other key element. This is where you describe the behavior of the function. Be precise and concise. Describe the input parameters and the nature of the output, as in a docstring. Feel free to try out lots of things, prompt engineering is not a closed science. :)
 
 ```python
 my_model = config.Model(
@@ -205,7 +213,7 @@ def find_name_age(sentence:str, id:dict)->dict:
     """
     return emulate(model=my_model)
 
-ret = find_name_age("l'âge du capitaine est d'un an de plus que celui du mousse qui a lui 22 ans", {"capitaine": 0, "mousse": 0})
+ret = find_name_age("the captain's age is one year more than the cabin boy's, who is 22 years old", {"captain": 0, "cabin boy": 0})
 print(ret)
 ```
 
@@ -353,6 +361,141 @@ print(car_advice("I would two buy a new car, but I would like an electric becaus
 # [{'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}, {'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}]
 ```
 
+## `predict` Function
+
+The `predict` function is the second main feature of OpenHosta ! This function allows you to create **specific neural networks** based on the specifications you provide. Here's a breakdown to help you understand it:
+
+
+
+The `predict` function can be used in function or class method by simply returns it. Its primary goal is to create a model tailored to the function it is called in. Currently, it supports two model types:
+
+- **Linear Regression**: For prediction tasks by simply returns an `int`or a `float` :
+  ```python
+  from Openhosta import predict, config
+
+  config.set_default_apiKey("put-your-api-key-here")
+  
+  def example_linear_regression(years : int, profession : str) -> float:
+      """
+      this function predict the salary based on the profession years.
+      """
+      return predict(verbose=2)
+  
+  print(example_linear_regression(1, "engineer"))
+  ```
+- **Classification**: For classifying multiple values among predefined categories in a `Literal` from the typing module :
+  ```python
+  from typing import Literal
+  from Openhosta import predict, config
+
+  config.set_default_apiKey("put-your-api-key-here")
+
+  output = Literal["Good", "Bad"]
+  
+  def example_classification(word: str) -> output:
+      """
+      this function detects if a words is good or bad
+      """
+      return predict(verbose=2)
+  
+  print(example_classification("Bad"))
+  ```
+
+
+Additionally like you can see, `predict` can generate a dataset if none is provided in the [PredictConfig](#predictconfig-class), allowing users to see how a large language model (LLM) understands the problem and generates relevant data. By default, the data generation uses GPT-4o by OpenAI, the same oracle used in the [emulate](#emulate-function) function .
+
+
+
+### Parameters
+The `predict` function supports the following parameters:
+
+- `verbose`: Controls the level of output information:
+  - `0`: No output.
+  - `1`: Basic output (default).
+  - `2`: Detailed output.
+
+
+
+- `oracle`: Specifies the model used for data generation. If set to `None`, no model will be used to handle missing data generation.
+
+- `config`: Accepts a `Predictconfig` object for advanced configuration of model creation.
+
+## `PredictConfig` class
+
+The `PredictConfig` class provides advanced options for configuring the creation and management of *predict* models. Here’s a detailed breakdown:
+
+```python
+from Openhosta import PredictConfig
+
+model_config = PredictConfig(
+    name="model_test",
+    path="./__hostacache__",
+    complexity=5,
+    growth_rate=1.5,
+    coef_layers=100,
+    epochs=100,
+    batch_size=32,
+    max_tokens=1,
+    dataset_path="./path_to_dataset.csv",
+    generated_data=100,
+    normalize=False
+)
+```
+
+### Features
+
+#### **Path Management**
+- `path` (`str`): Specifies where data will be stored. Default: `./__hostacache__/`.
+- `name` (`str`): Sets the directory name for storing model-related information. Default: the name of the Hosta-injected function.
+
+#### **Architecture Configuration**
+- `complexity` (`int`): Adjusts the model's complexity by adding or removing layers. Default: `5`.
+- `growth_rate` (`float`): Determines the rate of increase in layer size. Default: `1.5`.
+- `coef_layers` (`int`): Defines the maximum possible layer size based on the highest value between inputs and outputs. Default: `100`.
+
+#### **Training Configuration**
+- `normalize` (`bool`) : Specify if the data for training need to be normalize between -1 and 1. Default False, only possible with **Linear Regression** models
+- `epochs` (`int`): Sets the number of training iterations. Default: calculated based on dataset size and batch size.
+- `batch_size` (`int`): Specifies the number of examples processed before weight updates. Default: 5% of the dataset size if possible.
+
+#### **Dataset Management**
+- `max_tokens` (`int`): Limits the number of words a `str` input can contain, as the model adapts neuron sizes accordingly. Default: `1`.
+  - **Warning**: Current model architectures do not perform well with natural language processing tasks. For such cases, use the *emulate* feature instead. NLP architecture support is coming soon.
+- `dataset_path` (`str`): Provides a custom dataset path. Default: `None`, 
+  - **Warning**: Only `csv` and `jsonl` files are supported for now. For `csv`, please set the prediction columns to `_outputs`. and for `jsonl` please set the last element
+- `generated_data` (`int`): Specifies the target number of data points for LLM generation (approximate). Default: `100`.
+
+---
+
+### Example Usage
+
+```python
+from OpenHosta import predict, PredictConfig
+
+# Configuring the model
+config_predict = PredictConfig(
+    path="./__hostacache__",
+    name="test_openhosta",
+    complexity=5,
+    growth_rate=1.5,
+    layers_coefficien=100,
+    epochs=45,
+    batch_size=64,
+    max_tokens=1,
+    dataset_path="./dataset.csv",
+    normalize=False
+)
+
+# Using the predict function with the configuration
+def demo_open_hosta(number: int, message: str) -> int:
+    """
+    this function is just here for an example :)
+    """
+    return predict(config=config_predict, oracle=None, verbose=2)
+
+print(demo_open_hosta(42, "Hello World!"))
+```
+
 ## `thinkof` Function
 
 **Lambda** functions in Python provide a way to create small, anonymous functions. These are defined using the lambda keyword and can have any number of input parameters but only a single expression.
@@ -432,6 +575,83 @@ print(response['choices'][0]['message']['content'])
 As seen above takes 2 or more argument. The two first arguments are mandatory. `system` correspond to the system prompt to the LLM, same as the `user` parameter. You can also set the `model` parameter to a custom Model instance. It also handle all LLM parmaters (`max_tokens`, `n`, `top_p`...).
 
 **Note** : ***this feature uses the default model.***
+
+## `generate_data` func
+
+Generate a dataset based on a given function and the number of samples. This function uses a synthetic data generator to create realistic input-output pairs for a given callable Python function based on its defined parameters, examples, and return type.
+
+### Parameters
+
+- **`func`** (`Callable`):  
+  The target function used to generate the dataset. This function must take specific inputs and return outputs to be used for creating the dataset.  
+  Proper type annotations and a clear docstring for the `func` are recommended to enhance the quality of generated data.
+
+- **`num_samples`** (`int`):  
+  The number of samples to generate. If the number exceeds 100, the function intelligently splits the data requests into manageable chunks.
+
+- **`oracle`** (`Optional[Model]`, Optional):  
+  The model or "oracle" used to assist with generating synthetic data.  
+  By default, the function uses the system's predefined default model.
+
+- **`verbose`** (`Union[Literal[0, 1, 2], bool]`, default=`2`):  
+  Defines the verbosity level for logging the data generation process:  
+  - `0` or `False`: No logging.
+  - `1`: Minimal logging.
+  - `2` or `True`: Detailed logging, providing insights during data generation.
+
+### Returns
+
+- **`HostaDataset`**:  
+  An instance of `HostaDataset`, representing the generated dataset. This dataset can be saved to disk (CSV, JSON, JSONL) or iterated over for input-output pairs.
+
+### Raises
+
+- **`TypeError`**:  
+  Raised if the provided `func` is not callable or lacks sufficient information to generate data (such as missing type annotations).
+
+### Example
+
+The following example demonstrates how to define a function, generate synthetic data using `generate_data`, and save the resulting dataset.
+
+```python
+from typing import Literal
+from OpenHosta import generate_data, HostaDataset, example, emulate, SourceType
+
+def detect_mood(message: str) -> Literal["positive", "negative", "neutral"]:
+    """
+    Analyze the mood conveyed in a text message.
+    """
+    # Provide pre-defined examples to guide synthetic data generation
+    example(message="I feel lonely...", hosta_out="negative")
+    example(message="I am happy!", hosta_out="positive")
+    example(message="I have a cat", hosta_out="neutral")
+    return emulate()
+
+# Generate a dataset with 50 examples
+dataset: HostaDataset = generate_data(detect_mood, 50)
+
+# Save the dataset as a CSV file
+dataset.save_data("detect_mood.csv", SourceType.CSV)
+
+# Print each input-output pair in the dataset
+correct = 0
+
+for data in dataset.data:
+    print(f"{data.input[0].strip('"')} expected {data.output} got {detect_mood(data.input[0].strip('"'))}")
+    if data.output == detect_mood(data.input[0].strip('"')):
+        correct += 1
+
+print(f"Accuracy: {correct}/{len(dataset.data)}, {correct/len(dataset.data)*100}%")
+```
+
+### How It Works
+
+- **Define the Function**:  
+  The target function (`detect_mood` in the example) must be well-defined, preferably with type annotations and examples to guide the data generation process.
+- **Generate Synthetic Data**:
+  Use `generate_data` to produce a dataset by specifying the number of samples and optionally overriding the default model with a custom `oracle`.
+- **Save or Process Dataset**:  
+  The returned dataset (`HostaDataset` instance) provides methods to save it in various formats (CSV, JSON, JSONL) or iterate over its contents for further analysis.
 
 ## Advanced configuration
 
@@ -522,8 +742,8 @@ class MyModel(Model):
         return l_ret
 
 new_model = MyModel(
-    model="model-name"
-    base_url="base-url"
+    model="model-name",
+    base_url="base-url",
     api_key="put-your-api-key-here"
 )
 

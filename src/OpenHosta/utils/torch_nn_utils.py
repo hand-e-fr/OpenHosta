@@ -1,4 +1,4 @@
-from typing import Union
+from typing import get_origin, Literal, Union
 
 from torch import nn
 from torch import optim
@@ -242,9 +242,10 @@ def custom_optimizer_to_pytorch(optimizer_algorithm: OptimizerAlgorithm, model: 
 
 def type_size(data, tokens_size=10):
     """
-    Calculate the _inputs/_outputs size based on the type of the _inputs data.
+    Calculate the inputs/outputs size based on the type of the inputs data.
 
     Parameters:
+        tokens_size: The size of the tokens in the _inputs data.
         data: Can be of type int, float, list, tuple, numpy array, PyTorch tensor, set, dict, or string.
 
     Returns:
@@ -266,7 +267,7 @@ def type_size(data, tokens_size=10):
         return sum(type_size(item) for item in data)
     elif data is dict:
         return sum(type_size(k) + type_size(v) for k, v in data.items())
-    # elif isinstance(data, typing._GenericAlias) and get_origin(data) is Literal:
-    #     return len(data.__args__)
+    elif get_origin(data) is Literal:
+        return len(data.__args__)
     else:
         raise TypeError(f'Unsupported data type: {type(data)}')

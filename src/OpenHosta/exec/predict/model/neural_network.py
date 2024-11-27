@@ -4,7 +4,7 @@ from typing import Optional
 from torch import nn
 
 from .neural_network_types import LayerType, OptimizerAlgorithm, LossFunction, Layer
-from ....utils.torch_nn_utils import pytorch_layer_to_custom, pytorch_loss_to_custom, pytorch_optimizer_to_custom
+from ....utils.torch_nn_utils import pytorch_layer_to_custom, pytorch_loss_to_custom, pytorch_optimizer_to_custom, custom_layer_to_pytorch
 
 
 class NeuralNetwork:
@@ -15,6 +15,7 @@ class NeuralNetwork:
         self.layers: list[Layer] = []
         self.loss_function: Optional[LossFunction] = None
         self.optimizer: Optional[OptimizerAlgorithm] = None
+        self._type = "UNDEFINED"
 
     def add_layer(self, layer: Layer):
         """
@@ -61,6 +62,7 @@ class NeuralNetwork:
         :rtype: str
         """
         network_dict = {
+            "type": self._type,
             "layers": [
                 layer.to_json()
                 for layer in self.layers
@@ -85,22 +87,33 @@ class NeuralNetwork:
         """
         try:
             network_dict = json.loads(json_str)
-            network = cls()
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {e}")
 
-            if network_dict.get("loss_function", None) is not None:
-                network.loss_function = LossFunction[network_dict.get("loss_function", None)]
-            else:
-                network.loss_function = None
+        network = cls()
 
-            if network_dict.get("optimizer", None) is not None:
-                network.optimizer = OptimizerAlgorithm[network_dict.get("optimizer", None)]
-            else:
-                network.optimizer = None
+        # Set loss function
+        loss_fn_name = network_dict.get("loss_function")
+        if loss_fn_name:
+            try:
+                network.loss_function = LossFunction[loss_fn_name]
+            except KeyError:
+                raise ValueError(f"Unsupported loss function: {loss_fn_name}")
 
-            # Add layers
-            for layer_dict in network_dict.get("layers", []):
+        # Set optimizer
+        optimizer_name = network_dict.get("optimizer")
+        if optimizer_name:
+            try:
+                network.optimizer = OptimizerAlgorithm[optimizer_name]
+            except KeyError:
+                raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+
+        # Add layers
+        for layer_dict in network_dict.get("layers", []):
+            try:
+                layer_type = LayerType[layer_dict["layer_type"]]
                 layer = Layer(
-                    layer_type=LayerType[layer_dict.get("layer_type", None)],
+                    layer_type=layer_type,
                     in_features=layer_dict.get("in_features"),
                     out_features=layer_dict.get("out_features"),
                     kernel_size=layer_dict.get("kernel_size"),
@@ -109,11 +122,12 @@ class NeuralNetwork:
                     dropout=layer_dict.get("dropout")
                 )
                 network.add_layer(layer)
+            except KeyError as e:
+                raise ValueError(f"Missing key in layer definition: {e}")
+            except ValueError as e:
+                raise ValueError(f"Invalid value in layer definition: {e}")
 
-            return network
-
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
-            raise ValueError(f"Invalid JSON configuration: {str(e)}")
+        return network
 
 
     @classmethod
@@ -130,13 +144,13 @@ class NeuralNetwork:
         network = cls()
 
         # Iterating through the PyTorch model's children (layers)
-        for layer in torch_model.children():
-            try:
-                nn_layer = pytorch_layer_to_custom(layer)
+        for layer in torch_model.model.children(): # assuming that the model as a attribut model ! 
+            nn_layer = pytorch_layer_to_custom(layer)
+            if nn_layer is not None:
                 network.add_layer(nn_layer)
-            except ValueError as e:
-                # print(f"Skipping unsupported layer: {e}")
+            else:
                 pass
+                # print(f"Skipping unsupported layer: {e}")
 
         # Set loss function and optimizer if specified
         if loss_fn is not None:
@@ -153,3 +167,19 @@ class NeuralNetwork:
                 print(f"Skipping unsupported optimizer: {e}")
 
         return network
+    
+    def to_pytorch_sequential_model(self) -> nn.Sequential:
+        """
+        Convert the NeuralNetwork instance to a PyTorch nn.Sequential model.
+
+        :return: A PyTorch nn.Sequential model.
+        """
+        layers = []
+        for layer in self.layers:
+            try:
+                pytorch_layer = custom_layer_to_pytorch(layer)
+                if pytorch_layer is not None:
+                    layers.append(pytorch_layer)
+            except ValueError as e:
+                print(f"Skipping unsupported layer: {e}")
+        return nn.Sequential(*layers)
