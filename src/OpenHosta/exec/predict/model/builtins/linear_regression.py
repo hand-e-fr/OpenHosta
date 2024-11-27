@@ -70,9 +70,11 @@ class LinearRegression(HostaModel):
     def trainer(self, train_set, epochs):
         """
         Training loop for regression models.
+        Includes accuracy calculation with a tolerance (epsilon).
         """
+        epsilon = 0.1
         self.train()
-        
+
         for epoch in range(epochs):
             running_loss = 0.0
             correct_predictions = 0
@@ -80,7 +82,7 @@ class LinearRegression(HostaModel):
             
             for inputs, labels in train_set:
                 inputs = inputs.to(self.device)
-                labels = labels.to(self.device).float().view(-1, 1) # Ensure float type for regression and in a good format
+                labels = labels.to(self.device).float().view(-1, 1)  # Ensure proper shape and type
                 batch_size = labels.size(0)
 
                 self.optimizer.zero_grad()
@@ -91,8 +93,8 @@ class LinearRegression(HostaModel):
                 self.optimizer.step()
 
                 running_loss += loss.item()
-                
-                correct_predictions = (outputs == labels).sum().item()
+
+                correct_predictions += ((outputs - labels).abs() < epsilon).sum().item()
                 total_samples += batch_size
             
             self.scheduler.step()
@@ -104,24 +106,22 @@ class LinearRegression(HostaModel):
                 self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%, LR: {current_lr:.6f}", color=ANSIColor.CYAN, level=1, one_line=False)
             else :    
                 self.logger.log_custom("Epoch", f"{epoch + 1}/{epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.2f}%, LR: {current_lr:.6f}", color=ANSIColor.CYAN, level=1, one_line=True)
-    
-            # Learning rate scheduling to check later
-            # if self.scheduler:
-            #     self.scheduler.step()
 
 
 
     def validate(self, validation_set):
         """
-        Validate the model on a given validation set for linear regression task.
+        Validate the model on a given validation set for regression models.
+        Includes accuracy calculation with a tolerance (epsilon).
         """
         self.eval()
         validation_loss = 0.0
         correct_predictions = 0
         total_samples = 0
+        epsilon = 0.1
 
         with torch.no_grad():
-            for inputs, labels in validation_set :
+            for inputs, labels in validation_set:
                 inputs = inputs.to(self.device)
                 labels = labels.to(self.device).float().view(-1, 1)
                 batch_size = labels.size(0)
@@ -130,7 +130,7 @@ class LinearRegression(HostaModel):
                 loss = self.loss(outputs, labels)
                 validation_loss += loss.item() * batch_size
 
-                correct_predictions = (outputs == labels).sum().item()
+                correct_predictions += ((outputs - labels).abs() < epsilon).sum().item()
                 total_samples += batch_size
 
             avg_val_loss = validation_loss / len(validation_set)
