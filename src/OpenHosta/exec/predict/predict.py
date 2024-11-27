@@ -58,14 +58,13 @@ def predict(
     if not hasattr(func.f_obj, "_model"):
         setattr(func, "_model", hosta_model)
 
-    if hosta_model.architecture_type != ArchitectureType.CLASSIFICATION:
+    if config.normalize:
         dataset.normalize_input_inference(memory.normalization)
     torch_prediction = hosta_model.inference(dataset.inference.input)
-    if hosta_model.architecture_type != ArchitectureType.CLASSIFICATION:
-        dataset.denormalize_input_inference(memory.normalization)
     output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
+    if config.normalize:
+        dataset.denormalize_output_inference(output, memory.normalization)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
-
     return output
 
 
@@ -170,11 +169,10 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
 
     dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
-    if model.architecture_type != ArchitectureType.CLASSIFICATION:
+    if config.normalize:
         dataset.normalize_data(memory.normalization)
     dataset.tensorize()
-    if model.architecture_type != ArchitectureType.CLASSIFICATION:
-        dataset.save_data(memory.data.path)
+    dataset.save_data(memory.data.path)
 
     train_set, val_set = dataset.to_dataloaders(batch_size=config.batch_size, shuffle=True, train_ratio=0.8)
 
