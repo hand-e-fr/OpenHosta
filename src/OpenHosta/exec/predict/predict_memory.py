@@ -19,6 +19,7 @@ class PredictFileType(Enum):
     DICTIONARY = "dictionary.json"
     DATA = "data.json"
     SUMMARY = "summary.txt"
+    NORMALIZATION = "normalization.json"
 
 
 class PredictMemory(HostaMemory):
@@ -91,3 +92,7 @@ class PredictMemory(HostaMemory):
     @property
     def dictionary(self) -> File:
         return self.files[PredictFileType.DICTIONARY]
+
+    @property
+    def normalization(self) -> File:
+        return self.files[PredictFileType.NORMALIZATION]

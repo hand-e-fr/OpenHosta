@@ -57,10 +57,22 @@ class Sample:
         """Get the _inputs features"""
         return self._inputs
 
+    @input.setter
+    def input(self, value: List[Any]) -> None:
+        """Set the input features."""
+        if not isinstance(value, list):
+            raise ValueError("The 'input' property must be a list.")
+        self._inputs = value
+
     @property
     def output(self) -> Optional[Any]:
         """Get the _outputs label (None if no _outputs was provided)"""
         return self._outputs
+
+    @output.setter
+    def output(self, value: Optional[Any]) -> None:
+        """Set the output label."""
+        self._outputs = value
 
     def __repr__(self) -> str:
         return f"Sample(_inputs={self.input}, _outputs={self.output})"
