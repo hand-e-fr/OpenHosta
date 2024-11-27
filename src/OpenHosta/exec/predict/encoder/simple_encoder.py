@@ -1,4 +1,4 @@
-from typing import List, Any, Dict, Union, Optional, LiteralString
+from typing import List, Any, Dict, Union, Optional
 
 import torch
 import json

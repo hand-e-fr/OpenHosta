@@ -93,8 +93,8 @@ def load_weights(x: Hosta, memory: PredictMemory, hosta_model: HostaModel, logge
     """
     Load weights if they exist.
     """
-    if hasattr(x._infos.f_obj, "_weights_loaded"):
-        return True
+    # if hasattr(x._infos.f_obj, "_weights_loaded"):
+    #     return True
 
     if memory.weights.exist:
         logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
