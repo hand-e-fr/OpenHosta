@@ -1,5 +1,5 @@
 # OpenHosta 
-v2.0.2 - Opensource Project
+v2.1.0rc-1 - Opensource Project
 
 **- The future of development is human -**
 
@@ -79,7 +79,7 @@ For further questions or assistance, please refer to partner hand-e or contact u
 **Authors**:
    - Emmanuel Batt: Manager and Coordinator, Founder of Hand-e
    - William Jolivet: DevOps, SysAdmin
-   - Léandre Ramos: MLOps, IA developer
+   - Léandre Ramos: IA developer
    - Merlin Devillard: UX designer, Product Owner
 
 GitHub: https://github.com/hand-e-fr/OpenHosta
