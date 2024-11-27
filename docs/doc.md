@@ -374,11 +374,14 @@ The `predict` function can be used in function or class method by simply returns
   from Openhosta import predict, config
 
   config.set_default_apiKey("put-your-api-key-here")
+  
   def example_linear_regression(years : int, profession : str) -> float:
-  """
-  this function predict the salary based on the profession years.
-  """
-  return predict(verbose=2)
+      """
+      this function predict the salary based on the profession years.
+      """
+      return predict(verbose=2)
+  
+  print(example_linear_regression(1, "engineer"))
   ```
 - **Classification**: For classifying multiple values among predefined categories in a `Literal` from the typing module :
   ```python
@@ -388,12 +391,14 @@ The `predict` function can be used in function or class method by simply returns
   config.set_default_apiKey("put-your-api-key-here")
 
   output = Literal["Good", "Bad"]
-
+  
   def example_classification(word: str) -> output:
-  """
-  this function detects if a words is good or bad
-  """
-  return predict(verbose=2)
+      """
+      this function detects if a words is good or bad
+      """
+      return predict(verbose=2)
+  
+  print(example_classification("Bad"))
   ```
 
 
@@ -476,7 +481,8 @@ config_predict = Predictconfig(
     epochs=45,
     batch_size=64,
     max_tokens=1,
-    dataset_path="./dataset.csv"
+    dataset_path="./dataset.csv",
+    normalize=False
 )
 
 # Using the predict function with the configuration
