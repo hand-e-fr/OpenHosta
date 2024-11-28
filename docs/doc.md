@@ -85,7 +85,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Parameters](#parameters)
     - [Returns](#returns)
     - [Raises](#raises)
-    - [Example](#example)
+    - [Example](#example-1)
     - [How It Works](#how-it-works)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
@@ -541,10 +541,16 @@ You can also override an existing function to modify its behavior. It is importa
 To create your own LLM call function, you need to override the `api_call` method of the Model class. This method is called every time the library needs to communicate with the LLM.
 
 ```python
+from typing import Dict, List
 from OpenHosta import Model
 
 class MyModel(Model):
-    def api_call(self, sys_prompt, user_prompt, creativity, diversity):
+    def api_call(
+        self,
+        messages: List[Dict[str, str]],
+        json_form: bool = True,
+        **llm_args
+    ) -> Dict:
         # Your code here
         # Call the LLM and return the response
         return response
@@ -565,13 +571,14 @@ The "api_call" method returns a response object that contains the LLM's response
 To create your own response handling function, you need to override the "request_handler" method of the Model class. This method is called every time the library receives a response from the LLM.
 
 ```python
-from OpenHosta import Model
+from typing import Dict, Any
+from OpenHosta import Model, Func, HostaChecker
 
 class MyModel(Model):
-    def request_handler(self, response, return_type, return_caller):
+    def request_handler(self, response: Dict, func: Func) -> Any:
         # Your code here
         # Process the LLM response and return the result
-        return result
+        return HostaChecker(func, l_ret_data).check()
 ```
 
 In the example above, we have overridden the `request_handler` method of the Model class to create our own response handling function. 
