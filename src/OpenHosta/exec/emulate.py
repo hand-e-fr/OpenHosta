@@ -37,6 +37,7 @@ def _build_user_prompt(
     return user_prompt
 
 
+
 def emulate(
         _infos: Optional[Func] = None,
         *,
