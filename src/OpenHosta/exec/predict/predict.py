@@ -17,7 +17,7 @@ from ...core.logger import Logger, ANSIColor
 def predict(
     config: PredictConfig = PredictConfig(),
     oracle: Optional[Union[Model, HostaDataset]] = None,
-    verbose: Union[Literal[0, 1, 2], bool] = 2
+    verbose: Union[Literal[0, 1, 2], bool] = 0
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
