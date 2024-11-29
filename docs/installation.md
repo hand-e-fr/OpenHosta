@@ -29,7 +29,7 @@ All this will be detailed in this document.
   1. Clone the Git repository:
 
   ```sh
-  git clone git@github.com:hand-e-fr/OpenHosta.git
+  git clone https://github.com/hand-e-fr/OpenHosta.git
   ```
 
   1. Navigate to the directory:
