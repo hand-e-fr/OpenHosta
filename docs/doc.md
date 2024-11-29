@@ -372,8 +372,6 @@ The `predict` function can be used in function or class method by simply returns
 - **Linear Regression**: For prediction tasks by simply returns an `int`or a `float` :
   ```python
   from OpenHosta import predict, config
-
-  config.set_default_apiKey("put-your-api-key-here")
   
   def example_linear_regression(years : int, profession : str) -> float:
       """
@@ -387,8 +385,6 @@ The `predict` function can be used in function or class method by simply returns
   ```python
   from typing import Literal
   from OpenHosta import predict, config
-
-  config.set_default_apiKey("put-your-api-key-here")
 
   output = Literal["Good", "Bad"]
   
