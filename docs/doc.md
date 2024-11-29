@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.0.2**
+Documentation for version: **2.1.0rc-2**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -371,7 +371,7 @@ The `predict` function can be used in function or class method by simply returns
 
 - **Linear Regression**: For prediction tasks by simply returns an `int`or a `float` :
   ```python
-  from Openhosta import predict, config
+  from OpenHosta import predict, config
 
   config.set_default_apiKey("put-your-api-key-here")
   
@@ -386,7 +386,7 @@ The `predict` function can be used in function or class method by simply returns
 - **Classification**: For classifying multiple values among predefined categories in a `Literal` from the typing module :
   ```python
   from typing import Literal
-  from Openhosta import predict, config
+  from OpenHosta import predict, config
 
   config.set_default_apiKey("put-your-api-key-here")
 
@@ -425,7 +425,7 @@ The `predict` function supports the following parameters:
 The `PredictConfig` class provides advanced options for configuring the creation and management of *predict* models. Here’s a detailed breakdown:
 
 ```python
-from Openhosta import PredictConfig
+from OpenHosta import PredictConfig
 
 model_config = PredictConfig(
     name="model_test",
@@ -462,7 +462,7 @@ model_config = PredictConfig(
 - `max_tokens` (`int`): Limits the number of words a `str` input can contain, as the model adapts neuron sizes accordingly. Default: `1`.
   - **Warning**: Current model architectures do not perform well with natural language processing tasks. For such cases, use the *emulate* feature instead. NLP architecture support is coming soon.
 - `dataset_path` (`str`): Provides a custom dataset path. Default: `None`, 
-  - **Warning**: Only `csv` and `jsonl` files are supported for now. For `csv`, please set the prediction columns to `_outputs`. and for `jsonl` please set the last element
+  - **Warning**: Only `csv` and `jsonl` files are supported for now. Please set the prediction columns to `outputs`.
 - `generated_data` (`int`): Specifies the target number of data points for LLM generation (approximate). Default: `100`.
 
 ---
@@ -478,12 +478,12 @@ config_predict = PredictConfig(
     name="test_openhosta",
     complexity=5,
     growth_rate=1.5,
-    layers_coefficien=100,
+    coef_layers=100,
+    normalize=False,
     epochs=45,
     batch_size=64,
     max_tokens=1,
-    dataset_path="./dataset.csv",
-    normalize=False
+    dataset_path="./path_to_your_dataset.csv"
 )
 
 # Using the predict function with the configuration
