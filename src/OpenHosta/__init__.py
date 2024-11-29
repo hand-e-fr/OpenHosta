@@ -1,3 +1,3 @@
 from .OpenHosta import *
 
-__version__ = "2.1.0rc2"
+__version__ = "2.1.0"
