@@ -1,5 +1,5 @@
 # OpenHosta 
-v2.1.0rc-1 - Opensource Project
+v2.1.0rc2 - Opensource Project
 
 **- The future of development is human -**
 
@@ -31,7 +31,7 @@ pip install OpenHosta
 or
 
 ```sh
-git clone git@github.com:hand-e-fr/OpenHosta.git
+git clone https://github.com/hand-e-fr/OpenHosta.git
 ```
 
 **See the full installation guide [here](docs/installation.md)**
