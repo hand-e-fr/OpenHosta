@@ -64,13 +64,13 @@ class TestAttach:
     def test_OneAttr(self):
         def tmp():
             return
-        HI._attach(tmp, {"nb": 3})
+        HI.attach(tmp, {"nb": 3})
         assert tmp.nb == 3
             
     def test_ManyAttr(self):
         def tmp():
             return
-        HI._attach(tmp, {
+        HI.attach(tmp, {
             "a": 1,
             "b": "hi",
             "c": tmp
@@ -83,15 +83,15 @@ class TestAttach:
         def tmp():
             return
         with pytest.raises(ValueError, match=re.escape("[HostaInspector._attach] Invalid arguments")):
-            HI._attach(tmp, "6")
-            HI._attach("a", 1)
+            HI.attach(tmp, "6")
+            HI.attach("a", 1)
     
     def test_BasicMethod(self):
         class TMP:
             def tmp(self):
                 return
         x = TMP()
-        HI._attach(x.tmp, {"a": 1})
+        HI.attach(x.tmp, {"a": 1})
         assert x.tmp.a == 1
     
     def test_InvalidMethod(self):
@@ -99,10 +99,10 @@ class TestAttach:
             return
         with patch('inspect.ismethod', return_value=True):
             with pytest.raises(AttributeError, match=re.escape("[HostaInspector._attach] Failed to attach attributs. \"__func__\" attribut is missing.")):
-                HI._attach(tmp, {"a": 1})
+                HI.attach(tmp, {"a": 1})
     
     def test_InvalidCallable(self):
         class TMP:
             pass
         with pytest.raises(AttributeError, match=re.escape(f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(TMP)}.")):
-            HI._attach(TMP, {"a": 1})
+            HI.attach(TMP, {"a": 1})

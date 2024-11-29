@@ -19,6 +19,7 @@ class PredictFileType(Enum):
     DICTIONARY = "dictionary.json"
     DATA = "data.json"
     SUMMARY = "summary.txt"
+    NORMALIZATION = "normalization.json"
 
 
 class PredictMemory(HostaMemory):
@@ -48,11 +49,10 @@ class PredictMemory(HostaMemory):
             PredictMemory instance.
         """
         memory = PredictMemory(base_path=base_path, name=name)
-        memory._initialize_predict_directory
+        memory._initialize_predict_directory()
         memory._check_files()
         return memory
 
-    @property
     def _initialize_predict_directory(self) -> None:
         """
         Initializes the directory and file structure for predictions.
@@ -92,3 +92,7 @@ class PredictMemory(HostaMemory):
     @property
     def dictionary(self) -> File:
         return self.files[PredictFileType.DICTIONARY]
+
+    @property
+    def normalization(self) -> File:
+        return self.files[PredictFileType.NORMALIZATION]
