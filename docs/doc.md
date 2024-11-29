@@ -397,6 +397,7 @@ The `predict` function can be used in function or class method by simply returns
   print(example_classification("Bad"))
   ```
 
+The `predict` function currently supports only the following return types: `int`, `float`, and `str`.
 
 Additionally like you can see, `predict` can generate a dataset if none is provided in the [PredictConfig](#predictconfig-class), allowing users to see how a large language model (LLM) understands the problem and generates relevant data. By default, the data generation uses GPT-4o by OpenAI, the same oracle used in the [emulate](#emulate-function) function .
 
