@@ -54,7 +54,7 @@ If you wish to make changes to the code, please follow these steps:
 
 2. **Clone Your Fork**: Clone your fork locally using the following command:
     ```sh
-    git clone https://github.com/your-username/OpenHosta-dev.git
+    git clone https://github.com/hand-e-fr/OpenHosta.git
     ```
 
 3. **Create a Branch**: Create a new branch for your feature or bug fix:
