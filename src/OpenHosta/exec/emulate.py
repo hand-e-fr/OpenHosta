@@ -27,10 +27,16 @@ def _build_user_prompt(
     if use_self_as_ctx:
         user_prompt = (
             user_prompt + filler(EMULATE_PROMPT.PRE_SELF, _infos.f_self))
+
     if x:
+        ex_str = ""
+        if x.example:
+            for ex in x.example:
+                ex_args = ", ".join(f"{elem[0]}={str(elem[1])}" for elem in [arg for arg in ex["in_"].items()])
+                ex_str += f"input: {x.infos.f_name}({ex_args})\noutput: {{return: {str(ex["out"])}}}\n\n"
         user_prompt = (
             user_prompt
-            + filler(EMULATE_PROMPT.PRE_EXAMPLE, x.example)
+            + filler(EMULATE_PROMPT.PRE_EXAMPLE, ex_str)
             + filler(EMULATE_PROMPT.PRE_COT, x.cot)
         )
     user_prompt = (user_prompt + EMULATE_PROMPT.USER_SEP)
@@ -71,13 +77,13 @@ def emulate(
                     'user_prompt':_infos.f_call
                     }
                 }
-                     )
+            )
         response = model.simple_api_call(
             sys_prompt=f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
             user_prompt=_infos.f_call,
             **llm_args
         )
-
+        
         if x:
             x.attach(_infos.f_obj, {"_last_response": response}) # type: ignore
         
