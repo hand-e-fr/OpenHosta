@@ -6,11 +6,12 @@ from .predict.dataset.oracle import LLMSyntheticDataGenerator
 from ..core.config import Model, DefaultModel
 from ..core.hosta import Func
 from ..core.logger import Logger
+from ..core.analizer import FuncAnalizer
 
 
-def _analyze_function(func: Callable) -> Func:
+def _analyze_function(func: Callable) -> Func: 
     if not callable(func):
-        raise TypeError("The provided object is not a function or callable.")
+        raise TypeError("The  provided object is not a function or callable.")
 
     func_obj = Func()
     func_obj.f_name = func.__name__

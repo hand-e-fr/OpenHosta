@@ -31,6 +31,7 @@ from types import MethodType
 import inspect
 from types import FrameType
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
+from PIL import Image
 
 from ..utils.import_handler import is_pydantic
 
@@ -253,6 +254,9 @@ class FuncAnalizer:
 
         if isinstance(tp, type) and issubclass(tp, Protocol):
             return {"type": "object", "format": "protocol"}
+
+        if tp is Image:
+            return {"type": "image"}
 
         if tp is int:
             return {"type": "integer"}

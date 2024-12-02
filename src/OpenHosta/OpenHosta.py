@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .core import config
 from .core.config import Model, DefaultManager
+from .core.checker import HostaChecker, Func
 
 from .utils.meta_prompt import print_last_prompt
 from .utils.import_handler import is_predict
@@ -19,7 +20,6 @@ if is_predict:
     from .exec.predict.predict import predict
     from .exec.predict.predict_config import PredictConfig
 
-
 import os
 
 DefaultManager.set_default_model(
@@ -36,4 +36,9 @@ all = (
     "ask",
     "EMULATE_PROMPT",
     "print_last_prompt",
+    "generate_data",
+    "HostaDataset",
+    "SourceType",
+    "HostaChecker"
+    "Func"
 )

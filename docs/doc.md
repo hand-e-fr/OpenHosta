@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.1.0**
+Documentation for version: **2.1.1**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -80,14 +80,21 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [`Example`](#example)
       - [`Thought`](#thought)
   - [`predict` Function](#predict-function)
-    - [PredictConfig](#predictconfig-class)
+    - [Parameters](#parameters)
+  - [`PredictConfig` class](#predictconfig-class)
+    - [Features](#features)
+      - [**Path Management**](#path-management)
+      - [**Architecture Configuration**](#architecture-configuration)
+      - [**Training Configuration**](#training-configuration)
+      - [**Dataset Management**](#dataset-management)
+    - [Example Usage](#example-usage)
   - [`thinkof` Function](#thinkof-function)
   - [`ask` function](#ask-function)
   - [`generate_data` func](#generate_data-func)
-    - [Parameters](#parameters)
+    - [Parameters](#parameters-1)
     - [Returns](#returns)
     - [Raises](#raises)
-    - [Example](#example)
+    - [Example](#example-1)
     - [How It Works](#how-it-works)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
@@ -675,10 +682,16 @@ You can also override an existing function to modify its behavior. It is importa
 To create your own LLM call function, you need to override the `api_call` method of the Model class. This method is called every time the library needs to communicate with the LLM.
 
 ```python
+from typing import Dict, List
 from OpenHosta import Model
 
 class MyModel(Model):
-    def api_call(self, sys_prompt, user_prompt, creativity, diversity):
+    def api_call(
+        self,
+        messages: List[Dict[str, str]],
+        json_form: bool = True,
+        **llm_args
+    ) -> Dict:
         # Your code here
         # Call the LLM and return the response
         return response
@@ -687,10 +700,9 @@ class MyModel(Model):
 In the example above, we have overridden the "api_call" method of the Model class to create our own LLM call function.
 The "api_call" method takes four arguments:
 
-- **sys_prompt**: a string that specifies the system prompt to be sent to the LLM. It's all the basic instructions to give context to the LLM. It is not function-dependent, but feature-dependent.. System prompts provided by OpenHosta are present in the “prompt.json” file.
-- **user_prompt**: a string that specifies the user prompt to be sent to the LLM. It contains all the information relating to the emulated function. They are placed side by side, with sentences to separate each piece of information. This section is therefore unique for each case. 
-- **creativity**: a float that specifies the creativity level of the LLM's response.
-- **diversity**: a float that specifies the diversity level of the LLM's response.
+- **message**: The parsed message sent to the LLM.
+- **json_form**: A boolean enabling the json format return option in the LLM call.
+- **llm_args**: All the options given by the LLM's distributor. (ex. max_token, temperature, top_p...)
 
 The "api_call" method returns a response object that contains the LLM's response to the user prompt.
 
@@ -699,49 +711,58 @@ The "api_call" method returns a response object that contains the LLM's response
 To create your own response handling function, you need to override the "request_handler" method of the Model class. This method is called every time the library receives a response from the LLM.
 
 ```python
-from OpenHosta import Model
+from typing import Dict, Any
+from OpenHosta import Model, Func, HostaChecker
 
 class MyModel(Model):
-    def request_handler(self, response, return_type, return_caller):
+    def request_handler(self, response: Dict, func: Func) -> Any:
         # Your code here
         # Process the LLM response and return the result
-        return result
+        return HostaChecker(func, l_ret_data).check()
 ```
 
 In the example above, we have overridden the `request_handler` method of the Model class to create our own response handling function. 
 The "request_handler" method takes three arguments:
 
-- **response**: the response object returned by the LLM.
-- **return_caller**: the type of the return value. For an “int” return type, it would be as follows
-  ```<class :'int'>```
-- **return_type**: a JSON describing the type of the return value. This JSON is mainly used for more complex return types such as Pydantic models or classes. For an “int” return type, the JSON would be as follows:
-  ```{'properties': {'return_hosta_type': {'title': 'Return Hosta Type', 'type': 'integer'}}, 'required': ['return_hosta_type'], 'title': 'Hosta_return_shema', 'type': 'object'}```
+- **response**: The response object returned by the LLM.
+- **func**: The object containing all the useful information about the emulated function.
 
 The "request_handler" method returns the processed return value. This is the value returned by the emulated function.
 
 #### Create a new instance
 
-You can now create an instance of the class you've just created and use it in all OpenHosta's features.
+You can now create an instance of the class you've just created and use it in all OpenHosta's features. Here's an example of of a custom Model class for Llama models:
 
 ```python
-from OpenHosta import config, Model, emulate, thought
+from typing import Any, Dict, List
+from OpenHosta import emulate, Model, HostaChecker, Func
+import json
+import sys
 
-class MyModel(Model):
+class LlamaModel(Model):
+    
+    def __init__(self, model: str = None, base_url: str = None, api_key: str = None, timeout: int = 30):
+        super().__init__(model, base_url, api_key, timeout)
+        
+    def api_call(self, messages: List[Dict[str, str]], json_form: bool = True, **llm_args) -> Dict:
+        return super().api_call(messages, json_form, **llm_args)
+        
+    def request_handler(self, response: Dict, func: Func) -> Any:
+        json_string = response["message"]["content"]
+        try:
+            l_ret_data = json.loads(json_string)
+        except json.JSONDecodeError as e:
+            sys.stderr.write(
+                f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
+            l_cleand = "\n".join(json_string.split("\n")[1:-1])
+            l_ret_data = json.loads(l_cleand)
+        return HostaChecker(func, l_ret_data).check()
+        
 
-    def api_call(self, sys_prompt, user_prompt, creativity, diversity):
-        # Your code here
-        # Call the LLM and return the response
-        return response
-
-    def request_handler(self, response, return_type, return_caller):
-        # Your code here
-        # Process the LLM response and return the result
-        return l_ret
-
-new_model = MyModel(
-    model="model-name",
-    base_url="base-url",
-    api_key="put-your-api-key-here"
+mymodel = LlamaModel(
+    model="llama3.2:1B",
+    base_url="http://localhost:5000/api/query",
+    api_key="api"
 )
 
 def capitalize(a:str)->str:
@@ -751,12 +772,6 @@ def capitalize(a:str)->str:
     return emulate(model=new_model)
 
 print(capitalize("hello world!"))
-
-config.set_default_model(new_model)
-
-x = thought("Translate in german")
-ret = x("Hello World")
-print(ret)
 ```
 
 ### Prompts
