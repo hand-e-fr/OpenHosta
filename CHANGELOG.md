@@ -4,6 +4,13 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v2.1.1**
+- **Enhancement**
+  - Changed examples syntax in the system prompt for better performances.
+
+- **Doc**
+  - Added an example for a custom Model class with an Llama model.  
+
 ## **v2.0-beta2**
 - **Added**
   - Introduced `BaseEncoder` as an Abstract Base Class (ABC) for all specific encoders, providing a standardized interface.

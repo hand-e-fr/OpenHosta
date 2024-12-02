@@ -10,6 +10,7 @@ from .exec.generate_data import generate_data
 from .exec.predict.dataset.dataset import HostaDataset, SourceType
 from .core import config
 from .core.config import Model, DefaultManager
+from .core.checker import HostaChecker, Func
 from .utils.meta_prompt import print_last_prompt
 
 from .exec.predict.predict import predict
@@ -35,5 +36,7 @@ all = (
     "print_last_prompt",
     "generate_data",
     "HostaDataset",
-    "SourceType"
+    "SourceType",
+    "HostaChecker"
+    "Func"
 )
