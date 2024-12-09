@@ -4,6 +4,13 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v2.1.2**
+- **Doc**
+  - Fix the example for the custom Model class with a Llama Model
+
+- **Fixes**
+  - Remove the PIL dependency
+
 ## **v2.1.1**
 - **Enhancement**
   - Changed examples syntax in the system prompt for better performances.
