@@ -1,5 +1,5 @@
 # OpenHosta 
-v2.1.1 - Open-Source Project
+v2.1.2 - Open-Source Project
 
 **- The future of development is human -**
 
