@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.1.1**
+Documentation for version: **2.1.2**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -735,7 +735,9 @@ You can now create an instance of the class you've just created and use it in al
 
 ```python
 from typing import Any, Dict, List
-from OpenHosta import emulate, Model, HostaChecker, Func
+from OpenHosta import emulate, Model, HostaChecker, Func, example
+from OpenHosta.utils.errors import RequestError
+import requests
 import json
 import sys
 
@@ -745,7 +747,32 @@ class LlamaModel(Model):
         super().__init__(model, base_url, api_key, timeout)
         
     def api_call(self, messages: List[Dict[str, str]], json_form: bool = True, **llm_args) -> Dict:
-        return super().api_call(messages, json_form, **llm_args)
+        l_body = {
+            "model": self.model,
+            "messages": messages,
+            "stream": False
+        }
+        headers = {
+            "Content-Type": "application/json"
+        }
+ 
+        if json_form:
+            l_body["format"] = "json"
+        for key, value in llm_args.items():
+            l_body[key] = value
+        try:
+            response = requests.post(self.base_url, headers=headers, json=l_body, timeout=self.timeout)
+
+            if response.status_code != 200:
+                response_text = response.text
+                raise RequestError(
+                    f"[Model.api_call] API call was unsuccessful.\n"
+                    f"Status cod: {response.status_code }:\n{response_text}"
+                )
+            self._nb_requests += 1
+            return response.json()
+        except Exception as e:
+            raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
         
     def request_handler(self, response: Dict, func: Func) -> Any:
         json_string = response["message"]["content"]
@@ -761,15 +788,17 @@ class LlamaModel(Model):
 
 mymodel = LlamaModel(
     model="llama3.2:1B",
-    base_url="http://localhost:5000/api/query",
-    api_key="api"
+    base_url="http://localhost:11434/api/chat",
+    api_key="..."
 )
 
-def capitalize(a:str)->str:
+def capitalize(sentence:str)->str:
     """
     This function capitalize a sentence in parameter.
     """
-    return emulate(model=new_model)
+    example(sentence="foo bar", hosta_out="Foo Bar")
+    return emulate(model=mymodel)
+
 
 print(capitalize("hello world!"))
 ```
