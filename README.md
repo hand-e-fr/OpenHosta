@@ -1,11 +1,11 @@
 # OpenHosta 
-v2.1.2 - Open-Source Project
+v2.1.3 - Open-Source Project
 
 **- The future of development is human -**
 
 Welcome to the OpenHosta documentation, a powerful tool that facilitates the integration LLM in the development environnement. OpenHosta is used to emulate functions using AI, while respecting Python's native paradygma and syntax.
 
-For this project, we have adopted a [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
+For this project, we have adopted a [Code of Conduct](https://github.com/hand-e-fr/OpenHosta/blob/main/CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
 
 ## Table of Content
 
@@ -34,7 +34,7 @@ or
 git clone https://github.com/hand-e-fr/OpenHosta.git
 ```
 
-**See the full installation guide [here](docs/installation.md)**
+**See the full installation guide [here](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/installation.md)**
 
 ## Example
 
@@ -52,7 +52,7 @@ def translate(text:str, language:str)->str:
 result = translate("Hello World!", "French")
 print(result)
 ```
-You check OpenHosta's [documentation](docs/doc.md) for more detailled informations or exemple
+You check OpenHosta's [documentation](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/doc.md) for more detailled informations or exemple
 
 ## Further information
 
@@ -60,7 +60,7 @@ You check OpenHosta's [documentation](docs/doc.md) for more detailled informatio
 
 We warmly welcome contributions from the community. Whether you are an experienced developer or a beginner, your contributions are welcome.
 
-If you wish to contribute to this project, please refer to our [Contribution Guide](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md).
+If you wish to contribute to this project, please refer to our [Contribution Guide](https://github.com/hand-e-fr/OpenHosta/blob/main/CONTRIBUTING.md) and our [Code of Conduct](https://github.com/hand-e-fr/OpenHosta/blob/main/CODE_OF_CONDUCT.md).
 
 Browse the existing [issues](https://github.com/hand-e-fr/OpenHosta/issues) to see if someone is already working on what you have in mind or to find contribution ideas.
 
@@ -70,7 +70,7 @@ This project is licensed under the MIT License. This means you are free to use, 
 
   - The text of the license below must be included in all copies or substantial portions of the software.
 
-See the [LICENSE](LICENSE) file for more details.
+See the [LICENSE](https://github.com/hand-e-fr/OpenHosta/blob/main/LICENSE) file for more details.
 
 ### Authors & Contact
 

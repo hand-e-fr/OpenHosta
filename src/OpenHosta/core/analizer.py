@@ -33,6 +33,7 @@ from types import FrameType
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 
 from ..utils.import_handler import is_pydantic
+from .pydantic_usage import get_pydantic_schema
 
 if version_info.major == 3 and version_info.minor > 9:
     from types import NoneType
@@ -171,6 +172,10 @@ class FuncAnalizer:
 
         origin = get_origin(tp)
         args = get_args(tp)
+        
+        res = get_pydantic_schema(tp)
+        if res is not None:
+            return res
 
         if origin in (Union, Optional):
             if len(args) == 2 and (NoneType in args or type(None) in args):
@@ -250,9 +255,6 @@ class FuncAnalizer:
                 return self._get_type_schema(tp.__bound__)
             else:
                 return {"type": "any"}
-
-        if isinstance(tp, type) and issubclass(tp, Protocol):
-            return {"type": "object", "format": "protocol"}
 
         if tp is int:
             return {"type": "integer"}
