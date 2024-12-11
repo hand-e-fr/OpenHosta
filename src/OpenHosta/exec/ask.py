@@ -7,8 +7,8 @@ from ..utils.errors import RequestError
 
 
 def ask(
-    *,
     user: str,
+    *,
     system: Optional[str] = None,
     model: Optional[Model] = None,
     **api_args
@@ -18,9 +18,10 @@ def ask(
     if system is None:
         system = "You are an helpful assistant."
 
-    response = model.simple_api_call(
-        system,
-        user,
+    response = model.api_call([
+            {"role": "system", "content": system},
+            {"role": "user", "content": user}
+        ],
         False,
         **api_args
     )
