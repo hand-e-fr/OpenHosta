@@ -30,11 +30,18 @@ class Model:
 
     _SYS_PROMPT = ""
 
-    def __init__(self, model: str = None, base_url: str = None, api_key: str = None, timeout: int = 30):
+    def __init__(self, 
+            model: str = None, 
+            base_url: str = None, 
+            api_key: str = None, 
+            timeout: int = 30,
+            additionnal_headers: Dict[str, Any] = {}
+        ):
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
         self.timeout = timeout
+        self.user_headers = additionnal_headers
         self._last_request = None
         self._used_tokens = 0
         self._nb_requests = 0
@@ -43,22 +50,6 @@ class Model:
             raise ValueError(f"[Model.__init__] Missing values.")
         elif not is_valid_url(self.base_url):
             raise ValueError(f"[Model.__init__] Invalid URL.")
-
-    def simple_api_call(
-        self,
-        sys_prompt: str,
-        user_prompt: str,
-        json_form: bool = True,
-        **llm_args
-    ) -> Dict:
-        return self.api_call(
-            [
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            json_form,
-            **llm_args
-        )
 
     def api_call(
         self,
@@ -77,6 +68,9 @@ class Model:
             "Content-Type": "application/json"
         }
         
+        for key, value in self.user_headers.items():
+            headers[key] = value
+            
         if "azure.com" in self.base_url:
             headers["api-key"] = f"{self.api_key}"
         else:

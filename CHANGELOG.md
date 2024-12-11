@@ -4,6 +4,21 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v2.1.3**
+- **Features**
+  - Added `additionnal_headers` in `Model` to add specific values in the header of the request send to the API.
+  - `ask` can now be used without specify the `user` parameter name.
+
+- **Fixes**
+  - Fixed the bug with the f-string in python 3.10 or below.
+  - Removed `simple_api_call`.
+  - `Hosta` now support a nested pydantic type like `List[PydanticType]`.
+
+- **Doc**
+  - Added two example to work with Microsoft Azure and Ollama.
+  - Added documentation for the `emulate` functions.
+  - Remplace all links in the `README` by absolute link 
+
 ## **v2.1.2**
 - **Doc**
   - Fix the example for the custom Model class with a Llama Model
