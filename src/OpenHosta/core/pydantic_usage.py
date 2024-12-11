@@ -58,6 +58,8 @@ if is_pydantic:
             return None
         except:
             return None
+        
+    
 
 else:
     class Func:

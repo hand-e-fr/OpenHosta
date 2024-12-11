@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.1.2**
+Documentation for version: **2.1.3**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -101,7 +101,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
       - [Inheriting from the Model Class](#inheriting-from-the-model-class)
       - [Custom LLM Call Function](#custom-llm-call-function)
       - [Custom Response Handling Function](#custom-response-handling-function)
-      - [Create a new instance](#create-a-new-instance)
+      - [Example Usage](#example-usage-1)
     - [Prompts](#prompts)
       - [Edit the prompt](#edit-the-prompt)
       - [Show me the prompt !](#show-me-the-prompt-)
@@ -729,9 +729,13 @@ The "request_handler" method takes three arguments:
 
 The "request_handler" method returns the processed return value. This is the value returned by the emulated function.
 
-#### Create a new instance
+#### Example Usage
 
-You can now create an instance of the class you've just created and use it in all OpenHosta's features. Here's an example of of a custom Model class for Llama models:
+You can now create an instance of the class you've just created and use it in all OpenHosta's features.
+
+With this method, you can now make OpenHosta compatible with a large number of API.
+
+**Here's an example of of a custom Model class for Llama models:**
 
 ```python
 from typing import Any, Dict, List
@@ -801,6 +805,38 @@ def capitalize(sentence:str)->str:
 
 
 print(capitalize("hello world!"))
+```
+
+If the API request model is similar to OpenAI API, it can also work without class inheritance.
+
+**Another example to work with Ollama:**
+
+```python
+from OpenHosta import config, ask
+
+ollama_local_model=config.Model(
+    model="gemma2:9b",
+    base_url="http://localhost:11434/v1/chat/completions",
+    api_key="not-empty-string"
+)
+config.set_default_model(ollama_local_model)
+
+ask("hello")
+```
+
+**Now with Microsoft Azure:**
+
+```python
+from OpenHosta import config, ask
+
+azure_model=config.Model(
+    model="gpt-4o",
+    base_url="https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/chat/completions?api-version=2024-06-01",
+    api_key="Provide Azure OpenAI API key here"
+)
+config.set_default_model(azure_model)
+
+ask("hello")
 ```
 
 ### Prompts
