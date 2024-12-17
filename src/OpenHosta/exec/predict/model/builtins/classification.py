@@ -20,14 +20,12 @@ class Classification(HostaModel):
             input_size: int,
             output_size: int,
             config: PredictConfig,
-            logger: Logger,
-            device: Optional[str] = None
+            logger: Logger
     ):
-        super().__init__(device)
+        super().__init__()
 
         self.complexity = config.complexity
         self.logger = logger
-        self.device = device
         self.growth_rate = config.growth_rate
         self.max_layer_coefficent = config.coef_layers
         self.architecture_type = ArchitectureType.CLASSIFICATION
