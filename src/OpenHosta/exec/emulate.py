@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Optional, Callable
 
-from ..core.config import Model, DefaultManager
+from ..core.config import Model
+from ..core.default import DefaultManager
 from ..core.hosta import Hosta, Func
 from ..utils.meta_prompt import EMULATE_PROMPT
 

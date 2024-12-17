@@ -3,11 +3,10 @@ from typing import Callable, Optional, Union, Literal
 
 from .predict.dataset.dataset import HostaDataset
 from .predict.dataset.oracle import LLMSyntheticDataGenerator
-from ..core.config import Model, DefaultModel
+from ..core.config import Model
+from ..core.default import DefaultModel
 from ..core.hosta import Func
 from ..core.logger import Logger
-from ..core.analizer import FuncAnalizer
-
 
 def _analyze_function(func: Callable) -> Func: 
     if not callable(func):

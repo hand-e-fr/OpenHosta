@@ -2,7 +2,8 @@ import inspect
 from typing import Optional, Dict, Any, List, Type, Union, Literal,  get_args, get_origin
 
 from ....core.logger import Logger
-from ....core.config import Model, DefaultManager
+from ....core.config import Model
+from ....core.default import DefaultManager
 from ....core.hosta import Func
 
 _PROMPT = "{func_name}{signature}:\n    \"\"\"{docstring}\"\"\"\n\nIMPORTANT RULES:\n1. Input values should respect the type hints\n2. Output values MUST be diverse - avoid generating the same output repeatedly\n3. Each row must be in CSV format\n4. For text outputs, enclose them in double quotes\n5. NO MORE THAN 20% of outputs should be the same value\n6. Generate inputs across the entire possible range\n7. Ensure proper formatting for {return_type} output type"

@@ -9,7 +9,8 @@ from .model.neural_network import NeuralNetwork
 from .model.neural_network_types import ArchitectureType
 from .predict_config import PredictConfig
 from .predict_memory import PredictMemory, File
-from ...core.config import Model, DefaultModel
+from ...core.config import Model
+from ...core.default import DefaultModel
 from ...core.hosta import Hosta, Func
 from ...core.logger import Logger, ANSIColor
 

@@ -4,7 +4,7 @@ import json
 from pydoc import locate
 
 from .emulate import emulate
-from ..core.config import DefaultManager
+from ..core.default import DefaultManager
 from ..core.hosta import Func
 from ..utils.errors import RequestError
 from ..utils.meta_prompt import THOUGHT_PROMPT

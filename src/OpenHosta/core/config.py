@@ -5,14 +5,13 @@ import json
 import re
 import sys
 import requests
+from typing import Any, Dict
 import asyncio
 from  concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict
 
 from .checker import HostaChecker
 from .pydantic_usage import Func
 from ..utils.errors import ApiKeyError, RequestError
-
 
 def is_valid_url(url: str) -> bool:
     regex = re.compile(
@@ -27,29 +26,26 @@ def is_valid_url(url: str) -> bool:
     )
     return re.match(regex, url) is not None
 
-
 class Model:
-
-    _SYS_PROMPT = ""
 
     def __init__(self, 
             model: str = None, 
             base_url: str = None, 
             api_key: str = None, 
             timeout: int = 30,
-            max_async_calls = 5,
-            additionnal_headers: Dict[str, Any] = {}
+            additionnal_headers: Dict[str, Any] = {},
+            max_workers:int = 5
         ):
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
         self.timeout = timeout
-        self.max_async_calls = max_async_calls
-        self.async_executor = None
         self.user_headers = additionnal_headers
         self._last_request = None
         self._used_tokens = 0
         self._nb_requests = 0
+        self.max_workers = max_workers
+        self.async_executor = None
 
         if any(var is None for var in (model, base_url)):
             raise ValueError(f"[Model.__init__] Missing values.")
@@ -60,27 +56,7 @@ class Model:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
 
-    def __exit__(self):
-        if self.async_executor is not None:
-            self.async_executor.shutdown()
-
-    def get_executor(self):
-        if self.async_executor is None:
-            self.async_executor = ThreadPoolExecutor(max_workers=self.max_async_calls)
-        return self.async_executor
-    
     def api_call(
-        self,
-        messages: list[dict[str, str]],
-        json_form: bool = True,
-        **llm_args 
-        )-> Dict:
-        return asyncio.run(self.api_call_async(
-                messages, json_form, **llm_args
-                )
-              )
-
-    async def api_call_async(
         self,
         messages: list[dict[str, str]],
         json_form: bool = True,
@@ -107,13 +83,8 @@ class Model:
         for key, value in llm_args.items():
             l_body[key] = value
         try:
+            response = requests.post(self.base_url, headers=headers, json=l_body, timeout=self.timeout)
 
-            response = await asyncio.get_event_loop().run_in_executor(
-                self.get_executor(),
-                requests.post,
-                self.base_url, headers=headers, json=l_body, timeout=self.timeout
-            )
-            
             if response.status_code  != 200:
                 response_text = response.text
                 if "invalid_api_key" in response_text:
@@ -140,43 +111,25 @@ class Model:
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
         return HostaChecker(func, l_ret_data).check()
+    
+    def __exit__(self):
+        if self.async_executor is not None:
+            self.async_executor.shutdown()
 
+    def get_executor(self):
+        if self.async_executor is None:
+            self.async_executor = ThreadPoolExecutor(max_workers=self.max_workers)
+        return self.async_executor
 
-class DefaultModel:
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(DefaultModel, cls).__new__(
-                cls, *args, **kwargs)
-        return cls._instance
-
-    def __init__(self):
-        if not hasattr(self, "model"):
-            self.model = None
-
-    def set_default_model(self, new):
-        if isinstance(new, Model):
-            self.model = new
-        else:
-            sys.stderr.write("[CONFIG_ERROR] Invalid model instance.\n")
-
-    def set_default_apiKey(self, api_key=None):
-        if api_key is not None or isinstance(api_key, str):
-            self.model.api_key = api_key
-        else:
-            sys.stderr.write("[CONFIG_ERROR] Invalid API key.")
-
-    def get_default_model(self):
-        return self.model
-
-
-DefaultManager = DefaultModel()
-
-
-def set_default_model(new):
-    DefaultManager.set_default_model(new)
-
-
-def set_default_apiKey(api_key=None):
-    DefaultManager.set_default_apiKey(api_key)
+    async def api_call_async(
+        self,
+        messages: list[dict[str, str]],
+        json_form: bool = True,
+        **llm_args
+    ) -> Dict:
+        thread = await asyncio.get_event_loop().run_in_executor(
+                self.get_executor(),
+                self.api_call,
+                messages, json_form, **llm_args
+            )
+        return thread

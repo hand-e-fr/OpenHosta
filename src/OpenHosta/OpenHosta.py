@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from . import asyncify
 from .core import config
-from .core.config import Model, DefaultManager
+from .core.config import Model
+from .core.default import DefaultManager
 from .core.checker import HostaChecker, Func
 
 from .utils.meta_prompt import print_last_prompt
@@ -28,6 +30,7 @@ DefaultManager.set_default_model(
 )
 
 all = (
+    "asyncify"
     "config",
     "emulate",
     "thought",
