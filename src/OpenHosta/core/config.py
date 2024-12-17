@@ -5,6 +5,8 @@ import json
 import re
 import sys
 import requests
+import asyncio
+from  concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict
 
 from .checker import HostaChecker
@@ -35,12 +37,15 @@ class Model:
             base_url: str = None, 
             api_key: str = None, 
             timeout: int = 30,
+            max_async_calls = 5,
             additionnal_headers: Dict[str, Any] = {}
         ):
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
         self.timeout = timeout
+        self.max_async_calls = max_async_calls
+        self.async_executor = None
         self.user_headers = additionnal_headers
         self._last_request = None
         self._used_tokens = 0
@@ -55,7 +60,27 @@ class Model:
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
 
+    def __exit__(self):
+        if self.async_executor is not None:
+            self.async_executor.shutdown()
+
+    def get_executor(self):
+        if self.async_executor is None:
+            self.async_executor = ThreadPoolExecutor(max_workers=self.max_async_calls)
+        return self.async_executor
+    
     def api_call(
+        self,
+        messages: list[dict[str, str]],
+        json_form: bool = True,
+        **llm_args 
+        )-> Dict:
+        return asyncio.run(self.api_call_async(
+                messages, json_form, **llm_args
+                )
+              )
+
+    async def api_call_async(
         self,
         messages: list[dict[str, str]],
         json_form: bool = True,
@@ -82,8 +107,13 @@ class Model:
         for key, value in llm_args.items():
             l_body[key] = value
         try:
-            response = requests.post(self.base_url, headers=headers, json=l_body, timeout=self.timeout)
 
+            response = await asyncio.get_event_loop().run_in_executor(
+                self.get_executor(),
+                requests.post,
+                self.base_url, headers=headers, json=l_body, timeout=self.timeout
+            )
+            
             if response.status_code  != 200:
                 response_text = response.text
                 if "invalid_api_key" in response_text:
