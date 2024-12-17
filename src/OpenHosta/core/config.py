@@ -50,6 +50,10 @@ class Model:
             raise ValueError(f"[Model.__init__] Missing values.")
         elif not is_valid_url(self.base_url):
             raise ValueError(f"[Model.__init__] Invalid URL.")
+        if "localhost" in base_url:
+            self.api_key = "..." 
+        if self.api_key is None or not self.api_key:
+            raise ApiKeyError("[model.api_call] Empty API key.")
 
     def api_call(
         self,
@@ -57,9 +61,6 @@ class Model:
         json_form: bool = True,
         **llm_args
     ) -> Dict:
-        if self.api_key is None or not self.api_key:
-            raise ApiKeyError("[model.api_call] Empty API key.")
-
         l_body = {
             "model": self.model,
             "messages": messages,
