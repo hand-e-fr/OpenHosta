@@ -116,7 +116,7 @@ If you add a new feature, please update the documentation accordingly. The docum
    2. Draft a new release on GitHub
    3. Copy the changelog entries to the release notes section
    4. Add any additional release notes if necessary
-   5. Push the package to PyPI
+   5. Push the package to PyPI (automatically via GitHub Actions)
    6. Send release announcement on Discord
 
 ### Post-release tasks
