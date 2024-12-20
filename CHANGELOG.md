@@ -4,6 +4,16 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v2.1.4**
+- **Fixes**
+  - CUDA compatibility
+
+- **Internal**
+  - Added a GitHub Action to push automatically on PyPI on a release
+
+- **Doc**
+  - Added `delivery method` to the contributing file
+
 ## **v2.1.3**
 - **Features**
   - Added `additionnal_headers` in `Model` to add specific values in the header of the request send to the API.
