@@ -92,3 +92,4 @@ re: clean
 	@$(L_SHELL) $(WRITE) '$(TAG) Succesfully updated package !' $(COLOR)
 
 .PHONY: all help build upload ftests utests format lint clean re install
+
