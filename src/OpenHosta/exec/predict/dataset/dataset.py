@@ -566,16 +566,3 @@ class HostaDataset:
     def __iter__(self):
         return iter(self.data)
     
-
-
-
-
-if __name__ == "__main__":
-    logger = Logger()
-    dataset = HostaDataset(logger)
-
-    dataset.convert_files("data.csv", SourceType.CSV)
-
-    dataset.encode(...)
-    dataset.tensorize()
-    train, val = dataset.to_dataloaders(32)
