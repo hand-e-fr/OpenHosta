@@ -22,6 +22,10 @@ All types of contributions are encouraged and valued. See the Table of Contents 
     - [Code Review](#code-review)
     - [Coding Style](#coding-style)
     - [Documentation](#documentation)
+  - [Delivery Method](#delivery-method)
+    - [Pre-release checks](#pre-release-checks)
+    - [Release process](#release-process)
+    - [Post-release tasks](#post-release-tasks)
   - [Conclusion](#conclusion)
     - [Additional Information](#additional-information)
 
@@ -92,6 +96,34 @@ Please ensure that your code follows the project's style conventions. We use `bl
 ### Documentation
 
 If you add a new feature, please update the documentation accordingly. The documentation should be clear, concise, and include usage examples.
+
+## Delivery Method
+
+### Pre-release checks
+
+   1. Merge all concerned branches into `dev`
+   2. Verify that all quality checks pass successfully
+   3. Perform a thorough code review using `git diff`
+   4. Ensure the CHANGELOG.md is up to date
+   5. Review the documentation for accuracy
+   6. Verify all unit tests are passing
+   7. Confirm all version numbers have been properly updated
+   8. Conduct bug hunting on a clean virtual environment and perform user testing
+
+### Release process
+
+   1. Merge `dev` branch into `main`
+   2. Draft a new release on GitHub
+   3. Copy the changelog entries to the release notes section
+   4. Add any additional release notes if necessary
+   5. Push the package to PyPI (automatically via GitHub Actions)
+   6. Send release announcement on Discord
+
+### Post-release tasks
+
+   1. Update all other branches with the new release
+   2. Review and update issues as needed
+   3. Create a new milestone for the next release
 
 ---
 

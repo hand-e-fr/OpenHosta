@@ -7,8 +7,8 @@ from .neural_network_types import ArchitectureType
 
 
 class HostaModel(ABC, nn.Module):
-    def __init__(self, device: Optional[str]):
-        self.device = device if device is not None else ('cuda' if torch.cuda.is_available() else 'cpu')
+    def __init__(self):
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.layers = []
         self.architecture_type: Optional[ArchitectureType] = None
         super().__init__()
