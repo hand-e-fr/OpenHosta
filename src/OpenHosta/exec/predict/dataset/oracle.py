@@ -15,7 +15,7 @@ class LLMSyntheticDataGenerator:
 
     @staticmethod
     def _validate_row(row: str, expected_fields: List[Type], logger: Logger) -> Optional[List[Union[str, float]]]:
-        logger.log_custom("Data Generation", f"Validating row: {row}", one_line=False)
+        logger.log_custom("Data Generation", f"Validating row: {row}", one_line=False, level=2)
         try:
             values = row.strip().split(',')
 
