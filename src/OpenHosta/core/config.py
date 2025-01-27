@@ -68,13 +68,13 @@ class Model:
             "Content-Type": "application/json"
         }
         
-        for key, value in self.user_headers.items():
-            headers[key] = value
-            
         if "azure.com" in self.base_url:
             headers["api-key"] = f"{self.api_key}"
         else:
             headers["Authorization"] = f"Bearer {self.api_key}"
+
+        for key, value in self.user_headers.items():
+            headers[key] = value
  
         if json_form:
             l_body["response_format"] = {"type": "json_object"}

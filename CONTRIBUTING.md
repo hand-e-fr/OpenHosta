@@ -108,6 +108,10 @@ If you add a new feature, please update the documentation accordingly. The docum
    5. Review the documentation for accuracy
    6. Verify all unit tests are passing
    7. Confirm all version numbers have been properly updated
+      - pyproject.toml: version = "X.Y.patch"
+      - README.md: vX.Y.patch - Open-Source Project
+      - docs/doc.md: Documentation for version: **X.Y.patch**
+      - src/OpenHosta/__init__.py: __version__ = "X.Y.patch"
    8. Conduct bug hunting on a clean virtual environment and perform user testing
 
 ### Release process
