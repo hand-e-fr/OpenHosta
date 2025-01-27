@@ -4,6 +4,14 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v2.1.5**
+- **Fixes**
+  - Allow basic auth for models behind API
+
+- **Doc**
+  - List files with versions to be modified at delivery 
+  - Update Google colab local llm and agent documentation
+
 ## **v2.1.4**
 - **Fixes**
   - CUDA compatibility

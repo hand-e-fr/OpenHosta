@@ -1,5 +1,5 @@
 # OpenHosta 
-v2.1.4 - Open-Source Project
+v2.1.5 - Open-Source Project
 
 <a href="https://colab.research.google.com/github/hand-e-fr/OpenHosta/blob/main/docs/openhosta_phi4.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/> Basic Usage - Synthetic Data - local LLM (phi-4)</a>
 <br/>
