@@ -62,6 +62,14 @@ if is_pydantic:
     
 
 else:
+
+    def get_pydantic_schema(return_caller) -> Optional[Dict[str, Any]]:
+        """
+        Return None as pydantic is not installed.
+        Installed pydantic to use this feature.
+        """
+        return None
+
     class Func:
         f_obj: Optional[object] = None
         f_def: str = ""

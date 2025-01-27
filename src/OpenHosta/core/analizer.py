@@ -32,7 +32,6 @@ import inspect
 from types import FrameType
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 
-from ..utils.import_handler import is_pydantic
 from .pydantic_usage import get_pydantic_schema
 
 if version_info.major == 3 and version_info.minor > 9:
@@ -113,7 +112,7 @@ class FuncAnalizer:
             A tuple containing the bound arguments, local variables, and local attributs.
         """
         values_locals = {k: v for k, v in self.values.items()
-                         if k not in self.sig.parameters}
+                        if k not in self.sig.parameters}
         values_locals.pop('self', None)
 
         values_self = None
@@ -130,7 +129,7 @@ class FuncAnalizer:
             A tuple containing a string representing the function call and the bound arguments.
         """
         values_args = {k: v for k, v in self.values.items()
-                       if k in self.sig.parameters}
+                    if k in self.sig.parameters}
 
         bound_args = self.sig.bind_partial(**values_args)
         bound_args.apply_defaults()
@@ -291,12 +290,11 @@ class FuncAnalizer:
         return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
 
         if return_caller is not None:
-            if is_pydantic:
-                from .pydantic_usage import get_pydantic_schema
 
-                pyd_sch = get_pydantic_schema(return_caller)
-                if pyd_sch is not None:
-                    return pyd_sch
+            pyd_sch = get_pydantic_schema(return_caller)
+            if pyd_sch is not None:
+                return pyd_sch
+            
             return self._get_type_schema(return_caller)
         else:
             return self._get_type_schema(Any)
