@@ -4,7 +4,7 @@ from .core import config
 from .core.config import Model, DefaultManager
 from .core.checker import HostaChecker, Func
 
-from .utils.meta_prompt import print_last_prompt
+from .utils.meta_prompt import print_last_prompt, print_last_response
 from .utils.import_handler import is_predict
 from .utils.meta_prompt import EMULATE_PROMPT
 
@@ -36,6 +36,7 @@ all = (
     "ask",
     "EMULATE_PROMPT",
     "print_last_prompt",
+    "print_last_response",
     "generate_data",
     "HostaDataset",
     "SourceType",

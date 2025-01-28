@@ -42,7 +42,6 @@ class Model:
         self.api_key = api_key
         self.timeout = timeout
         self.user_headers = additionnal_headers
-        self._last_request = None
         self._used_tokens = 0
         self._nb_requests = 0
 
@@ -94,22 +93,77 @@ class Model:
                     )
             self._nb_requests += 1
             return response.json()
+        
         except Exception as e:
             raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
 
-    def request_handler(self, response: Dict, func: Func) -> Any:
-        json_string = response["choices"][0]["message"]["content"]
-        if "usage" in response:
-            self._used_tokens += int(response["usage"]["total_tokens"])
+    def request_handler(self, response_dict: Dict, func: Func) -> Any:
+
+        if "usage" in response_dict:
+            self._used_tokens += int(response_dict["usage"]["total_tokens"])
+
+        response = response_dict["choices"][0]["message"]["content"]
+        rational, answer = self.split_cot_answer(response)
+
+        func.f_obj._last_response["rational"] = rational
+        func.f_obj._last_response["answer"] = answer
+        
+        response = self.extract_json(answer)
+        
         try:
-            l_ret_data = json.loads(json_string)
+            l_ret_data = json.loads(response)
         except json.JSONDecodeError as e:
             sys.stderr.write(
                 f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
-            l_cleand = "\n".join(json_string.split("\n")[1:-1])
-            l_ret_data = json.loads(l_cleand)
+            l_ret_data = ""
+
         return HostaChecker(func, l_ret_data).check()
 
+    def split_cot_answer(self, response:str) -> tuple[str, str]:
+        """
+        This function split response into rational and answer.
+
+        Special prompt may ask for chain-of-thought or models might be trained to reason first.
+
+        Args:
+            response (str): response from the model.
+
+        Returns:
+            tuple[str, str]: rational and answer.
+        """
+        response = response.strip()
+
+        if response.startswith("<think>") and "</think>" in response:
+            chunks = response[8:].split("</think>")
+            rational = chunks[0]
+            answer = "</think>".join(chunks[1:]) # in case there are multiple </think> tags
+        else:
+            rational, answer = "", response
+        
+        return rational, answer
+
+
+    def extract_json(self, response: str) -> str:
+        """
+        Extracts the JSON part from the response.
+
+        Some LLM will return the JSON with some additional text.
+        """
+        if response.strip().endswith("```"):
+            chuncks = response.split("```")
+            last_chunk = chuncks[-2]
+            if "{" in last_chunk and "}" in last_chunk:
+                chunk_lines = last_chunk.split("\n")[1:]
+                # find first line with { and last line with }
+                start_line = next(i for i, line in enumerate(chunk_lines) if "{" in line)
+                end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
+                response = "\n".join(chunk_lines[start_line:end_line + 1])
+
+            else:
+                sys.stderr.write(
+                    f"[Model.extract_json] JSON not found in the response. (passthrough)")
+        
+        return response
 
 class DefaultModel:
     _instance = None

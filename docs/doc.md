@@ -869,10 +869,10 @@ Here's all the shards:
 
 You can find all the separated values by visiting the [meta_prompt.py](../src/OpenHosta/utils/meta_prompt.py) file.
 
-To see te full filled prompt send to the LLM, you can also use the `print_last_prompt` function:
+To see te full filled prompt send to the LLM, you can also use the `print_last_prompt` and `print_last_response` function:
 
 ```python
-from OpenHosta import emulate, print_last_prompt
+from OpenHosta import emulate, print_last_prompt, print_last_response
 
 def multiply(a:int, b:int)->int:
     """
@@ -882,6 +882,7 @@ def multiply(a:int, b:int)->int:
 
 multiply(5, 6)
 print_last_prompt(multiply)
+print_last_response(multiply)
 ```
 
 #### Show me the prompt !
