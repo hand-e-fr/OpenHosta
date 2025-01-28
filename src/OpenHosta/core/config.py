@@ -35,6 +35,7 @@ class Model:
             base_url: str = None, 
             api_key: str = None, 
             timeout: int = 30,
+            force_json_output:bool = True,
             additionnal_headers: Dict[str, Any] = {}
         ):
         self.model = model
@@ -42,6 +43,7 @@ class Model:
         self.api_key = api_key
         self.timeout = timeout
         self.user_headers = additionnal_headers
+        self.json_form = force_json_output
         self._used_tokens = 0
         self._nb_requests = 0
 
@@ -53,9 +55,12 @@ class Model:
     def api_call(
         self,
         messages: list[dict[str, str]],
-        json_form: bool = True,
+        json_form: bool = None,
         **llm_args
     ) -> Dict:
+        if json_form is None:
+            json_form = self.json_form
+
         if self.api_key is None or not self.api_key:
             raise ApiKeyError("[model.api_call] Empty API key.")
 

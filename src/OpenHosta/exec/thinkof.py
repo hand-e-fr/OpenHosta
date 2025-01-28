@@ -21,7 +21,7 @@ def guess_type(key: str, *args) -> object:
     )
 
     response = l_default.api_call([
-            {"role": "system", "content": f"{THOUGHT_PROMPT!r}{THOUGHT_PROMPT.USER_SEP}"},
+            {"role": "system", "content": THOUGHT_PROMPT.render()},
             {"role": "user", "content": l_user_prompt}
         ],
         temperature=0.5,

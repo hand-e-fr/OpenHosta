@@ -29,36 +29,29 @@ def _build_user_prompt(
         str: A formatted prompt string containing all relevant function information and context,
             structured with appropriate separators and headers.
     """
-    def filler(
-        pre, value): return f"**{pre}**\n{str(value)}\n\n" if value is not None and value != [] else ""
-
-    user_prompt = (
-        filler(EMULATE_PROMPT.PRE_DEF, _infos.f_def)
-        + filler(EMULATE_PROMPT.PRE_TYPE, _infos.f_type[1])
-        + filler(EMULATE_PROMPT.PRE_SCHEMA, _infos.f_schema)
-    )
+    
+    user_prompt_data = {
+        "PRE_DEF":_infos.f_def,
+        "PRE_TYPE": _infos.f_type[1],
+        "PRE_SCHEMA": _infos.f_schema
+    }
     if use_locals_as_ctx:
-        user_prompt = (
-            user_prompt + filler(EMULATE_PROMPT.PRE_LOCALS, _infos.f_locals))
+        user_prompt_data["PRE_LOCALS"] = _infos.f_locals
     if use_self_as_ctx:
-        user_prompt = (
-            user_prompt + filler(EMULATE_PROMPT.PRE_SELF, _infos.f_self))
+        user_prompt_data["PRE_SELF"] = _infos.f_self
 
     if x:
         ex_str = ""
         if x.example:
+            user_prompt_data["PRE_EXAMPLE"] = []
             for ex in x.example:
                 ex_args = ", ".join(f"{elem[0]}={str(elem[1])}" for elem in [arg for arg in ex["in_"].items()])
-                ex_str += f"input: {x.infos.f_name}({ex_args})\noutput: {{return: {str(ex['out'])}}}\n\n"
-        user_prompt = (
-            user_prompt
-            + filler(EMULATE_PROMPT.PRE_EXAMPLE, ex_str)
-            + filler(EMULATE_PROMPT.PRE_COT, x.cot)
-        )
-    user_prompt = (user_prompt + EMULATE_PROMPT.USER_SEP)
-    return user_prompt
-
-
+                ex_str = f"input: {x.infos.f_name}({ex_args})\noutput: {{return: {str(ex['out'])}}}\n\n"
+                user_prompt_data["PRE_EXAMPLE"].append(ex_str)
+        
+        user_prompt_data["PRE_COT"] = x.cot
+        
+    return EMULATE_PROMPT.render(user_prompt_data)
 
 def emulate(
         _infos: Optional[Func] = None,
@@ -92,7 +85,7 @@ def emulate(
         x = Hosta()
         _infos = getattr(x._update_call(), "_infos")
 
-    func_prompt: str = _build_user_prompt(
+    func_prompt_rendered: str = _build_user_prompt(
         _infos, x, use_locals_as_ctx, use_self_as_ctx)
 
     if model is None:
@@ -106,12 +99,12 @@ def emulate(
     if x:
         x.attach(_infos.f_obj, logging_object)
 
-    logging_object["_last_request"]['sys_prompt']=f"{EMULATE_PROMPT!r}\n{func_prompt}\n"
+    logging_object["_last_request"]['sys_prompt']=func_prompt_rendered
     logging_object["_last_request"]['user_prompt']=_infos.f_call
     
     try:
         response_dict = model.api_call([
-                {"role": "system", "content": f"{EMULATE_PROMPT!r}\n{func_prompt}\n"},
+                {"role": "system", "content": func_prompt_rendered},
                 {"role": "user", "content": _infos.f_call}
             ],
             **llm_args
