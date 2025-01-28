@@ -91,39 +91,41 @@ def emulate(
     if _infos is None:
         x = Hosta()
         _infos = getattr(x._update_call(), "_infos")
+
     func_prompt: str = _build_user_prompt(
         _infos, x, use_locals_as_ctx, use_self_as_ctx)
 
     if model is None:
         model = DefaultManager.get_default_model()
 
-    if x:
-        x.attach(_infos.f_obj, { # type: ignore
-            "_last_request": None,
-            "_last_response": None
-        })
+    logging_object = { 
+        "_last_request": {},
+        "_last_response": {}
+    }
 
+    if x:
+        x.attach(_infos.f_obj, logging_object)
+
+    logging_object["_last_request"]['sys_prompt']=f"{EMULATE_PROMPT!r}\n{func_prompt}\n"
+    logging_object["_last_request"]['user_prompt']=_infos.f_call
+    
     try:
-        if x:
-            x.attach(_infos.f_obj, {"_last_request": { # type: ignore
-                    'sys_prompt':f"{EMULATE_PROMPT!r}\n{func_prompt}\n",
-                    'user_prompt':_infos.f_call
-                    }
-                }
-            )
-        response = model.api_call([
+        response_dict = model.api_call([
                 {"role": "system", "content": f"{EMULATE_PROMPT!r}\n{func_prompt}\n"},
                 {"role": "user", "content": _infos.f_call}
             ],
             **llm_args
         )
         
-        if x:
-            x.attach(_infos.f_obj, {"_last_response": response}) # type: ignore
+        logging_object["_last_response"]["response_dict"] = response_dict
         
-        l_ret = model.request_handler(response, _infos)
+        l_ret = model.request_handler(response_dict, _infos)
+
+        logging_object["_last_response"]["data"] = l_ret
+
         if post_callback is not None:
             l_ret = post_callback(l_ret)
+
     except NameError as e:
         raise NotImplementedError(
             f"[emulate]: {e}\nModel object does not have the required methods.")

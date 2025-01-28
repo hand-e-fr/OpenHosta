@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import List, Callable
 
 def print_last_prompt(func:Callable):
+    """
+    Print the last prompt sent to the LLM when using function `func`.
+    """
     if hasattr(func, "_last_request"):
         if "sys_prompt" in func._last_request:
             print("[SYSTEM PROMPT]")
@@ -10,6 +13,21 @@ def print_last_prompt(func:Callable):
         if "user_prompt" in func._last_request:
             print("[USER PROMPT]")
             print(func._last_request["user_prompt"])
+    else:
+        print("No prompt found for this function.")
+
+
+def print_last_response(func:Callable):
+    """
+    Print the last answer recived from the LLM when using function `func`.
+    """
+    if hasattr(func, "_last_response"):
+        if "rational" in func._last_response:
+            print("[THINKING]")
+            print(func._last_response["rational"])
+        if "answer" in func._last_response:
+            print("[ANSWER]")
+            print(func._last_response["answer"])
     else:
         print("No prompt found for this function.")
 
