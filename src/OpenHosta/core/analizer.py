@@ -32,7 +32,7 @@ import inspect
 from types import FrameType
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 
-from ..utils.import_handler import is_pydantic
+from ..utils.import_handler import is_pydantic_enabled
 from .pydantic_usage import get_pydantic_schema
 
 if version_info.major == 3 and version_info.minor > 9:
@@ -50,24 +50,24 @@ class FuncAnalizer:
     A class for inspecting the signature, definition, and call information of a function.
 
     Args:
-        func (Callable): The function to inspect.
+        function_pointer (Callable): The function to inspect.
 
     Attributes:
-        func (Callable): The function to inspect.
+        function_pointer (Callable): The function to inspect.
         sig (Signature): The signature of the function.
     """
 
-    def __init__(self, func: Union[Callable, MethodType] | None, caller_frame: FrameType | None):
+    def __init__(self, function_pointer: Union[Callable, MethodType] | None, caller_frame: FrameType | None):
         """
         Initialize the function inspector with the given function.
 
         Args:
-            func (Callable): The function to inspect.
+            function_pointer (Callable): The function to inspect.
             caller_frame (FrameType): The function's frame in which it is called.
         """
         try:
-            self.func = func
-            self.sig = inspect.signature(func)
+            self.function_pointer = function_pointer
+            self.sig = inspect.signature(function_pointer)
             _, _, _, self.values = inspect.getargvalues(caller_frame)
         except Exception as e:
             raise AttributeError(
@@ -81,7 +81,7 @@ class FuncAnalizer:
         Returns:
             The string representing the function's definition.
         """
-        func_name = getattr(self.func, "__name__")
+        func_name = getattr(self.function_pointer, "__name__")
         func_params = ", ".join(
             [
                 (
@@ -100,7 +100,7 @@ class FuncAnalizer:
         )
         definition = (
             f"```python\ndef {func_name}({func_params}):{func_return}\n"
-            f"    \"\"\"\n\t{self.func.__doc__}\n    \"\"\"\n```"
+            f"    \"\"\"\n\t{self.function_pointer.__doc__}\n    \"\"\"\n```"
         )
         return definition
 
@@ -117,8 +117,8 @@ class FuncAnalizer:
         values_locals.pop('self', None)
 
         values_self = None
-        if hasattr(self.func, '__self__'):
-            values_self = getattr(self.func.__self__, '__dict__', None)
+        if hasattr(self.function_pointer, '__self__'):
+            values_self = getattr(self.function_pointer.__self__, '__dict__', None)
         return values_locals or None, values_self
 
     @property
@@ -140,7 +140,7 @@ class FuncAnalizer:
         args_str = ", ".join(
             f"{k}={v!r}" for k, v in bound_arguments.items()
         )
-        call_str = f"{self.func.__name__}({args_str})"
+        call_str = f"{self.function_pointer.__name__}({args_str})"
         return call_str, bound_arguments
 
     @property
@@ -291,7 +291,7 @@ class FuncAnalizer:
         return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
 
         if return_caller is not None:
-            if is_pydantic:
+            if is_pydantic_enabled:
                 from .pydantic_usage import get_pydantic_schema
 
                 pyd_sch = get_pydantic_schema(return_caller)

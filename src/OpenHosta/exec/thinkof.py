@@ -4,14 +4,26 @@ import json
 from pydoc import locate
 
 from .emulate import emulate
-from ..core.config import DefaultManager
-from ..core.hosta import Func
+from ..core.config import DefaultModelPolicy
+from ..core.hosta_inspector import FunctionMetadata
 from ..utils.errors import RequestError
 from ..utils.meta_prompt import THOUGHT_PROMPT
 
 
+def gather_data_for_prompt_template(
+        _infos: FunctionMetadata
+):    
+    user_prompt_data = {
+        "PRE_DEF":_infos.f_def,
+        "PRE_TYPE": _infos.f_type[1],
+        "PRE_SCHEMA": _infos.f_schema,
+        "PRE_FUNCTION_CALL": _infos.f_call
+    }
+        
+    return user_prompt_data
+
 def guess_type(key: str, *args) -> object:
-    l_default = DefaultManager.get_default_model()
+    l_default = DefaultModelPolicy.get_model()
 
     l_user_prompt = (
         "Here's the function behavior:\n"
@@ -34,23 +46,56 @@ def guess_type(key: str, *args) -> object:
     return locate(type_str)
 
 
-def thinkof(key):
-
+def thinkof(key, model=None, prompt=None, **llm_args):
+    
     def inner_func(*args, **kwargs):
-        _infos: Func = Func()
+        _infos = FunctionMetadata()
+        _model = model
+        _prompt = prompt
 
         if not hasattr(inner_func, "_return_type"):
-            setattr(inner_func, "_return_type", guess_type(key, *args))
+            setattr(inner_func, "_return_type", guess_type(key, *args, **kwargs))
 
         _infos.f_def = key
         _infos.f_call = str([str(arg) for arg in args])
         _infos.f_type = ([type(arg) for arg in args], inner_func._return_type)
+        prompt_data = gather_data_for_prompt_template(_infos)
 
+        if _model is None:
+            _model = DefaultModelPolicy.get_model()
+
+        if _prompt is None:
+            _prompt = DefaultModelPolicy.get_prompt()
+
+        prompt_rendered = _prompt.render(prompt_data)
+
+        logging_object = { 
+            "_last_request": {},
+            "_last_response": {}
+        }
+
+        setattr(inner_func, "_last_request", logging_object["_last_request"])
+
+        logging_object["_last_request"]['sys_prompt']=prompt_rendered
+        logging_object["_last_request"]['user_prompt']=prompt_data["PRE_FUNCTION_CALL"]
+        
         try:
-            result = emulate(_infos=_infos)
-            setattr(inner_func, "_last_response", result)
+            response_dict = _model.api_call([
+                    {"role": "system", "content": prompt_rendered},
+                    {"role": "user", "content": prompt_data["PRE_FUNCTION_CALL"]}
+                ],
+                **llm_args
+            )
+            
+            logging_object["_last_response"]["response_dict"] = response_dict
+            
+            l_ret = _model.response_parser(response_dict, _infos)
+
+            logging_object["_last_response"]["data"] = l_ret
+            setattr(inner_func, "_last_response", logging_object["_last_response"])
+
         except Exception as e:
             raise RequestError(f"[thinkof] Cannot emulate the function.\n{e}")
-        return result
+        return l_ret
 
     return inner_func

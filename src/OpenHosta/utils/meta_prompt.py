@@ -1,7 +1,26 @@
-from __future__ import annotations
-
-from typing import List, Callable
+from typing import Callable
 from jinja2 import Template
+
+class Prompt(Template):
+    """
+    Jinja2 compatible template.
+
+    To create your own prompt:
+    `my_prompt = Prompt('''Try to produce a JSON that answer this call:''')`
+    
+    To see the original prompt:
+    `print(my_prompt)`
+    """
+
+    def __init__(self, source, *args, **kargs):
+        super().__init__(source, *args, **kargs)
+
+        self.source = source
+
+    def __str__(self):
+        return self.source
+
+    
 
 EMULATE_PROMPT=Template("""\
 ## Context
@@ -127,31 +146,31 @@ Expected response: {"type": "list"}
 {% endif %}                              
 """)
 
-def print_last_prompt(func:Callable):
+def print_last_prompt(function_pointer:Callable):
     """
-    Print the last prompt sent to the LLM when using function `func`.
+    Print the last prompt sent to the LLM when using function `function_pointer`.
     """
-    if hasattr(func, "_last_request"):
-        if "sys_prompt" in func._last_request:
+    if hasattr(function_pointer, "_last_request"):
+        if "sys_prompt" in function_pointer._last_request:
             print("[SYSTEM PROMPT]")
-            print(func._last_request["sys_prompt"])
-        if "user_prompt" in func._last_request:
+            print(function_pointer._last_request["sys_prompt"])
+        if "user_prompt" in function_pointer._last_request:
             print("[USER PROMPT]")
-            print(func._last_request["user_prompt"])
+            print(function_pointer._last_request["user_prompt"])
     else:
         print("No prompt found for this function.")
 
 
-def print_last_response(func:Callable):
+def print_last_response(function_pointer:Callable):
     """
-    Print the last answer recived from the LLM when using function `func`.
+    Print the last answer recived from the LLM when using function `function_pointer`.
     """
-    if hasattr(func, "_last_response"):
-        if "rational" in func._last_response:
+    if hasattr(function_pointer, "_last_response"):
+        if "rational" in function_pointer._last_response:
             print("[THINKING]")
-            print(func._last_response["rational"])
-        if "answer" in func._last_response:
+            print(function_pointer._last_response["rational"])
+        if "answer" in function_pointer._last_response:
             print("[ANSWER]")
-            print(func._last_response["answer"])
+            print(function_pointer._last_response["answer"])
     else:
         print("No prompt found for this function.")
