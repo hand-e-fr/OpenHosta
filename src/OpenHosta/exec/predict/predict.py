@@ -9,8 +9,8 @@ from .model.neural_network import NeuralNetwork
 from .model.neural_network_types import ArchitectureType
 from .predict_config import PredictConfig
 from .predict_memory import PredictMemory, File
-from ...core.config import Model, DefaultModel
-from ...core.hosta import Hosta, Func
+from ...core.config import Model, DefaultModelPolicy
+from ...core.hosta_inspector import HostaInspector, FunctionMetadata
 from ...core.logger import Logger, ANSIColor
 
 
@@ -33,51 +33,54 @@ def predict(
 
     assert config is not None, "Please provide a valid configuration not None"
 
-    x = Hosta()
-    func: Func = getattr(x._update_call(), "_infos")
+    inspection = HostaInspector()
+    function_metadata = inspection._infos
     
-    name = config.name if config and config.name else str(func.f_name)
+    name = config.name if config and config.name else str(function_metadata.f_name)
     base_path = config.path if config and config.path else os.getcwd()
     memory: PredictMemory = PredictMemory.load(base_path=base_path, name=name)
 
     logger: Logger = Logger(log_file_path=memory.summary.path, verbose=verbose)
 
-    dataset: Optional[HostaDataset] = getattr(func.f_obj, "_dataset", None)
+    dataset: Optional[HostaDataset] = getattr(function_metadata.f_obj, "_dataset", None)
 
-    hosta_model: HostaModel = get_hosta_model(func, memory.architecture, logger, config)
+    hosta_model: HostaModel = get_hosta_model(function_metadata, memory.architecture, logger, config)
 
-    if not load_weights(x, memory, hosta_model, logger):
-        train_model(config, memory, hosta_model, oracle, func, logger)
+    if not load_weights(inspection, memory, hosta_model, logger):
+        train_model(config, memory, hosta_model, oracle, function_metadata, logger)
     
     if dataset is None:
-        dataset = HostaDataset.from_input(func.f_args, logger, config.max_tokens, func, memory.dictionary.path)
-        x.attach(func.f_obj, {"_dataset": dataset})
+        dataset = HostaDataset.from_input(function_metadata.f_args, logger, config.max_tokens, function_metadata, memory.dictionary.path)
+        inspection.set_logging_object() {"_dataset": dataset})
     else:
-        dataset.prepare_inference(func.f_args, config.max_tokens, func, memory.dictionary.path)
+        dataset.prepare_inference(function_metadata.f_args, config.max_tokens, function_metadata, memory.dictionary.path)
 
-    if not hasattr(func.f_obj, "_model"):
-        setattr(func, "_model", hosta_model)
+    if not hasattr(function_metadata.f_obj, "_model"):
+        setattr(function_metadata, "_model", hosta_model)
 
     if config.normalize:
         dataset.normalize_input_inference(memory.normalization)
     torch_prediction = hosta_model.inference(dataset.inference.input)
     if config.normalize:
         torch_prediction = dataset.denormalize_output_inference(torch_prediction, memory.normalization)
-    output, prediction = dataset.decode(torch_prediction, func_f_type=func.f_type)
+    output, prediction = dataset.decode(torch_prediction, func_f_type=function_metadata.f_type)
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
     return output
 
 
-def get_hosta_model(func: Func, architecture_file: File, logger: Logger, config: Optional[PredictConfig] = None) -> HostaModel:
+def get_hosta_model(function_metadata: FunctionMetadata, 
+                    architecture_file: File, 
+                    logger: Logger, 
+                    config: Optional[PredictConfig] = None) -> HostaModel:
     """
     Load or create a new model.
     """
-    if hasattr(func.f_obj, "_model"):
-        return getattr(func.f_obj, "_model")
+    if hasattr(function_metadata.f_obj, "_model"):
+        return getattr(function_metadata.f_obj, "_model")
 
     architecture: Optional[NeuralNetwork] = load_architecure(architecture_file, logger)
 
-    model = HostaModelProvider.from_hosta_func(func, config, architecture, architecture_file.path, logger)
+    model = HostaModelProvider.from_hosta_func(function_metadata, config, architecture, architecture_file.path, logger)
     return model
 
 
@@ -94,24 +97,29 @@ def load_architecure(architecture_file: File, logger: Logger) -> Union[NeuralNet
         logger.log_custom("Architecture", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
         return None
 
-def load_weights(x: Hosta, memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
+def load_weights(inspection: HostaInspector, memory: PredictMemory, hosta_model: HostaModel, logger: Logger) -> bool:
     """
     Load weights if they exist.
     """
-    # if hasattr(x._infos.f_obj, "_weights_loaded"):
+    # if hasattr(inspection._infos.f_obj, "_weights_loaded"):
     #     return True
 
     if memory.weights.exist:
         logger.log_custom("Weights", f"found at {memory.weights.path}", color=ANSIColor.BRIGHT_GREEN, level=2)
         hosta_model.init_weights(memory.weights.path)
-        x.attach(x._infos.f_obj, {"_weights_loaded": True})
+        inspection.set_logging_object({"_weights_loaded": True})
         return True
 
     logger.log_custom("Weights", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
     return False
 
 
-def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel, oracle: Optional[Union[Model, HostaDataset]], func: Func, logger: Logger) -> None:
+def train_model(config: PredictConfig,
+                memory: PredictMemory, 
+                model: HostaModel, 
+                oracle: Optional[Union[Model, HostaDataset]], 
+                function_metadata: FunctionMetadata, 
+                logger: Logger) -> None:
     """
     Prepare the data and train the model.
     """
@@ -125,7 +133,7 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
 
     else:
         logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
-        train_set, val_set = prepare_dataset(config, memory, func, oracle, model, logger)
+        train_set, val_set = prepare_dataset(config, memory, function_metadata, oracle, model, logger)
 
     logger.log_custom("Training", f"epochs: {config.epochs}, batch_size: {config.batch_size}, train_set size: {len(train_set)}, val_set size: {len(val_set)}", color=ANSIColor.BRIGHT_YELLOW, level=2)
 
@@ -143,7 +151,12 @@ def train_model(config: PredictConfig, memory: PredictMemory, model: HostaModel,
     model.save_weights(memory.weights.path)
 
 
-def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, oracle: Optional[Union[Model, HostaDataset]], model: HostaModel, logger: Logger) -> tuple:
+def prepare_dataset(config: PredictConfig, 
+                    memory: PredictMemory, 
+                    function_metadata: FunctionMetadata, 
+                    oracle: Optional[Union[Model, HostaDataset]], 
+                    model: HostaModel, 
+                    logger: Logger) -> tuple:
     """
     Prepare the dataset for training.
     """
@@ -159,7 +172,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
         dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None, log=logger)
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW, level=2)
-        dataset = _generate_data(func, oracle, config, logger)
+        dataset = _generate_data(function_metadata, oracle, config, logger)
         save_path = os.path.join(memory.predict_dir, "generated_data.csv")
         dataset.save(save_path, SourceType.CSV)
         logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN, level=2)
@@ -168,7 +181,7 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
     if config.batch_size is None:
         config.batch_size = max(1, min(16384, int(0.05 * len(dataset.data))))
 
-    dataset.encode(max_tokens=config.max_tokens, inference=False, func=func, dictionary_path=memory.dictionary.path)
+    dataset.encode(max_tokens=config.max_tokens, inference=False, function_metadata=function_metadata, dictionary_path=memory.dictionary.path)
     if config.normalize:
         dataset.normalize_data(memory.normalization)
     dataset.tensorize()
@@ -180,18 +193,21 @@ def prepare_dataset(config: PredictConfig, memory: PredictMemory, func: Func, or
     return train_set, val_set
 
 
-def _generate_data(func: Func, oracle: Optional[Union[Model, HostaDataset]], config: PredictConfig, logger: Logger) -> HostaDataset:
+def _generate_data(function_metadata: FunctionMetadata, 
+                   oracle: Optional[Union[Model, HostaDataset]], 
+                   config: PredictConfig, 
+                   logger: Logger) -> HostaDataset:
     """
     Generate data for training.
     """
     request_amounts = int(config.generated_data / 100) if config.generated_data > 100 else 1
 
     data = LLMSyntheticDataGenerator.generate_synthetic_data(
-        func=func,
+        function_metadata=function_metadata,
         logger=logger,
         request_amounts=request_amounts,
         examples_in_req=int(config.generated_data / request_amounts),
-        model=oracle if oracle is not None else DefaultModel().get_default_model()
+        model=oracle if oracle is not None else DefaultModelPolicy.get_model()
     )
     return HostaDataset.from_list(data, logger)
 

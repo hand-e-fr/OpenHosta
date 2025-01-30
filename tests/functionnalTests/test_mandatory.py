@@ -72,9 +72,9 @@ class TestEmulate:
         
     def test_FeatureDecorator(self):
         
-        def decorator(func):
+        def decorator(function_pointer):
             def wrapper(*args, **kwargs):
-                res = func(*args, **kwargs)
+                res = function_pointer(*args, **kwargs)
                 return res
             return wrapper
         
