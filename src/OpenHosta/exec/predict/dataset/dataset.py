@@ -11,7 +11,7 @@ from enum import Enum
 from .sample_type import Sample
 from ..encoder.simple_encoder import SimpleEncoder
 from ..predict_memory import File
-from ....core.hosta import Func
+from ....core.hosta_inspector import FunctionMetadata
 from ....core.logger import Logger
 
 class SourceType(Enum):
@@ -51,15 +51,15 @@ class HostaDataset:
     ########################################################
     ### Preparation of the data ###
     def encode(self, max_tokens: int, dataset: Optional[List[Sample]] = None, inference_data: Optional[Sample] = None,
-               func : Func = None, dictionary_path : str = None ,inference : bool = False) -> List[Sample]:
+               function_metadata : FunctionMetadata = None, dictionary_path : str = None ,inference : bool = False) -> List[Sample]:
         """
         Encode data with a token limit for str values.
         """
-        assert func is not None, "Func attribut must be provided for encoding"
+        assert function_metadata is not None, "function_metadata attribut must be provided for encoding"
         mapping_dict: Optional[Dict[str, int]] = None
 
 
-        output_type = func.f_type[1]
+        output_type = function_metadata.f_type[1]
         if get_origin(output_type) is Literal:
             mapping_dict = self._generate_mapping_dict(output_type)
             # print("Mapping dict : ", mapping_dict)
@@ -344,12 +344,12 @@ class HostaDataset:
         with open(dictionary_path, 'w', encoding='utf-8') as f:
             json.dump(self.dictionary, f, indent=2, sort_keys=True) # type: ignore
 
-    def prepare_inference(self, inference_data: dict, max_tokens :int, func : Func, dictionary_path :str) -> None:
+    def prepare_inference(self, inference_data: dict, max_tokens :int, function_metadata : FunctionMetadata, dictionary_path :str) -> None:
             """
             Prepare the inference data for the model.
             """
             self.inference = Sample(inference_data)
-            self.encode(max_tokens=max_tokens, inference_data=self.inference, func=func, dictionary_path=dictionary_path, inference=True)
+            self.encode(max_tokens=max_tokens, inference_data=self.inference, function_metadata=function_metadata, dictionary_path=dictionary_path, inference=True)
             self.tensorize(self.inference)
 
     def save(self, path: str, source_type: SourceType = SourceType.CSV, elements: Optional[List[Sample]] = None):
@@ -538,12 +538,12 @@ class HostaDataset:
         return dataset
     
     @staticmethod
-    def from_input(inference_data: dict, logger: Logger, max_tokens : int, func: Func, dictionary_path : str) -> 'HostaDataset':
+    def from_input(inference_data: dict, logger: Logger, max_tokens : int, function_metadata: FunctionMetadata, dictionary_path : str) -> 'HostaDataset':
         """
         Crée un dataset à partir de données d'inférence
         """
         dataset = HostaDataset(logger)
-        dataset.prepare_inference(inference_data, max_tokens, func, dictionary_path)
+        dataset.prepare_inference(inference_data, max_tokens, function_metadata, dictionary_path)
         return dataset
 
     @staticmethod
