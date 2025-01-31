@@ -4,18 +4,18 @@ import re
 import sys
 from unittest.mock import patch
 
-from OpenHosta.core.inspector import HostaInspector as HI
+from OpenHosta.core.hosta_inspector import HostaInspector as HI
 from OpenHosta.utils.errors import FrameError
 
 class TestExtend:
     
     def test_BasicMethod(self):
         class TMP:
-            def tmp_extend(self):
-                return HI._extend()
+            def tmp_find_caller_function(self):
+                return HI._find_caller_function()
         def tmp():
             x = TMP()
-            return x.tmp_extend()
+            return x.tmp_find_caller_function()
         def tmp2():
             return (tmp(), inspect.currentframe())
         
@@ -27,7 +27,7 @@ class TestExtend:
         
     def test_LowBackLevel(self):    
         def tmp():
-            return (HI._extend(back_level=1), inspect.currentframe())
+            return (HI._find_caller_function(back_level=1), inspect.currentframe())
         
         res = tmp()
         
@@ -35,15 +35,15 @@ class TestExtend:
         
     def test_InvalidArgs(self):
         with pytest.raises(ValueError, match=re.escape("[HostaInspector._extend] back_level must a non-zero positive integers.")):
-            HI._extend(back_level=0)
-            HI._extend(back_level=-1)
-            HI._extend(back_level="Hi mom")
+            HI._find_caller_function(back_level=0)
+            HI._find_caller_function(back_level=-1)
+            HI._find_caller_function(back_level="Hi mom")
     
     def test_FuncWithFlask(self):
         from flask import Flask, request, session
 
         def tmp():
-            return (HI._extend(back_level=1), inspect.currentframe())
+            return (HI._find_caller_function(back_level=1), inspect.currentframe())
         
         res = tmp()
         del sys.modules["flask"]
@@ -54,7 +54,7 @@ class TestExtend:
     
     def test_FBackNotFound(self):
         with pytest.raises(FrameError, match=re.escape("[HostaInspector._extend] Frame can't be found (level: 33)")):
-            HI._extend(back_level=100)
+            HI._find_caller_function(back_level=100)
     
     def test_FuncNotCallable(self):
         pass # TODO
