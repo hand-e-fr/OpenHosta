@@ -580,15 +580,15 @@ As seen above takes 2 or more argument. The two first arguments are mandatory. `
 
 **Note** : ***this feature uses the default model.***
 
-## `generate_data` func
+## `generate_data` function
 
 Generate a dataset based on a given function and the number of samples. This function uses a synthetic data generator to create realistic input-output pairs for a given callable Python function based on its defined parameters, examples, and return type.
 
 ### Parameters
 
-- **`func`** (`Callable`):  
+- **`function_pointer`** (`Callable`):  
   The target function used to generate the dataset. This function must take specific inputs and return outputs to be used for creating the dataset.  
-  Proper type annotations and a clear docstring for the `func` are recommended to enhance the quality of generated data.
+  Proper type annotations and a clear docstring for the `function_pointer` are recommended to enhance the quality of generated data.
 
 - **`num_samples`** (`int`):  
   The number of samples to generate. If the number exceeds 100, the function intelligently splits the data requests into manageable chunks.
@@ -611,7 +611,7 @@ Generate a dataset based on a given function and the number of samples. This fun
 ### Raises
 
 - **`TypeError`**:  
-  Raised if the provided `func` is not callable or lacks sufficient information to generate data (such as missing type annotations).
+  Raised if the provided `function_pointer` is not callable or lacks sufficient information to generate data (such as missing type annotations).
 
 ### Example
 
@@ -689,7 +689,7 @@ class MyModel(Model):
     def api_call(
         self,
         messages: List[Dict[str, str]],
-        json_form: bool = True,
+        json_output: bool = True,
         **llm_args
     ) -> Dict:
         # Your code here
@@ -701,33 +701,33 @@ In the example above, we have overridden the "api_call" method of the Model clas
 The "api_call" method takes four arguments:
 
 - **message**: The parsed message sent to the LLM.
-- **json_form**: A boolean enabling the json format return option in the LLM call.
+- **json_output**: A boolean enabling the json format return option in the LLM call.
 - **llm_args**: All the options given by the LLM's distributor. (ex. max_token, temperature, top_p...)
 
 The "api_call" method returns a response object that contains the LLM's response to the user prompt.
 
 #### Custom Response Handling Function
 
-To create your own response handling function, you need to override the "request_handler" method of the Model class. This method is called every time the library receives a response from the LLM.
+To create your own response handling function, you need to override the "response_parser" method of the Model class. This method is called every time the library receives a response from the LLM.
 
 ```python
 from typing import Dict, Any
-from OpenHosta import Model, Func, HostaChecker
+from OpenHosta import Model, FunctionMetadata, TypeConverter
 
 class MyModel(Model):
-    def request_handler(self, response: Dict, func: Func) -> Any:
+    def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
         # Your code here
         # Process the LLM response and return the result
-        return HostaChecker(func, l_ret_data).check()
+        return TypeConverter(function_metadata, l_ret_data).check()
 ```
 
-In the example above, we have overridden the `request_handler` method of the Model class to create our own response handling function. 
-The "request_handler" method takes three arguments:
+In the example above, we have overridden the `response_parser` method of the Model class to create our own response handling function. 
+The "response_parser" method takes three arguments:
 
 - **response**: The response object returned by the LLM.
-- **func**: The object containing all the useful information about the emulated function.
+- **function_metadata**: The object containing all the useful information about the emulated function.
 
-The "request_handler" method returns the processed return value. This is the value returned by the emulated function.
+The "response_parser" method returns the processed return value. This is the value returned by the emulated function.
 
 #### Example Usage
 
@@ -739,7 +739,7 @@ With this method, you can now make OpenHosta compatible with a large number of A
 
 ```python
 from typing import Any, Dict, List
-from OpenHosta import emulate, Model, HostaChecker, Func, example
+from OpenHosta import emulate, Model, TypeConverter, FunctionMetadata, example
 from OpenHosta.utils.errors import RequestError
 import requests
 import json
@@ -750,7 +750,7 @@ class LlamaModel(Model):
     def __init__(self, model: str = None, base_url: str = None, api_key: str = None, timeout: int = 30):
         super().__init__(model, base_url, api_key, timeout)
         
-    def api_call(self, messages: List[Dict[str, str]], json_form: bool = True, **llm_args) -> Dict:
+    def api_call(self, messages: List[Dict[str, str]], json_output: bool = True, **llm_args) -> Dict:
         l_body = {
             "model": self.model,
             "messages": messages,
@@ -760,7 +760,7 @@ class LlamaModel(Model):
             "Content-Type": "application/json"
         }
  
-        if json_form:
+        if json_output:
             l_body["format"] = "json"
         for key, value in llm_args.items():
             l_body[key] = value
@@ -778,16 +778,16 @@ class LlamaModel(Model):
         except Exception as e:
             raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
         
-    def request_handler(self, response: Dict, func: Func) -> Any:
+    def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
         json_string = response["message"]["content"]
         try:
             l_ret_data = json.loads(json_string)
         except json.JSONDecodeError as e:
             sys.stderr.write(
-                f"[Model.request_handler] JSONDecodeError: {e}\nContinuing the process.")
+                f"[Model.response_parser] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
-        return HostaChecker(func, l_ret_data).check()
+        return TypeConverter(function_metadata, l_ret_data).check()
         
 
 mymodel = LlamaModel(
