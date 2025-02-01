@@ -8,7 +8,6 @@ import hashlib
 import inspect
 
 from .analizer import FuncAnalizer
-from .pydantic_usage import FunctionMetadata
 from ..utils.errors import InvalidStructureError
 from ..utils.hosta_type import MemoryNode, MemKey, MemValue, ExampleType, CotType
 from ..utils.errors import FrameError
@@ -359,12 +358,53 @@ class HostaInspector:
             f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(obj)}.")
 
 
+        
+class FunctionMetadata:
+    """
+    FunctionMetadata is an object representing a function's metadata.
+    Useful for the executive functions and the post-processing.
+    """    
+    f_obj: Optional[object] = None
+    
+    # Simple definition of the function, e.g., 'def func(a:int, b:str)->int:'
+    f_def: str = ""
+    
+    # Name of the function, e.g., 'func'
+    f_name: str = ""
+    
+    # Documentation of the function, e.g., 'This function returns the sum of two integers.' 
+    f_doc: str = ""
+    
+    # Actual call of the function, e.g., 'func(1, 'hello')'
+    f_call: str = ""
+    
+    # Arguments of the function, e.g., {'a': 1, 'b': 'hello'}
+    f_args: Dict[str, Any] = {}
+    
+    # Desired type of the _inputs and outputs of the function
+    f_type: Tuple[List[Any], Any] = ([], None)
+    
+    # Dictionary describing the function's return type (in case of pydantic).
+    f_schema: Dict[str, Any] = {}
+    
+    # Signature of the function
+    f_sig: Optional[inspect.Signature] = None
+    
+    # Local variables within the function's scope
+    f_locals: Optional[Dict[str, Any]] = None
+    
+    # Memory nodes associated with the function, contains examples, chain of thought...
+    f_self: Optional[Dict[str, Any]] = None
+    
+    f_mem: Optional[List[MemoryNode]] = None
+
 
 all = (
     "FuncAnalizer",
     "UseType",
     "MemKey",
     "MemValue",
-    "MemoryNode"
+    "MemoryNode",
+    "FunctionMetadata"
 )
 

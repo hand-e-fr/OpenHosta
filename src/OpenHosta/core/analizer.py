@@ -32,8 +32,7 @@ import inspect
 from types import FrameType
 from typing import Callable, Tuple, List, Dict, Any, Optional, Type
 
-from ..utils.import_handler import is_pydantic_enabled
-from .pydantic_usage import get_pydantic_schema
+from .pydantic_stub import get_pydantic_schema
 
 if version_info.major == 3 and version_info.minor > 9:
     from types import NoneType
@@ -286,17 +285,17 @@ class FuncAnalizer:
         Get the JSON schema of the function's return type.
 
         Returns:
-            The JSON schema of the function's return type.
+            The JSON schema in a dictionary
         """
         return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
 
         if return_caller is not None:
-            if is_pydantic_enabled:
-                from .pydantic_usage import get_pydantic_schema
-
-                pyd_sch = get_pydantic_schema(return_caller)
-                if pyd_sch is not None:
-                    return pyd_sch
-            return self._get_type_schema(return_caller)
+            pyd_sch = get_pydantic_schema(return_caller)
+            if pyd_sch is None:
+                schema = self._get_type_schema(return_caller)
+            else:
+                schema = pyd_sch
         else:
-            return self._get_type_schema(Any)
+            schema = self._get_type_schema(Any)
+        
+        return schema

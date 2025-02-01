@@ -4,7 +4,7 @@ from sys import version_info
 from typing import Type, Any, Dict, Optional, Callable, TypeVar
 
 from .hosta_inspector import FunctionMetadata
-from ..utils.import_handler import is_pydantic_enabled
+from .pydantic_stub import convert_pydantic
 
 T = TypeVar('T')
 
@@ -87,8 +87,5 @@ class TypeConverter:
             return None
         if self.is_passed:
             self.checked = self.convert(self.function_metadata.f_type[1])(self.checked)
-            if is_pydantic_enabled:
-                from .pydantic_usage import convert_pydantic
-
-                self.checked = convert_pydantic(self.function_metadata.f_type[1], self.checked)
+            self.checked = convert_pydantic(self.function_metadata.f_type[1], self.checked)
         return self.checked
