@@ -99,8 +99,8 @@ class FuncAnalizer:
             else f" -> {self.sig.return_annotation}"
         )
         definition = (
-            f"```python\ndef {func_name}({func_params}):{func_return}\n"
-            f"    \"\"\"\n\t{self.function_pointer.__doc__}\n    \"\"\"\n```"
+            f"```python\ndef {func_name}({func_params}){func_return}:\n"
+            f"    \"\"\"{self.function_pointer.__doc__}    \"\"\"\n```"
         )
         return definition
 
