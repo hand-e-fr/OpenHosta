@@ -130,7 +130,7 @@ class Model:
         response = self.extract_json(answer)
         
         try:
-            l_ret_data = json.loads(response)
+            l_ret_data = json.loads(response)['return']
         except json.JSONDecodeError as e:
             sys.stderr.write(
                 f"[Model.response_parser] JSONDecodeError: {e}\nContinuing the process.")
@@ -141,6 +141,11 @@ class Model:
     def type_returned_data(self, l_ret_data, function_metadata:FunctionMetadata):
 
         l_ret_data_typed = TypeConverter(function_metadata, l_ret_data).check()
+
+        if l_ret_data_typed is None:
+            sys.stderr.write(
+                f"[Model.type_returned_data]: TypeConverter: Unable to convert\nContinuing the process.")
+            l_ret_data_typed = l_ret_data
 
         return l_ret_data_typed
 

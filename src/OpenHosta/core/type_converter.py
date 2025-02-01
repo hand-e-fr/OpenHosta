@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
+
 from sys import version_info
-from typing import Type, Any, Dict, Optional, Callable, TypeVar
+from typing import Type, Any, Callable, TypeVar, get_origin
 
 from .hosta_inspector import FunctionMetadata
 from .pydantic_stub import convert_pydantic
@@ -24,19 +26,11 @@ class TypeConverter:
     Attributes:
         function_metadata (FunctionMetadata): The function object containing the type annotations for the LLM outputs.
         data (dict): The LLM outputs data to be checked and converted.
-        checked (Any): The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
-        is_passed (bool): A flag indicating whether the checked data should be converted or not. It is set to True if `data` contains a "return" key.
     """
 
-    def __init__(self, function_metadata: FunctionMetadata, data: dict):
+    def __init__(self, function_metadata: FunctionMetadata, data: Any):
         self.function_metadata = function_metadata
         self.data = data
-        try:
-            self.checked = self.data["return"]
-            self.is_passed = True
-        except KeyError:
-            self.checked = self.data
-            self.is_passed = False
 
     def _default(x: Any) -> Any:
         """
@@ -83,9 +77,19 @@ class TypeConverter:
             Returns:
                 Any: The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         """
-        if self.checked == "None" or self.checked is None:
+        if self.data == "None" or self.data is None:
             return None
-        if self.is_passed:
-            self.checked = self.convert(self.function_metadata.f_type[1])(self.checked)
-            self.checked = convert_pydantic(self.function_metadata.f_type[1], self.checked)
-        return self.checked
+        
+        caller = self.function_metadata.f_type[1]
+        checked = self.data
+
+        # Small models (SLM) tend to return well structired json as a string
+        if type(checked) is str and get_origin(caller) in [list,dict]:
+            try:
+                checked = json.loads(checked)
+            except Exception as e:
+                raise ValueError(f"LLM did not return a compatible structure for type `{checked}`:\n\t->{e} ")
+        
+        self.data = self.convert(caller)(checked)
+        self.data = convert_pydantic(caller, checked)
+        return self.data

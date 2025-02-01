@@ -92,14 +92,14 @@ class FuncAnalizer:
             ]
         )
         
-        func_return = (
-            f" -> {getattr(self.sig.return_annotation, '__name__')}"
-            if hasattr(self.sig.return_annotation, '__name__') and self.sig.return_annotation != inspect.Signature.empty
-            else f" -> {self.sig.return_annotation}"
-        )
+        if self.sig.return_annotation is inspect.Signature.empty:
+            func_return = ""
+        else:
+            func_return = f" -> {self.sig.return_annotation}"
+
         definition = (
             f"```python\ndef {func_name}({func_params}){func_return}:\n"
-            f"    \"\"\"{self.function_pointer.__doc__}    \"\"\"\n```"
+            f"    \"\"\"{self.function_pointer.__doc__}\"\"\"\n    ...\n```"
         )
         return definition
 
@@ -287,15 +287,11 @@ class FuncAnalizer:
         Returns:
             The JSON schema in a dictionary
         """
-        return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
-
-        if return_caller is not None:
-            pyd_sch = get_pydantic_schema(return_caller)
-            if pyd_sch is None:
-                schema = self._get_type_schema(return_caller)
-            else:
-                schema = pyd_sch
-        else:
+        if self.sig.return_annotation == inspect.Signature.empty:
             schema = self._get_type_schema(Any)
+        else:
+            schema = get_pydantic_schema(self.sig.return_annotation)
+            if schema is None:
+                schema = self._get_type_schema(self.sig.return_annotation)
         
         return schema

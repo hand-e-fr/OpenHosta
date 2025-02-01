@@ -122,8 +122,8 @@ async def _emulate(
         
         logging_object["_last_response"]["response_dict"] = response_dict
         
-        l_ret = model.response_parser(response_dict, inspection._infos)
-        l_data = model.type_returned_data(l_ret, inspection._infos)
+        l_data = model.response_parser(response_dict, inspection._infos)
+        l_data = model.type_returned_data(l_data, inspection._infos)
         
         logging_object["_last_response"]["data"] = l_data
 
