@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any, get_args, get_origin, Literal
 
-from ..core.hosta import Hosta, ExampleType
+from ..core.hosta_inspector import HostaInspector, ExampleType
 
 
 def example(*args, hosta_out: Any = None, **kwargs):
-    x = Hosta()
+    x = HostaInspector()
     if args != ():
         raise ValueError(
             "[example] The arguments in example function must be keyword only arguments, with keywords matching with the name of the calling function's arguments"
