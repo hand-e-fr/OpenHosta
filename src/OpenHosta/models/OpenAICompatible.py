@@ -5,6 +5,8 @@ import json
 import requests
 import re
 import sys
+import asyncio
+from  concurrent.futures import ThreadPoolExecutor
 
 from ..core.type_converter import TypeConverter
 from ..utils.errors import ApiKeyError, RequestError
@@ -18,6 +20,7 @@ class Model:
             base_url: str = None, 
             api_key: str = None, 
             timeout: int = 30,
+            max_async_calls = 7,
             json_output:bool = True,
             additionnal_headers: Dict[str, Any] = {}
         ):
@@ -25,6 +28,8 @@ class Model:
         self.base_url = base_url
         self.api_key = api_key
         self.timeout = timeout
+        self.max_async_calls = max_async_calls
+        self.async_executor = None        
         self.user_headers = additionnal_headers
         self.json_output = json_output
         self._used_tokens = 0
@@ -34,12 +39,34 @@ class Model:
             raise ValueError(f"[Model.__init__] Missing values.")
         elif not is_valid_url(self.base_url):
             raise ValueError(f"[Model.__init__] Invalid URL.")
+        
+    def __exit__(self):
+        if self.async_executor is not None:
+            self.async_executor.shutdown()
 
+    def get_executor(self):
+        if self.async_executor is None:
+            self.async_executor = ThreadPoolExecutor(max_workers=self.max_async_calls)
+        return self.async_executor
+        
+    async def api_call_async(
+        self,
+        messages: list[dict[str, str]],
+        json_output: bool = None,
+        llm_args:dict = {}
+    ) -> Dict:
+        response_dict = await asyncio.get_event_loop().run_in_executor(
+                self.get_executor(),
+                self.api_call,
+                messages, json_output, llm_args
+            )
+        return response_dict
+    
     def api_call(
         self,
         messages: list[dict[str, str]],
         json_output: bool = None,
-        **llm_args
+        llm_args:dict = {}
     ) -> Dict:
         if json_output is None:
             json_output = self.json_output
@@ -80,11 +107,13 @@ class Model:
                         f"Status code: {response.status_code }:\n{response_text}"
                     )
             self._nb_requests += 1
-            return response.json()
+            response_dict = response.json()
         
         except Exception as e:
             raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
 
+        return response_dict
+    
     def response_parser(self, response_dict: Dict, function_metadata) -> Any:
 
         if "usage" in response_dict:
@@ -94,7 +123,7 @@ class Model:
         rational, answer = self.split_cot_answer(response)
 
         if hasattr(function_metadata.f_obj, "_last_response") and \
-            type(function_metadata.f_obj._last_response) is list:
+            type(function_metadata.f_obj._last_response) is dict:
             function_metadata.f_obj._last_response["rational"] = rational
             function_metadata.f_obj._last_response["answer"] = answer
         

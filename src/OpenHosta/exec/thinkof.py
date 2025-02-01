@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import json
+import asyncio
+
 from pydoc import locate
 
-from .emulate import emulate
 from ..core.config import DefaultModelPolicy
 from ..core.hosta_inspector import FunctionMetadata
 from ..utils.errors import RequestError
 from ..utils.meta_prompt import THOUGHT_PROMPT
-
 
 def gather_data_for_prompt_template(
         _infos: FunctionMetadata
@@ -22,7 +22,7 @@ def gather_data_for_prompt_template(
         
     return user_prompt_data
 
-def guess_type(key: str, *args) -> object:
+async def guess_type(key: str, *args) -> object:
     l_default = DefaultModelPolicy.get_model()
 
     l_user_prompt = (
@@ -32,11 +32,11 @@ def guess_type(key: str, *args) -> object:
         + f"{args}\n"
     )
 
-    response = l_default.api_call([
+    response = await l_default.api_call_async([
             {"role": "system", "content": THOUGHT_PROMPT.render()},
             {"role": "user", "content": l_user_prompt}
         ],
-        temperature=0.5,
+        llm_args={"temperature":0.5},
     )
 
     type_json = response["choices"][0]["message"]["content"]
@@ -46,15 +46,36 @@ def guess_type(key: str, *args) -> object:
     return locate(type_str)
 
 
+def thinkof_async(key, model=None, prompt=None, **llm_args):
+    
+    async def inner_func(*args, **kwargs):
+        _model = model
+        _prompt = prompt
+        l_ret =  await build_function(_model, _prompt, inner_func, key, args, kwargs, llm_args)
+        return l_ret
+
+    return inner_func
+
+
 def thinkof(key, model=None, prompt=None, **llm_args):
     
     def inner_func(*args, **kwargs):
+        _model = model
+        _prompt = prompt
+        l_ret = asyncio.run(build_function(_model, _prompt, inner_func, key, args, kwargs, llm_args))
+        return l_ret
+
+    return inner_func
+
+
+async def build_function(model, prompt, inner_func, key, args, kwargs, llm_args):
         _infos = FunctionMetadata()
         _model = model
         _prompt = prompt
 
         if not hasattr(inner_func, "_return_type"):
-            setattr(inner_func, "_return_type", guess_type(key, *args, **kwargs))
+            return_type = await guess_type(key, *args, **kwargs)
+            setattr(inner_func, "_return_type", return_type)
 
         _infos.f_def = key
         _infos.f_call = str([str(arg) for arg in args])
@@ -80,7 +101,7 @@ def thinkof(key, model=None, prompt=None, **llm_args):
         logging_object["_last_request"]['user_prompt']=prompt_data["PRE_FUNCTION_CALL"]
         
         try:
-            response_dict = _model.api_call([
+            response_dict = await _model.api_call_async([
                     {"role": "system", "content": prompt_rendered},
                     {"role": "user", "content": prompt_data["PRE_FUNCTION_CALL"]}
                 ],
@@ -90,12 +111,11 @@ def thinkof(key, model=None, prompt=None, **llm_args):
             logging_object["_last_response"]["response_dict"] = response_dict
             
             l_ret = _model.response_parser(response_dict, _infos)
+            l_data = _model.type_returned_data(l_ret, _infos)
 
-            logging_object["_last_response"]["data"] = l_ret
+            logging_object["_last_response"]["data"] = l_data
             setattr(inner_func, "_last_response", logging_object["_last_response"])
 
         except Exception as e:
             raise RequestError(f"[thinkof] Cannot emulate the function.\n{e}")
-        return l_ret
-
-    return inner_func
+        return l_data
