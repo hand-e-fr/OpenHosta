@@ -122,7 +122,7 @@ class LLMSyntheticDataGenerator:
 
 
     @staticmethod
-    def generate_synthetic_data(
+    async def generate_synthetic_data(
             function_metadata: FunctionMetadata, # The function to generate data for
             logger: Logger, # Logger to use for logging
             request_amounts: int = 3, # Amount of requests to the model
@@ -188,7 +188,7 @@ class LLMSyntheticDataGenerator:
                     "content": content
                 })
 
-                response = model.api_call(
+                response = await model.api_call_async(
                     messages=conversation_history,
                     temperature=1.0,
                     json_output=False,

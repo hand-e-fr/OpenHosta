@@ -1,4 +1,6 @@
 import inspect
+import asyncio
+
 from typing import Callable, Optional, Union, Literal
 
 from .predict.dataset.dataset import HostaDataset
@@ -41,11 +43,23 @@ def generate_data(
         oracle: Optional[Model] = None,
         verbose: Union[Literal[0, 1, 2], bool] = 2
 ):
+    return asyncio.run(generate_data_async(
+        function_pointer,
+        ammount,
+        oracle,
+        verbose))
+
+async def generate_data_async(
+        function_pointer: Callable,
+        ammount: int,
+        oracle: Optional[Model] = None,
+        verbose: Union[Literal[0, 1, 2], bool] = 2
+):
     logger: Logger = Logger(verbose=verbose)
     request_amounts = int(ammount / 100) if ammount > 100 else 1
 
     logger.log_custom("Data Generation", f"Generating {ammount} examples for function {function_pointer.__name__}")
-    data = LLMSyntheticDataGenerator.generate_synthetic_data(
+    data = await LLMSyntheticDataGenerator.generate_synthetic_data(
         function_metadata=_analyze_function(function_pointer),
         logger=logger,
         request_amounts=request_amounts,

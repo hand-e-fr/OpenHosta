@@ -6,18 +6,19 @@ from .core.type_converter import TypeConverter, FunctionMetadata
 
 from .utils.meta_prompt import print_last_prompt, print_last_response
 from .utils.import_handler import is_predict_enabled
-from .utils.meta_prompt import EMULATE_PROMPT
+from .utils.meta_prompt import Prompt
 
-from .exec.ask import ask
-from .exec.thinkof import thinkof
+from .exec.ask import ask, ask_async
+from .exec.thinkof import thinkof, thinkof_async
+from .exec.emulate import emulate, emulate_async
+
 from .exec.thought import thought
 from .exec.example import example
-from .exec.emulate import emulate
 
 if is_predict_enabled:
-    from .exec.generate_data import generate_data
+    from .exec.generate_data import generate_data, generate_data_async
+    from .exec.predict.predict import predict, predict_async
     from .exec.predict.dataset.dataset import HostaDataset, SourceType
-    from .exec.predict.predict import predict
     from .exec.predict.predict_config import PredictConfig
 
 import os
@@ -30,14 +31,18 @@ DefaultModelPolicy.set_default_model(
 all = (
     "config",
     "emulate",
-    "thought",
-    "example",
+    "emulate_async",
     "thinkof",
+    "thinkof_async",
     "ask",
-    "EMULATE_PROMPT",
+    "ask_async",
+    "example",
+    "thought",
+    "Prompt",
     "print_last_prompt",
     "print_last_response",
     "generate_data",
+    "generate_data_async",
     "HostaDataset",
     "SourceType",
     "TypeConverter"
