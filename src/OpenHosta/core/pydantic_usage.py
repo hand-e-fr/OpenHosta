@@ -4,9 +4,9 @@ import inspect
 from typing import Optional, Dict, Tuple, List, Any, get_args, get_origin
 
 from ..utils.hosta_type import MemoryNode
-from ..utils.import_handler import is_pydantic
+from ..utils.import_handler import is_pydantic_enabled
 
-if is_pydantic:
+if is_pydantic_enabled:
     from pydantic import BaseModel, Field, ConfigDict, create_model
 
 
@@ -25,7 +25,7 @@ if is_pydantic:
             return checked
 
 
-    class Func(BaseModel):
+    class FunctionMetadata(BaseModel):
         """
         Func is a Pydantic model representing a function's metadata.
         Useful for the executive functions and the post-processing.
@@ -59,10 +59,8 @@ if is_pydantic:
         except:
             return None
         
-    
-
 else:
-    class Func:
+    class FunctionMetadata:
         f_obj: Optional[object] = None
         f_def: str = ""
         f_name: str = ""
