@@ -13,16 +13,20 @@ class Prompt(Template):
     """
 
     def __init__(self, source, *args, **kargs):
-        super().__init__(source, *args, **kargs)
+        super(Template, self).__init__()
 
         self.source = source
 
     def __str__(self):
         return self.source
 
-    
+    def __repr__(self):
+        return f"""\
+{type(self)}
+source=
+{self.source}"""
 
-EMULATE_PROMPT=Template("""\
+EMULATE_PROMPT=Prompt("""\
 ## Context
 
 You will act as an emulator of impossible-to-code functions.
@@ -102,7 +106,7 @@ To solve the request, you have to follow theses intermediate steps. Give only th
 """)
 
 
-THOUGHT_PROMPT = Template("""\
+THOUGHT_PROMPT = Prompt("""\
 You will act as an emulator of impossible-to-code functions. 
 I will provide you with the description of the function using Python's way of declaring functions, 
 but I won't provide the function body as I don't know how to code it. 
@@ -172,5 +176,11 @@ def print_last_response(function_pointer:Callable):
         if "answer" in function_pointer._last_response:
             print("[ANSWER]")
             print(function_pointer._last_response["answer"])
+        if "data" in function_pointer._last_response:
+            print("[Data]")
+            print(function_pointer._last_response["data"])
+        else:
+            print("[UNFINISHED]")
+            print("answer processing was interupted")
     else:
         print("No prompt found for this function.")
