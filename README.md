@@ -6,6 +6,7 @@ v2.1.5 - Open-Source Project
 <a href="https://colab.research.google.com/github/hand-e-fr/OpenHosta/blob/main/docs/openhosta_phi4.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/> Basic Usage - Synthetic Data - local LLM (phi-4)</a>
 <br/>
 <a href="https://colab.research.google.com/github/hand-e-fr/OpenHosta/blob/main/docs/openhosta_agent.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/> Simple AI Agent with gpt-4o</a>
+<br/>Or have a look at [regression tests files](https://github.com/hand-e-fr/OpenHosta/tree/main/tests/non-regression) for multiples exemples.
 
 OpenHosta is a powerful Python tool designed to seamlessly integrate Large Language Models (LLMs) into development environments, enabling AI-powered function emulation that maintains native Python syntax and paradigms. Its strength lies in its simplicity and flexibility, allowing developers to easily create AI-enhanced applications while maintaining clean, Pythonic code structure.
 
