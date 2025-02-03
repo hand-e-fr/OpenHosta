@@ -142,11 +142,6 @@ class Model:
 
         l_ret_data_typed = TypeConverter(function_metadata, l_ret_data).check()
 
-        if l_ret_data_typed is None:
-            sys.stderr.write(
-                f"[Model.type_returned_data]: TypeConverter: Unable to convert\nContinuing the process.")
-            l_ret_data_typed = l_ret_data
-
         return l_ret_data_typed
 
     def split_cot_answer(self, response:str) -> tuple[str, str]:

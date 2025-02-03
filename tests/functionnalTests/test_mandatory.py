@@ -44,7 +44,7 @@ class TestEmulate:
             return emulate(model=abracadabra)
         
         ret = randomSentence()
-        ret_model = randomSentence._last_response["model"]
+        ret_model = randomSentence._last_response["response_dict"]["model"]
         print(ret_model)
         assert "gpt-4o-mini" in ret_model   
        
@@ -55,12 +55,12 @@ class TestEmulate:
         ("float", "generator", "generates a float in python", "", float),
     ])
     def test_basicType(self, type, name, doc, arg, expected):
-        global emulate_1arg
-        emulate_1arg[type].__name__ = name
-        emulate_1arg[type].__doc__ = doc
-        my_func = emulate_1arg[type]
-        result = my_func(arg)
-        print(f"[{doc}]: {result}")
+        def generator(arg):
+            """
+            """
+            return emulate()
+        generator.__doc__ = doc
+        result = generator(arg)
         assert isinstance(result, expected)
 
 
@@ -210,8 +210,8 @@ class Testthinkof:
 
     def test_FeatureMultiArgs(self):
         x = thinkof("Combine each word of a sentence in a string")
-        ret = x("Hello", ", how are you ?", " Nice to meet you !")
-        assert ret == "Hello, how are you ? Nice to meet you !"
+        ret = x("Hello", ", how are you?", " Nice to meet you!")
+        assert ret == "Hello, how are you? Nice to meet you!"
     
     def test_FeatureChainOfthinkof(self):
         pass
@@ -228,7 +228,7 @@ class Testthinkof:
     #     x = thinkof("Is a masculine name")
     #     ret = x("Max")
     #     print(x._last_response)
-    #     ret_model = x._last_response["model"]
+    #     ret_model = x._last_response["response_dict"]["model"]
     #     assert ret == True
     #     assert "gpt-4o-mini" in ret_model
     

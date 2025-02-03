@@ -15,7 +15,7 @@ def emulate(
         use_locals_as_ctx: bool = False,
         use_self_as_ctx: bool = False,
         post_callback: Optional[Callable] = None,
-        **llm_args
+        llm_args = {}
         ) -> Any:
     """
     Emulates a function's behavior using a language model.
@@ -28,7 +28,7 @@ def emulate(
         - use_locals_as_ctx (bool): If True, includes local variables as context. Defaults to False.
         - use_self_as_ctx (bool): If True, includes self attributs as context for class methods. Defaults to False.
         - post_callback (Optional[Callable]): Optional callback function to process the model's output.
-        - **llm_args: Additional keyword arguments to pass to the language model.
+        - llm_args: Additional keyword arguments to pass to the language model.
     
     Returns:
         - Any: The emulated function's return value, processed by the model and optionally modified by post_callback.
@@ -52,7 +52,7 @@ async def emulate_async(
         use_locals_as_ctx: bool = False,
         use_self_as_ctx: bool = False,
         post_callback: Optional[Callable] = None,
-        **llm_args
+        llm_args = {}
         ) -> Any:
     """
     Emulates a function's behavior using a language model.
@@ -65,7 +65,7 @@ async def emulate_async(
         - use_locals_as_ctx (bool): If True, includes local variables as context. Defaults to False.
         - use_self_as_ctx (bool): If True, includes self attributs as context for class methods. Defaults to False.
         - post_callback (Optional[Callable]): Optional callback function to process the model's output.
-        - **llm_args: Additional keyword arguments to pass to the language model.
+        - llm_args: Additional keyword arguments to pass to the language model.
     
     Returns:
         - Any: The emulated function's return value, processed by the model and optionally modified by post_callback.
@@ -89,7 +89,7 @@ async def _emulate(
         use_locals_as_ctx: bool = False,
         use_self_as_ctx: bool = False,
         post_callback: Optional[Callable] = None,
-        **llm_args
+        llm_args = {}
 ) -> Any:
 
     prompt_data = gather_data_for_prompt_template(inspection, use_locals_as_ctx, use_self_as_ctx)

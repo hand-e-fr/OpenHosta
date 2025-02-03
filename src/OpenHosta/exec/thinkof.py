@@ -46,7 +46,7 @@ async def guess_type(key: str, *args) -> object:
     return locate(type_str)
 
 
-def thinkof_async(key, model=None, prompt=None, **llm_args):
+def thinkof_async(key, model=None, prompt=None, llm_args={}):
     
     async def inner_func(*args, **kwargs):
         _model = model
@@ -57,7 +57,7 @@ def thinkof_async(key, model=None, prompt=None, **llm_args):
     return inner_func
 
 
-def thinkof(key, model=None, prompt=None, **llm_args):
+def thinkof(key, model=None, prompt=None, llm_args={}):
     
     def inner_func(*args, **kwargs):
         _model = model
@@ -112,7 +112,7 @@ def no_name(argument)->{return_type}:
                     {"role": "system", "content": prompt_rendered},
                     {"role": "user", "content": prompt_data["PRE_FUNCTION_CALL"]}
                 ],
-                **llm_args
+                llm_args
             )
             
             logging_object["_last_response"]["response_dict"] = response_dict
