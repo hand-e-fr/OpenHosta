@@ -1,7 +1,9 @@
 import os
+import shutil
 import asyncio
 
-from typing import Union, Optional, Literal
+from pathlib import Path
+from typing import Union, Optional, Literal, Callable
 
 from .dataset.dataset import HostaDataset, SourceType
 from .dataset.oracle import LLMSyntheticDataGenerator
@@ -24,12 +26,12 @@ def predict(
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
-    
+
     Args:
         config: Model configuration
         oracle: Reference model or dataset for data generation
         verbose: Enables detailed logging
-    
+
     Returns:
         Model prediction
     """
@@ -51,12 +53,12 @@ async def predict_async(
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
-    
+
     Args:
         config: Model configuration
         oracle: Reference model or dataset for data generation
         verbose: Enables detailed logging
-    
+
     Returns:
         Model prediction
     """
@@ -80,7 +82,7 @@ async def _predict(
 ) -> Union[int, float, bool, str]:
 
     function_metadata = inspection._infos
-    
+
     name = config.name if config and config.name else str(function_metadata.f_name)
     base_path = config.path if config and config.path else os.getcwd()
     memory: PredictMemory = PredictMemory.load(base_path=base_path, name=name)
@@ -94,7 +96,7 @@ async def _predict(
     #TODO: is this thread safe?
     if not load_weights(inspection, memory, hosta_model, logger):
         await train_model(config, memory, hosta_model, oracle, function_metadata, logger)
-    
+
     if dataset is None:
         dataset = HostaDataset.from_input(function_metadata.f_args, logger, config.max_tokens, function_metadata, memory.dictionary.path)
         inspection.set_logging_object({"_dataset": dataset})
@@ -113,10 +115,63 @@ async def _predict(
     logger.log_custom("Prediction", f"{prediction} -> {output}", color=ANSIColor.BLUE_BOLD, level=1)
     return output
 
+def clear_training(function_pointer: Callable, config: PredictConfig = PredictConfig()):
+    # Valider et nettoyer le nom
+    name = config.name if config and config.name else str(function_pointer.__name__)
+    name = os.path.basename(name)  # Extrait uniquement le nom de fichier
+    
+    # Valider et normaliser le chemin de base
+    base_path = config.path if config and config.path else os.getcwd()
+    base_path = os.path.abspath(base_path)  # Convertit en chemin absolu
+    
+    # Construire le chemin final de manière sécurisée
+    cache_dir = Path(base_path) / "__hostacache__"
+    cache_path = cache_dir / name
+    
+    # Vérifier que le chemin final est bien un sous-répertoire du chemin de base
+    try:
+        cache_path = cache_path.resolve()
+        base_path = Path(base_path).resolve()
+        if not str(cache_path).startswith(str(base_path)):
+            raise ValueError("Invalid path: attempted directory traversal")
+        
+        # Supprimer le répertoire s'il existe
+        if cache_path.exists():
+            shutil.rmtree(str(cache_path))
+            
+    except (ValueError, RuntimeError) as e:
+        raise ValueError(f"Security error: {str(e)}")
+        
+def clear_training(function_pointer: Callable, config: PredictConfig = PredictConfig()):
+    # Valider et nettoyer le nom
+    name = config.name if config and config.name else str(function_pointer.__name__)
+    name = os.path.basename(name)  # Extrait uniquement le nom de fichier
+    
+    # Valider et normaliser le chemin de base
+    base_path = config.path if config and config.path else os.getcwd()
+    base_path = os.path.abspath(base_path)  # Convertit en chemin absolu
+    
+    # Construire le chemin final de manière sécurisée
+    cache_dir = Path(base_path) / "__hostacache__"
+    cache_path = cache_dir / name
+    
+    # Vérifier que le chemin final est bien un sous-répertoire du chemin de base
+    try:
+        cache_path = cache_path.resolve()
+        base_path = Path(base_path).resolve()
+        if not str(cache_path).startswith(str(base_path)):
+            raise ValueError("Invalid path: attempted directory traversal")
+        
+        # Supprimer le répertoire s'il existe
+        if cache_path.exists():
+            shutil.rmtree(str(cache_path))
+            
+    except (ValueError, RuntimeError) as e:
+        raise ValueError(f"Security error: {str(e)}")
 
-def get_hosta_model(function_metadata: FunctionMetadata, 
-                    architecture_file: File, 
-                    logger: Logger, 
+def get_hosta_model(function_metadata: FunctionMetadata,
+                    architecture_file: File,
+                    logger: Logger,
                     config: Optional[PredictConfig] = None) -> HostaModel:
     """
     Load or create a new model.
@@ -161,10 +216,10 @@ def load_weights(inspection: HostaInspector, memory: PredictMemory, hosta_model:
 
 
 async def train_model(config: PredictConfig,
-                memory: PredictMemory, 
-                model: HostaModel, 
-                oracle: Optional[Union[Model, HostaDataset]], 
-                function_metadata: FunctionMetadata, 
+                memory: PredictMemory,
+                model: HostaModel,
+                oracle: Optional[Union[Model, HostaDataset]],
+                function_metadata: FunctionMetadata,
                 logger: Logger) -> None:
     """
     Prepare the data and train the model.
@@ -187,7 +242,7 @@ async def train_model(config: PredictConfig,
         config.epochs = int(2 * len(train_set.dataset) / config.batch_size if config.batch_size != len(train_set.dataset)\
                                 else 2 * len(train_set.dataset))
         assert config.epochs > 0, f"epochs must be greater than 0 now it's {config.epochs}"
-    
+
     model.trainer(train_set, epochs=config.epochs)
 
     if logger.verbose >= 1:
@@ -197,11 +252,11 @@ async def train_model(config: PredictConfig,
     model.save_weights(memory.weights.path)
 
 
-async def prepare_dataset(config: PredictConfig, 
-                    memory: PredictMemory, 
-                    function_metadata: FunctionMetadata, 
-                    oracle: Optional[Union[Model, HostaDataset]], 
-                    model: HostaModel, 
+async def prepare_dataset(config: PredictConfig,
+                    memory: PredictMemory,
+                    function_metadata: FunctionMetadata,
+                    oracle: Optional[Union[Model, HostaDataset]],
+                    model: HostaModel,
                     logger: Logger) -> tuple:
     """
     Prepare the dataset for training.
@@ -239,9 +294,9 @@ async def prepare_dataset(config: PredictConfig,
     return train_set, val_set
 
 
-async def _generate_data(function_metadata: FunctionMetadata, 
-                   oracle: Optional[Union[Model, HostaDataset]], 
-                   config: PredictConfig, 
+async def _generate_data(function_metadata: FunctionMetadata,
+                   oracle: Optional[Union[Model, HostaDataset]],
+                   config: PredictConfig,
                    logger: Logger) -> HostaDataset:
     """
     Generate data for training.
@@ -256,4 +311,5 @@ async def _generate_data(function_metadata: FunctionMetadata,
         model=oracle if oracle is not None else DefaultModelPolicy.get_model()
     )
     return HostaDataset.from_list(data, logger)
+
 
