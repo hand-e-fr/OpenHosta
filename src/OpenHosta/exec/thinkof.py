@@ -24,12 +24,11 @@ def gather_data_for_prompt_template(
 
 async def guess_type(key: str, *args) -> object:
     l_default = DefaultModelPolicy.get_model()
-
+    
     l_user_prompt = (
-        "Here's the function behavior:\n"
-        + f"{key}\n"
-        + "Here's the arguments:\n"
-        + f"{args}\n"
+        "Function behavior: "
+        + f"\"{key}\" applyed on "
+        + f"{', '.join([str(arg) for arg in args])}\n"
     )
 
     response = await l_default.api_call_async([
@@ -42,8 +41,8 @@ async def guess_type(key: str, *args) -> object:
     type_json = response["choices"][0]["message"]["content"]
     type_dict = json.loads(type_json)
     type_str = str(type_dict["type"])
-
-    return locate(type_str)
+    type_object = locate(type_str)
+    return type_object
 
 
 def thinkof_async(key, model=None, prompt=None, llm_args={}):
@@ -57,37 +56,38 @@ def thinkof_async(key, model=None, prompt=None, llm_args={}):
     return inner_func
 
 
-def thinkof(key, model=None, prompt=None, llm_args={}):
+def thinkof(query_string, model=None, prompt=None, llm_args={}):
     
     def inner_func(*args, **kwargs):
         _model = model
         _prompt = prompt
-        l_ret = asyncio.run(build_function(_model, _prompt, inner_func, key, args, kwargs, llm_args))
+        l_ret = asyncio.run(build_function(_model, _prompt, inner_func, query_string, args, kwargs, llm_args))
         return l_ret
 
     return inner_func
 
 
-async def build_function(model, prompt, inner_func, key, args, kwargs, llm_args):
+async def build_function(model, prompt, inner_func, query_string, args, kwargs, llm_args):
         _infos = FunctionMetadata()
         _model = model
         _prompt = prompt
 
         if not hasattr(inner_func, "_return_type"):
-            return_type = await guess_type(key, *args, **kwargs)
+            return_type = await guess_type(query_string, *args, **kwargs)
             setattr(inner_func, "_return_type", return_type)
+        else:
+            return_type = getattr(inner_func, "_return_type")
 
         _infos.f_def = f'''
-def no_name(argument)->{return_type}:
+def lambda_function(*argument)->{return_type.__name__}:
     """
-    {key}
+    {query_string}
     """
     ...
 '''
-        _infos.f_call = str([str(arg) for arg in args])
-        _infos.f_type = ([type(arg) for arg in args], inner_func._return_type)
+        _infos.f_call = [str(arg) for arg in args]
         prompt_data = gather_data_for_prompt_template(_infos)
-        prompt_data["PRE_FUNCTION_CALL"] = f"no_name({', '.join(_infos.f_call) })"
+        prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function(\"{'", "'.join(_infos.f_call) }\")"
 
         if _model is None:
             _model = DefaultModelPolicy.get_model()

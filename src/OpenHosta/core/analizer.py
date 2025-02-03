@@ -188,13 +188,13 @@ class FuncAnalizer:
                 }
             return {"anyOf": [self._get_type_schema(arg) for arg in args]}
 
-        if origin in (list, Sequence, Collection):
+        if origin in (list, Sequence.__origin__, Collection.__origin__):
             return {
                 "type": "array",
                 "items": self._get_type_schema(args[0]) if args else {"type": "any"}
             }
 
-        if origin in (dict, Mapping):
+        if origin in (dict, Mapping.__origin__):
             return {
                 "type": "object",
                 "additionalProperties": self._get_type_schema(args[1]) if args else {"type": "any"}
@@ -203,7 +203,7 @@ class FuncAnalizer:
         if origin is (Final, ClassVar):
             return self._get_type_schema(args[0]) if args else {"type": "any"}
 
-        if origin is Type:
+        if origin is Type.__origin__:
             return {"type": "object", "format": "type"}
 
         if origin is Literal:
@@ -221,7 +221,7 @@ class FuncAnalizer:
                 "items": False
             }
 
-        if origin in (Set, FrozenSet, AbstractSet):
+        if origin in (Set.__origin__, FrozenSet.__origin__, AbstractSet.__origin__):
             return {
                 "type": "array",
                 "uniqueItems": True,

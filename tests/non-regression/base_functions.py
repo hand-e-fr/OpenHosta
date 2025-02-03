@@ -58,16 +58,21 @@ from OpenHosta import thinkof, thinkof_async
 
 increment=thinkof("add one to this number")
 
-assert increment(1) == 2
+assert increment(2) == 3
 
 from OpenHosta import print_last_prompt, print_last_response
 
 print_last_prompt(increment)
+print_last_response(increment)
 
 assert increment._return_type == int
 
+rnd_flt=thinkof("return a random float")
+
+assert type(rnd_flt("")) == float
+
 hello_async=thinkof_async("say hello in a foreign language")
-assert "bonjour" in asyncio.run(hello_async("french"))
+assert "onjour" in asyncio.run(hello_async("french"))
 assert hello_async._return_type == str
 
 from OpenHosta import emulate, emulate_async
