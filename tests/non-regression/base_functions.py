@@ -87,5 +87,5 @@ assert "Londres" in sentence
 
 from OpenHosta import print_last_prompt, print_last_response
 
-print(print_last_prompt(capitalize_cities))
+print_last_prompt(capitalize_cities)
 print_last_response(capitalize_cities)
