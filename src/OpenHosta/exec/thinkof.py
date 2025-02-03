@@ -77,10 +77,17 @@ async def build_function(model, prompt, inner_func, key, args, kwargs, llm_args)
             return_type = await guess_type(key, *args, **kwargs)
             setattr(inner_func, "_return_type", return_type)
 
-        _infos.f_def = key
+        _infos.f_def = f'''
+def no_name(argument)->{return_type}:
+    """
+    {key}
+    """
+    ...
+'''
         _infos.f_call = str([str(arg) for arg in args])
         _infos.f_type = ([type(arg) for arg in args], inner_func._return_type)
         prompt_data = gather_data_for_prompt_template(_infos)
+        prompt_data["PRE_FUNCTION_CALL"] = f"no_name({', '.join(_infos.f_call) })"
 
         if _model is None:
             _model = DefaultModelPolicy.get_model()

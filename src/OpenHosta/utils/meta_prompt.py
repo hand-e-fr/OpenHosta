@@ -65,44 +65,25 @@ def example_function(a: int, b: dict) -> int:
 ```
 
 ---
-
-{% endif %}
-
-{% if PRE_DEF %}
+{% endif %}{% if PRE_DEF %}
 Here's the function definition:
 {{ PRE_DEF }}
-{% endif %}
-
-{% if PRE_TYPE %}
-Here's the type annotation of the function:
-{{ PRE_TYPE }}
-{% endif %}
-
-{% if PRE_SCHEMA %}
-If it isn't a native type, here's a schema describing the type annotation:
+{% endif %}{% if PRE_SCHEMA %}
+As you return the result in JSON format, here's the schema of the JSON object you should return:
 {{ PRE_SCHEMA }}
-{% endif %}
-
-{% if PRE_LOCALS %}
+{% endif %}{% if PRE_LOCALS %}
 Here's the function's locals variables which you can use as additional information to give your answer:
 {{ PRE_LOCALS }}
-{% endif %}
-
-{% if PRE_SELF %}
+{% endif %}{% if PRE_SELF %}
 Here's the method's class attributs variables which you can use as additional information to give your answer:
 {{ PRE_SELF }}
-{% endif %}
-
-{% if PRE_EXAMPLE %}
+{% endif %}{% if PRE_EXAMPLE %}
 Here are some examples of expected input and output:
 {{ PRE_EXAMPLE }}
-{% endif %}
-
-{% if PRE_COT %}
+{% endif %}{% if PRE_COT %}
 To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
 {{ PRE_COT }}
-{% endif %}                        
-                            
+{% endif %}                                         
 """)
 
 
