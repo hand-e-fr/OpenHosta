@@ -190,7 +190,7 @@ class LLMSyntheticDataGenerator:
 
                 response = await model.api_call_async(
                     messages=conversation_history,
-                    temperature=1.0,
+                    llm_args={"temperature":1.0},
                     json_output=False,
                 )
 
