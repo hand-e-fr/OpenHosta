@@ -17,12 +17,12 @@ from .exec.example import example
 
 if is_predict_enabled:
     from .exec.generate_data import generate_data, generate_data_async
-    from .exec.predict.predict import predict, predict_async
+    from .exec.predict.predict import predict, predict_async, clear_training
     from .exec.predict.dataset.dataset import HostaDataset, SourceType
     from .exec.predict.predict_config import PredictConfig
 else:
     from .exec.predict.stubs import generate_data, generate_data_async
-    from .exec.predict.stubs import predict, predict_async
+    from .exec.predict.stubs import predict, predict_async, clear_training
     from .exec.predict.stubs import HostaDataset, SourceType
     from .exec.predict.stubs import PredictConfig    
 

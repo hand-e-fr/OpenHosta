@@ -42,6 +42,10 @@ def predict_async(
     f"""{_doctype_predict}"""
     raise _predict_error
 
+def clear_training(function_metadata, config=None):
+    f"""{_doctype_predict}"""
+    raise _predict_error
+
 class HostaDataset:
     def __init__(self, log):
         f"""{_doctype_predict}"""
