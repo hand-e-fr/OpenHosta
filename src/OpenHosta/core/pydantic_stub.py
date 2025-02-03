@@ -24,9 +24,10 @@ else:
 
     def ispydanticclass(obj):
         try:
-            return isinstance(obj, BaseModel)
+            l_ret = issubclass(obj, BaseModel)
         except Exception:
-            return False
+            l_ret = False
+        return l_ret
 
     def convert_pydantic(caller, checked) -> Optional[BaseModel]:
         """
@@ -60,11 +61,7 @@ else:
         Returns:
             The JSON schema of the function's return type.
         """
-        if get_origin(return_caller) is list:
-            return_caller = get_args(return_caller)[0]
-        elif get_origin(return_caller) is dict:
-            return_caller = get_args(return_caller)[1]
-        
+
         if ispydanticclass(return_caller):
             return return_caller.model_json_schema()
         

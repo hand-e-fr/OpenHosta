@@ -266,9 +266,9 @@ class FuncAnalizer:
         if tp is dict:
             return {"type": "dict"}
         if tp is tuple:
-            return {"type": "tuple"}
+            return {"type": "list"}
         if tp is set:
-            return {"type": "set"}
+            return {"type": "list"}
         if tp is frozenset:
             return {"type": "frozenset"}
         if tp is bool:
@@ -290,8 +290,6 @@ class FuncAnalizer:
         if self.sig.return_annotation == inspect.Signature.empty:
             schema = self._get_type_schema(Any)
         else:
-            schema = get_pydantic_schema(self.sig.return_annotation)
-            if schema is None:
-                schema = self._get_type_schema(self.sig.return_annotation)
+            schema = self._get_type_schema(self.sig.return_annotation)
         
         return schema

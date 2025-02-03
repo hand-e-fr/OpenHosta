@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import sys
 from sys import version_info
 from typing import Type, Any, Callable, TypeVar, get_origin
 
@@ -78,18 +79,13 @@ class TypeConverter:
                 Any: The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
         """
         if self.data == "None" or self.data is None:
+            sys.stderr.write(
+                f"[TypeConverter.check]: Got None response from the LLM.")
             return None
         
         caller = self.function_metadata.f_type[1]
         checked = self.data
-
-        # Small models (SLM) tend to return well structired json as a string
-        if type(checked) is str and get_origin(caller) in [list,dict]:
-            try:
-                checked = json.loads(checked)
-            except Exception as e:
-                raise ValueError(f"LLM did not return a compatible structure for type `{checked}`:\n\t->{e} ")
-        
+                
         self.data = self.convert(caller)(checked)
         self.data = convert_pydantic(caller, checked)
         return self.data

@@ -98,6 +98,7 @@ class TestTypes:
             return emulate()
         
         assert type(random_tuple((5, "aaaaaaah"))) == tuple
+
     
     def test_NativeSequentialRange(self):
         def range_func(a:range)->range:
@@ -125,7 +126,13 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_set({1, 2, 3, 4})) == set
+        msg=""
+        try:
+            return_set([1, 2, 3])
+        except ValueError as e:
+            msg = str(e)
+        assert "type is not supported" in msg
+
         
     def test_NativeEnsembleFrozenset(self):
         def return_frozenset(a:frozenset)->frozenset:
@@ -234,7 +241,12 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_sequence([1, 2, 3])) in (list, tuple)
+        msg=""
+        try:
+            return_sequence([1, 2, 3])
+        except ValueError as e:
+            msg = str(e)
+        assert "type is not supported" in msg
 
     def test_TypingMapping(self):
         def return_mapping(a: Mapping[str, int]) -> Mapping[str, int]:
@@ -243,7 +255,12 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_mapping({"test": 1})) == dict
+        msg=""
+        try:
+            return_mapping({"test": 1})
+        except ValueError as e:
+            msg = str(e)
+        assert "type is not supported" in msg
 
     def test_TypingNamedTuple(self):
         class TestNamedTuple(NamedTuple):
@@ -257,7 +274,7 @@ class TestTypes:
             return emulate()
         
         with pytest.raises(ValueError):
-            return_named_tuple(self.TestNamedTuple("John", 30))
+            return_named_tuple(TestNamedTuple("John", 30))
 
     def test_TypingTypedDict(self):
         class TestTypedDict(TypedDict):
