@@ -7,8 +7,26 @@ import json
 
 from ..utils.import_handler import is_pydantic_enabled
 
-if is_pydantic_enabled:
+if not is_pydantic_enabled:
+
+    # Do not try to convert to pydantic object as the lib is not installed
+    def convert_pydantic(caller, checked):
+        return checked
+
+    def get_pydantic_schema(return_caller) -> Optional[Dict[str, Any]]:
+        """
+        You shall install pydantic to use this function
+        """
+        return None
+
+else:
     from pydantic import BaseModel
+
+    def ispydanticclass(obj):
+        try:
+            return isinstance(obj, BaseModel)
+        except Exception:
+            return False
 
     def convert_pydantic(caller, checked) -> Optional[BaseModel]:
         """
@@ -18,18 +36,18 @@ if is_pydantic_enabled:
             Optional[BaseModel]: The converted checked data based on the Pydantic model annotations.
         """
                 # Small models (SLM) tend to return well structired json as a string
-        if type(checked) is str and issubclass(caller, BaseModel):
+        if type(checked) is str and ispydanticclass(caller):
             try:
                 checked = json.loads(checked, )
             except Exception as e:
                 raise ValueError(f"LLM did not return a compatible structure for type `{caller}`:\n\t->{e} ")
         
         # Support for list of pydantic models
-        if get_origin(caller) is list and issubclass(get_args(caller)[0], BaseModel):
+        if get_origin(caller) is list and ispydanticclass(get_args(caller)[0]):
             return [convert_pydantic(get_args(caller)[0], item) for item in checked]
-        elif get_origin(caller) is dict and issubclass(get_args(caller)[1], BaseModel):
+        elif get_origin(caller) is dict and ispydanticclass(get_args(caller)[1]):
             return {get_args(caller)[0](k): convert_pydantic(get_args(caller)[1], v) for k, v in checked.items()}
-        elif issubclass(caller, BaseModel) and type(checked) is dict:
+        elif ispydanticclass(caller) and type(checked) is dict:
             return caller(**checked)
         else:
             # Unsuported type, keep as is
@@ -47,19 +65,9 @@ if is_pydantic_enabled:
         elif get_origin(return_caller) is dict:
             return_caller = get_args(return_caller)[1]
         
-        if issubclass(return_caller, BaseModel):
+        if ispydanticclass(return_caller):
             return return_caller.model_json_schema()
         
         # Unsupported type
         return None
-else:
 
-    # Do not try to convert to pydantic object as the lib is not installed
-    def convert_pydantic(caller, checked):
-        return checked
-
-    def get_pydantic_schema(return_caller) -> Optional[Dict[str, Any]]:
-        """
-        You shall install pydantic to use this function
-        """
-        return None
