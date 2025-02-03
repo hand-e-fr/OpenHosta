@@ -100,7 +100,7 @@ Your objective is to find the Python data type to be returned by the function.
 Take into account the function's behavior, the wording and intent of the sentence, and the arguments given.
 You must give your answer without any comment and in the following JSON schema:
 ```
-{\"type\": \"\"}
+{\"type\": \"...\"}
 ```
 
 ---
@@ -110,20 +110,19 @@ To fill in the type key, you need to follow Python syntax, such as "int" or "str
 To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
 Here are a few examples:
 
-Function behavior: "Is a positive number"
-Argument: 2
+Function behavior: "Is a positive number" applyed on 2
 Expected response: {"type": "bool"}
 
-Function behavior: "Multiply a number by 2"
-Argument: 10
+Function behavior: "Multiply a number by 2"  applyed on 10
 Expected response: {"type": "int"}
 
-Function behavior: "Reverse a string"
-Argument: "Hello World!"
+Function behavior: "count words" applyed on "go to Mars"
+Expected response: {"type": "int"}
+                        
+Function behavior: "Reverse a string"  applyed on "Hello World!"
 Expected response: {"type": "str"}
 
-Function behavior: "Sorts a list in ascending order"
-Argument: (10, 5, 7, 12, 3)
+Function behavior: "Sorts a list in ascending order"  applyed on (10, 5, 7, 12, 3)
 Expected response: {"type": "list"}
                             
 {% if CTX_EXAMPLE %}

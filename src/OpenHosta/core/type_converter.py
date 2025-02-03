@@ -86,6 +86,6 @@ class TypeConverter:
         caller = self.function_metadata.f_type[1]
         checked = self.data
                 
-        self.data = self.convert(caller)(checked)
-        self.data = convert_pydantic(caller, checked)
-        return self.data
+        checked = self.convert(caller)(checked)
+        checked = convert_pydantic(caller, checked)
+        return checked

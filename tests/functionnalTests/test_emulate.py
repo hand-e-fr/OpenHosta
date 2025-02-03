@@ -97,6 +97,8 @@ class TestTypes:
             """
             return emulate()
         
+        # model.type_returned_data(random_tuple._last_response["data"], random_tuple.hosta_inspection._infos)
+        # random_tuple.hosta_inspection._infos.f_type
         assert type(random_tuple((5, "aaaaaaah"))) == tuple
 
     
@@ -126,12 +128,7 @@ class TestTypes:
             """
             return emulate()
         
-        msg=""
-        try:
-            return_set([1, 2, 3])
-        except ValueError as e:
-            msg = str(e)
-        assert "type is not supported" in msg
+        assert type(return_set([1, 2, 3])) == set
 
         
     def test_NativeEnsembleFrozenset(self):
