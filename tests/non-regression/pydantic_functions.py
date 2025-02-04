@@ -63,6 +63,10 @@ def find_people(sentence:str)->Person:
     return emulate()
 
 fist_person = find_people("french president went with his wife brigite to london.")
+from OpenHosta import print_last_prompt, print_last_response
+
+print_last_prompt(find_people)
+print_last_response(find_people)
 
 assert "rigit" in fist_person.name or "acron" in fist_person.name or "resident" in fist_person.name
 

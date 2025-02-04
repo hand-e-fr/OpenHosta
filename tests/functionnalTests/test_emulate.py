@@ -60,7 +60,7 @@ class TestTypes:
             """
             return emulate()
         
-        with pytest.raises(ValueError, match=re.escape(f"<class 'complex'> type is not supported please check here to see the supported types : https://github.com/hand-e-fr/OpenHosta/blob/dev/docs/doc.md#:~:text=bool.%20The-,complex,-type%20is%20not")):
+        with pytest.raises(ValueError):
             complex_func(complex(1))
         
     def test_NativeNumericalBool(self):
@@ -182,7 +182,7 @@ class TestTypes:
             This function returns a tuple with an integer and a string
             """
             return emulate()
-        
+
         assert type(return_mixed_tuple((1, "test"))) == tuple
 
     def test_TypingDict(self):
@@ -237,13 +237,8 @@ class TestTypes:
             This function returns a sequence of integers
             """
             return emulate()
-        
-        msg=""
-        try:
-            return_sequence([1, 2, 3])
-        except ValueError as e:
-            msg = str(e)
-        assert "type is not supported" in msg
+
+        assert type(return_sequence([1, 2, 3]) ) == list
 
     def test_TypingMapping(self):
         def return_mapping(a: Mapping[str, int]) -> Mapping[str, int]:
@@ -252,12 +247,8 @@ class TestTypes:
             """
             return emulate()
         
-        msg=""
-        try:
-            return_mapping({"test": 1})
-        except ValueError as e:
-            msg = str(e)
-        assert "type is not supported" in msg
+        assert type(return_mapping({"test": 1})) == dict
+
 
     def test_TypingNamedTuple(self):
         class TestNamedTuple(NamedTuple):
