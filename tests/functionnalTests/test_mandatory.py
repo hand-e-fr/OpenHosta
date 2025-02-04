@@ -32,7 +32,7 @@ class TestEmulate:
        
     def test_FeatureModelInParameter(self):
         abracadabra = config.Model(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             base_url="https://api.openai.com/v1/chat/completions",
             api_key=os.getenv("OPENAI_API_KEY")
         )
@@ -44,9 +44,9 @@ class TestEmulate:
             return emulate(model=abracadabra)
         
         ret = randomSentence()
-        ret_model = randomSentence._last_response["model"]
+        ret_model = randomSentence._last_response["response_dict"]["model"]
         print(ret_model)
-        assert "gpt-4o-mini" in ret_model   
+        assert "gpt-4o" in ret_model   
        
     @pytest.mark.parametrize("type, name, doc, arg, expected", [
         ("str", "generator", "generates a sentence", "", str),
@@ -55,12 +55,14 @@ class TestEmulate:
         ("float", "generator", "generates a float in python", "", float),
     ])
     def test_basicType(self, type, name, doc, arg, expected):
-        global emulate_1arg
-        emulate_1arg[type].__name__ = name
-        emulate_1arg[type].__doc__ = doc
-        my_func = emulate_1arg[type]
-        result = my_func(arg)
-        print(f"[{doc}]: {result}")
+        def generator():
+            """
+            """
+            return emulate()
+        generator.__doc__ = doc
+        generator.__name__ = name
+        generator.__annotations__ = {'return':expected}
+        result = generator(arg)
         assert isinstance(result, expected)
 
 
@@ -72,9 +74,9 @@ class TestEmulate:
         
     def test_FeatureDecorator(self):
         
-        def decorator(func):
+        def decorator(function_pointer):
             def wrapper(*args, **kwargs):
-                res = func(*args, **kwargs)
+                res = function_pointer(*args, **kwargs)
                 return res
             return wrapper
         
@@ -209,9 +211,9 @@ class Testthinkof:
         assert x._return_type is expected
 
     def test_FeatureMultiArgs(self):
-        x = thinkof("Combine each word of a sentence in a string")
-        ret = x("Hello", ", how are you ?", " Nice to meet you !")
-        assert ret == "Hello, how are you ? Nice to meet you !"
+        x = thinkof("Combine each part of sentence in a signle string")
+        ret = x("Hello", "how are you?", "Nice to meet you!")
+        assert ret.strip() == "Hello how are you? Nice to meet you!"
     
     def test_FeatureChainOfthinkof(self):
         pass
@@ -228,7 +230,7 @@ class Testthinkof:
     #     x = thinkof("Is a masculine name")
     #     ret = x("Max")
     #     print(x._last_response)
-    #     ret_model = x._last_response["model"]
+    #     ret_model = x._last_response["response_dict"]["model"]
     #     assert ret == True
     #     assert "gpt-4o-mini" in ret_model
     

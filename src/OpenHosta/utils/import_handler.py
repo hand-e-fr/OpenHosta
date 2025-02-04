@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 all = (
-    "is_pydantic"
-    "is_predict"
+    "is_pydantic_enabled"
+    "is_predict_enabled"
 )
 
-is_pydantic = False
+is_pydantic_enabled = False
 try:
     import pydantic
-    is_pydantic = True
+    is_pydantic_enabled = True
 except ImportError:
-    is_pydantic = False
+    is_pydantic_enabled = False
 
-is_predict = False
+is_predict_enabled = False
 try:
     import torch
     import numpy
-    is_predict = True
+    is_predict_enabled = True
 except ImportError:
-    is_predict = False
+    is_predict_enabled = False

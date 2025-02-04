@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Union
 
-from ..core.hosta import Hosta, UseType
+from ..core.hosta_inspector import HostaInspector, UseType
 
 all = (
     "use",
@@ -30,5 +30,5 @@ class DB:
 
 
 def use(obj: Union[Callable, Any], typ: Union[VAR, TOOL, RAG, DB], title: str):
-    x = Hosta()
+    x = HostaInspector()
     x._bdy_add('use', UseType())
