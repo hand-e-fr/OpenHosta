@@ -11,6 +11,8 @@ if not is_pydantic_enabled:
 
     # Do not try to convert to pydantic object as the lib is not installed
     def convert_pydantic(caller, checked):
+        import sys
+        sys.stdout.write("You shall install pydantic to use this function")
         return checked
 
     def get_pydantic_schema(return_caller) -> Optional[Dict[str, Any]]:
@@ -39,7 +41,7 @@ else:
                 # Small models (SLM) tend to return well structired json as a string
         if type(checked) is str and ispydanticclass(caller):
             try:
-                checked = json.loads(checked, )
+                checked = json.loads(checked)
             except Exception as e:
                 raise ValueError(f"LLM did not return a compatible structure for type `{caller}`:\n\t->{e} ")
         

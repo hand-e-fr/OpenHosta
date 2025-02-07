@@ -137,6 +137,7 @@ async def _emulate(
     return l_data
 
 
+
 def gather_data_for_prompt_template(
         inspection: HostaInspector,
         use_locals_as_ctx: Optional[bool] = False,
