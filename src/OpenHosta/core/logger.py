@@ -39,13 +39,13 @@ class ANSIColor(Enum):
     REVERSED = '\033[7m'
 
 class Logger:
-    def __init__(self, log_file_path: Optional[str] = None, verbose: Union[Literal[0, 1, 2], bool] = 2):
+    def __init__(self, log_file_path: Optional[str] = None, verbose: Union[Literal[0, 1, 2], bool] = 1):
         self.log_file_path: Optional[str] = log_file_path
         if log_file_path:
             self.log_file = open(log_file_path, "w")
             self.log_file.close()
-        self.verbose = verbose if isinstance(verbose, int) else 2 if verbose else 0
-        assert self.verbose is not None and 0 <= self.verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 2"
+        self.verbose = verbose if isinstance(verbose, int) else 1 if verbose else 0
+        assert self.verbose is not None and 0 <= self.verbose <= 2, "Please provide a valid verbose level (0, 1 or 2) default is 1"
 
     def _log(
             self,
