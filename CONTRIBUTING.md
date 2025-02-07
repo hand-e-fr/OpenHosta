@@ -103,6 +103,8 @@ If you add a new feature, please update the documentation accordingly. The docum
 
    1. Merge all concerned branches into `dev`
    2. Verify that all quality checks pass successfully
+      - run `export  OPENAI_API_KEY=sk-svcacct-8j...` 
+      - run `python -m pytest tests/functionnalTests/ -v  --html=report.html ` 
    3. Perform a thorough code review using `git diff`
    4. Ensure the CHANGELOG.md is up to date
    5. Review the documentation for accuracy

@@ -2,8 +2,8 @@ import inspect
 from typing import Optional, Dict, Any, List, Type, Union, Literal,  get_args, get_origin
 
 from ....core.logger import Logger
-from ....core.config import Model, DefaultManager
-from ....core.hosta import Func
+from ....core.config import Model, DefaultModelPolicy
+from ....core.hosta_inspector import FunctionMetadata
 
 _PROMPT = "{func_name}{signature}:\n    \"\"\"{docstring}\"\"\"\n\nIMPORTANT RULES:\n1. Input values should respect the type hints\n2. Output values MUST be diverse - avoid generating the same output repeatedly\n3. Each row must be in CSV format\n4. For text outputs, enclose them in double quotes\n5. NO MORE THAN 20% of outputs should be the same value\n6. Generate inputs across the entire possible range\n7. Ensure proper formatting for {return_type} output type"
 
@@ -95,7 +95,7 @@ class LLMSyntheticDataGenerator:
     @staticmethod
     def _build_user_prompt(
             examples: List[Dict],
-            func: Func,
+            function_metadata: FunctionMetadata,
             output_type: Type,
             examples_in_req: int,
     ):
@@ -111,10 +111,10 @@ class LLMSyntheticDataGenerator:
             user_prompt += " (remember to enclose string outputs in quotes ex: \"outputs\")"
         user_prompt += ":\n"
 
-        user_prompt += f"{','.join(func.f_sig.parameters.keys())},outputs"
+        user_prompt += f"{','.join(function_metadata.f_sig.parameters.keys())},outputs"
         user_prompt += "\n" + "\n".join([
             f"- {a} is type {b.annotation.__name__ if b.annotation != inspect.Parameter.empty else 'Any'}"
-            for a, b in func.f_sig.parameters.items()
+            for a, b in function_metadata.f_sig.parameters.items()
         ]) + "\n"
         user_prompt += f"- outputs is type {output_type.__name__}\n"
 
@@ -122,18 +122,18 @@ class LLMSyntheticDataGenerator:
 
 
     @staticmethod
-    def generate_synthetic_data(
-            func: Func, # The function to generate data for
+    async def generate_synthetic_data(
+            function_metadata: FunctionMetadata, # The function to generate data for
             logger: Logger, # Logger to use for logging
             request_amounts: int = 3, # Amount of requests to the model
             examples_in_req: int = 50, # Examples amount in each request
             model: Optional[Model] = None # Model to use for data generation
     ) -> List[Dict]:
-        input_types: Dict[str, Type] = dict(zip(func.f_args.keys(), func.f_type[0]))
-        output_type: Type = func.f_type[1]
+        input_types: Dict[str, Type] = dict(zip(function_metadata.f_args.keys(), function_metadata.f_type[0]))
+        output_type: Type = function_metadata.f_type[1]
         examples: List[Dict] = []
-        if func.f_mem:
-            for ex in func.f_mem:
+        if function_metadata.f_mem:
+            for ex in function_metadata.f_mem:
                 ex_inputes = list(ex.value["in_"].values())
                 ex_output = ex.value["out"]
                 to_append = {}
@@ -142,7 +142,7 @@ class LLMSyntheticDataGenerator:
                 to_append["outputs"] = ex_output
 
         if not model:
-            model = DefaultManager.get_default_model()
+            model = DefaultModelPolicy.get_model()
 
         try:
             assert input_types and len(input_types) > 0, "Input types must be provided."
@@ -155,11 +155,11 @@ class LLMSyntheticDataGenerator:
 
         prompt: str = (
             _PROMPT
-            .replace("{func_name}", func.f_name)
-            .replace("{signature}", str(func.f_sig))
-            .replace("{docstring}", func.f_doc)
+            .replace("{func_name}", function_metadata.f_name)
+            .replace("{signature}", str(function_metadata.f_sig))
+            .replace("{docstring}", function_metadata.f_doc)
         )
-        prompt += LLMSyntheticDataGenerator._build_user_prompt(examples, func, output_type, examples_in_req)
+        prompt += LLMSyntheticDataGenerator._build_user_prompt(examples, function_metadata, output_type, examples_in_req)
 
         generated_data: List = []
         result: List[Dict] = []
@@ -188,10 +188,10 @@ class LLMSyntheticDataGenerator:
                     "content": content
                 })
 
-                response = model.api_call(
+                response = await model.api_call_async(
                     messages=conversation_history,
-                    temperature=1.0,
-                    json_form=False,
+                    llm_args={"temperature":1.0},
+                    json_output=False,
                 )
 
                 # Add the assistant's response to conversation history

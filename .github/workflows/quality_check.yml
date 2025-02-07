@@ -107,8 +107,9 @@ jobs:
           
       - name: Install dependencies
         run: pip install .[tests]
-        
       - name: Run functional tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}         
         run: python -m pytest tests/functionnalTests -v --cov=OpenHosta
 
   notify:
