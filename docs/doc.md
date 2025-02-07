@@ -73,7 +73,9 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Install OpenHosta](#install-openhosta)
     - [Librairie Import](#librairie-import)
     - [Basic Setup](#basic-setup)
+  - [Reasoning models](#reasoning-models)
   - [`emulate` Function](#emulate-function)
+  - [Asynchronous Mode](#asynchronous-mode)
     - [Supported types \& Pydantic](#supported-types--pydantic)
       - [Integration Details](#integration-details)
     - [Body Functions](#body-functions)
@@ -90,7 +92,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Example Usage](#example-usage)
   - [`thinkof` Function](#thinkof-function)
   - [`ask` function](#ask-function)
-  - [`generate_data` func](#generate_data-func)
+  - [`generate_data` function](#generate_data-function)
     - [Parameters](#parameters-1)
     - [Returns](#returns)
     - [Raises](#raises)
@@ -182,6 +184,22 @@ Note that some features like `thinkof` or `LLMSyntheticDataGenerator` specifical
 config.set_default_model(my_model)
 ```
 
+## Reasoning models
+
+When you use reasoning models like DeepSeek-R1, you need to disable JSON mode as the model will first output its chain of thought before producing the JSON. It is also a good idea to increase the timeout.
+
+```python
+r1_650b_azure = Model(
+        base_url="https://DeepSeek-R1-lfvng.eastus.models.ai.azure.com/v1/chat/completions",
+        model="DeepSeek-R1",
+        timeout=180,
+        json_output=False,
+        api_key="..."
+        )
+        
+```
+
+
 ## `emulate` Function
 
 The *emulate* function is the main feature of OpenHosta. This is the function that allows you to emulate functions with AI, i.e. the instructions will be executed in an LLM and not directly in your computer. Here's how to use it.
@@ -236,6 +254,41 @@ You can find theses in your model's offcial documentation, but here's a few comm
   - `top_p`
   - `max_tokens` 
   - (...)
+
+
+## Asynchronous Mode
+
+`emulate` can also be used in asynchronous mode. This can be useful if you want to use OpenHosta in a web application or a bot.
+
+To use `emulate` in asynchronous mode, you need to use the `emulate` function from `OpenHosta.asynchrone` module with the `await` keyword. 
+It works the same way as `emulate`, but it returns an `awaitable` object. If you need to mix synchronous and asynchronous code, you can use the `emulate` and `emulate_async` functions together.
+
+```python
+import asyncio
+from OpenHosta.asynchrone import emulate
+
+## You can also import it like this if you need both synchronous and asynchronous versions in the same file
+# from OpenHosta import emulate, emulate_async
+
+async def capitalize_cities(sentence:str)->str:
+    """
+    This function capitalize the first letter of all city names in a sentence.
+    """
+    return await emulate()
+
+sentence = asyncio.run(capitalize_cities("je suis allé à londres et los angeles en juin"))
+
+print(sentence)
+# 'je suis allé à Londres et Los Angeles en juin'
+```
+
+Functions that are available in asynchronous mode:
+
+- `emulate`
+- `ask`
+- `thinkof`
+- `predict`
+- `generate_data`
 
 ### Supported types & Pydantic
 
