@@ -92,7 +92,7 @@ def lambda_function(*argument)->{return_type.__name__}:
             _infos = getattr(inner_func, "_infos")
 
         prompt_data = gather_data_for_prompt_template(_infos)
-        prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function(\"{'", "'.join(_infos.f_call) }\")"
+        prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function('" + "', '".join(_infos.f_call) + "')"
 
         if _model is None:
             _model = DefaultModelPolicy.get_model()
