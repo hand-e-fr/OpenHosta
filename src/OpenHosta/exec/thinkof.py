@@ -35,7 +35,7 @@ async def guess_type(key: str, *args) -> object:
             {"role": "system", "content": THOUGHT_PROMPT.render()},
             {"role": "user", "content": l_user_prompt}
         ],
-        llm_args={"temperature":0.5},
+        llm_args={"temperature":0.2},
     )
 
     type_json = response["choices"][0]["message"]["content"]
@@ -72,14 +72,18 @@ async def build_function(model, prompt, inner_func, query_string, args, kwargs, 
         _prompt = prompt
 
         if not hasattr(inner_func, "_infos"):
-            _infos = FunctionMetadata()
             return_type = await guess_type(query_string, *args, **kwargs)
+
+            _infos = FunctionMetadata()
+            _infos.f_schema = {"type": f"{return_type.__name__}"}
             _infos.f_def = f'''
+```python
 def lambda_function(*argument)->{return_type.__name__}:
     """
     {query_string}
     """
     ...
+```
 '''
             _infos.f_call = [str(arg) for arg in args]
             _infos.f_type = ([], return_type)
