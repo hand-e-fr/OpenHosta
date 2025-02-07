@@ -30,10 +30,9 @@ from sys import version_info
 from types import MethodType
 import inspect
 from types import FrameType
-from typing import Callable, Tuple, List, Dict, Any, Optional, Type
+from typing import Callable, Tuple, List, Dict, Any, Optional, Type, _SpecialGenericAlias
 
-from ..utils.import_handler import is_pydantic
-from .pydantic_usage import get_pydantic_schema
+from .pydantic_stub import get_pydantic_schema
 
 if version_info.major == 3 and version_info.minor > 9:
     from types import NoneType
@@ -44,30 +43,43 @@ all = (
     "FuncAnalizer"
 )
 
+def nice_type_name(obj) -> str:
+    """
+    Get a nice name for the type to insert in function description for LLM.
+    """
+    if type(obj) is _SpecialGenericAlias:
+        t=obj.__repr__()
+        t=t.replace("typing.", "")
+        return t
+    
+    if hasattr(obj, "__name__"):
+        return obj.__name__
+
+    return str(obj)
 
 class FuncAnalizer:
     """
     A class for inspecting the signature, definition, and call information of a function.
 
     Args:
-        func (Callable): The function to inspect.
+        function_pointer (Callable): The function to inspect.
 
     Attributes:
-        func (Callable): The function to inspect.
+        function_pointer (Callable): The function to inspect.
         sig (Signature): The signature of the function.
     """
 
-    def __init__(self, func: Union[Callable, MethodType] | None, caller_frame: FrameType | None):
+    def __init__(self, function_pointer: Union[Callable, MethodType] | None, caller_frame: FrameType | None):
         """
         Initialize the function inspector with the given function.
 
         Args:
-            func (Callable): The function to inspect.
+            function_pointer (Callable): The function to inspect.
             caller_frame (FrameType): The function's frame in which it is called.
         """
         try:
-            self.func = func
-            self.sig = inspect.signature(func)
+            self.function_pointer = function_pointer
+            self.sig = inspect.signature(function_pointer)
             _, _, _, self.values = inspect.getargvalues(caller_frame)
         except Exception as e:
             raise AttributeError(
@@ -81,11 +93,11 @@ class FuncAnalizer:
         Returns:
             The string representing the function's definition.
         """
-        func_name = getattr(self.func, "__name__")
+        func_name = getattr(self.function_pointer, "__name__")
         func_params = ", ".join(
             [
                 (
-                    f"{param_name}: {getattr(param.annotation, '__name__')}"
+                    f"{param_name}: {nice_type_name(param.annotation)}"
                     if param.annotation != inspect.Parameter.empty
                     else param_name
                 )
@@ -93,14 +105,14 @@ class FuncAnalizer:
             ]
         )
         
-        func_return = (
-            f" -> {getattr(self.sig.return_annotation, '__name__')}"
-            if hasattr(self.sig.return_annotation, '__name__') and self.sig.return_annotation != inspect.Signature.empty
-            else f" -> {self.sig.return_annotation}"
-        )
+        if self.sig.return_annotation is inspect.Signature.empty:
+            func_return = ""
+        else:
+            func_return = " -> " + nice_type_name(self.sig.return_annotation)
+
         definition = (
-            f"```python\ndef {func_name}({func_params}):{func_return}\n"
-            f"    \"\"\"\n\t{self.func.__doc__}\n    \"\"\"\n```"
+            f"```python\ndef {func_name}({func_params}){func_return}:\n"
+            f"    \"\"\"{self.function_pointer.__doc__}\"\"\"\n    ...\n```"
         )
         return definition
 
@@ -117,8 +129,8 @@ class FuncAnalizer:
         values_locals.pop('self', None)
 
         values_self = None
-        if hasattr(self.func, '__self__'):
-            values_self = getattr(self.func.__self__, '__dict__', None)
+        if hasattr(self.function_pointer, '__self__'):
+            values_self = getattr(self.function_pointer.__self__, '__dict__', None)
         return values_locals or None, values_self
 
     @property
@@ -140,7 +152,7 @@ class FuncAnalizer:
         args_str = ", ".join(
             f"{k}={v!r}" for k, v in bound_arguments.items()
         )
-        call_str = f"{self.func.__name__}({args_str})"
+        call_str = f"{self.function_pointer.__name__}({args_str})"
         return call_str, bound_arguments
 
     @property
@@ -189,13 +201,13 @@ class FuncAnalizer:
                 }
             return {"anyOf": [self._get_type_schema(arg) for arg in args]}
 
-        if origin in (list, Sequence, Collection):
+        if origin in (list, Sequence.__origin__, Collection.__origin__):
             return {
                 "type": "array",
                 "items": self._get_type_schema(args[0]) if args else {"type": "any"}
             }
 
-        if origin in (dict, Mapping):
+        if origin in (dict, Mapping.__origin__):
             return {
                 "type": "object",
                 "additionalProperties": self._get_type_schema(args[1]) if args else {"type": "any"}
@@ -204,7 +216,7 @@ class FuncAnalizer:
         if origin is (Final, ClassVar):
             return self._get_type_schema(args[0]) if args else {"type": "any"}
 
-        if origin is Type:
+        if origin is Type.__origin__:
             return {"type": "object", "format": "type"}
 
         if origin is Literal:
@@ -222,7 +234,7 @@ class FuncAnalizer:
                 "items": False
             }
 
-        if origin in (Set, FrozenSet, AbstractSet):
+        if origin in (Set.__origin__, FrozenSet.__origin__, AbstractSet.__origin__):
             return {
                 "type": "array",
                 "uniqueItems": True,
@@ -267,9 +279,9 @@ class FuncAnalizer:
         if tp is dict:
             return {"type": "dict"}
         if tp is tuple:
-            return {"type": "tuple"}
+            return {"type": "list"}
         if tp is set:
-            return {"type": "set"}
+            return {"type": "list"}
         if tp is frozenset:
             return {"type": "frozenset"}
         if tp is bool:
@@ -286,17 +298,11 @@ class FuncAnalizer:
         Get the JSON schema of the function's return type.
 
         Returns:
-            The JSON schema of the function's return type.
+            The JSON schema in a dictionary
         """
-        return_caller = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
-
-        if return_caller is not None:
-            if is_pydantic:
-                from .pydantic_usage import get_pydantic_schema
-
-                pyd_sch = get_pydantic_schema(return_caller)
-                if pyd_sch is not None:
-                    return pyd_sch
-            return self._get_type_schema(return_caller)
+        if self.sig.return_annotation == inspect.Signature.empty:
+            schema = self._get_type_schema(Any)
         else:
-            return self._get_type_schema(Any)
+            schema = self._get_type_schema(self.sig.return_annotation)
+        
+        return schema
