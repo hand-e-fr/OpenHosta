@@ -4,6 +4,21 @@ All significant changes to this project will be documented in this file.
 
 ---
 
+## **v2.2.0**
+- **Features**
+  - #193 Allow model thinking before answering (DeepSeek R1 compatible) 
+  - #197 Support for asyncawait
+  - #182 Fix based hyperparameters in predict
+
+- **Internal**
+  - stub missing functions when pydantic or predict are not installed
+  - #202 add regression tests
+  - #32 The emulate prompt could be created dynamically depending on the context. (possibility tree) 
+
+- **Fixes**
+  - #195 fix Bug with pydantic import
+  - #199 improve pydantic return type support for List[BaseModel] and Dict[..., BaseModel]
+
 ## **v2.1.5**
 - **Fixes**
   - Allow basic auth for models behind API
