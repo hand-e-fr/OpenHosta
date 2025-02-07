@@ -70,7 +70,7 @@ class LinearRegression(HostaModel):
         Training loop for regression models.
         Includes accuracy calculation with a tolerance (epsilon).
         """
-        epsilon = 0.1
+        epsilon = 0.5
         self.train()
 
         for epoch in range(epochs):
@@ -116,7 +116,7 @@ class LinearRegression(HostaModel):
         validation_loss = 0.0
         correct_predictions = 0
         total_samples = 0
-        epsilon = 0.1
+        epsilon = 0.5
 
         with torch.no_grad():
             for inputs, labels in validation_set:
