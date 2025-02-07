@@ -6,26 +6,26 @@ from .hosta_model import HostaModel
 from .neural_network import NeuralNetwork
 from .neural_network_types import ArchitectureType
 from ..predict_config import PredictConfig
-from ....core.hosta import Func
+from ....core.hosta_inspector import FunctionMetadata
 from ....core.logger import Logger, ANSIColor
 from ....utils.torch_nn_utils import type_size
 
 
 class HostaModelProvider:
     @staticmethod
-    def from_hosta_func(func: Func, config: Optional[PredictConfig], architecture: Optional[NeuralNetwork], path: str, logger: Logger) -> Optional[HostaModel]:
+    def from_hosta_func(function_metadata: FunctionMetadata, config: Optional[PredictConfig], architecture: Optional[NeuralNetwork], path: str, logger: Logger) -> Optional[HostaModel]:
         input_size = 0
-        for arg in func.f_type[0]:
+        for arg in function_metadata.f_type[0]:
             if get_origin(arg) is Literal:
                 input_size += 1
             else:
                 input_size += type_size(arg, config.max_tokens)
 
-        output_size = type_size(func.f_type[1], config.max_tokens)
+        output_size = type_size(function_metadata.f_type[1], config.max_tokens)
         logger.log_debug(f"Model with input size {input_size} and output size {output_size}", level=2)
 
         hosta_model: Optional[HostaModel] = None
-        model_type = determine_model_type(func)
+        model_type = determine_model_type(function_metadata)
 
         if model_type == ArchitectureType.LINEAR_REGRESSION:
             hosta_model = LinearRegression(architecture, input_size, output_size, config, logger)
@@ -44,8 +44,8 @@ class HostaModelProvider:
         return hosta_model
 
 
-def determine_model_type(func: Func) -> ArchitectureType:
-    if get_origin(func.f_type[1]) is Literal:
+def determine_model_type(function_metadata: FunctionMetadata) -> ArchitectureType:
+    if get_origin(function_metadata.f_type[1]) is Literal:
         return ArchitectureType.CLASSIFICATION
     else:
         return ArchitectureType.LINEAR_REGRESSION
