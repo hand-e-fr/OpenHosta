@@ -125,7 +125,7 @@ class FuncAnalizer:
             A tuple containing the bound arguments, local variables, and local attributs.
         """
         values_locals = {k: v for k, v in self.values.items()
-                         if k not in self.sig.parameters}
+                        if k not in self.sig.parameters}
         values_locals.pop('self', None)
 
         values_self = None
@@ -142,7 +142,7 @@ class FuncAnalizer:
             A tuple containing a string representing the function call and the bound arguments.
         """
         values_args = {k: v for k, v in self.values.items()
-                       if k in self.sig.parameters}
+                    if k in self.sig.parameters}
 
         bound_args = self.sig.bind_partial(**values_args)
         bound_args.apply_defaults()
