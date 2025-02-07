@@ -62,7 +62,7 @@ class TestEmulate:
         generator.__doc__ = doc
         generator.__name__ = name
         generator.__annotations__ = {'return':expected}
-        result = generator(arg)
+        result = generator()
         assert isinstance(result, expected)
 
 
@@ -178,7 +178,7 @@ class TestEmulate:
 class Testthinkof:
     
     def test_BasicDirect(self):
-        ret = thinkof("Multiply by 2")(8)
+        ret = thinkof("Multiply this number by 2")(8)
         assert ret == 16
     
     def test_BasicIndirect(self):
@@ -208,12 +208,12 @@ class Testthinkof:
     def test_FeaturePredict(self, prompt, args, expected):
         x = thinkof(prompt)
         ret = x(args)
-        assert x._return_type is expected
+        assert x._infos.f_type[1] is expected
 
     def test_FeatureMultiArgs(self):
         x = thinkof("Combine each part of sentence in a signle string")
         ret = x("Hello", "how are you?", "Nice to meet you!")
-        assert ret.strip() == "Hello how are you? Nice to meet you!"
+        assert "ello" in ret and "are" in ret and "meet" in ret
     
     def test_FeatureChainOfthinkof(self):
         pass

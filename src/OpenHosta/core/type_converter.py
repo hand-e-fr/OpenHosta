@@ -83,9 +83,26 @@ class TypeConverter:
                 f"[TypeConverter.check]: Got None response from the LLM.")
             return None
         
-        caller = self.function_metadata.f_type[1]
+        return_type = self.function_metadata.f_type[1]
+        if type(return_type) is type:
+            # Standart python types
+            caller = return_type
+        elif get_origin(return_type) is not None:
+            # typing compatible types
+            caller = get_origin(return_type)
+        else:
+            # Other types (pydantic models)
+            caller = return_type
+
         checked = self.data
-                
-        checked = self.convert(caller)(checked)
-        checked = convert_pydantic(caller, checked)
+
+        try:   
+            checked = self.convert(caller)(checked)
+        except:
+            sys.stderr.write("[TypeConverter.check]: Failed to convert basic type from the LLM. Keep original type.\n")
+
+        try:   
+            checked = convert_pydantic(caller, checked)
+        except:
+            sys.stderr.write("[TypeConverter.check]: Failed to convert pydantic type from the LLM. Keep original type.\n")
         return checked

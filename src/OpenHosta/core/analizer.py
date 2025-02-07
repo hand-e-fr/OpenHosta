@@ -30,7 +30,7 @@ from sys import version_info
 from types import MethodType
 import inspect
 from types import FrameType
-from typing import Callable, Tuple, List, Dict, Any, Optional, Type
+from typing import Callable, Tuple, List, Dict, Any, Optional, Type, _SpecialGenericAlias
 
 from .pydantic_stub import get_pydantic_schema
 
@@ -43,6 +43,19 @@ all = (
     "FuncAnalizer"
 )
 
+def nice_type_name(obj) -> str:
+    """
+    Get a nice name for the type to insert in function description for LLM.
+    """
+    if type(obj) is _SpecialGenericAlias:
+        t=obj.__repr__()
+        t=t.replace("typing.", "")
+        return t
+    
+    if hasattr(obj, "__name__"):
+        return obj.__name__
+
+    return str(obj)
 
 class FuncAnalizer:
     """
@@ -84,7 +97,7 @@ class FuncAnalizer:
         func_params = ", ".join(
             [
                 (
-                    f"{param_name}: {getattr(param.annotation, '__name__')}"
+                    f"{param_name}: {nice_type_name(param.annotation)}"
                     if param.annotation != inspect.Parameter.empty
                     else param_name
                 )
@@ -95,7 +108,7 @@ class FuncAnalizer:
         if self.sig.return_annotation is inspect.Signature.empty:
             func_return = ""
         else:
-            func_return = f" -> {self.sig.return_annotation}"
+            func_return = " -> " + nice_type_name(self.sig.return_annotation)
 
         definition = (
             f"```python\ndef {func_name}({func_params}){func_return}:\n"

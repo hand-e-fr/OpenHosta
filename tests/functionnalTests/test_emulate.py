@@ -128,7 +128,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_set([1, 2, 3])) == set
+        assert type(return_set({1, 2, 3})) == set
 
         
     def test_NativeEnsembleFrozenset(self):
