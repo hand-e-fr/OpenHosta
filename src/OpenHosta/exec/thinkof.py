@@ -68,24 +68,25 @@ def thinkof(query_string, model=None, prompt=None, llm_args={}):
 
 
 async def build_function(model, prompt, inner_func, query_string, args, kwargs, llm_args):
-        _infos = FunctionMetadata()
         _model = model
         _prompt = prompt
 
-        if not hasattr(inner_func, "_return_type"):
+        if not hasattr(inner_func, "_infos"):
+            _infos = FunctionMetadata()
             return_type = await guess_type(query_string, *args, **kwargs)
-            setattr(inner_func, "_return_type", return_type)
-        else:
-            return_type = getattr(inner_func, "_return_type")
-
-        _infos.f_def = f'''
+            _infos.f_def = f'''
 def lambda_function(*argument)->{return_type.__name__}:
     """
     {query_string}
     """
     ...
 '''
-        _infos.f_call = [str(arg) for arg in args]
+            _infos.f_call = [str(arg) for arg in args]
+            _infos.f_type = ([], return_type)
+            setattr(inner_func, "_infos", _infos)
+        else:
+            _infos = getattr(inner_func, "_infos")
+
         prompt_data = gather_data_for_prompt_template(_infos)
         prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function(\"{'", "'.join(_infos.f_call) }\")"
 

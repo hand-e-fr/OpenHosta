@@ -39,7 +39,7 @@ In the conversation, I will directly write the function call as if it was called
 You should answer with whatever you believe would be a good return for the function.
 
 You should encode the returned value according to the provided JSON format, without comments. 
-If you need to think first, place your thought within <think></think> before answering.
+{% if NEED_THINKING %}If you need to think first, place your thought within <think></think> before answering.{% endif %}
 Answer using the following format:
 ```
 {"return":"..."}
