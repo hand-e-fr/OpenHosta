@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 import json
 import requests
+import os
 import re
 import sys
 import asyncio
@@ -71,8 +72,12 @@ class Model:
         if json_output is None:
             json_output = self.json_output
 
-        if self.api_key is None or not self.api_key:
+        if self.api_key is None and "api.openai.com/v1" in self.base_url:
             raise ApiKeyError("[model.api_call] Empty API key.")
+        
+        api_key = self.api_key
+        if api_key is None:
+            api_key = os.environ.get("OPENAI_API_KEY")
 
         l_body = {
             "model": self.model,
@@ -83,9 +88,9 @@ class Model:
         }
         
         if "azure.com" in self.base_url:
-            headers["api-key"] = f"{self.api_key}"
+            headers["api-key"] = f"{api_key}"
         else:
-            headers["Authorization"] = f"Bearer {self.api_key}"
+            headers["Authorization"] = f"Bearer {api_key}"
 
         for key, value in self.user_headers.items():
             headers[key] = value
