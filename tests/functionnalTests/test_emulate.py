@@ -1,5 +1,4 @@
 import pytest
-from pydantic import BaseModel
 import re
 from typing import (
     Any,
@@ -115,7 +114,7 @@ class TestTypes:
     def test_NativeMappinDict(self):
         def count_dict(a:dict)->dict:
             """
-            This function returns a dict containing as a key the name of the dict in paramter and as a value his length
+            This function returns a dict of one element containing "count" as key and the count of elements in a as value
             """
             return emulate()
         

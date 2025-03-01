@@ -14,20 +14,21 @@ import os
 from OpenHosta import config
 
 PORT=11434
-PORT=11436
-MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{11436}/v1/chat/completions")
+#PORT=11436
+MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/chat/completions")
 MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
+MODEL_NAME = os.environ.get("MODEL_NAME", "DeepSeek-R1-huggingface")
 
-deepseek_r1_14b_rtx3060 = config.Model(
-        base_url=MODEL_BASE_URL,
-        model="deepseek-r1:14b",
-        timeout=120, # 2 minutes, reasoning models can be slow
-        json_output=False, # For reasoning models, json_output shall be False as there is a first part that is non JSON
-        api_key="none",
-        additionnal_headers={"Authorization":"Basic ZWJhdHQ6UFM3cno0QTdja1VpTEt3VlNYa2VDTURZVnFXMHZ4cUw="}
-        )
+model=config.Model(
+    model="DeepSeek-R1-huggingface",
+    json_output=False,
+    timeout=120, # 2 minutes, reasoning models can be slow
+    base_url=MODEL_BASE_URL,
+    api_key="none",
+    additionnal_headers={"Authorization":MODEL_API_KEY}
+)
 
-config.set_default_model(deepseek_r1_14b_rtx3060)
+config.set_default_model(model)
 
 #########################################################
 #
