@@ -15,15 +15,13 @@ import asyncio
 from OpenHosta import config
 
 PORT=11434
-PORT=11436
+#PORT=11436
 MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/chat/completions")
 MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
-
-#TODO: tester avec json_output = False
-#TODO: tester models r1
+MODEL_NAME = os.environ.get("MODEL_NAME", "gemma2-9b-it")
 
 model=config.Model(
-    model="RTX3060-gemma2:9b",
+    model=MODEL_NAME,
     max_async_calls=10,
     base_url=MODEL_BASE_URL,
     timeout=120, api_key="none",

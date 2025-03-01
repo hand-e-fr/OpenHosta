@@ -1,4 +1,3 @@
-from typing import Callable
 from jinja2 import Template
 
 class Prompt(Template):
@@ -129,38 +128,3 @@ Expected response: {"type": "list"}
 {{ CTX_EXAMPLE }}
 {% endif %}                              
 """)
-
-def print_last_prompt(function_pointer:Callable):
-    """
-    Print the last prompt sent to the LLM when using function `function_pointer`.
-    """
-    if hasattr(function_pointer, "_last_request"):
-        if "sys_prompt" in function_pointer._last_request:
-            print("[SYSTEM PROMPT]")
-            print(function_pointer._last_request["sys_prompt"])
-        if "user_prompt" in function_pointer._last_request:
-            print("[USER PROMPT]")
-            print(function_pointer._last_request["user_prompt"])
-    else:
-        print("No prompt found for this function.")
-
-
-def print_last_response(function_pointer:Callable):
-    """
-    Print the last answer recived from the LLM when using function `function_pointer`.
-    """
-    if hasattr(function_pointer, "_last_response"):
-        if "rational" in function_pointer._last_response:
-            print("[THINKING]")
-            print(function_pointer._last_response["rational"])
-        if "answer" in function_pointer._last_response:
-            print("[ANSWER]")
-            print(function_pointer._last_response["answer"])
-        if "data" in function_pointer._last_response:
-            print("[Data]")
-            print(function_pointer._last_response["data"])
-        else:
-            print("[UNFINISHED]")
-            print("answer processing was interupted")
-    else:
-        print("No prompt found for this function.")
