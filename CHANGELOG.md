@@ -3,6 +3,9 @@
 All significant changes to this project will be documented in this file.
 
 ---
+## **v2.2.2**
+- **Fixes**
+  - #216 allow sync functions in google colab 
 
 ## **v2.2.0**
 - **Features**

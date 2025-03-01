@@ -1,6 +1,8 @@
-from typing import Union, Literal, Optional
+from typing import Union, Literal, Optional, Callable
 from enum import Enum
 import platform
+
+from ..core.hosta_inspector import HostaInspector
 
 IS_UNIX = platform.system() != "Windows"
 
@@ -39,6 +41,8 @@ class ANSIColor(Enum):
     REVERSED = '\033[7m'
 
 class Logger:
+
+    
     def __init__(self, log_file_path: Optional[str] = None, verbose: Union[Literal[0, 1, 2], bool] = 1):
         self.log_file_path: Optional[str] = log_file_path
         if log_file_path:
@@ -106,3 +110,67 @@ class Logger:
             one_line : bool = False
     ):
         self._log(prefix, message, level, color, text_color, one_line)
+
+class dialog_logger:
+
+    def __init__(self, inspection:HostaInspector=None, inner_func=None):
+        
+        self.logging_object = { 
+            "_last_request": {},
+            "_last_response": {}
+        }
+
+        if inspection is not None:
+            inspection.set_logging_object(self.logging_object)
+
+        if inner_func is not None:
+            setattr(inner_func, "_last_request",  self.logging_object["_last_request"])
+            setattr(inner_func, "_last_response", self.logging_object["_last_response"])
+
+
+    def set_sys_prompt(self, prompt_rendered):
+        self.logging_object["_last_request"]['sys_prompt']=prompt_rendered
+
+    def set_user_prompt(self, user_prompt):
+        self.logging_object["_last_request"]['user_prompt']=user_prompt
+    
+    def set_response_dict(self, response_dict):
+        self.logging_object["_last_response"]["response_dict"] = response_dict
+
+    def set_response_data(self, response_data):
+        self.logging_object["_last_response"]["data"] = response_data
+
+def print_last_prompt(function_pointer:Callable):
+    """
+    Print the last prompt sent to the LLM when using function `function_pointer`.
+    """
+    if hasattr(function_pointer, "_last_request"):
+        if "sys_prompt" in function_pointer._last_request:
+            print("[SYSTEM PROMPT]")
+            print(function_pointer._last_request["sys_prompt"])
+        if "user_prompt" in function_pointer._last_request:
+            print("[USER PROMPT]")
+            print(function_pointer._last_request["user_prompt"])
+    else:
+        print("No prompt found for this function.")
+
+
+def print_last_response(function_pointer:Callable):
+    """
+    Print the last answer recived from the LLM when using function `function_pointer`.
+    """
+    if hasattr(function_pointer, "_last_response"):
+        if "rational" in function_pointer._last_response:
+            print("[THINKING]")
+            print(function_pointer._last_response["rational"])
+        if "answer" in function_pointer._last_response:
+            print("[ANSWER]")
+            print(function_pointer._last_response["answer"])
+        if "data" in function_pointer._last_response:
+            print("[Data]")
+            print(function_pointer._last_response["data"])
+        else:
+            print("[UNFINISHED]")
+            print("answer processing was interupted")
+    else:
+        print("No prompt found for this function.")
