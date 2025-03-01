@@ -72,13 +72,13 @@ class Model:
         if json_output is None:
             json_output = self.json_output
 
-        if self.api_key is None and "api.openai.com/v1" in self.base_url:
-            raise ApiKeyError("[model.api_call] Empty API key.")
-        
         api_key = self.api_key
         if api_key is None:
             api_key = os.environ.get("OPENAI_API_KEY")
 
+        if api_key is None and "api.openai.com/v1" in self.base_url:
+            raise ApiKeyError("[model.api_call] Empty API key.")
+        
         l_body = {
             "model": self.model,
             "messages": messages,
