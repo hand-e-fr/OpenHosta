@@ -5,7 +5,41 @@ import sys
 from ..models.OpenAICompatible import Model
 from ..utils.meta_prompt import EMULATE_PROMPT, Prompt
 
-class AlwaysDefaultPolicy:
+from typing import Tuple
+from abc import ABC, abstractmethod
+
+class ModelPolicy(ABC):
+    """
+    Abstract base class defining the interface for model selection policies.
+
+    This class provides a template for implementing different strategies
+    for selecting and managing AI models.
+    """
+
+    @abstractmethod
+    def apply_policy(self, user_desired_model=None, prompt_data=None) -> Tuple[Model, Prompt]:
+        """
+        Apply the policy to select an appropriate model.
+
+        Args:
+            user_desired_model (Model, optional): The model specifically requested by the user.
+
+        Returns:
+            Model: The selected model according to the policy implementation.
+        """
+        pass
+
+    @abstractmethod
+    def get_model(self) -> Model:
+        """
+        Retrieve the current model associated with this policy.
+
+        Returns:
+            Model: The current model instance.
+        """
+        pass
+
+class AlwaysDefaultPolicy(ModelPolicy):
     """
     This policy always use the default prompt with the default model
     """
@@ -28,6 +62,22 @@ class AlwaysDefaultPolicy:
 
     def get_model(self):
         return self.model
+    
+    def apply_policy(self, desired_model=None, desired_prompt=None, prompt_data=None) -> Tuple[Model, Prompt]:
+
+        selected_model = desired_model
+        selected_prompt = desired_prompt
+
+        if type(selected_prompt) is str:
+            selected_prompt = Prompt(selected_prompt)
+
+        if selected_model == None:
+            selected_model = self.get_model()
+        
+        if selected_prompt == None:
+            selected_prompt = self.get_prompt()
+
+        return selected_model, selected_prompt
 
     def get_prompt(self):
         return self.prompt

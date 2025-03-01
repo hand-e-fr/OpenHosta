@@ -4,7 +4,6 @@
 # then run ollama pull llama3.2:3b
 
 import os
-import asyncio
 
 from OpenHosta.utils.import_handler import is_pydantic_enabled
 assert is_pydantic_enabled, "Pydantic shall be installed"
@@ -18,15 +17,13 @@ assert is_pydantic_enabled, "Pydantic shall be installed"
 from OpenHosta import config
 
 PORT=11434
-PORT=11436
-MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{11436}/v1/chat/completions")
+#PORT=11436
+MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/chat/completions")
 MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
-
-#TODO: tester avec json_output = False
-#TODO: tester models r1
+MODEL_NAME = os.environ.get("MODEL_NAME", "gemma2-9b-it")
 
 model=config.Model(
-    model="RTX3060-gemma2:9b",
+    model=MODEL_NAME,
     max_async_calls=10,
     base_url=MODEL_BASE_URL,
     timeout=120, api_key="none",
@@ -41,7 +38,7 @@ config.set_default_model(model)
 #
 #########################################################
 
-from OpenHosta import emulate, emulate_async
+from OpenHosta import emulate
 
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
@@ -63,6 +60,7 @@ def find_people(sentence:str)->Person:
     return emulate()
 
 fist_person = find_people("french president went with his wife brigite to london.")
+
 from OpenHosta import print_last_prompt, print_last_response
 
 print_last_prompt(find_people)
