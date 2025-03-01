@@ -29,8 +29,7 @@ else:
 import os
 
 DefaultModelPolicy.set_default_model(
-    Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions",
-          api_key=os.getenv("OPENAI_API_KEY") or None)
+    Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions")
 )
 
 all = (
