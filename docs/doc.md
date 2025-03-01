@@ -280,13 +280,14 @@ async def capitalize_cities(sentence:str)->str:
 try:
   sentence = asyncio.run(capitalize_cities("je suis allé à londres et los angeles en juin"))
 except:
-  pass
+  print("You are in a notebook or a python interpreter that does not support asyncio.run")
 
 # From Google colab or jupyter
 try:
   sentence = await capitalize_cities("je suis allé à londres et los angeles en juin")
 except:
-  pass
+  print("You are in python interpreter that does not support async")
+
 
 print(sentence)
 # 'je suis allé à Londres et Los Angeles en juin'
@@ -698,13 +699,13 @@ def detect_mood(message: str) -> Literal["positive", "negative", "neutral"]:
 dataset: HostaDataset = generate_data(detect_mood, 50)
 
 # Save the dataset as a CSV file
-dataset.save_data("detect_mood.csv", SourceType.CSV)
+dataset.save("detect_mood.csv", SourceType.CSV)
 
 # Print each input-output pair in the dataset
 correct = 0
 
 for data in dataset.data:
-    print(f"{data.input[0].strip('"')} expected {data.output} got {detect_mood(data.input[0].strip('"'))}")
+    print(data.input[0].strip('"')+ f"expected {data.output} got " + detect_mood(data.input[0].strip('"')))
     if data.output == detect_mood(data.input[0].strip('"')):
         correct += 1
 
