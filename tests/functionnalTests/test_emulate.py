@@ -1,5 +1,4 @@
 import pytest
-from pydantic import BaseModel
 import re
 from typing import (
     Any,
@@ -115,7 +114,7 @@ class TestTypes:
     def test_NativeMappinDict(self):
         def count_dict(a:dict)->dict:
             """
-            This function returns a dict containing as a key the name of the dict in paramter and as a value his length
+            This function returns a dict of one element containing "count" as key and the count of elements in a as value
             """
             return emulate()
         
@@ -204,13 +203,14 @@ class TestTypes:
         assert type(return_int_set({1, 2, 3})) == set
 
     def test_TypingOptional(self):
-        def return_optional(a: Optional[int]) -> Optional[int]:
+        def return_optional(a: Optional[str]) -> Optional[int]:
             """
-            This function returns either an integer or None
+            This function returns the count of letters in a if a is a king name, otherwise return no value
             """
             return emulate()
         
-        assert type(return_optional(1)) in (int, type(None))
+        assert type(return_optional("Arthur")) is int
+        assert type(return_optional("go have a break")) is type(None)
 
     def test_TypingUnion(self):
         def return_union(a: Union[int, str]) -> Union[int, str]:
