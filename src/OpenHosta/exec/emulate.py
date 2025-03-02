@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Optional, Callable
 
-import asyncio
-
 from ..core.config import Model, DefaultModelPolicy
+from ..core.logger import dialog_logger
 from ..core.hosta_inspector import HostaInspector
 from ..utils.meta_prompt import Prompt
 
@@ -34,15 +33,35 @@ def emulate(
         - Any: The emulated function's return value, processed by the model and optionally modified by post_callback.
     """
     inspection = HostaInspector()
-    return asyncio.run(_emulate(
-        inspection=inspection,
-        model=model,
-        prompt=prompt,
-        use_locals_as_ctx=use_locals_as_ctx,
-        use_self_as_ctx=use_self_as_ctx,
-        post_callback=post_callback,
-        llm_args=llm_args,
-        ))
+    
+    prompt_data = gather_data_for_prompt_template(inspection, use_locals_as_ctx, use_self_as_ctx)
+
+    model, prompt = DefaultModelPolicy.apply_policy(model, prompt, prompt_data)
+
+    prompt_rendered = prompt.render(prompt_data)
+
+    logger = dialog_logger(inspection)
+    logger.set_sys_prompt(prompt_rendered)
+    logger.set_user_prompt(prompt_data["PRE_FUNCTION_CALL"])
+
+    response_dict = model.api_call([
+            {"role": "system", "content": prompt_rendered},
+            {"role": "user", "content": prompt_data["PRE_FUNCTION_CALL"]}
+        ],
+        llm_args=llm_args
+    )
+    
+    logger.set_response_dict(response_dict)
+    
+    untyped_response = model.response_parser(response_dict, inspection._infos)
+    response_data = model.type_returned_data(untyped_response, inspection._infos)
+    
+    logger.set_response_data(response_data)
+    
+    if post_callback is not None:
+        response_data = post_callback(response_data)
+
+    return response_data
 
 
 async def emulate_async(
@@ -71,70 +90,35 @@ async def emulate_async(
         - Any: The emulated function's return value, processed by the model and optionally modified by post_callback.
     """
     inspection = HostaInspector()
-    return await _emulate(
-        inspection=inspection,
-        model=model,
-        prompt=prompt,
-        use_locals_as_ctx=use_locals_as_ctx,
-        use_self_as_ctx=use_self_as_ctx,
-        post_callback=post_callback,
-        llm_args=llm_args,
-        )
-
-async def _emulate(
-        *,
-        inspection:HostaInspector,
-        model: Optional[Model] = None,
-        prompt: Optional[Prompt] = None,
-        use_locals_as_ctx: bool = False,
-        use_self_as_ctx: bool = False,
-        post_callback: Optional[Callable] = None,
-        llm_args = {}
-) -> Any:
-
+    
     prompt_data = gather_data_for_prompt_template(inspection, use_locals_as_ctx, use_self_as_ctx)
 
-    if model is None:
-        model = DefaultModelPolicy.get_model()
-
-    if prompt is None:
-        prompt = DefaultModelPolicy.get_prompt()
+    model, prompt = DefaultModelPolicy.apply_policy(model, prompt, prompt_data)
 
     prompt_rendered = prompt.render(prompt_data)
 
-    logging_object = { 
-        "_last_request": {},
-        "_last_response": {}
-    }
+    logger = dialog_logger(inspection)
+    logger.set_sys_prompt(prompt_rendered)
+    logger.set_user_prompt(prompt_data["PRE_FUNCTION_CALL"])
 
-    inspection.set_logging_object(logging_object)
-
-    logging_object["_last_request"]['sys_prompt']=prompt_rendered
-    logging_object["_last_request"]['user_prompt']=prompt_data["PRE_FUNCTION_CALL"]
+    response_dict = await model.api_call_async([
+            {"role": "system", "content": prompt_rendered},
+            {"role": "user", "content": prompt_data["PRE_FUNCTION_CALL"]}
+        ],
+        llm_args=llm_args
+    )
     
-    try:
-        response_dict = await model.api_call_async([
-                {"role": "system", "content": prompt_rendered},
-                {"role": "user", "content": prompt_data["PRE_FUNCTION_CALL"]}
-            ],
-            llm_args=llm_args
-        )
-        
-        logging_object["_last_response"]["response_dict"] = response_dict
-        
-        l_data = model.response_parser(response_dict, inspection._infos)
-        l_data = model.type_returned_data(l_data, inspection._infos)
-        
-        logging_object["_last_response"]["data"] = l_data
+    logger.set_response_dict(response_dict)
+    
+    untyped_response = model.response_parser(response_dict, inspection._infos)
+    response_data = model.type_returned_data(untyped_response, inspection._infos)
+    
+    logger.set_response_data(response_data)
+    
+    if post_callback is not None:
+        response_data = post_callback(response_data)
 
-        if post_callback is not None:
-            l_data = post_callback(l_data)
-
-    except NameError as e:
-        raise NotImplementedError(
-            f"[emulate]: {e}\nModel object does not have the required methods.")
-
-    return l_data
+    return response_data
 
 
 

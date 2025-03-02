@@ -1,6 +1,5 @@
 import os
 import shutil
-import asyncio
 
 from pathlib import Path
 from typing import Union, Optional, Literal, Callable
@@ -16,8 +15,6 @@ from .predict_memory import PredictMemory, File
 from ...core.config import Model, DefaultModelPolicy
 from ...core.hosta_inspector import HostaInspector, FunctionMetadata
 from ...core.logger import Logger, ANSIColor
-
-
 
 def predict(
     config: PredictConfig = PredictConfig(),
@@ -39,12 +36,12 @@ def predict(
     assert config is not None, "Please provide a valid configuration not None"
 
     inspection = HostaInspector()
-    return asyncio.run(_predict(
+    return _predict(
                 inspection,
                 config,
                 oracle,
                 verbose
-            ))
+            )
 
 async def predict_async(
     config: PredictConfig = PredictConfig(),
@@ -66,7 +63,7 @@ async def predict_async(
     assert config is not None, "Please provide a valid configuration not None"
 
     inspection = HostaInspector()
-    return await _predict(
+    return _predict(
                 inspection,
                 config,
                 oracle,
@@ -74,7 +71,7 @@ async def predict_async(
             )
 
 
-async def _predict(
+def _predict(
     inspection: HostaInspector,
     config: PredictConfig = PredictConfig(),
     oracle: Optional[Union[Model, HostaDataset]] = None,
@@ -95,7 +92,7 @@ async def _predict(
 
     #TODO: is this thread safe?
     if not load_weights(inspection, memory, hosta_model, logger):
-        await train_model(config, memory, hosta_model, oracle, function_metadata, logger)
+        train_model(config, memory, hosta_model, oracle, function_metadata, logger)
 
     if dataset is None:
         dataset = HostaDataset.from_input(function_metadata.f_args, logger, config.max_tokens, function_metadata, memory.dictionary.path)
@@ -215,7 +212,7 @@ def load_weights(inspection: HostaInspector, memory: PredictMemory, hosta_model:
     return False
 
 
-async def train_model(config: PredictConfig,
+def train_model(config: PredictConfig,
                 memory: PredictMemory,
                 model: HostaModel,
                 oracle: Optional[Union[Model, HostaDataset]],
@@ -234,7 +231,7 @@ async def train_model(config: PredictConfig,
 
     else:
         logger.log_custom("Data", "not found", color=ANSIColor.BRIGHT_YELLOW, level=2)
-        train_set, val_set = await prepare_dataset(config, memory, function_metadata, oracle, model, logger)
+        train_set, val_set = prepare_dataset(config, memory, function_metadata, oracle, model, logger)
 
     logger.log_custom("Training", f"epochs: {config.epochs}, batch_size: {config.batch_size}, train_set size: {len(train_set)}, val_set size: {len(val_set)}", color=ANSIColor.BRIGHT_YELLOW, level=2)
 
@@ -252,7 +249,7 @@ async def train_model(config: PredictConfig,
     model.save_weights(memory.weights.path)
 
 
-async def prepare_dataset(config: PredictConfig,
+def prepare_dataset(config: PredictConfig,
                     memory: PredictMemory,
                     function_metadata: FunctionMetadata,
                     oracle: Optional[Union[Model, HostaDataset]],
@@ -273,7 +270,7 @@ async def prepare_dataset(config: PredictConfig,
         dataset = HostaDataset.from_files(path=config.dataset_path, source_type=None, log=logger)
     else :
         logger.log_custom("Dataset", "not found, generate data", color=ANSIColor.BRIGHT_YELLOW, level=2)
-        dataset = await _generate_data(function_metadata, oracle, config, logger)
+        dataset = _generate_data(function_metadata, oracle, config, logger)
         save_path = os.path.join(memory.predict_dir, "generated_data.csv")
         dataset.save(save_path, SourceType.CSV)
         logger.log_custom("Dataset", f"generated and saved at {save_path}", color=ANSIColor.BRIGHT_GREEN, level=2)
@@ -294,7 +291,7 @@ async def prepare_dataset(config: PredictConfig,
     return train_set, val_set
 
 
-async def _generate_data(function_metadata: FunctionMetadata,
+def _generate_data(function_metadata: FunctionMetadata,
                    oracle: Optional[Union[Model, HostaDataset]],
                    config: PredictConfig,
                    logger: Logger) -> HostaDataset:
@@ -303,7 +300,7 @@ async def _generate_data(function_metadata: FunctionMetadata,
     """
     request_amounts = int(config.generated_data / 100) if config.generated_data > 100 else 1
 
-    data = await LLMSyntheticDataGenerator.generate_synthetic_data(
+    data = LLMSyntheticDataGenerator.generate_synthetic_data(
         function_metadata=function_metadata,
         logger=logger,
         request_amounts=request_amounts,

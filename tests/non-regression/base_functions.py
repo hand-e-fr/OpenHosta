@@ -15,15 +15,13 @@ import asyncio
 from OpenHosta import config
 
 PORT=11434
-PORT=11436
-MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{11436}/v1/chat/completions")
+#PORT=11436
+MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/chat/completions")
 MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
-
-#TODO: tester avec json_output = False
-#TODO: tester models r1
+MODEL_NAME = os.environ.get("MODEL_NAME", "gemma2-9b-it")
 
 model=config.Model(
-    model="RTX3060-gemma2:9b",
+    model=MODEL_NAME,
     max_async_calls=10,
     base_url=MODEL_BASE_URL,
     timeout=120, api_key="none",
@@ -60,12 +58,15 @@ increment=thinkof("add one to this number")
 
 assert increment(2) == 3
 
-from OpenHosta import print_last_prompt, print_last_response
+from OpenHosta import print_last_prompt, print_last_response, 
 
+print('Should print "No prompt found for this function."')
 print_last_prompt(increment)
 print_last_response(increment)
 
-assert increment._return_type == int
+from OpenHosta import return_type
+
+assert return_type(increment) == int
 
 rnd_flt=thinkof("return a random float")
 
@@ -73,7 +74,7 @@ assert type(rnd_flt("")) == float
 
 hello_async=thinkof_async("say hello in a foreign language")
 assert "onjour" in asyncio.run(hello_async("french"))
-assert hello_async._return_type == str
+assert return_type(hello_async) == str
 
 from OpenHosta import emulate, emulate_async
 
@@ -95,6 +96,7 @@ sentence = asyncio.run(capitalize_cities("je suis allé à londres et los angele
 
 assert "Londres" in sentence
 
+print("Should print content")
 print_last_prompt(capitalize_cities)
 print_last_response(capitalize_cities)
 
@@ -118,5 +120,5 @@ person_dict = find_people_dict(sentence)
 
 assert all([k in sentence for k in person_dict.keys()])
 
-print_last_prompt(find_people_dict)
-print_last_response(find_people_dict)
+#print_last_prompt(find_people_dict)
+#print_last_response(find_people_dict)

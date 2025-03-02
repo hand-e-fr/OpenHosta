@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.2.1**
+Documentation for version: **2.2.2**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -276,7 +276,18 @@ async def capitalize_cities(sentence:str)->str:
     """
     return await emulate()
 
-sentence = asyncio.run(capitalize_cities("je suis allé à londres et los angeles en juin"))
+# From native python interpreter you shall use asyncio.run
+try:
+  sentence = asyncio.run(capitalize_cities("je suis allé à londres et los angeles en juin"))
+except:
+  print("You are in a notebook or a python interpreter that does not support asyncio.run")
+
+# From Google colab or jupyter
+try:
+  sentence = await capitalize_cities("je suis allé à londres et los angeles en juin")
+except:
+  print("You are in python interpreter that does not support async")
+
 
 print(sentence)
 # 'je suis allé à Londres et Los Angeles en juin'
@@ -581,14 +592,14 @@ print(result)   # 4
 In the example above, we can see two distinct ways of using `thinkof`. In the first example, you can store a lambda function in a variable and then use it. You can also call it directly by enclosing the arguments behind it in brackets. `thinkof` accepts multiple arguments and all types native to python. However, the content of the first bracket is always a string.
 
 The `thinkof` function has an initial pre-compilation stage where it predicts the type of the return value by making an initial call to an LLM. Execution time can therefore be increased the first time using the function, then the type is stored and reused for the next execution.
-You can retrieve the predicted return type with the `_return_type` attribute attached to the object:
+You can retrieve the predicted return type with the `return_type()` function:
 
 ```python
-from OpenHosta import thinkof
+from OpenHosta import thinkof, return_type
 
 x = thinkof("Adds all integers")
 ret = x(2 ,3 ,6)
-print(x._return_type) # int
+print(return_type(x)) # int
 ```
 
 **Note** : ***this feature uses the default model.***
@@ -688,13 +699,13 @@ def detect_mood(message: str) -> Literal["positive", "negative", "neutral"]:
 dataset: HostaDataset = generate_data(detect_mood, 50)
 
 # Save the dataset as a CSV file
-dataset.save_data("detect_mood.csv", SourceType.CSV)
+dataset.save("detect_mood.csv", SourceType.CSV)
 
 # Print each input-output pair in the dataset
 correct = 0
 
 for data in dataset.data:
-    print(f"{data.input[0].strip('"')} expected {data.output} got {detect_mood(data.input[0].strip('"'))}")
+    print(data.input[0].strip('"')+ f"expected {data.output} got " + detect_mood(data.input[0].strip('"')))
     if data.output == detect_mood(data.input[0].strip('"')):
         correct += 1
 
