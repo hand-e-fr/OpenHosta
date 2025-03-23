@@ -114,26 +114,27 @@ def hosta_analyze(frame, function_pointer):
     sig = inspect.signature(function_pointer)
     args_info = inspect.getargvalues(frame)
     args_values = {arg: args_info.locals[arg] for arg in args_info.args}
-    func_name = getattr(self.function_pointer, "__name__")
-    func_params = ", ".join(
-        [
-            (
-                f"{param_name}: {nice_type_name(param.annotation)}"
-                if param.annotation != inspect.Parameter.empty
-                else param_name
-            )
-            for param_name, param in self.sig.parameters.items()
-        ]
-    )
-    if self.sig.return_annotation is inspect.Signature.empty:
-        func_return = ""
-    else:
-        func_return = " -> " + nice_type_name(self.sig.return_annotation)
+    analyse["args_values"] = args_values
+    # func_name = getattr(self.function_pointer, "__name__")
+    # func_params = ", ".join(
+    #     [
+    #         (
+    #             f"{param_name}: {nice_type_name(param.annotation)}"
+    #             if param.annotation != inspect.Parameter.empty
+    #             else param_name
+    #         )
+    #         for param_name, param in self.sig.parameters.items()
+    #     ]
+    # )
+    # if self.sig.return_annotation is inspect.Signature.empty:
+    #     func_return = ""
+    # else:
+    #     func_return = " -> " + nice_type_name(self.sig.return_annotation)
 
-    definition = (
-        f"```python\ndef {func_name}({func_params}){func_return}:\n"
-        f"    \"\"\"{self.function_pointer.__doc__}\"\"\"\n    ...\n```"
-    )    
+    # definition = (
+    #     f"```python\ndef {func_name}({func_params}){func_return}:\n"
+    #     f"    \"\"\"{self.function_pointer.__doc__}\"\"\"\n    ...\n```"
+    # )    
     return analyse
 
 def hosta_inspect(frame):
