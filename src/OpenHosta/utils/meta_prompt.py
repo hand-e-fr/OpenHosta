@@ -82,7 +82,12 @@ Here are some examples of expected input and output:
 {% endif %}{% if PRE_COT %}
 To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
 {{ PRE_COT }}
-{% endif %}                                         
+{% endif %}     
+
+If you need to say anything or assume anything before the JSON output, say it between <think></think> tags this way:
+<think>
+The user might want ...
+</think>                                    
 """)
 
 
