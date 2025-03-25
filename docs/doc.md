@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.2.2**
+Documentation for version: **3.0**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -70,8 +70,6 @@ Let's **get started**! First here's the **table of contents** to help you naviga
   - [Table of Content](#table-of-content)
   - [Get Started](#get-started)
     - [OpenHosta Example](#openhosta-example)
-    - [Install OpenHosta](#install-openhosta)
-    - [Librairie Import](#librairie-import)
     - [Basic Setup](#basic-setup)
   - [Reasoning models](#reasoning-models)
   - [`emulate` Function](#emulate-function)
@@ -129,6 +127,30 @@ def translate(text:str, language:str)->str:
 result = translate("Hello World!", "French")
 print(result)
 ```
+
+```python
+from OpenHosta import emulate
+from dataclasses import dataclass
+
+@dataclass
+class Client:
+  name:str
+  surname:str
+  company:str
+  email:str
+  town:str
+  address:str
+
+
+def extract_client_name(text:str)->Client:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    return emulate()
+
+client1 = extract_client_name("FROM: sebastien@somecorp.com\nTO: shipment@hand-e.fr\nObject: do not send mail support@somecorp.com\n\nto Hello bob, I am Sebastian from Paris, france. Could you send me a sample of your main product? my office address is 3 rue de la république, Lyon 1er")
+print(client1)
+
 
 ### Install OpenHosta
 
