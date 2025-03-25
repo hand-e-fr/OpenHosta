@@ -9,6 +9,24 @@ import sys
 
 
 from OpenHosta import Prompt
+
+# TODO: test all combinations
+# allow_thinking: T/F
+# use_json_mode: T/F
+# chain_of_thought: []
+# examples_database: []
+
+# Trois types de sortie LLM: string, json, python
+# Map: 
+# str -> string
+# dataclass / pydantic -> json
+# int, float, conplex, ...simple tupes... -> string + regexp
+# callable -> python + regexp : test simple var definition + too call
+
+# Input : python code, python repr, json, text
+# Process: english string, python pseudo code 
+# Output: string to regexp, string to json, string to regexp for python call plus data,  
+
 EMULATE_PROMPT=Prompt("""\
 You will act as a simulator for functions that cannot be implemented in actual code.
 I'll provide you with function definitions described in Python syntax. These functions will have no body and may even be impossible to implement in real code, so do not attempt to generate the implementation.
@@ -19,25 +37,27 @@ If the provided information isn't enough to determine a clear answer, respond si
 If assumptions need to be made, ensure they stay realistic, align with the provided description.
 {% if not allow_thinking %}If unable to determine a clear answer or if assumptions need to be made, explain is in between <think></think> tags.{% endif %}
 
+
 Here's the function definition:
 
+
 ```python
-def {function_name}({function_args}){function_return_as_python_type}:
-    \"\"\"{function_doc}\"\"\"
+def {{ function_name }}({{ function_args }}) -> {{ function_return_as_python_type }}:
+    \"\"\"{{ function_doc }}\"\"\"
     ...
-    ...behavior to be simulted...
+    ...behavior to be simulated...
     ...
     return ...appropriate return value...
 ```
                       
 {% if use_json_mode %}As you return the result in JSON format, here's the schema of the JSON object you should return:
-{{ function_return_as_json_schema }}{% endif %}
+{{{ function_return_as_json_schema }}}{% endif %}
                       
 {% if examples_database %}Here are some examples of expected input and output:
-{{ examples_database }}{% endif %}
+{{{ examples_database }}}{% endif %}
 
 {% if chain_of_thought %}To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
-{{ chain_of_thought }}{% endif %}
+{{{ chain_of_thought }}}{% endif %}
 
 {% if allow_thinking %}
 If you need to think first, place your thought within <think></think> before answering like this:
@@ -196,7 +216,7 @@ def hosta_prompt_snippets(analyse):
 
     snippets |= {
     "function_name"                  : analyse["name"],
-    "function_return_as_python_type" : analyse["type"],
+    "function_return_as_python_type" : nice_type_name(analyse["type"]),
     "function_return_as_json_schema" : build_types_as_json_schema(analyse["type"]),
     "function_doc"                   : analyse["doc"],
     }
@@ -279,7 +299,7 @@ def build_parameters_as_prompt(args):
 
 def build_types_as_json_schema(arg_type):
     # TODO: build a JSON schema here
-    return f"<<<json schema for {describe_specific_types(arg_type)}>>"
+    return f"{describe_specific_types(arg_type)}"
 
 def get_hota_inspection(frame):
     function_pointer = identify_function_of_frame(frame)  
@@ -301,32 +321,134 @@ def get_hota_inspection(frame):
 
     return inspection
 
-from OpenHosta import Model
-
-small_2501_mistral = Model(
-        base_url="https://api.mistral.ai/v1/chat/completions",
-        model="mistral-small-2503",
-        api_key="E8tPSJA3XqIq3myFW1OH3r539oSnIMUP"
-        )
 
 USER_CALL_PROMPT = Prompt("""
 {% if variable_declaration %}# Values of parameters to be used
 {{ variable_declaration }}{% endif %}
 {{ function_call_as_python_code }}""")
 
-def emulate():
+def split_cot_answer(response:str) -> tuple[str, str]:
+        """
+        This function split response into rational and answer.
+
+        Special prompt may ask for chain-of-thought or models might be trained to reason first.
+
+        Args:
+            response (str): response from the model.
+
+        Returns:
+            tuple[str, str]: rational and answer.
+        """
+        response = response.strip()
+
+        if response.startswith("<think>") and "</think>" in response:
+            chunks = response[8:].split("</think>")
+            rational = chunks[0]
+            answer = "</think>".join(chunks[1:]) # in case there are multiple </think> tags
+        else:
+            rational, answer = "", response
+        
+        return rational, answer
+
+import json
+
+def response_parser(response_dict:dict) -> dict:
+
+    # if "usage" in response_dict:
+    #     self._used_tokens += int(response_dict["usage"]["total_tokens"])
+
+    response = response_dict["choices"][0]["message"]["content"]
+    reasoning, answer = split_cot_answer(response)
+    print(reasoning)
+    try:
+        l_ret_data = json.loads(answer)
+    except json.JSONDecodeError as e:
+        # If not a JSON, use as is
+        l_ret_data = answer
+
+    return l_ret_data
+
+from OpenHosta import Model
+
+default_model = Model(
+        base_url="https://chat.hand-e.cloud/api/chat/completions",
+        model='mistral-small-2503',#'chatgpt-4o-latest',
+        api_key="sk-2063d493d39544089c3fe31f90d9b468",
+        json_output=False
+        )
+
+def emulate(model=None):
+    global default_model
+    if not model is None:
+        user_model = model
+    else:
+        user_model = default_model
     frame = get_caller_frame()
     inspection = get_hota_inspection(frame)
-    system_prompt_rendered = EMULATE_PROMPT.render(inspection["prompt_snippets"])
-    user_prompt_rendered = EMULATE_PROMPT.render(inspection["prompt_snippets"])
+    print(inspection["prompt_snippets"])
+
+    inspection["prompt_snippets"] |= {
+        "use_json_mode":True,
+        "allow_thinking":True
+        }
     
-    response_dict = small_2501_mistral.api_call([
+    system_prompt_rendered = EMULATE_PROMPT.render(inspection["prompt_snippets"])
+    print(system_prompt_rendered)
+    user_prompt_rendered = USER_CALL_PROMPT.render(inspection["prompt_snippets"])
+    print(user_prompt_rendered)
+
+    response_dict = user_model.api_call([
             {"role": "system", "content": system_prompt_rendered},
             {"role": "user", "content": user_prompt_rendered}
         ]
     )
-    return response_dict
+    untyped_response = response_parser(response_dict)
+    return untyped_response
 
+from typing import Dict
+
+@dataclass
+class Town:
+    country:str
+    long:float
+    lat:float
+
+def find_town(town_name:str, zip:int=None, *, size:int, alt:str=0, population=None) -> Town :
+    """
+    this function return the country and gps location of the town in parameter
+    it also return the second word of alt
+    """
+    global frame
+    frame = sys._getframe(0)
+    return emulate()
+
+r=find_town(town_name="glasgow", size="1M", alt="very long alt name for unused idea of value")
+print(r)
+
+@dataclass
+class Client:
+  name:str
+  surname:str
+  company:str
+  email:str
+  town:str
+  address:str
+
+def extract_client_name(text:str) -> Client:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    return emulate()
+
+client1 = extract_client_name("FROM: sebastien@somecorp.com\nTO: shipment@hand-e.fr\nObject: do not send mail support@somecorp.com\n\nto Hello bob, I am Sebastian from Paris, france. Could you send me a sample of your main product? my office address is 3 rue de la république, Lyon 1er")
+print(client1)
+
+
+
+# Return types:
+# - python: unsafe but better on small models
+# - json: safe but slow and corrupted
+# - raw: of for text only
 
 ### Exmaples
 
@@ -390,16 +512,16 @@ def remember_that(**kwds):
 ### function:
 # - function pointer equals binder
 
-def my_function(b, arg, *, dd, fd=5, toto=44):
+def find_country_of_town(town_name, zip=None, *, size, alt=0, population=None) -> str:
     """
-    This is my function that does simple things
+    this function return the country of the town in parameter
     """
     return emulate()
 
-my_function(44, "rr", dd=4)
+find_country_of_town(town_name="glasgow", size="1M")
 
-toto=my_function
-toto(45, "rdsd", dd=4)
+# toto=find_country_of_town
+# toto(45, "rdsd", dd=4)
 
 ### Object Method
 
