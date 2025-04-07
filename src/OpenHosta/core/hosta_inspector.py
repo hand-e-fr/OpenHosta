@@ -1,410 +1,149 @@
-from __future__ import annotations
-
-from typing import List, Optional
-from typing import Tuple, Callable, Optional, Dict, Any, Union
-from types import FrameType, CodeType, MethodType
-
-import hashlib
+import sys
 import inspect
 
-from .analizer import FuncAnalizer
-from ..utils.errors import InvalidStructureError
-from ..utils.hosta_type import MemoryNode, MemKey, MemValue, ExampleType, CotType
+from types import FrameType, MethodType, FunctionType
+
 from ..utils.errors import FrameError
+from ..core.analizer import hosta_analyze, hosta_analyse_update, hosta_prompt_snippets
 
-all = (
-    "HostaInspector"
-)
-
-class HostaInspector:
+def identify_function_of_frame(function_frame):
     """
-    HostaInspector is a class that provides functionality for analyzing
-    and storing information about the calling function.
+    frame -> code -> function
 
-    This class uses introspection to gather details
-    about the callable that called the function that instantiated it.
+    We need to find the function pointer in order to store OpenHosta inspection object
+    The main advantage over a centralized list is that this object will be deleted 
+    a the same time than the associated function. Keeping a centrelized list would
+    induce deletion issues.
 
-    If many function instantiate it for the same callable, the first function will create
-    an instance and attach it to the callable so that the next function can retrieve it.
+    """
+    
+    function_code = function_frame.f_code
+    function_name = function_frame.f_code.co_name
+    function_pointer = None # This is to be found by the code below
+
+    # First we look in every parent frame if the function exists there
+
+    look_for_function_in_frame = function_frame.f_back
+    while isinstance(look_for_function_in_frame, FrameType):
+        
+        for candidate_obj in look_for_function_in_frame.f_locals.values():
+            # Use try catch as With Flask we found some strange behaviors for some candidate_obj
+            try:
+                # This is in case function exists in the caller stack
+                if callable(candidate_obj) and hasattr(candidate_obj, "__code__"):
+                    if candidate_obj.__code__ is function_code:
+                        function_pointer = candidate_obj
+                        break
+
+            except Exception as e:
+                raise FrameError("This is the strange error with Flask", e)
+        
+        look_for_function_in_frame = look_for_function_in_frame.f_back
+    
+    # Then look at the object in case we are a method of class
+    if function_pointer is None:
+        args_info = inspect.getargvalues(function_frame)
+        if len(args_info.args) > 0:
+
+            # first_arg_name should be 'self', 'cls' or any funny names)
+            first_arg_name = args_info.args[0]
+            
+            # We get the first argument and check if is is a class 
+            first_argument = args_info.locals[first_arg_name]
+            
+            # If the class has an attribute with our name, there is a good chance it is us
+            bound_function = getattr(first_argument, function_name, None)
+            if bound_function:
+                if isinstance(bound_function, MethodType):
+                    function_pointer = bound_function.__func__
+                else:
+                    # If function is a @staticmethod it does not have class as 
+                    # first argument. But it was found by last part below.
+                    pass
+
+    # Finally we look in every parent frame if an object has the function
+    # This is mainly for @staticmethod
+
+    look_for_function_in_frame = function_frame.f_back
+    while isinstance(look_for_function_in_frame, FrameType):
+        
+        for candidate_obj in look_for_function_in_frame.f_locals.values():
+            # Use try catch as With Flask we found some strange behaviors for some candidate_obj
+            try:
+                # This is in case function was declared as @staticmethod
+                if callable(candidate_obj) and hasattr(candidate_obj, function_name):
+                    candidate_function = getattr(candidate_obj, function_name)
+                    if isinstance(candidate_function, FunctionType) and \
+                        candidate_function.__code__ is function_code:
+                        function_pointer = candidate_function
+                        break
+
+            except Exception as e:
+                raise FrameError("This is the strange error with Flask", e)
+        
+        look_for_function_in_frame = look_for_function_in_frame.f_back
+
+    # Try in globals if not found in parent frames 
+    if function_pointer is None:
+        function_pointer = function_frame.f_globals.get(function_name, None)
+    
+    # In case there is a wrapper for class or global defined function
+    if not function_pointer is None:
+        function_pointer = inspect.unwrap(function_pointer) 
+
+    if not function_pointer is None and \
+       not function_pointer.__code__ is function_code:
+        raise FrameError(f"We thought that we had found {function_name} but it is not the good one!")
+
+    if function_pointer is None:
+        raise Exception("Unable to find function for inspection")
+
+    return function_pointer
+
+def get_caller_frame():
+    try:
+        frame = sys._getframe(2)
+    except ValueError as e:
+        raise FrameError("get_caller_frame shall not be called from outsite of exec functions")
+    
+    return frame
+
+def get_hota_inspection(frame):
+    function_pointer = identify_function_of_frame(frame)  
+    inspection = getattr(function_pointer, "hosta_inspection", None)
+    
+    if inspection == None:
+        analyse = hosta_analyze(frame, function_pointer)
+        inspection = {
+            "function":function_pointer,
+            "frame": frame,
+            "analyse": analyse,
+            "logs": {},
+            "counters": {},
+            "prompt_data":{},
+            "pipe": None
+        }
+        setattr(function_pointer, "hosta_inspection", inspection)
+    else:
+        hosta_analyse_update(frame, inspection["analyse"])
+
+    inspection["prompt_data"] = hosta_prompt_snippets(inspection["analyse"])
+
+    return inspection
+
+def get_last_frame(function_pointer):
+    """
+    Find the last frame of an Hosta function.
+    This is usefull when debugging prompts.
+
+    If the function was never called, return None.
     """
 
-    def __new__(cls, *args, **kwargs) -> HostaInspector:
-        """
-        Create a new instance of Hosta or return the existing one if already created.
+    inspection = getattr(function_pointer, "hosta_inspection", None)
 
-        This method implements the singleton pattern, ensuring only one instance of Hosta exists.
-        It also handles the initialization of the instance when first created.
+    if inspection == None:
+        frame = None
+    else:
+        frame = inspection["frame"]
 
-        Returns:
-            Hosta: The single instance of the Hosta class.
-        """
-        caller_function, caller_frame = cls._find_caller_function()
-        
-        if caller_function is None:
-            raise InvalidStructureError(
-                "[HostaInspector.__new__] The function {} must be called in a function/method."
-                .format(cls._find_caller_function(back_level=2)[0].__name__)
-            )
-        
-        if hasattr(caller_function, "hosta_data"):
-            hosta_inspection, = caller_function.hosta_inspection
-            hosta_inspection._update_call()
-        else:
-            hosta_inspection = super(HostaInspector, cls).__new__(cls)
-            hosta_inspection.caller_function = caller_function
-            hosta_inspection.caller_frame = caller_frame
-            cls.attach(caller_function, {"hosta_inspection": hosta_inspection})
-
-        return hosta_inspection
-
-    def __init__(self, caller_function=None, caller_frame=None):
-        """
-        Initialize the Hosta instance.
-
-        This method is called after __new__ and sets up the instance attributes.
-        It also triggers the function analysis if caller_analysis is True.
-
-        Args:
-            caller_analysis (bool): If True, analyze the calling function. Defaults to True.
-        """
-        # Set by __new__()
-        # print("caller_function: ",self.caller_function)
-        # print("caller_frame: ",self.caller_frame)
-
-        self._infos = FunctionMetadata()
-        self._get_infos_func()
-
-    def _get_infos_func(self) -> None:
-        """
-        Analyze and store information about the calling function.
-
-        This method uses FuncAnalizer to extract various details about the function
-        that called the Hosta instance, including its name, definition, call signature,
-        arguments, types, and local variables. This informations are useful in all OpenHosta's function.
-
-        The extracted information is stored in the _infos attribute of the instance.
-        """
-        analizer = FuncAnalizer(self.caller_function, self.caller_frame)
-        self._infos.f_obj  = self.caller_function
-        self._infos.f_name = self.caller_function.__name__
-        self._infos.f_doc  = self.caller_function.__doc__
-        self._infos.f_def                        = analizer.func_def
-        self._infos.f_call, self._infos.f_args   = analizer.func_call
-        self._infos.f_type                       = analizer.func_type
-        self._infos.f_locals, self._infos.f_self = analizer.func_locals
-        self._infos.f_schema                     = analizer.func_schema
-        self._infos.f_sig                        = analizer.sig
-        
-    def _update_call(self):
-        analizer = FuncAnalizer(self.caller_function, self.caller_frame)
-        self._infos.f_call, self._infos.f_args = analizer.func_call
-        return self
-        
-
-    def _bdy_add(self, key: MemKey, value: MemValue) -> None:
-        """
-        Add a new memory node to the function's memory.
-
-        This method creates a new MemoryNode with the given key and value,
-        and appends it to the function's memory list. If the memory list
-        doesn't exist, it initializes it.
-
-        Args:
-            key (MemKey): The type of memory node ('ex', 'cot', or 'use').
-            value (MemValue): The value to be stored in the memory node.
-        """
-        seen: List[MemKey] = []
-
-        if self._infos.f_mem is None:
-            self._infos.f_mem = []
-            mem_id = 0
-        else:
-            mem_id = 0
-            for node in self._infos.f_mem:
-                if node.key == key:
-                    mem_id += 1
-        new = MemoryNode(key=key, id=mem_id, value=value)
-        self._infos.f_mem.append(new)
-        previous = new
-        for node in self._infos.f_mem:
-            if node.key not in seen:
-                seen.append(node.key)
-                previous = node
-            elif node.key in seen and node.key == previous.key:
-                previous = node
-            else:
-                raise InvalidStructureError(
-                    "[Hosta._bdy_add] Inconsistent function structure. Place your OpenHosta functions per block.")
-
-    def _bdy_get(self, key: MemKey) -> List[MemoryNode]:
-        """
-        Retrieve memory nodes of a specific type from the function's memory.
-
-        This method searches through the function's memory list and returns
-        all nodes that match the given key.
-
-        Args:
-            key (MemKey): The type of memory node to retrieve ('ex', 'cot', or 'use').
-
-        Returns:
-            List[MemoryNode]: A list of memory nodes matching the key, or None if no matches are found.
-        """
-        l_list: List[MemoryNode] = []
-
-        if self._infos.f_mem is None:
-            return None
-        for node in self._infos.f_mem:
-            if node.key == key:
-                l_list.append(node)
-        return l_list if l_list != [] else None
-    
-    def set_logging_object(self, logging_object: object) -> None:
-        self.attach(self._infos.f_obj, logging_object)
-
-    @property
-    def example(self) -> Optional[List[ExampleType]]:
-        """
-        Retrieve all example nodes from the function's memory.
-
-        This property method uses _bdy_get to fetch all memory nodes with the 'ex' key.
-
-        Returns:
-            Optional[List[ExampleType]]: A list of example nodes, or None if no examples are found.
-        """
-        nodes = self._bdy_get(key="ex")
-        return [node.value for node in nodes] if nodes else []
-
-    @property
-    def cot(self) -> Optional[List[CotType]]:
-        """
-        Retrieve all chain-of-thought (cot) nodes from the function's memory.
-
-        This property method uses _bdy_get to fetch all memory nodes with the 'cot' key.
-
-        Returns:
-            Optional[List[CotType]]: A list of chain-of-thought nodes, or None if no cot nodes are found.
-        """
-        nodes = self._bdy_get(key="cot")
-        return [node.value for node in nodes] if nodes else None
-
-    @property
-    def infos(self):
-        return self._infos
-
-    @staticmethod
-    def hash_func(function_metadata: FunctionMetadata) -> str:
-        """
-        Generate a hash value for a function without use builtin python hash function.
-
-        This method generates a hash value for a function using a custom algorithm
-        Hashed by function_metadata.f_doc, function_metadata.f_def, function_metadata.f_call, function_metadata.f_args, function_metadata.f_type, function_metadata.f_schema, function_metadata.f_locals, function_metadata.f_self
-
-        Args:
-            function_metadata (object): The function to hash.
-
-        Returns:
-            str: The hash value of the function.
-        """
-        return hashlib.md5(
-            str(function_metadata.f_def).encode() +
-            str(function_metadata.f_type).encode()
-        ).hexdigest()
-    
-    @staticmethod
-    def _find_caller_function(*, back_level: int = 3) -> Tuple[Union[Callable, MethodType], FrameType]:
-        """
-        Retrieves the callable object and the frame from which this method is called.
-
-        This method navigates up the call stack to find the function or method that called it.
-        It can retrieve the callable object from both class methods and standalone functions.
-
-        This method uses introspection to examine the call stack and local variables.
-        It may not work correctly in all execution environments or with all types of callable objects.
-
-        Args:
-            - back_level (int, optional): The number of frames to go back in the call stack. 
-                Defaults to 2. Must be a non-zero positive integer.
-
-        Returns:
-            Tuple[Callable, FrameType]: A tuple containing:
-                - The callable object (function or method) that called this method.
-                - The frame object of the caller.
-        """
-        if back_level <= 0 or not isinstance(back_level, int):
-            raise ValueError(
-                f"[HostaInspector._extend] back_level must a non-zero positive integers.")
-
-        def _get_obj_from_class(caller: FrameType) -> Optional[Callable]:
-            """
-            Search for the callable object when it is called within a class method.
-
-            This function attempts to retrieve the method from the 'self' object
-            in the caller's local variables. It's designed for internal use only, 
-            within the _extend method.
-
-            Args:
-                caller (FrameType): The frame object of the calling method.
-
-            Returns:
-                Callable: The unwrapped method object if found, otherwise None.
-            """
-            function_pointer: Union[Callable, MethodType]
-
-            obj = caller.f_locals["self"]
-            function_pointer = getattr(obj, caller_name, None)
-            return inspect.unwrap(function_pointer) if function_pointer else None
-
-        def _get_obj_from_func(
-            caller: FrameType,
-            code: CodeType,
-            name: str
-        ) -> Optional[Callable]:
-            """
-            Search for the callable object when it is called within a function.
-
-            This function traverses the call stack, examining local and global variables
-            to find the function that matches the given code object. It's designed for
-            internal use only, within the _extend method.
-
-            Args:
-                - caller (FrameType): The frame object of the calling function.
-                - code (CodeType): The code object of the calling function.
-                - name (str): The name of the calling function.
-
-            Returns:
-                Callable: The unwrapped function object if found, otherwise None.
-            """
-            function_pointer: Union[Callable, MethodType]
-            l_caller: FrameType = caller
-
-            while not l_caller.f_back is None:
-                for obj in l_caller.f_back.f_locals.values():
-                    try:
-                        if hasattr(obj, "__code__"):
-                            if obj.__code__ == code:
-                                return obj
-                    except:
-                        continue
-                l_caller = l_caller.f_back
-            function_pointer = caller.f_globals.get(name)
-            return inspect.unwrap(function_pointer) if function_pointer else None
-
-        function_pointer: Union[Callable, MethodType]
-        current: Optional[FrameType] = inspect.currentframe()
-
-        if current is None:
-            raise FrameError(
-                f"[HostaInspector._extend] Current frame can't be found")
-        for k in range(back_level):
-            current = current.f_back
-            if current is None:
-                raise FrameError(
-                    f"[HostaInspector._extend] Frame can't be found (level: {k})")
-
-        caller = current
-        caller_name = caller.f_code.co_name
-        caller_code = caller.f_code
-        caller_args = inspect.getargvalues(caller)
-
-        is_likely_method = "self" in caller.f_locals or\
-            'cls' in caller.f_locals or\
-            (caller_args.args and caller_args.args[0] in ['self', 'cls'])
-        if is_likely_method:
-            function_pointer = _get_obj_from_class(caller)
-        else:
-            function_pointer = _get_obj_from_func(caller, caller_code, caller_name)
-
-        if function_pointer is not None and not callable(function_pointer):
-            raise FrameError(
-                "[HostaInspector._extend] The foud object isn't a callable.")
-
-        return function_pointer, caller
-
-    @staticmethod
-    def attach(obj: Callable, attr: Dict[str, Any]) -> Optional[bool]:
-        """
-        Attaches attributes to a function or method.
-
-        This method attempts to add new attributes to a callable object (function or method).
-        For methods, it attaches the attributes to the underlying function object.
-        Only supports attaching to functions and methods. Other callable types will raise an AttributeError.
-
-        Args:
-            - obj (Callable): The function or method to which the attribute will be attached.
-            - attr (Dict[str, Any]): The dictionary of the attributes to attach.
-
-        Return:
-            Optional[bool]: Returns True if the attribute was successfully attached, raise an Exception otherwise. 
-        """
-        if not callable(obj) or not isinstance(attr, dict):
-            raise ValueError("[HostaInspector._attach] Invalid arguments")
-
-        def attr_parser(obj: Callable, attr: Dict[str, Any]) -> None:
-            for key, value in attr.items():
-                setattr(obj, key, value)
-
-        if inspect.ismethod(obj):
-            if hasattr(obj, "__func__"):
-                attr_parser(obj.__func__, attr)
-                return True
-            raise AttributeError(
-                f"[HostaInspector._attach] Failed to attach attributs. \"__func__\" attribut is missing.")
-        
-        elif inspect.isfunction(obj):
-            attr_parser(obj, attr)
-            return True
-        
-        raise AttributeError(
-            f"[HostaInspector._attach] Failed to attach attributs. Object's type not supported: {type(obj)}.")
-
-
-        
-class FunctionMetadata:
-    """
-    FunctionMetadata is an object representing a function's metadata.
-    Useful for the executive functions and the post-processing.
-    """    
-    f_obj: Optional[object] = None
-    
-    # Simple definition of the function, e.g., 'def func(a:int, b:str)->int:'
-    f_def: str = ""
-    
-    # Name of the function, e.g., 'func'
-    f_name: str = ""
-    
-    # Documentation of the function, e.g., 'This function returns the sum of two integers.' 
-    f_doc: str = ""
-    
-    # Actual call of the function, e.g., 'func(1, 'hello')'
-    f_call: str = ""
-    
-    # Arguments of the function, e.g., {'a': 1, 'b': 'hello'}
-    f_args: Dict[str, Any] = {}
-    
-    # Desired type of the _inputs and outputs of the function
-    f_type: Tuple[List[Any], Any] = ([], None)
-    
-    # Dictionary describing the function's return type (in case of pydantic).
-    f_schema: Dict[str, Any] = {}
-    
-    # Signature of the function
-    f_sig: Optional[inspect.Signature] = None
-    
-    # Local variables within the function's scope
-    f_locals: Optional[Dict[str, Any]] = None
-    
-    # Memory nodes associated with the function, contains examples, chain of thought...
-    f_self: Optional[Dict[str, Any]] = None
-    
-    f_mem: Optional[List[MemoryNode]] = None
-
-
-all = (
-    "FuncAnalizer",
-    "UseType",
-    "MemKey",
-    "MemValue",
-    "MemoryNode",
-    "FunctionMetadata"
-)
-
+    return frame

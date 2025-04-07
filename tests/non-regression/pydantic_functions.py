@@ -22,7 +22,7 @@ MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/cha
 MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gemma2-9b-it")
 
-model=config.Model(
+model=config.OpenAICompatibleModel(
     model=MODEL_NAME,
     max_async_calls=10,
     base_url=MODEL_BASE_URL,
@@ -40,10 +40,10 @@ config.set_default_model(model)
 
 from OpenHosta import emulate
 
-from pydantic import BaseModel, Field
+from pydantic import DialogueModel, Field
 from typing import List, Dict, Optional
 
-class Person(BaseModel):
+class Person(DialogueModel):
     name: str = Field(..., description="The full name (Firstname and Sirname ) of the person")
     age: Optional[int] = None
     birth_city: Optional[str] = None

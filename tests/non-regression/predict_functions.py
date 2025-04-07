@@ -20,7 +20,7 @@ MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/cha
 MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
 MODEL_NAME = os.environ.get("MODEL_NAME", "gemma2-9b-it")
 
-model=config.Model(
+model=config.OpenAICompatibleModel(
     model=MODEL_NAME,
     max_async_calls=10,
     base_url=MODEL_BASE_URL,

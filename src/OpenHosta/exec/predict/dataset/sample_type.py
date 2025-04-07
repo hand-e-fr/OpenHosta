@@ -1,6 +1,6 @@
 from typing import List, Any, Optional
 
-# from pydantic import BaseModel
+# from pydantic import DialogueModel
 
 
 class Sample:
@@ -36,9 +36,9 @@ class Sample:
     def _flatten_data(self, data: Any) -> List[Any]:
         """
         Flatten any nested data structure into a list.
-        Handles: BaseModel, dict, list/tuple, primitive types
+        Handles: DialogueModel, dict, list/tuple, primitive types
         """
-        # if isinstance(data, BaseModel):
+        # if isinstance(data, DialogueModel):
         #     return self._flatten_data(data.model_dump())
         if isinstance(data, dict):
             result = []

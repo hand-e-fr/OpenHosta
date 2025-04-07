@@ -19,7 +19,7 @@ MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/cha
 MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
 MODEL_NAME = os.environ.get("MODEL_NAME", "DeepSeek-R1-huggingface")
 
-model=config.Model(
+model=config.OpenAICompatibleModel(
     model="DeepSeek-R1-huggingface",
     json_output=False,
     timeout=120, # 2 minutes, reasoning models can be slow

@@ -20,7 +20,7 @@ All significant changes to this project will be documented in this file.
 
 - **Fixes**
   - #195 fix Bug with pydantic import
-  - #199 improve pydantic return type support for List[BaseModel] and Dict[..., BaseModel]
+  - #199 improve pydantic return type support for List[DialogueModel] and Dict[..., DialogueModel]
 
 ## **v2.1.5**
 - **Fixes**
@@ -42,7 +42,7 @@ All significant changes to this project will be documented in this file.
 
 ## **v2.1.3**
 - **Features**
-  - Added `additionnal_headers` in `Model` to add specific values in the header of the request send to the API.
+  - Added `additionnal_headers` in `OpenAICompatibleModel` to add specific values in the header of the request send to the API.
   - `ask` can now be used without specify the `user` parameter name.
 
 - **Fixes**
@@ -57,7 +57,7 @@ All significant changes to this project will be documented in this file.
 
 ## **v2.1.2**
 - **Doc**
-  - Fix the example for the custom Model class with a Llama Model
+  - Fix the example for the custom OpenAICompatibleModel class with a Llama OpenAICompatibleModel
 
 - **Fixes**
   - Remove the PIL dependency
@@ -67,7 +67,7 @@ All significant changes to this project will be documented in this file.
   - Changed examples syntax in the system prompt for better performances.
 
 - **Doc**
-  - Added an example for a custom Model class with an Llama model.  
+  - Added an example for a custom OpenAICompatibleModel class with an Llama model.  
 
 ## **v2.0-beta2**
 - **Added**
@@ -131,7 +131,7 @@ All significant changes to this project will be documented in this file.
 ## **v1.1.1** 10/07/24
 
 - **Features**
-  - Added `_last_request` attributs to the `Model` object
+  - Added `_last_request` attributs to the `OpenAICompatibleModel` object
 
 - **Optimization**
   - Reduce the `emulate`'s user prompt to only the function call string and move the rest in the system prompt.
@@ -179,7 +179,7 @@ All significant changes to this project will be documented in this file.
   - the `emulate` function is now decorator-resistant.
   - The function `config.set_default_model` works now w/ `config.set_default_apiKey`
   - `thought` function now accept multiple arguments
-  - `suggest` and `analytics` call now th LLM with `Model` class (`ai_call`)
+  - `suggest` and `analytics` call now th LLM with `OpenAICompatibleModel` class (`ai_call`)
   - `emulate` works now in a nested function.
   - Added Flask compatibility
   

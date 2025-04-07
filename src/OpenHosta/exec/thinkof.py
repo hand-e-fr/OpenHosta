@@ -4,11 +4,11 @@ import json
 
 from pydoc import locate
 
-from ..core.config import DefaultModelPolicy
+from ..core.config import _DefaultModelPolicy
 from ..core.hosta_inspector import FunctionMetadata
 from ..core.logger import dialog_logger
+from ..core.meta_prompt import THOUGHT_PROMPT
 from ..utils.errors import RequestError
-from ..utils.meta_prompt import THOUGHT_PROMPT
 
 def return_type(func):
 
@@ -30,7 +30,7 @@ def gather_data_for_prompt_template(
     return user_prompt_data
 
 def guess_type(key: str, *args) -> object:
-    l_default = DefaultModelPolicy.get_model()
+    l_default = _DefaultModelPolicy.get_model()
     
     l_user_prompt = (
         "Function behavior: "
@@ -107,7 +107,7 @@ async def build_function_async(model, prompt, inner_func, query_string, args, kw
         prompt_data = gather_data_for_prompt_template(_infos)
         prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function('" + "', '".join(_infos.f_call) + "')"
         
-        _model, _prompt = DefaultModelPolicy.apply_policy(_model, _prompt, prompt_data)
+        _model, _prompt = _DefaultModelPolicy.get_conversation(_model, _prompt, prompt_data)
 
         prompt_rendered = _prompt.render(prompt_data)
 
@@ -140,7 +140,7 @@ def build_function(model, prompt, inner_func, query_string, args, kwargs, llm_ar
         prompt_data = gather_data_for_prompt_template(_infos)
         prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function('" + "', '".join(_infos.f_call) + "')"
         
-        _model, _prompt = DefaultModelPolicy.apply_policy(_model, _prompt, prompt_data)
+        _model, _prompt = _DefaultModelPolicy.get_conversation(_model, _prompt, prompt_data)
 
         prompt_rendered = _prompt.render(prompt_data)
 
