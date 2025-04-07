@@ -33,7 +33,7 @@ api_key = "sk-2063d493d39544089c3fe31f90d9b468"
 
 
 #from OpenHosta.utils.meta_prompt import EMULATE_PROMPT
-from OpenHosta.utils.meta_prompt import Prompt
+from OpenHosta.core.meta_prompt import Prompt
 EMULATE_PROMPT=Prompt("""\
 ## Context
 
@@ -99,9 +99,9 @@ The user might want ...
 </think>                                    
 """)
 
-from OpenHosta import Model, config
+from OpenHosta import OpenAICompatibleModel, config
 
-model = Model(
+model = OpenAICompatibleModel(
     model=ModelList[0],
     base_url=base_url,
     api_key=api_key,
@@ -123,8 +123,8 @@ def add_two(some_number:str)->int:
     """
     return emulate(prompt=EMULATE_PROMPT)
 
-config.DefaultModelPolicy.model.model = 'chatgpt-4o-latest'
-config.DefaultModelPolicy.model.json_output = False
+config._DefaultModelPolicy.model.model = 'chatgpt-4o-latest'
+config._DefaultModelPolicy.model.json_output = False
 add_two("cinq")
 inspection = add_two.hosta_inspection
 

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from .core import config
-from .core.config import Model, DefaultModelPolicy
 from .core.type_converter import TypeConverter, FunctionMetadata
 
 from .core.logger import print_last_prompt, print_last_response
 from .utils.import_handler import is_predict_enabled
-from .utils.meta_prompt import Prompt
+from .core.meta_prompt import MetaPrompt
 
 from .exec.ask import ask, ask_async
 from .exec.thinkof import thinkof, thinkof_async, return_type
@@ -28,10 +26,6 @@ else:
 
 import os
 
-DefaultModelPolicy.set_default_model(
-    Model(model="gpt-4o", base_url="https://api.openai.com/v1/chat/completions")
-)
-
 all = (
     "config",
     "emulate",
@@ -43,7 +37,7 @@ all = (
     "ask_async",
     "example",
     "thought",
-    "Prompt",
+    "MetaPrompt",
     "print_last_prompt",
     "print_last_response",
     "generate_data",

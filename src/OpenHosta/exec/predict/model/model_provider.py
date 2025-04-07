@@ -22,7 +22,7 @@ class HostaModelProvider:
                 input_size += type_size(arg, config.max_tokens)
 
         output_size = type_size(function_metadata.f_type[1], config.max_tokens)
-        logger.log_debug(f"Model with input size {input_size} and output size {output_size}", level=2)
+        logger.log_debug(f"DialogueModel with input size {input_size} and output size {output_size}", level=2)
 
         hosta_model: Optional[HostaModel] = None
         model_type = determine_model_type(function_metadata)
@@ -33,9 +33,9 @@ class HostaModelProvider:
         elif model_type == ArchitectureType.CLASSIFICATION:
             hosta_model = Classification(architecture, input_size, output_size, config, logger)
         else:
-            raise ValueError(f"Model type {model_type} not supported")
+            raise ValueError(f"DialogueModel type {model_type} not supported")
 
-        logger.log_custom("Model", f"Type : {type(hosta_model).__name__}", color=ANSIColor.BLUE_BOLD)
+        logger.log_custom("DialogueModel", f"Type : {type(hosta_model).__name__}", color=ANSIColor.BLUE_BOLD)
 
 
         if architecture is None:

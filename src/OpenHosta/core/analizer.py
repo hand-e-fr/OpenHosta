@@ -1,53 +1,39 @@
-from __future__ import annotations
 
-from typing import (
-    Any,
-    Dict,
-    get_args,
-    get_origin,
-    Union,
-    List,
-    Tuple,
-    Mapping,
-    Sequence,
-    Collection,
-    Literal,
-    Final,
-    Type,
-    ClassVar,
-    Protocol,
-    AnyStr,
-    ByteString,
-    Set,
-    FrozenSet,
-    AbstractSet,
-    Optional,
-    Callable,
-    OrderedDict,
-    TypeVar
-)
-from sys import version_info
-from types import MethodType
 import inspect
-from types import FrameType
-from typing import Callable, Tuple, List, Dict, Any, Optional, Type, _SpecialGenericAlias
+from typing import _alias
+from dataclasses import is_dataclass
 
-from .pydantic_stub import get_pydantic_schema
+def hosta_analyse_update(frame, analyse):
+    args_info = inspect.getargvalues(frame)
+    analyse["args"] = [{"name":a["name"], "value":args_info.locals[a["name"]], "type":a["type"]} for a in analyse["args"]] 
+    return analyse
 
-if version_info.major == 3 and version_info.minor > 9:
-    from types import NoneType
-else:
-    NoneType = type(None)
+def hosta_analyze(frame, function_pointer):
+    sig = inspect.signature(function_pointer)
+    args_info = inspect.getargvalues(frame)
+    
+    result_args_value_table = [{
+        "name":arg, 
+        "value": args_info.locals[arg], 
+        "type":sig.parameters[arg].annotation} for arg in args_info.args]
+    
 
-all = (
-    "FuncAnalizer"
-)
+    result_function_name = function_pointer.__name__
+    result_return_type = sig.return_annotation
+    result_docstring = function_pointer.__doc__
+
+    return {
+        "name": result_function_name,
+        "args": result_args_value_table,
+        "type": result_return_type,
+        "doc":  result_docstring
+    }
 
 def nice_type_name(obj) -> str:
     """
     Get a nice name for the type to insert in function description for LLM.
     """
-    if type(obj) is _SpecialGenericAlias:
+    if type(obj) is _alias:
         t=obj.__repr__()
         t=t.replace("typing.", "")
         return t
@@ -57,252 +43,91 @@ def nice_type_name(obj) -> str:
 
     return str(obj)
 
-class FuncAnalizer:
-    """
-    A class for inspecting the signature, definition, and call information of a function.
 
-    Args:
-        function_pointer (Callable): The function to inspect.
+def hosta_prompt_snippets(analyse):
+    snippets = build_parameters_as_prompt(analyse["args"])
 
-    Attributes:
-        function_pointer (Callable): The function to inspect.
-        sig (Signature): The signature of the function.
-    """
+    snippets |= {
+    "function_name"                  : analyse["name"],
+    "function_return_as_python_type" : nice_type_name(analyse["type"]),
+    "function_return_as_json_schema" : build_types_as_json_schema(analyse["type"]),
+    "function_doc"                   : analyse["doc"],
+    }
 
-    def __init__(self, function_pointer: Union[Callable, MethodType] | None, caller_frame: FrameType | None):
-        """
-        Initialize the function inspector with the given function.
+    python_call = "{function_name}({call_arguments})".format(**snippets)
+    
+    return snippets | {
+        "function_call_as_python_code" : python_call,
+    }
 
-        Args:
-            function_pointer (Callable): The function to inspect.
-            caller_frame (FrameType): The function's frame in which it is called.
-        """
-        try:
-            self.function_pointer = function_pointer
-            self.sig = inspect.signature(function_pointer)
-            _, _, _, self.values = inspect.getargvalues(caller_frame)
-        except Exception as e:
-            raise AttributeError(
-                f"[_FuncInspector.__init__] Invalid arguments:\n{e}")
+def describe_specific_types(arg_type):
+    # TODO: add pydantic types
+    type_definition = None
+    if arg_type in vars(__builtins__).values() or\
+        type(arg_type) is _alias or\
+            arg_type == type:
+        print("Ignore type", arg_type)
+        # This is generic type. Assume it is known. 
+        pass
 
-    @property
-    def func_def(self) -> str:
-        """
-        Build the string representing the function's definition.
+    elif is_dataclass(arg_type):
+        type_definition=f"""\
+python class {arg_type.__name__} is defines as a @dataclass:
+{arg_type.__doc__}
+"""       
+    elif hasattr(arg_type, '__annotations__')  and \
+            not arg_type.__annotations__ is inspect._empty:
+        type_definition=f"""\
+python class {arg_type.__name__} has this annotation:
+{arg_type.__annotations__}
+"""
+    else:
+        # Unknwon types
+        raise Exception(f"Unknwon type ({arg_type}). Please use another type.")
 
-        Returns:
-            The string representing the function's definition.
-        """
-        func_name = getattr(self.function_pointer, "__name__")
-        func_params = ", ".join(
-            [
-                (
-                    f"{param_name}: {nice_type_name(param.annotation)}"
-                    if param.annotation != inspect.Parameter.empty
-                    else param_name
-                )
-                for param_name, param in self.sig.parameters.items()
-            ]
-        )
-        
-        if self.sig.return_annotation is inspect.Signature.empty:
-            func_return = ""
+    return type_definition
+
+
+def build_parameters_as_prompt(args):
+    variable_definition_list = []
+    type_definition_list = []
+    inline_string_list = []
+    call_string_list = []
+    
+    for a in args:
+        name, value, arg_type = a["name"], a["value"], a["type"]
+        str_arg = name
+        call_arg = name
+        if arg_type is inspect._empty:
+            pass
         else:
-            func_return = " -> " + nice_type_name(self.sig.return_annotation)
+            str_arg += ": "+nice_type_name(arg_type) 
+            print(name, value, arg_type)
+            specifig_type_doc = describe_specific_types(arg_type)
+            if not specifig_type_doc is None:
+                type_definition_list.append(specifig_type_doc)
 
-        definition = (
-            f"```python\ndef {func_name}({func_params}){func_return}:\n"
-            f"    \"\"\"{self.function_pointer.__doc__}\"\"\"\n    ...\n```"
-        )
-        return definition
-
-    @property
-    def func_locals(self) -> Tuple[Optional[Dict[str, Any]], Any]:
-        """
-        Get the attributs and local variables of the function call.
-
-        Returns:
-            A tuple containing the bound arguments, local variables, and local attributs.
-        """
-        values_locals = {k: v for k, v in self.values.items()
-                        if k not in self.sig.parameters}
-        values_locals.pop('self', None)
-
-        values_self = None
-        if hasattr(self.function_pointer, '__self__'):
-            values_self = getattr(self.function_pointer.__self__, '__dict__', None)
-        return values_locals or None, values_self
-
-    @property
-    def func_call(self) -> Tuple[str, OrderedDict[str, Any]]:
-        """
-        Build a string representing the function call.
-
-        Returns:
-            A tuple containing a string representing the function call and the bound arguments.
-        """
-        values_args = {k: v for k, v in self.values.items()
-                    if k in self.sig.parameters}
-
-        bound_args = self.sig.bind_partial(**values_args)
-        bound_args.apply_defaults()
-
-        bound_arguments = bound_args.arguments
-
-        args_str = ", ".join(
-            f"{k}={v!r}" for k, v in bound_arguments.items()
-        )
-        call_str = f"{self.function_pointer.__name__}({args_str})"
-        return call_str, bound_arguments
-
-    @property
-    def func_type(self) -> Tuple[List[Any], Any]:
-        """
-        Get the inputs and outputs types of the function.
-
-        Returns:
-            A tuple containing the inputs types and outputs type.
-        """
-        input_types = [
-            param.annotation for param in self.sig.parameters.values()
-        ]
-        output_type = self.sig.return_annotation if self.sig.return_annotation != inspect.Signature.empty else None
-        return input_types, output_type
-
-    def _get_type_schema(self, tp: Any) -> Dict[str, Any]:
-        """
-        Generate a JSON schema for a given type.
-
-        Args:
-            tp: The type to generate the schema for.
-
-        Returns:
-            The JSON schema for the type.
-        """
-        if tp == Any:
-            return {"type": "any"}
-
-        origin = get_origin(tp)
-        args = get_args(tp)
-        
-        res = get_pydantic_schema(tp)
-        if res is not None:
-            return res
-
-        if origin in (Union, Optional):
-            if len(args) == 2 and (NoneType in args or type(None) in args):
-                main_type = args[0] if args[1] in (
-                    NoneType, type(None)) else args[1]
-                return {
-                    "anyOf": [
-                        self._get_type_schema(main_type),
-                        {"type": "null"}
-                    ]
-                }
-            return {"anyOf": [self._get_type_schema(arg) for arg in args]}
-
-        if origin in (list, Sequence.__origin__, Collection.__origin__):
-            return {
-                "type": "array",
-                "items": self._get_type_schema(args[0]) if args else {"type": "any"}
-            }
-
-        if origin in (dict, Mapping.__origin__):
-            return {
-                "type": "object",
-                "additionalProperties": self._get_type_schema(args[1]) if args else {"type": "any"}
-            }
-
-        if origin is (Final, ClassVar):
-            return self._get_type_schema(args[0]) if args else {"type": "any"}
-
-        if origin is Type.__origin__:
-            return {"type": "object", "format": "type"}
-
-        if origin is Literal:
-            return {"enum": list(args)}
-
-        if origin is tuple:
-            if len(args) == 2 and args[1] is ...:
-                return {
-                    "type": "tuple",
-                    "items": self._get_type_schema(args[0])
-                }
-            return {
-                "type": "tuple",
-                "prefixItems": [self._get_type_schema(arg) for arg in args],
-                "items": False
-            }
-
-        if origin in (Set.__origin__, FrozenSet.__origin__, AbstractSet.__origin__):
-            return {
-                "type": "array",
-                "uniqueItems": True,
-                "items": self._get_type_schema(args[0]) if args else {"type": "any"}
-            }
-
-        if hasattr(tp, "__annotations__") and isinstance(tp, type) and hasattr(tp, "__total__"):
-            properties = {
-                key: self._get_type_schema(value)
-                for key, value in tp.__annotations__.items()
-            }
-            required = [key for key in properties.keys()] if getattr(
-                tp, "__total__", True) else []
-            return {
-                "type": "object",
-                "properties": properties,
-                "required": required,
-                "additionalProperties": False
-            }
-
-        if isinstance(tp, TypeVar):
-            if tp.__constraints__:
-                return {
-                    "anyOf": [
-                        self._get_type_schema(constraint)
-                        for constraint in tp.__constraints__
-                    ]
-                }
-            elif tp.__bound__:
-                return self._get_type_schema(tp.__bound__)
-            else:
-                return {"type": "any"}
-
-        if tp is int:
-            return {"type": "integer"}
-        if tp is float:
-            return {"type": "number"}
-        if tp is str or tp is AnyStr:
-            return {"type": "string"}
-        if tp is list:
-            return {"type": "list"}
-        if tp is dict:
-            return {"type": "dict"}
-        if tp is tuple:
-            return {"type": "list"}
-        if tp is set:
-            return {"type": "list"}
-        if tp is frozenset:
-            return {"type": "frozenset"}
-        if tp is bool:
-            return {"type": "boolean"}
-        if tp is NoneType or tp is None:
-            return {"type": "null"}
-        if tp is bytes or tp is bytearray or tp is ByteString:
-            return {"type": "string", "format": "binary"}
-        raise ValueError(f"{tp} type is not supported please check here to see the supported types : https://github.com/hand-e-fr/OpenHosta/blob/dev/docs/doc.md#:~:text=bool.%20The-,complex,-type%20is%20not")
-
-    @property
-    def func_schema(self) -> Dict[str, Any]:
-        """
-        Get the JSON schema of the function's return type.
-
-        Returns:
-            The JSON schema in a dictionary
-        """
-        if self.sig.return_annotation == inspect.Signature.empty:
-            schema = self._get_type_schema(Any)
+        # Place long variables outside function definition. 
+        # math.pi is 17 char, I decide to cut at 20 
+        str_value = repr(value)
+        if len(str_value) > 20:
+            variable_definition_list += [name+"="+str_value+"\n"]
         else:
-            schema = self._get_type_schema(self.sig.return_annotation)
-        
-        return schema
+            # We do not show default values as this could contradict values from call
+            # str_arg += " = "+str_value
+            call_arg += " = "+str_value
+
+        inline_string_list += [str_arg]
+        call_string_list   += [call_arg]
+
+    return {
+        "function_args":", ".join(inline_string_list),
+        "call_arguments":", ".join(call_string_list), 
+        "type_definitions":"\n".join(type_definition_list),
+        "variable_declaration":"\n".join(variable_definition_list)
+    }
+
+
+def build_types_as_json_schema(arg_type):
+    # TODO: build a JSON schema here
+    return f"{describe_specific_types(arg_type)}"

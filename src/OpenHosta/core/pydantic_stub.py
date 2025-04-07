@@ -22,21 +22,21 @@ if not is_pydantic_enabled:
         return None
 
 else:
-    from pydantic import BaseModel
+    from pydantic import DialogueModel
 
     def ispydanticclass(obj):
         try:
-            l_ret = issubclass(obj, BaseModel)
+            l_ret = issubclass(obj, DialogueModel)
         except Exception:
             l_ret = False
         return l_ret
 
-    def convert_pydantic(caller, checked) -> Optional[BaseModel]:
+    def convert_pydantic(caller, checked) -> Optional[DialogueModel]:
         """
         A method to convert the checked data based on the Pydantic model annotations of the function.
 
         Returns:
-            Optional[BaseModel]: The converted checked data based on the Pydantic model annotations.
+            Optional[DialogueModel]: The converted checked data based on the Pydantic model annotations.
         """
                 # Small models (SLM) tend to return well structired json as a string
         if type(checked) is str and ispydanticclass(caller):

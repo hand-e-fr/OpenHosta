@@ -2,7 +2,7 @@ import inspect
 from typing import Optional, Dict, Any, List, Type, Union, Literal,  get_args, get_origin
 
 from ....core.logger import Logger
-from ....core.config import Model, DefaultModelPolicy
+from ....core.config import DialogueModel, _DefaultModelPolicy
 from ....core.hosta_inspector import FunctionMetadata
 
 _PROMPT = "{func_name}{signature}:\n    \"\"\"{docstring}\"\"\"\n\nIMPORTANT RULES:\n1. Input values should respect the type hints\n2. Output values MUST be diverse - avoid generating the same output repeatedly\n3. Each row must be in CSV format\n4. For text outputs, enclose them in double quotes\n5. NO MORE THAN 20% of outputs should be the same value\n6. Generate inputs across the entire possible range\n7. Ensure proper formatting for {return_type} output type"
@@ -10,7 +10,7 @@ _PROMPT = "{func_name}{signature}:\n    \"\"\"{docstring}\"\"\"\n\nIMPORTANT RUL
 
 
 class LLMSyntheticDataGenerator:
-    """Generates synthetic data using a Language Model."""
+    """Generates synthetic data using a Language DialogueModel."""
 
 
     @staticmethod
@@ -127,7 +127,7 @@ class LLMSyntheticDataGenerator:
             logger: Logger, # Logger to use for logging
             request_amounts: int = 3, # Amount of requests to the model
             examples_in_req: int = 50, # Examples amount in each request
-            model: Optional[Model] = None # Model to use for data generation
+            model: Optional[DialogueModel] = None # DialogueModel to use for data generation
     ) -> List[Dict]:
         input_types: Dict[str, Type] = dict(zip(function_metadata.f_args.keys(), function_metadata.f_type[0]))
         output_type: Type = function_metadata.f_type[1]
@@ -142,14 +142,14 @@ class LLMSyntheticDataGenerator:
                 to_append["outputs"] = ex_output
 
         if not model:
-            model = DefaultModelPolicy.get_model()
+            model = _DefaultModelPolicy.get_model()
 
         try:
             assert input_types and len(input_types) > 0, "Input types must be provided."
             assert output_type, "Output type must be provided."
             assert request_amounts > 0, "Request amount must be greater than 0."
             assert examples_in_req > 0, "Examples amount in each request must be greater than 0."
-            assert model, "Model must be provided."
+            assert model, "DialogueModel must be provided."
         except AssertionError as e:
             raise ValueError(f"Invalid parameters: {e}")
 

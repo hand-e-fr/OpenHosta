@@ -98,7 +98,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [How It Works](#how-it-works)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
-      - [Inheriting from the Model Class](#inheriting-from-the-model-class)
+      - [Inheriting from the OpenAICompatibleModel Class](#inheriting-from-the-model-class)
       - [Custom LLM Call Function](#custom-llm-call-function)
       - [Custom Response Handling Function](#custom-response-handling-function)
       - [Example Usage](#example-usage-1)
@@ -190,10 +190,10 @@ config.set_default_apiKey("put-your-api-key-here")
 
 Once you've done that, all OpenHosta's features are ready to use.
 
-If you want to use another model, you'll need to create an instance of the *Model* class.
+If you want to use another model, you'll need to create an instance of the *OpenAICompatibleModel* class.
 
 ```python
-my_model = config.Model(
+my_model = config.OpenAICompatibleModel(
     model="gpt-4o", 
     base_url="https://api.openai.com/v1/chat/completions",
     api_key="put-your-api-key-here"
@@ -211,7 +211,7 @@ config.set_default_model(my_model)
 When you use reasoning models like DeepSeek-R1, you need to disable JSON mode as the model will first output its chain of thought before producing the JSON. It is also a good idea to increase the timeout.
 
 ```python
-r1_650b_azure = Model(
+r1_650b_azure = OpenAICompatibleModel(
         base_url="https://DeepSeek-R1-lfvng.eastus.models.ai.azure.com/v1/chat/completions",
         model="DeepSeek-R1",
         timeout=180,
@@ -240,7 +240,7 @@ def example_function(a:int, b:str)->List[str]:
   - **The docstring** is the other key element. This is where you describe the behavior of the function. Be precise and concise. Describe the input parameters and the nature of the output, as in a docstring. Feel free to try out lots of things, prompt engineering is not a closed science. :)
 
 ```python
-my_model = config.Model(
+my_model = config.OpenAICompatibleModel(
     model="gpt-4o", 
     base_url="https://api.openai.com/v1/chat/completions",
     api_key="put-your-api-key-here"
@@ -367,10 +367,10 @@ The Pydantic model cannot be defined inside a function, as this will produce an 
 Let's take the same example, but using this feature:
 
 ```python
-from pydantic import BaseModel
+from pydantic import DialogueModel
 from OpenHosta import emulate
 
-class Person(BaseModel):
+class Person(DialogueModel):
     name: str
     age: int
 
@@ -631,7 +631,7 @@ print(return_type(x)) # int
 The function `ask` is a sort of a *side* function In OpenHosta. Its only use is to make a simple LLM call without the OpenHosta's meta-prompt. It simplies the process af an API call.
 
 ```python
-from OpenHosta import ask, Model
+from OpenHosta import ask, OpenAICompatibleModel
 
 print(
     ask(
@@ -662,7 +662,7 @@ response = openai.ChatCompletion.create(
 print(response['choices'][0]['message']['content'])
 ```
 
-As seen above takes 2 or more argument. The two first arguments are mandatory. `system` correspond to the system prompt to the LLM, same as the `user` parameter. You can also set the `model` parameter to a custom Model instance. It also handle all LLM parmaters (`max_tokens`, `n`, `top_p`...).
+As seen above takes 2 or more argument. The two first arguments are mandatory. `system` correspond to the system prompt to the LLM, same as the `user` parameter. You can also set the `model` parameter to a custom OpenAICompatibleModel instance. It also handle all LLM parmaters (`max_tokens`, `n`, `top_p`...).
 
 **Note** : ***this feature uses the default model.***
 
@@ -679,7 +679,7 @@ Generate a dataset based on a given function and the number of samples. This fun
 - **`num_samples`** (`int`):  
   The number of samples to generate. If the number exceeds 100, the function intelligently splits the data requests into manageable chunks.
 
-- **`oracle`** (`Optional[Model]`, Optional):  
+- **`oracle`** (`Optional[OpenAICompatibleModel]`, Optional):  
   The model or "oracle" used to assist with generating synthetic data.  
   By default, the function uses the system's predefined default model.
 
@@ -749,29 +749,29 @@ print(f"Accuracy: {correct}/{len(dataset.data)}, {correct/len(dataset.data)*100}
 
 This section explains how to customize the program to make its own LLM call and response handling functions. This can be useful if you need a specific functionality that is not provided by the standard library, or to enable compatibility with a specific LLM. 
 
-#### Inheriting from the Model Class
+#### Inheriting from the OpenAICompatibleModel Class
 
-The first step is to inherit from the Model class to create your own configuration class. The Model class provides a base for the library's configuration, including connection settings to the LLM and response handling functions.
+The first step is to inherit from the OpenAICompatibleModel class to create your own configuration class. The OpenAICompatibleModel class provides a base for the library's configuration, including connection settings to the LLM and response handling functions.
 
 ```python
-from OpenHosta import Model
+from OpenHosta import OpenAICompatibleModel
 
-class MyModel(Model):
+class MyModel(OpenAICompatibleModel):
     # Your code here
 ```
 
-In the example above, we have created a new class `MyModel` that inherits from the Model class. This means that `MyModel` has access to all the methods and attributes of the Model class. You can now add your own functions to this class to customize the OpenHosta's configuration.
+In the example above, we have created a new class `MyModel` that inherits from the OpenAICompatibleModel class. This means that `MyModel` has access to all the methods and attributes of the OpenAICompatibleModel class. You can now add your own functions to this class to customize the OpenHosta's configuration.
 You can also override an existing function to modify its behavior. It is important to keep input/output components identical in order to avoid errors when interacting with calling functions.
 
 #### Custom LLM Call Function
 
-To create your own LLM call function, you need to override the `api_call` method of the Model class. This method is called every time the library needs to communicate with the LLM.
+To create your own LLM call function, you need to override the `api_call` method of the OpenAICompatibleModel class. This method is called every time the library needs to communicate with the LLM.
 
 ```python
 from typing import Dict, List
-from OpenHosta import Model
+from OpenHosta import OpenAICompatibleModel
 
-class MyModel(Model):
+class MyModel(OpenAICompatibleModel):
     def api_call(
         self,
         messages: List[Dict[str, str]],
@@ -783,7 +783,7 @@ class MyModel(Model):
         return response
 ```
 
-In the example above, we have overridden the "api_call" method of the Model class to create our own LLM call function.
+In the example above, we have overridden the "api_call" method of the OpenAICompatibleModel class to create our own LLM call function.
 The "api_call" method takes four arguments:
 
 - **message**: The parsed message sent to the LLM.
@@ -794,20 +794,20 @@ The "api_call" method returns a response object that contains the LLM's response
 
 #### Custom Response Handling Function
 
-To create your own response handling function, you need to override the "response_parser" method of the Model class. This method is called every time the library receives a response from the LLM.
+To create your own response handling function, you need to override the "response_parser" method of the OpenAICompatibleModel class. This method is called every time the library receives a response from the LLM.
 
 ```python
 from typing import Dict, Any
-from OpenHosta import Model, FunctionMetadata, TypeConverter
+from OpenHosta import OpenAICompatibleModel, FunctionMetadata, TypeConverter
 
-class MyModel(Model):
+class MyModel(OpenAICompatibleModel):
     def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
         # Your code here
         # Process the LLM response and return the result
         return TypeConverter(function_metadata, l_ret_data).check()
 ```
 
-In the example above, we have overridden the `response_parser` method of the Model class to create our own response handling function. 
+In the example above, we have overridden the `response_parser` method of the OpenAICompatibleModel class to create our own response handling function. 
 The "response_parser" method takes three arguments:
 
 - **response**: The response object returned by the LLM.
@@ -821,17 +821,17 @@ You can now create an instance of the class you've just created and use it in al
 
 With this method, you can now make OpenHosta compatible with a large number of API.
 
-**Here's an example of of a custom Model class for Llama models:**
+**Here's an example of of a custom OpenAICompatibleModel class for Llama models:**
 
 ```python
 from typing import Any, Dict, List
-from OpenHosta import emulate, Model, TypeConverter, FunctionMetadata, example
+from OpenHosta import emulate, OpenAICompatibleModel, TypeConverter, FunctionMetadata, example
 from OpenHosta.utils.errors import RequestError
 import requests
 import json
 import sys
 
-class LlamaModel(Model):
+class LlamaModel(OpenAICompatibleModel):
     
     def __init__(self, model: str = None, base_url: str = None, api_key: str = None, timeout: int = 30):
         super().__init__(model, base_url, api_key, timeout)
@@ -856,13 +856,13 @@ class LlamaModel(Model):
             if response.status_code != 200:
                 response_text = response.text
                 raise RequestError(
-                    f"[Model.api_call] API call was unsuccessful.\n"
+                    f"[OpenAICompatibleModel.api_call] API call was unsuccessful.\n"
                     f"Status cod: {response.status_code }:\n{response_text}"
                 )
             self._nb_requests += 1
             return response.json()
         except Exception as e:
-            raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
+            raise RequestError(f"[OpenAICompatibleModel.api_call] Request failed:\n{e}\n\n")
         
     def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
         json_string = response["message"]["content"]
@@ -870,7 +870,7 @@ class LlamaModel(Model):
             l_ret_data = json.loads(json_string)
         except json.JSONDecodeError as e:
             sys.stderr.write(
-                f"[Model.response_parser] JSONDecodeError: {e}\nContinuing the process.")
+                f"[OpenAICompatibleModel.response_parser] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
         return TypeConverter(function_metadata, l_ret_data).check()
@@ -900,7 +900,7 @@ If the API request model is similar to OpenAI API, it can also work without clas
 ```python
 from OpenHosta import config, ask
 
-ollama_local_model=config.Model(
+ollama_local_model=config.OpenAICompatibleModel(
     model="gemma2:9b",
     base_url="http://localhost:11434/v1/chat/completions",
     api_key="not-empty-string"
@@ -915,7 +915,7 @@ ask("hello")
 ```python
 from OpenHosta import config, ask
 
-azure_model=config.Model(
+azure_model=config.OpenAICompatibleModel(
     model="gpt-4o",
     base_url="https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/chat/completions?api-version=2024-06-01",
     api_key="Provide Azure OpenAI API key here"

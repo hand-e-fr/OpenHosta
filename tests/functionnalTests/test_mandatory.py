@@ -1,6 +1,6 @@
 import pytest
 import os
-from pydantic import BaseModel
+from pydantic import DialogueModel
 from typing import Callable
 
 from OpenHosta import config, emulate, thinkof
@@ -23,7 +23,7 @@ def emulate_1arg_list(arg)->list:
 
 emulate_1arg = {"str": emulate_1arg_str, "int": emulate_1arg_int, "float": emulate_1arg_float, "list": emulate_1arg_list}
 
-class User(BaseModel):
+class User(DialogueModel):
     name: str
     email: str
     age: int
@@ -31,7 +31,7 @@ class User(BaseModel):
 class TestEmulate:
        
     def test_FeatureModelInParameter(self):
-        abracadabra = config.Model(
+        abracadabra = config.OpenAICompatibleModel(
             model="gpt-4o",
             base_url="https://api.openai.com/v1/chat/completions",
             api_key=os.getenv("OPENAI_API_KEY")
@@ -219,7 +219,7 @@ class Testthinkof:
         pass
     
     # def test_FeatureDefaultModel(self):
-    #     my_model = config.Model(
+    #     my_model = config.OpenAICompatibleModel(
     #         model="gpt-4o-mini",
     #         base_url="https://api.openai.com/v1/chat/completions",
     #         api_key=g_apiKey
