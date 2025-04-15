@@ -6,7 +6,7 @@ from ..models import DialogueModel, OpenAICompatibleModel
 
 _DefaultNarrator = OneTurnConversationNarrator(
     default_model=OpenAICompatibleModel(
-        model="gpt-4o", 
+        model_name="gpt-4o", 
         base_url="https://api.openai.com/v1/chat/completions")
 )
      

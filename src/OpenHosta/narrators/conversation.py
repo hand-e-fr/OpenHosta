@@ -4,21 +4,20 @@ from typing import Dict
 from ..core.type_converter import apply_type
 from ..models import DialogueModel
 
-from .simple_narrator import Flow
 
 class Conversation:
 
     def __init__(self, 
                  inspection:Dict, 
                  model:DialogueModel, 
-                 meta_conversation:Flow,
+                 meta_conversation,
                  return_type:type=None,
                  llm_args={},
                  data={}):
 
         self.model:DialogueModel    = model
         self.inspection:Dict        = inspection
-        self.meta_conversation:Flow = meta_conversation
+        self.meta_conversation      = meta_conversation
         self.return_type:type       = return_type
         self.llm_args:Dict          = llm_args
         self.data:Dict              = data

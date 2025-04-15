@@ -4,10 +4,8 @@ import json
 
 from pydoc import locate
 
-from ..core.config import _DefaultModelPolicy
-from ..core.hosta_inspector import FunctionMetadata
+from ..core.config import _DefaultNarrator
 from ..core.logger import dialog_logger
-from ..core.meta_prompt import THOUGHT_PROMPT
 from ..utils.errors import RequestError
 
 def return_type(func):
@@ -18,7 +16,7 @@ def return_type(func):
     return func._infos.f_type[1]
 
 def gather_data_for_prompt_template(
-        _infos: FunctionMetadata
+        _infos
 ):    
     user_prompt_data = {
         "PRE_DEF":_infos.f_def,
@@ -30,7 +28,7 @@ def gather_data_for_prompt_template(
     return user_prompt_data
 
 def guess_type(key: str, *args) -> object:
-    l_default = _DefaultModelPolicy.get_model()
+    l_default = _DefaultNarrator.get_model()
     
     l_user_prompt = (
         "Function behavior: "
@@ -39,7 +37,7 @@ def guess_type(key: str, *args) -> object:
     )
 
     response = l_default.api_call([
-            {"role": "system", "content": THOUGHT_PROMPT.render()},
+            {"role": "system", "content": """Say : Not implemented"""},
             {"role": "user", "content": l_user_prompt}
         ],
         llm_args={"temperature":0.2},
@@ -78,8 +76,6 @@ def build_info(inner_func, query_string, *args, **kwargs):
     if not hasattr(inner_func, "_infos"):
         return_type = guess_type(query_string, *args, **kwargs)
 
-        _infos = FunctionMetadata()
-        _infos.f_schema = {"type": f"{return_type.__name__}"}
         _infos.f_def = f'''
 ```python
 def lambda_function(*argument)->{return_type.__name__}:
@@ -107,7 +103,7 @@ async def build_function_async(model, prompt, inner_func, query_string, args, kw
         prompt_data = gather_data_for_prompt_template(_infos)
         prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function('" + "', '".join(_infos.f_call) + "')"
         
-        _model, _prompt = _DefaultModelPolicy.get_conversation(_model, _prompt, prompt_data)
+        _model, _prompt = _DefaultNarrator.outline(_model, _prompt, prompt_data)
 
         prompt_rendered = _prompt.render(prompt_data)
 
@@ -140,7 +136,7 @@ def build_function(model, prompt, inner_func, query_string, args, kwargs, llm_ar
         prompt_data = gather_data_for_prompt_template(_infos)
         prompt_data["PRE_FUNCTION_CALL"] = f"lambda_function('" + "', '".join(_infos.f_call) + "')"
         
-        _model, _prompt = _DefaultModelPolicy.get_conversation(_model, _prompt, prompt_data)
+        _model, _prompt = _DefaultNarrator.outline(_model, _prompt, prompt_data)
 
         prompt_rendered = _prompt.render(prompt_data)
 

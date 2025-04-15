@@ -29,22 +29,22 @@ def emulate(
 
     inspection = get_hota_inspection(frame)
     
-    with  narrator.outline(inspection) as conversation:
-        
-        # This where your prompt is. You could also call `conversation.run(data)`
-        messages = [
-                    {"role":role, "content":  meta_prompt.render(conversation.data)}
-                        for role, meta_prompt in conversation.meta_conversation
-                    ]
-        
-        response_dict = conversation.model.api_call(messages, conversation.llm_args)
-
-        response_data = conversation.parse(response_dict)
+    conversation = narrator.outline(inspection)
     
+    # This where your prompt is. You could also call `conversation.run(data)`
+    messages = [
+                {"role":role, "content":  meta_prompt.render(conversation.data)}
+                    for role, meta_prompt in conversation.meta_conversation
+                ]
+    
+    response_dict = conversation.model.api_call(messages, conversation.llm_args)
+
+    response_data = conversation.parse(response_dict)
+
     return response_data
 
 
-async def emulate(
+async def emulate_async(
         *,
         narrator: Optional[Narrator] = _DefaultNarrator,
         ) -> Any:

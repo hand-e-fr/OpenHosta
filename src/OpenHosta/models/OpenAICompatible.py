@@ -20,14 +20,15 @@ class OpenAICompatibleModel(DialogueModel):
             api_key: str = None, 
             timeout: int = 30,
         ):
-        super(self).__init__(
-            max_async_calls,
-            additionnal_headers,
-            api_parameters,
-            json_output_capable,
-        )
+        # DialogueModel.__init__(
+        #     self,
+        #     max_async_calls,
+        #     additionnal_headers,
+        #     api_parameters,
+        #     json_output_capable,
+        # )
                 
-        self.reasoning_start_and_stop_tags = ["<think>", "</think>"],
+        self.reasoning_start_and_stop_tags = ["<think>", "</think>"]
         self.model_name = model_name
         self.base_url = base_url
         self.api_key = api_key
@@ -69,8 +70,8 @@ class OpenAICompatibleModel(DialogueModel):
         else:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        for key, value in self.user_headers.items():
-            headers[key] = value
+        # for key, value in self.user_headers.items():
+        #     headers[key] = value
  
         if force_json_output:
             l_body["response_format"] = {"type": "json_object"}
@@ -111,7 +112,7 @@ class OpenAICompatibleModel(DialogueModel):
         """
         response = response.strip()
 
-        if response.startswith(self.reasoning_start_and_stop_tags[0]) and self.reasoning_start_and_stop_tags[1] in response:
+        if self.reasoning_start_and_stop_tags[0] in response and self.reasoning_start_and_stop_tags[1] in response:
             chunks = response[8:].split(self.reasoning_start_and_stop_tags[1])
             rational = chunks[0]
             answer = self.reasoning_start_and_stop_tags[1].join(chunks[1:]) # in case there are multiple </think> tags
@@ -121,7 +122,7 @@ class OpenAICompatibleModel(DialogueModel):
         return rational, answer
     
 
-    def response_parser(self, response_dict: Dict, function_metadata) -> Any:
+    def response_parser(self, response_dict: Dict) -> Any:
 
         if "usage" in response_dict:
             self._used_tokens += int(response_dict["usage"]["total_tokens"])
@@ -129,18 +130,21 @@ class OpenAICompatibleModel(DialogueModel):
         response = response_dict["choices"][0]["message"]["content"]
         rational, answer = self.split_cot_answer(response)
 
-        if hasattr(function_metadata.f_obj, "_last_response") and \
-            type(function_metadata.f_obj._last_response) is dict:
-            function_metadata.f_obj._last_response["rational"] = rational
-            function_metadata.f_obj._last_response["answer"] = answer
-        
+        # if hasattr(function_metadata.f_obj, "_last_response") and \
+        #     type(function_metadata.f_obj._last_response) is dict:
+        #     function_metadata.f_obj._last_response["rational"] = rational
+        #     function_metadata.f_obj._last_response["answer"] = answer
         response = self.extract_json(answer)
         
         try:
-            l_ret_data = json.loads(response)
+            if response.startswith("{"):
+                l_ret_data = json.loads(response)
+            else:
+                l_ret_data = response
+                
         except json.JSONDecodeError as e:
             # If not a JSON, use as is
-            l_ret_data = answer
+            l_ret_data = response
 
         return l_ret_data
 
