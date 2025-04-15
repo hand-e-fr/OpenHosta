@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from .core.type_converter import TypeConverter, FunctionMetadata
-
-from .core.logger import print_last_prompt, print_last_response
 from .utils.import_handler import is_predict_enabled
+
+from .core import config
+from .core.logger import print_last_prompt, print_last_response
 from .core.meta_prompt import MetaPrompt
 
 from .exec.ask import ask, ask_async
@@ -43,7 +43,5 @@ all = (
     "generate_data",
     "generate_data_async",
     "HostaDataset",
-    "SourceType",
-    "TypeConverter"
-    "FunctionMetadata",
+    "SourceType"
 )

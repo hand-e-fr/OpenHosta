@@ -60,10 +60,15 @@ def hosta_prompt_snippets(analyse):
         "function_call_as_python_code" : python_call,
     }
 
+BASIC_TYPES = [
+    int, float, complex, str, list, tuple, range, dict, set, frozenset,
+    bool, bytes, bytearray, memoryview
+]
+
 def describe_specific_types(arg_type):
     # TODO: add pydantic types
     type_definition = None
-    if arg_type in vars(__builtins__).values() or\
+    if arg_type in BASIC_TYPES or\
         type(arg_type) is _alias or\
             arg_type == type:
         print("Ignore type", arg_type)
@@ -83,7 +88,7 @@ python class {arg_type.__name__} has this annotation:
 """
     else:
         # Unknwon types
-        raise Exception(f"Unknwon type ({arg_type}). Please use another type.")
+        pass #raise Exception(f"Unknwon type ({arg_type}). Please use another type.")
 
     return type_definition
 
@@ -102,7 +107,6 @@ def build_parameters_as_prompt(args):
             pass
         else:
             str_arg += ": "+nice_type_name(arg_type) 
-            print(name, value, arg_type)
             specifig_type_doc = describe_specific_types(arg_type)
             if not specifig_type_doc is None:
                 type_definition_list.append(specifig_type_doc)

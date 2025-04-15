@@ -2,8 +2,6 @@ from typing import Union, Literal, Optional, Callable
 from enum import Enum
 import platform
 
-from ..core.hosta_inspector import HostaInspector
-
 IS_UNIX = platform.system() != "Windows"
 
 class ANSIColor(Enum):
@@ -113,7 +111,7 @@ class Logger:
 
 class dialog_logger:
 
-    def __init__(self, inspection:HostaInspector=None, inner_func=None):
+    def __init__(self, inspection=None, inner_func=None):
         
         self.logging_object = { 
             "_last_request": {},

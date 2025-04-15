@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..core.config import DialogueModel, _DefaultModelPolicy
+from ..core.config import DialogueModel, _DefaultNarrator
 from ..utils.errors import RequestError
 
 def ask(
@@ -12,10 +12,11 @@ def ask(
     json_output=False,
     **api_args
 ) -> Any:
-    model, system = _DefaultModelPolicy.get_conversation(model, system)       
+    
+    model = _DefaultNarrator.model       
 
     response_dict = model.api_call([
-            {"role": "system", "content": system.render()},
+            {"role": "system", "content": system},
             {"role": "user", "content": user}
         ],
         json_output,
@@ -39,7 +40,7 @@ async def ask_async(
     **api_args
 ) -> Any:
     
-    model, system = _DefaultModelPolicy.get_conversation(model, system)       
+    model, system = _DefaultNarrator.outline(model, system)       
 
     response_dict = await model.api_call_async([
             {"role": "system", "content": system.render()},

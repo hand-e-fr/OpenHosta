@@ -6,7 +6,6 @@ import sys
 from sys import version_info
 from typing import Type, Any, Callable, TypeVar, get_origin
 
-from .hosta_inspector import FunctionMetadata
 from .pydantic_stub import convert_pydantic
 
 T = TypeVar('T')
@@ -17,7 +16,7 @@ else:
     NoneType = type(None)
 
 def apply_type(data, schema):
-    pass
+    return data
 
 class TypeConverter:
     """
@@ -32,7 +31,7 @@ class TypeConverter:
         data (dict): The LLM outputs data to be checked and converted.
     """
 
-    def __init__(self, function_metadata: FunctionMetadata, data: Any):
+    def __init__(self, function_metadata, data: Any):
         self.function_metadata = function_metadata
         self.data = data
 
