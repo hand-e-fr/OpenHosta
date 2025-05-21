@@ -30,7 +30,13 @@ from typing import (
     TypedDict
 )
 
-from OpenHosta import emulate
+from OpenHosta import emulate, config, OpenAICompatibleModel
+
+DefaultModel = OpenAICompatibleModel(
+        model_name="gpt-4o", 
+        base_url="https://api.openai.com/v1/chat/completions")
+
+config.set_default_model(DefaultModel)
 
 class TestTypes:
     
