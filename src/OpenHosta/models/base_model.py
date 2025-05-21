@@ -3,8 +3,17 @@ from typing import Any, Dict
 
 import abc
 import asyncio
+from enum import Enum
 
 from  concurrent.futures import ThreadPoolExecutor
+
+class ModelCapabilities(Enum):
+    TEXT2TEXT = "TEXT2TEXT"
+    TEXT2JSON = "TEXT2JSON"
+    TEXT2IMAGE = "TEXT2IMAGE"
+    IMAGE2TEXT = "IMAGE2TEXT"
+    IMAGE2IMAGE = "IMAGE2IMAGE"
+    THINK = "THINK"
 
 class Model:
     def __init__(self,
@@ -39,6 +48,11 @@ class Model:
             )
         return response_dict
     
+    def get_executor(self):
+        if self.async_executor is None:
+            self.async_executor = ThreadPoolExecutor(max_workers=self.max_async_calls)
+        return self.async_executor
+    
     @abc.abstractmethod
     def  api_call(
         self,
@@ -48,7 +62,13 @@ class Model:
     ) -> Dict:
         raise NotImplementedError("You need to implement 'api_call' in your subclass of Model")
 
-    def get_executor(self):
-        if self.async_executor is None:
-            self.async_executor = ThreadPoolExecutor(max_workers=self.max_async_calls)
-        return self.async_executor
+    @abc.abstractmethod
+    def get_consumption(self, response_dict) -> int:
+        """Return token consumption of the model for the given response_dict"""
+        pass
+
+    @abc.abstractmethod
+    def response_parser(self, response_dict: Dict) -> Any:
+        """Parse the response_dict and return the data section"""
+        pass
+

@@ -1,11 +1,11 @@
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 import os
 import json
 import requests
 
-from ..models import Model
+from ..models import Model, ModelCapabilities
 from ..utils.errors import ApiKeyError, RequestError
 
 class OpenAICompatibleModel(Model):
@@ -15,19 +15,11 @@ class OpenAICompatibleModel(Model):
             max_async_calls = 7,
             additionnal_headers: Dict[str, Any] = {},
             api_parameters:Dict[str, Any] = {},
-            json_output_capable:bool = True,
+            capabilities:Set[ModelCapabilities] = [ModelCapabilities.CHAT],
             base_url: str = None, 
             api_key: str = None, 
             timeout: int = 30,
-        ):
-        # Model.__init__(
-        #     self,
-        #     max_async_calls,
-        #     additionnal_headers,
-        #     api_parameters,
-        #     json_output_capable,
-        # )
-                
+        ):                
         self.reasoning_start_and_stop_tags = ["<think>", "</think>"]
         self.model_name = model_name
         self.base_url = base_url
@@ -54,6 +46,7 @@ class OpenAICompatibleModel(Model):
         if api_key is None:
             api_key = os.environ.get("OPENAI_API_KEY")
 
+        # Typical error from begginers
         if api_key is None and "api.openai.com/v1" in self.base_url:
             raise ApiKeyError("[model.api_call] Empty API key.")
         
@@ -97,76 +90,12 @@ class OpenAICompatibleModel(Model):
 
         return response_dict
     
-    
-    def split_cot_answer(self, response:str) -> tuple[str, str]:
-        """
-        This function split response into rational and answer.
-
-        Special prompt may ask for chain-of-thought or models might be trained to reason first.
-
-        Args:
-            response (str): response from the model.
-
-        Returns:
-            tuple[str, str]: rational and answer.
-        """
-        response = response.strip()
-
-        if self.reasoning_start_and_stop_tags[0] in response and self.reasoning_start_and_stop_tags[1] in response:
-            chunks = response[8:].split(self.reasoning_start_and_stop_tags[1])
-            rational = chunks[0]
-            answer = self.reasoning_start_and_stop_tags[1].join(chunks[1:]) # in case there are multiple </think> tags
-        else:
-            rational, answer = "", response
-        
-        return rational, answer
-    
-
-    def response_parser(self, response_dict: Dict) -> Any:
-
+    def get_consumption(self, response_dict) -> dict:
         if "usage" in response_dict:
             self._used_tokens += int(response_dict["usage"]["total_tokens"])
 
+    def response_parser(self, response_dict: Dict) -> Any:
+
         response = response_dict["choices"][0]["message"]["content"]
-        rational, answer = self.split_cot_answer(response)
 
-        # if hasattr(function_metadata.f_obj, "_last_response") and \
-        #     type(function_metadata.f_obj._last_response) is dict:
-        #     function_metadata.f_obj._last_response["rational"] = rational
-        #     function_metadata.f_obj._last_response["answer"] = answer
-        response = self.extract_json(answer)
-        
-        try:
-            if response.startswith("{"):
-                l_ret_data = json.loads(response)
-            else:
-                l_ret_data = response
-                
-        except json.JSONDecodeError as e:
-            # If not a JSON, use as is
-            l_ret_data = response
-
-        return l_ret_data
-
-    def extract_json(self, response: str) -> str:
-        """
-        Extracts the JSON part from the response.
-
-        Some LLM will return the JSON with some additional text.
-        """
-        if response.strip().endswith("```"):
-            chuncks = response.split("```")
-            last_chunk = chuncks[-2]
-            if "{" in last_chunk and "}" in last_chunk:
-                chunk_lines = last_chunk.split("\n")[1:]
-                # find first line with { and last line with }
-                start_line = next(i for i, line in enumerate(chunk_lines) if "{" in line)
-                end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
-                response = "\n".join(chunk_lines[start_line:end_line + 1])
-
-            else:
-                # JSON not found in the response. (passthrough)"
-                response = last_chunk
-        
         return response
-    

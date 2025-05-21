@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..core.config import Model, _DefaultPipeline
+from ..core.config import Model, DefaultPipeline
 from ..utils.errors import RequestError
 
 def ask(
@@ -13,7 +13,7 @@ def ask(
     **api_args
 ) -> Any:
     
-    model = _DefaultPipeline.model       
+    model = DefaultPipeline.model       
 
     response_dict = model.api_call([
             {"role": "system", "content": system},
@@ -40,7 +40,7 @@ async def ask_async(
     **api_args
 ) -> Any:
     
-    model, system = _DefaultPipeline.outline(model, system)       
+    model, system = DefaultPipeline.outline(model, system)       
 
     response_dict = await model.api_call_async([
             {"role": "system", "content": system.render()},
