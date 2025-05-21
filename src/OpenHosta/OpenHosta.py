@@ -13,6 +13,9 @@ from .exec.emulate import emulate, emulate_async
 from .exec.thought import thought
 from .exec.example import example
 
+from .models import OpenAICompatibleModel as Model
+from .models import OpenAICompatibleModel
+
 if is_predict_enabled:
     from .exec.generate_data import generate_data, generate_data_async
     from .exec.predict.predict import predict, predict_async, clear_training
@@ -29,6 +32,8 @@ import os
 all = (
     "config",
     "emulate",
+    "Model",
+    "OpenAICompatibleModel",
     "emulate_async",
     "thinkof",
     "thinkof_async",
