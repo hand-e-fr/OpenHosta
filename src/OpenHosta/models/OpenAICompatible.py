@@ -5,10 +5,10 @@ import os
 import json
 import requests
 
-from ..models import DialogueModel
+from ..models import Model
 from ..utils.errors import ApiKeyError, RequestError
 
-class OpenAICompatibleModel(DialogueModel):
+class OpenAICompatibleModel(Model):
 
     def __init__(self, 
             model_name: str = None, 
@@ -20,7 +20,7 @@ class OpenAICompatibleModel(DialogueModel):
             api_key: str = None, 
             timeout: int = 30,
         ):
-        # DialogueModel.__init__(
+        # Model.__init__(
         #     self,
         #     max_async_calls,
         #     additionnal_headers,
@@ -39,7 +39,7 @@ class OpenAICompatibleModel(DialogueModel):
         self._nb_requests = 0
 
         if any(var is None for var in (model_name, base_url)):
-            raise ValueError(f"[DialogueModel.__init__] Missing values.")
+            raise ValueError(f"[Model.__init__] Missing values.")
     
     def api_call(
         self,
@@ -83,17 +83,17 @@ class OpenAICompatibleModel(DialogueModel):
             if response.status_code  != 200:
                 response_text = response.text
                 if "invalid_api_key" in response_text:
-                    raise ApiKeyError("[DialogueModel.api_call] Incorrect API key.")
+                    raise ApiKeyError("[Model.api_call] Incorrect API key.")
                 else:
                     raise RequestError(
-                        f"[DialogueModel.api_call] API call was unsuccessful.\n"
+                        f"[Model.api_call] API call was unsuccessful.\n"
                         f"Status code: {response.status_code }:\n{response_text}"
                     )
             self._nb_requests += 1
             response_dict = response.json()
         
         except Exception as e:
-            raise RequestError(f"[DialogueModel.api_call] Request failed:\n{e}\n\n")
+            raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
 
         return response_dict
     

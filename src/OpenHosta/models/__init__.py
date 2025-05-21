@@ -1,7 +1,7 @@
-from .base_model import DialogueModel
+from .base_model import Model
 from .OpenAICompatible import OpenAICompatibleModel
 
 all = (
-    "DialogueModel",
+    "Model",
     "OpenAICompatibleModel"
 )

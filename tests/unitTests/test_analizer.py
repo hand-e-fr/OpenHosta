@@ -2,11 +2,10 @@ import pytest
 import inspect
 import re
 from typing import Optional, List, Union
-from pydantic import DialogueModel, Field
+from pydantic import Model, Field
 from PIL import Image
 
 from OpenHosta.core.analizer import FuncAnalizer as FA
-
 
 class TestInspector:
     
@@ -78,7 +77,7 @@ class TestInspector:
         assert x.func_call == ("testfunc()", {})
         
     def test_FuncCallComplexArgs(self):
-        class TMP(DialogueModel):
+        class TMP(BaseModel):
             var:str = Field(default="", description="It's a var :)")
         def testfunc(a:TMP, b:Image):
             return inspect.currentframe()
@@ -114,7 +113,7 @@ class TestInspector:
         assert x.func_type == ([], None)
         
     def test_FuncTypeComplexArgs(self):
-        class TMP(DialogueModel):
+        class TMP(BaseModel):
             var:str = Field(default="", description="It's a var :)")
         def testfunc(a:TMP, b:Image)->Optional[List[int]]:
             return inspect.currentframe()
@@ -142,7 +141,7 @@ class TestInspector:
         assert x.func_schema == {'anyOf': [{'items': {'type': 'number'}, 'type': 'array'}, {'type': 'null'}]}
 
     def test_FuncSchemaPydantic(self):
-        class TMP(DialogueModel):
+        class TMP(BaseModel):
             var1:str = Field(default="", description="It's one var :)")
             var2:int = Field(default=0, description="It's two var :)")
         def testfunc(a:int)->TMP:

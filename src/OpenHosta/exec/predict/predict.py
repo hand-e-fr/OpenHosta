@@ -12,25 +12,25 @@ from .model.neural_network import NeuralNetwork
 from .model.neural_network_types import ArchitectureType
 from .predict_config import PredictConfig
 from .predict_memory import PredictMemory, File
-from ...core.config import DialogueModel, _DefaultModelPolicy
+from ...core.config import Model, _DefaultModelPolicy
 from ...core.hosta_inspector import HostaInspector, FunctionMetadata
 from ...core.logger import Logger, ANSIColor
 
 def predict(
     config: PredictConfig = PredictConfig(),
-    oracle: Optional[Union[DialogueModel, HostaDataset]] = None,
+    oracle: Optional[Union[Model, HostaDataset]] = None,
     verbose: Union[Literal[0, 1, 2], bool] = 0
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
 
     Args:
-        config: DialogueModel configuration
+        config: Model configuration
         oracle: Reference model or dataset for data generation
         verbose: Enables detailed logging
 
     Returns:
-        DialogueModel prediction
+        Model prediction
     """
 
     assert config is not None, "Please provide a valid configuration not None"
@@ -45,19 +45,19 @@ def predict(
 
 async def predict_async(
     config: PredictConfig = PredictConfig(),
-    oracle: Optional[Union[DialogueModel, HostaDataset]] = None,
+    oracle: Optional[Union[Model, HostaDataset]] = None,
     verbose: Union[Literal[0, 1, 2], bool] = 0
 ) -> Union[int, float, bool, str]:
     """
     Predicts a result using an existing model or by creating a new one.
 
     Args:
-        config: DialogueModel configuration
+        config: Model configuration
         oracle: Reference model or dataset for data generation
         verbose: Enables detailed logging
 
     Returns:
-        DialogueModel prediction
+        Model prediction
     """
 
     assert config is not None, "Please provide a valid configuration not None"
@@ -74,7 +74,7 @@ async def predict_async(
 def _predict(
     inspection: HostaInspector,
     config: PredictConfig = PredictConfig(),
-    oracle: Optional[Union[DialogueModel, HostaDataset]] = None,
+    oracle: Optional[Union[Model, HostaDataset]] = None,
     verbose: Union[Literal[0, 1, 2], bool] = 0
 ) -> Union[int, float, bool, str]:
 
@@ -215,7 +215,7 @@ def load_weights(inspection: HostaInspector, memory: PredictMemory, hosta_model:
 def train_model(config: PredictConfig,
                 memory: PredictMemory,
                 model: HostaModel,
-                oracle: Optional[Union[DialogueModel, HostaDataset]],
+                oracle: Optional[Union[Model, HostaDataset]],
                 function_metadata: FunctionMetadata,
                 logger: Logger) -> None:
     """
@@ -252,7 +252,7 @@ def train_model(config: PredictConfig,
 def prepare_dataset(config: PredictConfig,
                     memory: PredictMemory,
                     function_metadata: FunctionMetadata,
-                    oracle: Optional[Union[DialogueModel, HostaDataset]],
+                    oracle: Optional[Union[Model, HostaDataset]],
                     model: HostaModel,
                     logger: Logger) -> tuple:
     """
@@ -292,7 +292,7 @@ def prepare_dataset(config: PredictConfig,
 
 
 def _generate_data(function_metadata: FunctionMetadata,
-                   oracle: Optional[Union[DialogueModel, HostaDataset]],
+                   oracle: Optional[Union[Model, HostaDataset]],
                    config: PredictConfig,
                    logger: Logger) -> HostaDataset:
     """

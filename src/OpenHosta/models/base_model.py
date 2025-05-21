@@ -6,7 +6,7 @@ import asyncio
 
 from  concurrent.futures import ThreadPoolExecutor
 
-class DialogueModel:
+class Model:
     def __init__(self,
                 max_async_calls = 7,
                 additionnal_headers: Dict[str, Any] = {},
@@ -46,7 +46,7 @@ class DialogueModel:
         force_json_output: bool = None,
         llm_args:dict = {}
     ) -> Dict:
-        raise NotImplementedError("You need to implement 'api_call' in your subclass of DialogueModel")
+        raise NotImplementedError("You need to implement 'api_call' in your subclass of Model")
 
     def get_executor(self):
         if self.async_executor is None:
