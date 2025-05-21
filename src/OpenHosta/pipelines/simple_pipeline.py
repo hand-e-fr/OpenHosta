@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple
 from abc import ABC, abstractmethod
 
-from ..models import DialogueModel
+from ..models import Model
 from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_PROMPT
 
 from .conversation import Conversation
@@ -9,7 +9,7 @@ from .conversation import Conversation
 Flow = List[Tuple[str, MetaPrompt]]
 
 
-class Narrator(ABC):
+class Pipeline(ABC):
     """
     Abstract base class defining the interface for model selection policies.
 
@@ -28,16 +28,16 @@ class Narrator(ABC):
         pass
 
 
-class OneTurnConversationNarrator(Narrator):
+class OneTurnConversationPipeline(Pipeline):
     """
     This policy always use the default MetaPrompt with the default model
     """
 
     def __init__(self, 
-                 default_model:DialogueModel=None,
+                 default_model:Model=None,
                  default_llm_args={}):
         
-        self.model:DialogueModel = default_model
+        self.model:Model = default_model
         self.llm_args:Dict = default_llm_args
 
         self.default_meta_conversation:Flow = [

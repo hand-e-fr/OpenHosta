@@ -2,20 +2,20 @@
 from typing import Dict
 
 from ..core.type_converter import apply_type
-from ..models import DialogueModel
+from ..models import Model
 
 
 class Conversation:
 
     def __init__(self, 
                  inspection:Dict, 
-                 model:DialogueModel, 
+                 model:Model, 
                  meta_conversation,
                  return_type:type=None,
                  llm_args={},
                  data={}):
 
-        self.model:DialogueModel    = model
+        self.model:Model    = model
         self.inspection:Dict        = inspection
         self.meta_conversation      = meta_conversation
         self.return_type:type       = return_type

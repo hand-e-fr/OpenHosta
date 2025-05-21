@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from ..core.hosta_inspector import get_caller_frame, get_hota_inspection
-from ..core.config import _DefaultNarrator
-from ..narrators import Narrator
+from ..core.config import _DefaultPipeline
+from ..pipelines import Pipeline
 
 def emulate(
         *,
-        narrator: Optional[Narrator] = _DefaultNarrator,
+        pipeline: Optional[Pipeline] = _DefaultPipeline,
         ) -> Any:
     """
     Emulates a function's behavior using a language model.
@@ -17,7 +17,7 @@ def emulate(
     based on its signature, docstring, and context.
     
     Args:
-        - model (Optional[DialogueModel]): The language model to use for emulation. If None, uses the default model.
+        - model (Optional[Model]): The language model to use for emulation. If None, uses the default model.
         - post_callback (Optional[Callable]): Optional callback function to process the model's output.
         - llm_args: Additional keyword arguments to pass to the language model.
     
@@ -29,7 +29,7 @@ def emulate(
 
     inspection = get_hota_inspection(frame)
     
-    conversation = narrator.outline(inspection)
+    conversation = pipeline.outline(inspection)
     
     # This where your prompt is. You could also call `conversation.run(data)`
     messages = [
@@ -46,7 +46,7 @@ def emulate(
 
 async def emulate_async(
         *,
-        narrator: Optional[Narrator] = _DefaultNarrator,
+        pipeline: Optional[Pipeline] = _DefaultPipeline,
         ) -> Any:
     """
     Emulates a function's behavior using a language model.
@@ -55,7 +55,7 @@ async def emulate_async(
     based on its signature, docstring, and context.
     
     Args:
-        - model (Optional[DialogueModel]): The language model to use for emulation. If None, uses the default model.
+        - model (Optional[Model]): The language model to use for emulation. If None, uses the default model.
         - post_callback (Optional[Callable]): Optional callback function to process the model's output.
         - llm_args: Additional keyword arguments to pass to the language model.
     
@@ -67,7 +67,7 @@ async def emulate_async(
 
     inspection = get_hota_inspection(frame)
     
-    conversation = narrator.outline(inspection)
+    conversation = pipeline.outline(inspection)
     
     # This where your prompt is. You could also call `conversation.run(data)`
     messages = [

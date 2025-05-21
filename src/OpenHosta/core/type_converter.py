@@ -20,7 +20,7 @@ def apply_type(data, schema):
 
 class TypeConverter:
     """
-    A class used to check and convert the outputs of a Language DialogueModel (LLM) to the type specified in a function's annotation.
+    A class used to check and convert the outputs of a Language Model (LLM) to the type specified in a function's annotation.
 
     Args:
         function_metadata (FunctionMetadata): A function object that contains the type annotations for the LLM outputs.

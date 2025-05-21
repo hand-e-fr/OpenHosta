@@ -1,8 +1,5 @@
 from typing import List, Any, Optional
 
-# from pydantic import DialogueModel
-
-
 class Sample:
     """
     A class to handle data samples for machine learning.
@@ -36,9 +33,9 @@ class Sample:
     def _flatten_data(self, data: Any) -> List[Any]:
         """
         Flatten any nested data structure into a list.
-        Handles: DialogueModel, dict, list/tuple, primitive types
+        Handles: Model, dict, list/tuple, primitive types
         """
-        # if isinstance(data, DialogueModel):
+        # if isinstance(data, Model):
         #     return self._flatten_data(data.model_dump())
         if isinstance(data, dict):
             result = []

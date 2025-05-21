@@ -20,7 +20,7 @@ All significant changes to this project will be documented in this file.
 
 - **Fixes**
   - #195 fix Bug with pydantic import
-  - #199 improve pydantic return type support for List[DialogueModel] and Dict[..., DialogueModel]
+  - #199 improve pydantic return type support for List[Model] and Dict[..., Model]
 
 ## **v2.1.5**
 - **Fixes**

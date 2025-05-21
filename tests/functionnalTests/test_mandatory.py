@@ -1,6 +1,6 @@
 import pytest
 import os
-from pydantic import DialogueModel
+from pydantic import BaseModel
 from typing import Callable
 
 from OpenHosta import config, emulate, thinkof
@@ -23,7 +23,7 @@ def emulate_1arg_list(arg)->list:
 
 emulate_1arg = {"str": emulate_1arg_str, "int": emulate_1arg_int, "float": emulate_1arg_float, "list": emulate_1arg_list}
 
-class User(DialogueModel):
+class User(BaseModel):
     name: str
     email: str
     age: int

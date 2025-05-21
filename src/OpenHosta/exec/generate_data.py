@@ -4,7 +4,7 @@ from typing import Callable, Optional, Union, Literal
 
 from .predict.dataset.dataset import HostaDataset
 from .predict.dataset.oracle import LLMSyntheticDataGenerator
-from ..core.config import DialogueModel, _DefaultModelPolicy
+from ..core.config import Model, _DefaultModelPolicy
 from ..core.hosta_inspector import FunctionMetadata
 from ..core.logger import Logger
 
@@ -39,7 +39,7 @@ def _analyze_function(function_pointer: Callable) -> FunctionMetadata:
 def generate_data(
         function_pointer: Callable,
         ammount: int,
-        oracle: Optional[DialogueModel] = None,
+        oracle: Optional[Model] = None,
         verbose: Union[Literal[0, 1, 2], bool] = 2
 ):
     logger: Logger = Logger(verbose=verbose)
@@ -58,7 +58,7 @@ def generate_data(
 async def generate_data_async(
         function_pointer: Callable,
         ammount: int,
-        oracle: Optional[DialogueModel] = None,
+        oracle: Optional[Model] = None,
         verbose: Union[Literal[0, 1, 2], bool] = 2
 ):
     logger: Logger = Logger(verbose=verbose)

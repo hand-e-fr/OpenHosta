@@ -40,10 +40,10 @@ config.set_default_model(model)
 
 from OpenHosta import emulate
 
-from pydantic import DialogueModel, Field
+from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 
-class Person(DialogueModel):
+class Person(BaseModel):
     name: str = Field(..., description="The full name (Firstname and Sirname ) of the person")
     age: Optional[int] = None
     birth_city: Optional[str] = None

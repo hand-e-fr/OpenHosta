@@ -1,13 +1,13 @@
 
-from OpenHosta import DialogueModel
+from OpenHosta import Model
 
 
 
-# Code -> LibOpenHosta -> Emulate -> DialogueModel
+# Code -> LibOpenHosta -> Emulate -> Model
 # Code -> Compiled
 # Code -> Logger
 #                         Emulate -> Logger
-#                                    DialogueModel -> Logger
+#                                    Model -> Logger
 
 # use dagster
 
@@ -31,8 +31,8 @@ from OpenHosta import DialogueModel
 # Output: string to regexp, string to json, string to regexp for python call plus data,  
 
 
-# from pydantic import DialogueModel, Field
-# class Toto(DialogueModel):
+#from pydantic import BaseModel, Field
+# class Toto(BaseModel):
 #     toto:str = Field(default="none", description="who is toto")
 
 

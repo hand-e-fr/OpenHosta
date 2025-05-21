@@ -1,3 +1,6 @@
+## TODO:
+ - [ ] Explain the beauty of MetaPrompts with indent and blank lines removal
+
 # Documentation
 ___
 
@@ -98,7 +101,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [How It Works](#how-it-works)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
-      - [Inheriting from the OpenAICompatibleModel Class](#inheriting-from-the-model-class)
+      - [Inheriting from the OpenAICompatibleModel Class](#inheriting-from-the-openaicompatiblemodel-class)
       - [Custom LLM Call Function](#custom-llm-call-function)
       - [Custom Response Handling Function](#custom-response-handling-function)
       - [Example Usage](#example-usage-1)
@@ -367,10 +370,10 @@ The Pydantic model cannot be defined inside a function, as this will produce an 
 Let's take the same example, but using this feature:
 
 ```python
-from pydantic import DialogueModel
+from pydantic import BaseModel
 from OpenHosta import emulate
 
-class Person(DialogueModel):
+class Person(BaseModel):
     name: str
     age: int
 
