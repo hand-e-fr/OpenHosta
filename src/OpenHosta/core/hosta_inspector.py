@@ -108,7 +108,7 @@ def get_caller_frame():
     
     return frame
 
-def get_hota_inspection(frame):
+def get_hosta_inspection(frame):
     function_pointer = identify_function_of_frame(frame)  
     inspection = getattr(function_pointer, "hosta_inspection", None)
     
@@ -126,8 +126,6 @@ def get_hota_inspection(frame):
         setattr(function_pointer, "hosta_inspection", inspection)
     else:
         hosta_analyse_update(frame, inspection["analyse"])
-
-    inspection["prompt_data"] = hosta_prompt_snippets(inspection["analyse"])
 
     return inspection
 

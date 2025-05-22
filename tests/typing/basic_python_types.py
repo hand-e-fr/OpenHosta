@@ -177,7 +177,7 @@ for model_name in ModelList:
 
         try:
             res[0] = response_dict['choices'][0]["message"]["content"]
-            res[1] = untyped_response = model.response_parser(response_dict, inspection._infos)
+            res[1] = untyped_response = model.get_response_content(response_dict, inspection._infos)
             res[2] = response_data = model.type_returned_data(untyped_response, inspection._infos)
         except:
             pass

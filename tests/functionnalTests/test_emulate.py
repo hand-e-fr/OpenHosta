@@ -38,6 +38,7 @@ DefaultModel = OpenAICompatibleModel(
 
 config.set_default_model(DefaultModel)
 
+import sys
 class TestTypes:
     
     def test_NativeNumericalInt(self):
@@ -45,7 +46,8 @@ class TestTypes:
             """
             This function adds two to the integers in parameter
             """
-            return emulate()
+            #return emulate()
+            return sys._getframe()
         
         assert type(add_two(2)) == int
         

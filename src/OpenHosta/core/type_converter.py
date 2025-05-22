@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import inspect
 import json
+import textwrap
+from typing import _alias
+from dataclasses import is_dataclass
 
 import sys
 from sys import version_info
@@ -15,96 +19,94 @@ if version_info.major == 3 and version_info.minor > 9:
 else:
     NoneType = type(None)
 
-def apply_type(data, schema):
-    return data
-
-class TypeConverter:
+def type_returned_data(untyped_response: str, expected_type: Type[T]) -> T:
     """
-    A class used to check and convert the outputs of a Language Model (LLM) to the type specified in a function's annotation.
-
-    Args:
-        function_metadata (FunctionMetadata): A function object that contains the type annotations for the LLM outputs.
-        data (dict): A dictionary containing the LLM outputs data to be checked and converted.
-
-    Attributes:
-        function_metadata (FunctionMetadata): The function object containing the type annotations for the LLM outputs.
-        data (dict): The LLM outputs data to be checked and converted.
+    Convert the untyped response to the expected type.
     """
+    
+    # In a real implementation, you might want to use a more sophisticated approach
+    return convert_pydantic(json.loads(untyped_response), expected_type)
 
-    def __init__(self, function_metadata, data: Any):
-        self.function_metadata = function_metadata
-        self.data = data
+BASIC_TYPES = [
+    int, float, complex, str, list, tuple, range, dict, set, frozenset,
+    bool, bytes, bytearray, memoryview
+]
 
-    def _default(x: Any) -> Any:
-        """
-        A default conversion function that returns the _inputs as is.
 
-        Args:
-            x (Any): The _inputs data to be converted.
+def describe_type_as_schema(arg_type):
+    """
+    Describe a Python type as a JSON schema.
+    """
+    return None
 
-        Returns:
-            Any: The _inputs data as is.
-        """
-        return x
+def describe_type_as_python(arg_type):
+    type_definition = None
+    
+    if arg_type in BASIC_TYPES or\
+        type(arg_type) is _alias or\
+            arg_type == type:
+        # Check if the type is a basic type or a typing alias
+        type_definition = nice_type_name(arg_type)
 
-    def convert(self, typ: Type[T]) -> Callable[[Any], T]:
-        """
-        A method to create a conversion function for a given type.
-
-        Args:
-            typ (Type[T]): The type for which a conversion function needs to be created.
-
-        Returns:
-            Callable[[Any], T]: A conversion function for the given type.
-        """
-        convert_map = {
-            NoneType: lambda x: None,
-            str: str,
-            int: int,
-            float: float,
-            list: list,
-            set: set,
-            frozenset: frozenset,
-            tuple: tuple,
-            bool: bool,
-            dict: dict,
-            complex: complex,
-            bytes: lambda x: bytes(x, encoding='utf-8') if isinstance(x, str) else bytes(x),
-        }
-        return convert_map.get(typ, self._default.__func__)
-
-    def check(self) -> Any:
-        """
-        A method to check and convert the _inputs data based on the function's type annotations and Pydantic model annotations.
-
-            Returns:
-                Any: The checked and converted data. If `data` contains a "return" key, its value is used as the checked data. Otherwise, `data` is used as the checked data.
-        """
-        if self.data == "None" or self.data is None:
-            sys.stderr.write(
-                f"[TypeConverter.check]: Got None response from the LLM.")
-            return None
+    elif is_dataclass(arg_type):
+        type_definition=textwrap.dedent(f"""\
+            python class {arg_type.__name__} is defines as a @dataclass:
+            {arg_type.__doc__}
+            """)
         
-        return_type = self.function_metadata.f_type[1]
-        if type(return_type) is type:
-            # Standart python types
-            caller = return_type
-        elif get_origin(return_type) is not None:
-            # typing compatible types
-            caller = get_origin(return_type)
+    elif hasattr(arg_type, '__annotations__')  and \
+            not arg_type.__annotations__ is inspect._empty:
+        # This is a class with annotations
+        type_definition=textwrap.dedent(f"""\
+            python class {arg_type.__name__} has this annotation:
+            {arg_type.__annotations__}
+            """)
+        
+    else:
+        # Unknown types
+        Warning(f"Unknown type {arg_type}. Keeping it as is.")
+        type_definition = str(arg_type)
+
+    return type_definition
+
+
+def build_types_as_json_schema(arg_type):
+    
+    simple_types = {
+        int: "integer",
+        float: "number",
+        str: "string",
+        list: "array",
+        bool: "boolean",
+        dict: "object",
+        set: "array",
+        tuple: "array",
+        frozenset: "array",
+        bytes: "string",
+    }
+    
+    return_type_schema = ""
+    if arg_type in BASIC_TYPES:
+        if not arg_type in simple_types:
+            raise Exception(f"Unsupported type {arg_type}. Please use another type. Supported types are {simple_types.keys()}")
         else:
-            # Other types (pydantic models)
-            caller = return_type
+            return_type_schema = '{"type": "' + simple_types[arg_type] + '"}'
+    else:
+        # This is advanced types of user defined types
+        return_type_schema = f"{describe_type_as_schema(arg_type)}"
 
-        checked = self.data
+    return return_type_schema
 
-        try:   
-            checked = self.convert(caller)(checked)
-        except:
-            sys.stderr.write("[TypeConverter.check]: Failed to convert basic type from the LLM. Keep original type.\n")
+def nice_type_name(obj) -> str:
+    """
+    Get a nice name for the type to insert in function description for LLM.
+    """
+    if type(obj) is _alias:
+        t=obj.__repr__()
+        t=t.replace("typing.", "")
+        return t
+    
+    if hasattr(obj, "__name__"):
+        return obj.__name__
 
-        try:   
-            checked = convert_pydantic(caller, checked)
-        except:
-            sys.stderr.write("[TypeConverter.check]: Failed to convert pydantic type from the LLM. Keep original type.\n")
-        return checked
+    return str(obj)

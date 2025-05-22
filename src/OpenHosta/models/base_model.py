@@ -14,23 +14,22 @@ class ModelCapabilities(Enum):
     IMAGE2TEXT = "IMAGE2TEXT"
     IMAGE2IMAGE = "IMAGE2IMAGE"
     THINK = "THINK"
+    JSON_OUTPUT = "JSON_OUTPUT"
 
 class Model:
     def __init__(self,
                 max_async_calls = 7,
                 additionnal_headers: Dict[str, Any] = {},
                 api_parameters:Dict[str, Any] = {},
-                json_output_capable = False,
                 ):
+        self.capabilities: set[ModelCapabilities] = set()
         
         self.max_async_calls = max_async_calls
-        self.async_executor = None  
-      
-        self.json_output_capable = json_output_capable
-
+        self.async_executor = None
+        
         self.user_headers = additionnal_headers
         self.api_parameters = api_parameters
-        
+
     def __exit__(self):
         if self.async_executor is not None:
             self.async_executor.shutdown()
@@ -68,7 +67,7 @@ class Model:
         pass
 
     @abc.abstractmethod
-    def response_parser(self, response_dict: Dict) -> Any:
+    def get_response_content(self, response_dict: Dict) -> str:
         """Parse the response_dict and return the data section"""
         pass
 
