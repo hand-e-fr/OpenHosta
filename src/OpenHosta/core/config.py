@@ -9,7 +9,7 @@ DefaultModel = OpenAICompatibleModel(
         base_url="https://api.openai.com/v1/chat/completions")
 
 DefaultPipeline = OneTurnConversationPipeline(
-    default_model=DefaultModel
+    model_list=[DefaultModel]
 )
      
 def set_default_model(new):

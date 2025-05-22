@@ -797,26 +797,26 @@ The "api_call" method returns a response object that contains the LLM's response
 
 #### Custom Response Handling Function
 
-To create your own response handling function, you need to override the "response_parser" method of the OpenAICompatibleModel class. This method is called every time the library receives a response from the LLM.
+To create your own response handling function, you need to override the "get_response_content" method of the OpenAICompatibleModel class. This method is called every time the library receives a response from the LLM.
 
 ```python
 from typing import Dict, Any
 from OpenHosta import OpenAICompatibleModel, FunctionMetadata, TypeConverter
 
 class MyModel(OpenAICompatibleModel):
-    def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
+    def get_response_content(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
         # Your code here
         # Process the LLM response and return the result
         return TypeConverter(function_metadata, l_ret_data).check()
 ```
 
-In the example above, we have overridden the `response_parser` method of the OpenAICompatibleModel class to create our own response handling function. 
-The "response_parser" method takes three arguments:
+In the example above, we have overridden the `get_response_content` method of the OpenAICompatibleModel class to create our own response handling function. 
+The "get_response_content" method takes three arguments:
 
 - **response**: The response object returned by the LLM.
 - **function_metadata**: The object containing all the useful information about the emulated function.
 
-The "response_parser" method returns the processed return value. This is the value returned by the emulated function.
+The "get_response_content" method returns the processed return value. This is the value returned by the emulated function.
 
 #### Example Usage
 
@@ -867,13 +867,13 @@ class LlamaModel(OpenAICompatibleModel):
         except Exception as e:
             raise RequestError(f"[OpenAICompatibleModel.api_call] Request failed:\n{e}\n\n")
         
-    def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
+    def get_response_content(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
         json_string = response["message"]["content"]
         try:
             l_ret_data = json.loads(json_string)
         except json.JSONDecodeError as e:
             sys.stderr.write(
-                f"[OpenAICompatibleModel.response_parser] JSONDecodeError: {e}\nContinuing the process.")
+                f"[OpenAICompatibleModel.get_response_content] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
         return TypeConverter(function_metadata, l_ret_data).check()

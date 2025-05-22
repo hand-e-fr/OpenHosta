@@ -120,7 +120,7 @@ async def build_function_async(model, prompt, inner_func, query_string, args, kw
         
         logger.set_response_dict(response_dict)
         
-        l_ret = _model.response_parser(response_dict, _infos)
+        l_ret = _model.get_response_content(response_dict, _infos)
         l_data = _model.type_returned_data(l_ret, _infos)
 
         logger.set_response_data(l_data)
@@ -153,7 +153,7 @@ def build_function(model, prompt, inner_func, query_string, args, kwargs, llm_ar
         
         logger.set_response_dict(response_dict)
         
-        l_ret = _model.response_parser(response_dict, _infos)
+        l_ret = _model.get_response_content(response_dict, _infos)
         l_data = _model.type_returned_data(l_ret, _infos)
 
         logger.set_response_data(l_data)

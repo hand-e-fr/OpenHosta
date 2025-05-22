@@ -15,7 +15,7 @@ class OpenAICompatibleModel(Model):
             max_async_calls = 7,
             additionnal_headers: Dict[str, Any] = {},
             api_parameters:Dict[str, Any] = {},
-            capabilities:Set[ModelCapabilities] = [ModelCapabilities.CHAT],
+            capabilities:Set[ModelCapabilities] = [ModelCapabilities.TEXT2TEXT],
             base_url: str = None, 
             api_key: str = None, 
             timeout: int = 30,
@@ -66,10 +66,11 @@ class OpenAICompatibleModel(Model):
         # for key, value in self.user_headers.items():
         #     headers[key] = value
  
-        if force_json_output:
-            l_body["response_format"] = {"type": "json_object"}
         for key, value in llm_args.items():
-            l_body[key] = value
+            if key == "force_json_output" and value:
+                l_body["response_format"] = {"type": "json_object"}
+            else:
+                l_body[key] = value
         try:
             response = requests.post(self.base_url, headers=headers, json=l_body, timeout=self.timeout)
 
@@ -94,7 +95,7 @@ class OpenAICompatibleModel(Model):
         if "usage" in response_dict:
             self._used_tokens += int(response_dict["usage"]["total_tokens"])
 
-    def response_parser(self, response_dict: Dict) -> Any:
+    def get_response_content(self, response_dict: Dict) -> str:
 
         response = response_dict["choices"][0]["message"]["content"]
 

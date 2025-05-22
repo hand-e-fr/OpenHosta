@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..core.hosta_inspector import get_caller_frame, get_hota_inspection
+from ..core.hosta_inspector import get_caller_frame, get_hosta_inspection
 from ..core.config import DefaultPipeline
-from ..pipelines import Pipeline
+from ..pipelines import Pipeline, OneTurnConversationPipeline
 
 def emulate(
         *,
-        pipeline: Optional[Pipeline] = DefaultPipeline,
+        pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+        force_llm_args: Optional[dict] = {},
         ) -> Any:
     """
     Emulates a function's behavior using a language model.
@@ -28,13 +29,13 @@ def emulate(
     frame = get_caller_frame()
 
     # Get everything about the function you are emulating
-    inspection = get_hota_inspection(frame)
+    inspection = get_hosta_inspection(frame)
     
     # Convert the inspection to a prompt
     messages = pipeline.push(inspection)
         
     # This is the api call to the model, nothing more. Easy to debug and test.
-    response_dict = pipeline.model.api_call(messages, pipeline.conversation.llm_args)
+    response_dict = pipeline.model.api_call(messages, pipeline.llm_args | force_llm_args)
 
     # Convert the model response to a python object according to expected types
     response_data = pipeline.pull(response_dict)
@@ -63,7 +64,7 @@ async def emulate_async(
     # You can retrive this frame using get_last_frame(your_emulated_function) in interactive mode
     frame = get_caller_frame()
 
-    inspection = get_hota_inspection(frame)
+    inspection = get_hosta_inspection(frame)
     
     conversation = pipeline.outline(inspection)
     
