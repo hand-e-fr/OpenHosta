@@ -5,8 +5,8 @@
 
 import os
 
-from OpenHosta.utils.import_handler import is_pydantic_enabled
-assert is_pydantic_enabled, "Pydantic shall be installed"
+from OpenHosta.utils.import_handler import is_pydantic_available
+assert is_pydantic_available, "Pydantic shall be installed"
 
 #########################################################
 #

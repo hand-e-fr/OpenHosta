@@ -100,11 +100,13 @@ EMULATE_META_PROMPT=MetaPrompt(
     Here's the function definition:
 
     ```python
-    def {{ function_name }}({{ function_args }}) -> {{ function_return_as_python_type }}:
+    def {{ function_name }}({{ function_args }}) -> {{ function_return_type_name }}:
         \"\"\"{{ function_doc }}\"\"\"
+        
         ...
         ...behavior to be simulated...
         ...
+        
         return ...appropriate return value...
     ```
                         
@@ -127,6 +129,6 @@ EMULATE_META_PROMPT=MetaPrompt(
 
 USER_CALL_META_PROMPT = MetaPrompt(
     """\
-    {% if variable_declaration %}# Values of parameters to be used
-    {{ variable_declaration }}{% endif %}
-    {{ function_call_as_python_code }}""")
+    {% if variables_initialization %}# Values of parameters to be used
+    {{ variables_initialization }}{% endif %}
+    {{ function_name }}({{ function_call_arguments }})""")

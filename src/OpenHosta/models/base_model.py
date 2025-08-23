@@ -13,6 +13,7 @@ class ModelCapabilities(Enum):
     TEXT2IMAGE = "TEXT2IMAGE"
     IMAGE2TEXT = "IMAGE2TEXT"
     IMAGE2IMAGE = "IMAGE2IMAGE"
+    
     THINK = "THINK"
     JSON_OUTPUT = "JSON_OUTPUT"
 
@@ -37,13 +38,12 @@ class Model:
     async def api_call_async(
         self,
         messages: list[dict[str, str]],
-        force_json_output: bool = None,
         llm_args:dict = {}
     ) -> Dict:
         response_dict = await asyncio.get_event_loop().run_in_executor(
                 self.get_executor(),
                 self.api_call,
-                messages, force_json_output, llm_args
+                messages, llm_args
             )
         return response_dict
     
@@ -56,7 +56,6 @@ class Model:
     def  api_call(
         self,
         messages: list[dict[str, str]],
-        force_json_output: bool = None,
         llm_args:dict = {}
     ) -> Dict:
         raise NotImplementedError("You need to implement 'api_call' in your subclass of Model")
