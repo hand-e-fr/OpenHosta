@@ -5,9 +5,11 @@ from typing import get_args, get_origin
 
 import json
 
-from ..utils.import_handler import is_pydantic_enabled
+from ..utils.import_handler import is_pydantic_available
 
-if not is_pydantic_enabled:
+if not is_pydantic_available:
+    
+    BaseModel = None
 
     # Do not try to convert to pydantic object as the lib is not installed
     def convert_pydantic(caller, checked):

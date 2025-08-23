@@ -617,14 +617,12 @@ print(result)   # 4
 In the example above, we can see two distinct ways of using `thinkof`. In the first example, you can store a lambda function in a variable and then use it. You can also call it directly by enclosing the arguments behind it in brackets. `thinkof` accepts multiple arguments and all types native to python. However, the content of the first bracket is always a string.
 
 The `thinkof` function has an initial pre-compilation stage where it predicts the type of the return value by making an initial call to an LLM. Execution time can therefore be increased the first time using the function, then the type is stored and reused for the next execution.
-You can retrieve the predicted return type with the `return_type()` function:
 
 ```python
-from OpenHosta import thinkof, return_type
+from OpenHosta import closure
 
-x = thinkof("Adds all integers")
+x = closure("Adds all integers")
 ret = x(2 ,3 ,6)
-print(return_type(x)) # int
 ```
 
 **Note** : ***this feature uses the default model.***

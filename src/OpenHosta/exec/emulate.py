@@ -45,7 +45,8 @@ def emulate(
 
 async def emulate_async(
         *,
-        pipeline: Optional[Pipeline] = DefaultPipeline,
+        pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+        force_llm_args: Optional[dict] = {},
         ) -> Any:
     """
     Emulates a function's behavior using a language model.
@@ -64,18 +65,16 @@ async def emulate_async(
     # You can retrive this frame using get_last_frame(your_emulated_function) in interactive mode
     frame = get_caller_frame()
 
+    # Get everything about the function you are emulating
     inspection = get_hosta_inspection(frame)
     
-    conversation = pipeline.outline(inspection)
+    # Convert the inspection to a prompt
+    messages = pipeline.push(inspection)
     
-    # This where your prompt is. You could also call `conversation.run(data)`
-    messages = [
-                {"role":role, "content":  meta_prompt.render(conversation.data)}
-                    for role, meta_prompt in conversation.meta_conversation
-                ]
-    
-    response_dict = await conversation.model.api_call_async(messages, conversation.llm_args)
+    response_dict = await pipeline.model.api_call_async(messages, pipeline.llm_args | force_llm_args)
 
-    response_data = conversation.parse(response_dict)
+    # Convert the model response to a python object according to expected types
+    response_data = pipeline.pull(response_dict)
     
     return response_data
+

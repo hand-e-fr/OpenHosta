@@ -6,7 +6,7 @@ from ..models import Model, OpenAICompatibleModel
 
 DefaultModel = OpenAICompatibleModel(
         model_name="gpt-4o", 
-        base_url="https://api.openai.com/v1/chat/completions")
+        base_url="https://api.openai.com/v1")
 
 DefaultPipeline = OneTurnConversationPipeline(
     model_list=[DefaultModel]

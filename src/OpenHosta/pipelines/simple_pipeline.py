@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple, Any
 from abc import ABC, abstractmethod
 import json
+import inspect
 
 from ..models import Model, ModelCapabilities
 
@@ -20,6 +21,7 @@ class Pipeline(ABC):
     def __init__(self):
         super().__init__()
         self.model: Model = None
+        self.llm_args = {}
 
     @abstractmethod
     def push(self, inspection) -> dict:
@@ -52,11 +54,13 @@ class OneTurnConversationPipeline(Pipeline):
         
         assert len(model_list) > 0, "You shall provide at least one model."
 
+        super().__init__()
+
         self.model_list:List[Model] = model_list 
         self.pipe_state = {}
     
 
-    def push__detect_missing_types(self, inspection):
+    def push_detect_missing_types(self, inspection):
         """Python Level"""
         if "type" not in inspection["analyse"] or inspection["analyse"]["type"] is None:
             Warning(f"No return type found for function {inspection["analyse"]["name"]}. Assuming str.")
@@ -73,7 +77,7 @@ class OneTurnConversationPipeline(Pipeline):
         return inspection
 
 
-    def push__chose_model(self, inspection):
+    def push_chose_model(self, inspection):
         """OpenHosta Level"""
         
         # For now, we just take the first model
@@ -81,16 +85,16 @@ class OneTurnConversationPipeline(Pipeline):
         
         return self.model
 
-    def push__encode_types(self, inspection, model_capabilities: set[ModelCapabilities]):
+    def push_encode_inspected_data(self, inspection, model_capabilities: set[ModelCapabilities]):
         """Data & Schema Level"""
         
         analyse = inspection["analyse"]
 
         snippets = encode_function(analyse, model_capabilities)
 
-        return snippets
+        return snippets 
 
-    def push__select_meta_prompts(self, inspection):
+    def push_select_meta_prompts(self, inspection):
         """Prompt Level""" 
         
         default_meta_conversation:Flow = [
@@ -102,29 +106,30 @@ class OneTurnConversationPipeline(Pipeline):
     def push(self, inspection) -> dict:
         
         # reset pipe state for new usage
-        inspection    = self.push__detect_missing_types(inspection)
-        model         = self.push__chose_model(inspection)
-        schema, data  = self.push__encode_types(inspection, model.capabilities)
-        meta_messages = self.push__select_meta_prompts(inspection)
-
-        # in case the user wants to use it by itself
-        self.model = model
-        self.return_schema = schema
+        self.inspection     = self.push_detect_missing_types(inspection)
+        self.model          = self.push_chose_model(self.inspection)
+        self.encoded_data   = self.push_encode_inspected_data(self.inspection, self.model.capabilities)
         
-        # For usage in pull phase
-        self.inspection = inspection
-
-        messages = [
-            {
-                "role": role, "content": [
-                        {"type": "text",  "text" : meta_prompt.render(data) }
-                    ] + [
-                        {"type": "image_url", "image_url": image} if image else []
-                    ]
-            }
-            for role, meta_prompt, image in meta_messages
-        ]
+        meta_messages       = self.push_select_meta_prompts(self.inspection)
+        
+        messages = []
+        
+        for role, meta_prompt, image in meta_messages:
             
+            message_content = [
+                        {"type": "text",  "text" : meta_prompt.render(self.encoded_data) }
+                    ]
+            
+            if image:
+                message_content += [
+                    {"type": "image_url", "image_url": image}
+                ]
+
+            messages += [{
+                "role": role,
+                "content": message_content
+            }]
+
         return messages
 
 
@@ -135,56 +140,57 @@ class OneTurnConversationPipeline(Pipeline):
     def pull_extract_data_section(self, raw_response:str) -> Any:
         """Data & Schema Level"""
 
-        thinking, untyped_response = get_thinking_and_data_sections(raw_response)
-        
-        if self.inspection["analyse"]["type"] is str: # output contains coded data
-            # Simple text not expected, response = untyped_response
-            response = untyped_response
-        else:
-            response = type_returned_data(untyped_response, self.inspection["analyse"]["type"])
+        thinking, response_string = get_thinking_and_data_sections(raw_response)
 
-        return response
+        return response_string.strip()
 
-    def pull_verify_llm_capability(self, data):
-        """OpenHosta Level"""
-        pass
-
-    def pull_type_data_section(self, data:Any) -> Any:
+    def pull_type_data_section(self, response:Any) -> Any:
         """Python Level"""
-        
-        if response.strip().endswith("```"):
-            chuncks = response.split("```")
-            last_chunk = chuncks[-2]
-            if "{" in last_chunk and "}" in last_chunk:
-                chunk_lines = last_chunk.split("\n")[1:]
-                # find first line with { and last line with }
-                start_line = next(i for i, line in enumerate(chunk_lines) if "{" in line)
-                end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
-                response = "\n".join(chunk_lines[start_line:end_line + 1])
+        l_ret_data = None
 
-            else:
-                # JSON not found in the response. (passthrough)"
-                response = last_chunk
-        
-        try:
-            if response.startswith("{"):
-                l_ret_data = json.loads(response)
-            else:
-                l_ret_data = response
+        # Check if encapsulated in code block
+        if response.endswith("```"):
+            chuncks = response.split("```")
+            response = chuncks[-2].strip()
+            
+        # Check if JSON object
+        if "{" in response and "}" in response:
+            chunk_lines = response.split("\n")
+            # find first line with { and last line with }
+            start_line = next(i for i, line in enumerate(chunk_lines) if "{" in line)
+            end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
+            response = "\n".join(chunk_lines[start_line:end_line + 1])
+
+        if self.inspection["analyse"]["type"] is None \
+            or self.inspection["analyse"]["type"] is inspect._empty \
+            or self.inspection["analyse"]["type"] in [Any]:
                 
-        except json.JSONDecodeError as e:
-            # If not a JSON, use as is
+            # TODO: we should also check for JSON schema
+                
+            # Try JSON
+            if response.startswith("{"):
+                try:
+                    l_ret_data = json.loads(response)                
+                except json.JSONDecodeError as e:
+                    # Brocken JSON, keep as string
+                    l_ret_data = response
+            
+            else:
+                # use string
+                l_ret_data = response
+
+        elif self.inspection["analyse"]["type"] is str:
+            # Simple text not expected, response = untyped_response
             l_ret_data = response
+        else:
+            l_ret_data = type_returned_data(response, self.inspection["analyse"]["type"])
 
         return l_ret_data
 
-
     def pull(self,response_dict ):
-        self.pull_extract_messages(response_dict)
-        self.pull_extract_data_section(response_dict)
-        self.pull_verify_llm_capability(response_dict)
-        response_data = self.pull_type_data_section(response_dict)
-
+        raw_response = self.pull_extract_messages(response_dict)
+        response_string = self.pull_extract_data_section(raw_response)
+        response_data = self.pull_type_data_section(response_string)
         return response_data
     
 

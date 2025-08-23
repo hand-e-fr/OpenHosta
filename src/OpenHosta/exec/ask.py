@@ -5,27 +5,35 @@ from typing import Any, Optional
 from ..core.config import Model, DefaultPipeline
 from ..utils.errors import RequestError
 
+from ..core.meta_prompt import MetaPrompt
+
 def ask(
     user: str,
-    system: Optional[str] = None,
+    system: Optional[MetaPrompt] = None,
     model: Optional[Model] = None,
     json_output=False,
     **api_args
 ) -> Any:
     
-    model = DefaultPipeline.model       
+    model = DefaultPipeline.model_list[0]    
+    
+    message = []
+    if system is not None:
+        message.append({"role": "system", "content": system.render()})
+    message.append({"role": "user", "content": user})   
 
-    response_dict = model.api_call([
-            {"role": "system", "content": system},
-            {"role": "user", "content": user}
-        ],
-        json_output,
-        **api_args
+    api_args["force_json_output"] = json_output
+    
+    response_dict = model.api_call(messages=message,
+        llm_args=api_args
     )
 
     try:
         response = response_dict["choices"][0]["message"]["content"]
-        rational, answer = model.split_cot_answer(response)
+        
+        # No type detection
+        answer = response
+        
     except Exception as e:
         raise RequestError(f"[ask] Request failed:\n{e}")
 
@@ -34,25 +42,32 @@ def ask(
 
 async def ask_async(
     user: str,
-    system: Optional[str] = "You are an helpful assistant.",
+    system: Optional[str] = MetaPrompt("You are an helpful assistant."),
     model: Optional[Model] = None,
     json_output=False,
     **api_args
 ) -> Any:
     
-    model, system = DefaultPipeline.outline(model, system)       
+    model = DefaultPipeline.model_list[0]    
 
-    response_dict = await model.api_call_async([
-            {"role": "system", "content": system.render()},
-            {"role": "user", "content": user}
-        ],
-        json_output,
-        **api_args
+
+    message = []
+    if system is not None:
+        message.append({"role": "system", "content": system.render()})
+    message.append({"role": "user", "content": user})   
+
+    api_args["force_json_output"] = json_output
+
+    response_dict = await model.api_call_async(messages=message,
+        llm_args=api_args
     )
 
     try:
         response = response_dict["choices"][0]["message"]["content"]
-        rational, answer = model.split_cot_answer(response)
+        
+        # No type detection
+        answer = response
+        
     except Exception as e:
         raise RequestError(f"[ask] Request failed:\n{e}")
 

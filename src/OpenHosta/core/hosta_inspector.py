@@ -4,7 +4,7 @@ import inspect
 from types import FrameType, MethodType, FunctionType
 
 from ..utils.errors import FrameError
-from ..core.analizer import hosta_analyze, hosta_analyse_update, hosta_prompt_snippets
+from ..core.analizer import hosta_analyze, hosta_analyse_update
 
 def identify_function_of_frame(function_frame):
     """
@@ -108,8 +108,12 @@ def get_caller_frame():
     
     return frame
 
-def get_hosta_inspection(frame):
-    function_pointer = identify_function_of_frame(frame)  
+def get_hosta_inspection(frame=None, function_pointer=None):
+    if function_pointer is None:
+        function_pointer = identify_function_of_frame(frame)
+    else:
+        function_pointer = function_pointer
+    
     inspection = getattr(function_pointer, "hosta_inspection", None)
     
     if inspection == None:
@@ -125,7 +129,7 @@ def get_hosta_inspection(frame):
         }
         setattr(function_pointer, "hosta_inspection", inspection)
     else:
-        hosta_analyse_update(frame, inspection["analyse"])
+        hosta_analyse_update(inspection)
 
     return inspection
 

@@ -3,19 +3,26 @@ import inspect
 from ..models import ModelCapabilities
 from ..core.type_converter import nice_type_name, describe_type_as_python, describe_type_as_schema, BASIC_TYPES
 
-def hosta_analyse_update(frame, analyse):
-    args_info = inspect.getargvalues(frame)
-    analyse["args"] = [{"name":a["name"], "value":args_info.locals[a["name"]], "type":a["type"]} for a in analyse["args"]] 
+def hosta_analyse_update(inspection):
+    frame = inspection["frame"]
+    analyse = inspection["analyse"]
+    if frame is not None:
+        args_info = inspect.getargvalues(frame)
+        analyse["args"] = [{"name":a["name"], "value":args_info.locals[a["name"]], "type":a["type"]} for a in analyse["args"]] 
     return analyse
 
-def hosta_analyze(frame, function_pointer):
+def hosta_analyze(frame=None, function_pointer=None):
     sig = inspect.signature(function_pointer)
-    args_info = inspect.getargvalues(frame)
-    
-    result_args_value_table = [{
-        "name":arg, 
-        "value": args_info.locals[arg], 
-        "type":sig.parameters[arg].annotation} for arg in args_info.args]
+
+    if frame is None:
+        result_args_value_table = []
+    else:
+        args_info = inspect.getargvalues(frame)
+        
+        result_args_value_table = [{
+            "name":arg, 
+            "value": args_info.locals[arg], 
+            "type":sig.parameters[arg].annotation} for arg in args_info.args]
     
     result_function_name = function_pointer.__name__
     result_return_type = sig.return_annotation
@@ -29,11 +36,11 @@ def hosta_analyze(frame, function_pointer):
     }
 
 
-def encode_function(analyse, model_capability=set(ModelCapabilities.TEXT2TEXT)):
+def encode_function(analyse, model_capability=set([ModelCapabilities.TEXT2TEXT])):
     """
     Encode the function signature and docstring into a format suitable for the model.
     """
-    snippets  = []
+    snippets  = {}
     snippets |= encode_function_documentation(analyse)
     snippets |= encode_function_parameter_types(analyse)
     snippets |= encode_function_parameter_values(analyse)
@@ -92,10 +99,6 @@ def encode_function_parameter_values(analyse):
     
     for a in args:
         call_arg, value, arg_type = a["name"], a["value"], a["type"]
-        if arg_type is inspect._empty:
-            pass
-        else:
-            call_arg += ": "+nice_type_name(arg_type)
 
         # Place long variables outside function definition. 
         # math.pi is 17 char, I decide to cut at 20 
