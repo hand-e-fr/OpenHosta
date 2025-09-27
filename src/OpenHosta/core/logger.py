@@ -142,18 +142,25 @@ def print_last_prompt(function_pointer:Callable):
     """
     Print the last prompt sent to the LLM when using function `function_pointer`.
     """
-    if hasattr(function_pointer, "_last_request"):
-        if "sys_prompt" in function_pointer._last_request:
-            print("[SYSTEM PROMPT]")
-            print(function_pointer._last_request["sys_prompt"])
-        if "user_prompt" in function_pointer._last_request:
-            print("[USER PROMPT]")
-            print(function_pointer._last_request["user_prompt"])
+    if hasattr(function_pointer, "hosta_inspection"):
+        if "llm_api_messages_sent" in function_pointer.hosta_inspection['logs'] and \
+            len(function_pointer.hosta_inspection['logs']["llm_api_messages_sent"]) >= 1:
+            print("System prompt:\n-----------------")
+            print(function_pointer.hosta_inspection['logs']["llm_api_messages_sent"][0]["content"][0]["text"])
+        if "llm_api_messages_sent" in function_pointer.hosta_inspection['logs'] and \
+            len(function_pointer.hosta_inspection['logs']["llm_api_messages_sent"]) >= 2:
+            print("User prompt:\n-----------------")
+            print(function_pointer.hosta_inspection['logs']["llm_api_messages_sent"][1]["content"][0]["text"])
+        if "llm_api_response" in function_pointer.hosta_inspection['logs'] and \
+            "choices" in function_pointer.hosta_inspection['logs']["llm_api_response"] and \
+                len(function_pointer.hosta_inspection['logs']["llm_api_response"]["choices"]) >= 1:
+            print("LLM response:\n-----------------")
+            print(function_pointer.hosta_inspection['logs']["llm_api_response"]["choices"][0]["message"]["content"])
     else:
         print("No prompt found for this function.")
 
 
-def print_last_response(function_pointer:Callable):
+def print_last_decoding(function_pointer:Callable):
     """
     Print the last answer recived from the LLM when using function `function_pointer`.
     """

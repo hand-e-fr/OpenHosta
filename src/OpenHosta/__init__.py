@@ -3,7 +3,7 @@ __version__ = "3.0.0"
 from .utils.import_handler import is_torch_available
 
 from .core import config
-from .core.logger import print_last_prompt, print_last_response
+from .core.logger import print_last_prompt
 from .core.meta_prompt import MetaPrompt
 
 from .exec.ask import ask, ask_async
@@ -33,7 +33,6 @@ all = (
     "thought",
     "MetaPrompt",
     "print_last_prompt",
-    "print_last_response",
     "generate_data",
     "generate_data_async",
     "HostaDataset",
