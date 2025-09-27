@@ -100,6 +100,8 @@ EMULATE_META_PROMPT=MetaPrompt(
     Here's the function definition:
 
     ```python
+    {{ function_return_as_python_type }}
+    
     def {{ function_name }}({{ function_args }}) -> {{ function_return_type_name }}:
         \"\"\"{{ function_doc }}\"\"\"
         

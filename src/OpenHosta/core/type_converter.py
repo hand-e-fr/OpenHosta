@@ -8,6 +8,7 @@ import typing
 
 from typing import Any
 from dataclasses import is_dataclass
+from enum import Enum 
 
 import sys
 from sys import version_info
@@ -30,6 +31,26 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
     
     typed_value = None
     
+    if expected_type is None \
+        or expected_type is inspect._empty:
+        typed_value = None
+
+    elif expected_type in [Any]:
+        
+        # Try JSON
+        if untyped_response.startswith("{"):
+            try:
+                typed_value = json.loads(untyped_response)                
+            except json.JSONDecodeError as e:
+                # Brocken JSON, keep as string
+                typed_value = untyped_response
+        else:
+            # use string
+            typed_value = untyped_response
+
+    elif expected_type is str:
+        typed_value = typed_value
+    
     if expected_type in BASIC_TYPES:
         try:
             typed_value = expected_type(untyped_response)
@@ -41,11 +62,17 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             # try with safe eval for python types
             try:
                 typed_value = ast.literal_eval(untyped_response)
-                assert isinstance(typed_value, expected_type)
+                assert isinstance(typed_value, expected_type), f"Expected type {expected_type}, got {type(typed_value)}"
             except (ValueError, SyntaxError):
                 # If eval fails, keep as string
                 typed_value = untyped_response
 
+    elif issubclass(expected_type, Enum):
+        typed_value = expected_type(untyped_response)
+        
+    elif is_dataclass(expected_type):
+        typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+        
     elif is_pydantic_available and issubclass(expected_type, BaseModel):
          typed_value = convert_pydantic(json.loads(untyped_response), expected_type)
 
@@ -81,11 +108,16 @@ def describe_type_as_python(arg_type):
         # Check if the type is a basic type or a typing alias
         type_definition = nice_type_name(arg_type)
 
-    elif is_dataclass(arg_type):
-        type_definition=textwrap.dedent(f"""\
-            python class {arg_type.__name__} is defines as a @dataclass:
-            {arg_type.__doc__}
-            """)
+    elif issubclass(arg_type, Enum):
+        type_definition = textwrap.dedent(f"""\
+            # Python enum {arg_type.__name__} definition.
+            # When you return a {arg_type.__name__}, print the enum member value as a string. I will identify the corresponding enum member.
+            class {arg_type.__name__}({arg_type.__base__.__name__}):""")
+        if arg_type.__doc__:
+            type_definition += f'\n    """{arg_type.__doc__}"""'
+        for member in arg_type:
+            type_definition += f'\n    {member.name} = {repr(member.value)}'
+        
         
     elif hasattr(arg_type, '__annotations__')  and \
             not arg_type.__annotations__ is inspect._empty:

@@ -114,6 +114,8 @@ class OneTurnConversationPipeline(Pipeline):
         
         messages = []
         
+        inspection["logs"]["llm_api_messages_sent"] = messages
+        
         for role, meta_prompt, image in meta_messages:
             
             message_content = [
@@ -130,6 +132,7 @@ class OneTurnConversationPipeline(Pipeline):
                 "content": message_content
             }]
 
+        
         return messages
 
 
@@ -161,33 +164,14 @@ class OneTurnConversationPipeline(Pipeline):
             end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
             response = "\n".join(chunk_lines[start_line:end_line + 1])
 
-        if self.inspection["analyse"]["type"] is None \
-            or self.inspection["analyse"]["type"] is inspect._empty \
-            or self.inspection["analyse"]["type"] in [Any]:
-                
-            # TODO: we should also check for JSON schema
-                
-            # Try JSON
-            if response.startswith("{"):
-                try:
-                    l_ret_data = json.loads(response)                
-                except json.JSONDecodeError as e:
-                    # Brocken JSON, keep as string
-                    l_ret_data = response
-            
-            else:
-                # use string
-                l_ret_data = response
 
-        elif self.inspection["analyse"]["type"] is str:
-            # Simple text not expected, response = untyped_response
-            l_ret_data = response
-        else:
-            l_ret_data = type_returned_data(response, self.inspection["analyse"]["type"])
+        l_ret_data = type_returned_data(response, self.inspection["analyse"]["type"])
 
         return l_ret_data
 
-    def pull(self,response_dict ):
+    def pull(self, response_dict ):
+        self.inspection["logs"]["llm_api_response"] = response_dict
+        
         raw_response = self.pull_extract_messages(response_dict)
         response_string = self.pull_extract_data_section(raw_response)
         response_data = self.pull_type_data_section(response_string)
