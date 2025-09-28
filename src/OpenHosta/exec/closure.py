@@ -13,6 +13,8 @@ class ArgType(Enum):
     int = "int"
     float = "float"
     bool = "bool"
+    list = "list"
+    dict = "dict"
     Any = "Any"
 
 def get_most_appropriate_type(request:str) -> ArgType:
