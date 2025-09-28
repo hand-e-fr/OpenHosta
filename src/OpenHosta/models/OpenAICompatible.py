@@ -4,6 +4,7 @@ from typing import Any, Dict, Set
 import os
 import requests
 
+from ..core.inspection import Inspection
 from ..models import Model, ModelCapabilities
 from ..utils.errors import ApiKeyError, RequestError
 
@@ -15,7 +16,7 @@ class OpenAICompatibleModel(Model):
             additionnal_headers: Dict[str, Any] = {},
             api_parameters:Dict[str, Any] = {},
             capabilities:Set[ModelCapabilities] = {ModelCapabilities.TEXT2TEXT},
-            base_url: str = None, 
+            base_url: str = "https://api.openai.com/v1", 
             chat_completion_url: str = "/chat/completions",
             api_key: str = None, 
             timeout: int = 30,
@@ -86,10 +87,8 @@ class OpenAICompatibleModel(Model):
                 if "invalid_api_key" in response_text:
                     raise ApiKeyError("[Model.api_call] Incorrect API key.")
                 else:
-                    raise RequestError(
-                        f"[Model.api_call] API call was unsuccessful.\n"
-                        f"Status code: {response.status_code }:\n{response_text}"
-                    )
+                    raise RequestError(f"[Model.api_call] Request failed with status code {response.status_code}:\n{response_text}\n\n")
+                
             self._nb_requests += 1
             response_dict = response.json()
         
@@ -111,3 +110,49 @@ class OpenAICompatibleModel(Model):
             response = response_dict["choices"][0]["message"]["text"]
 
         return response
+    
+        
+    def get_thinking_and_data_sections(
+                        self,
+                        response:str, 
+                        reasoning_start_and_stop_tags = ["<think>", "</think>"]) -> tuple[str, str]:
+        """
+        This function split response into rational and answer.
+
+        Special prompt may ask for chain-of-thought or models might be trained to reason first.
+
+        Args:
+            response (str): response from the model.
+
+        Returns:
+            tuple[str, str]: rational and answer.
+        """
+        response = response.strip()
+
+        if reasoning_start_and_stop_tags[0] in response and reasoning_start_and_stop_tags[1] in response:
+            chunks = response[8:].split(reasoning_start_and_stop_tags[1])
+            rational = chunks[0]
+            answer = reasoning_start_and_stop_tags[1].join(chunks[1:]) # in case there are multiple </think> tags
+        else:
+            rational, answer = "", response
+        
+        return rational, answer
+        
+
+    def print_last_prompt(self, hosta_inspection:Inspection):
+        """
+        Print the last prompt sent to the LLM when using function `function_pointer`.
+        """
+        if "llm_api_messages_sent" in hosta_inspection['logs'] and \
+            len(hosta_inspection['logs']["llm_api_messages_sent"]) >= 1:
+            print("System prompt:\n-----------------")
+            print(hosta_inspection['logs']["llm_api_messages_sent"][0]["content"][0]["text"])
+        if "llm_api_messages_sent" in hosta_inspection['logs'] and \
+            len(hosta_inspection['logs']["llm_api_messages_sent"]) >= 2:
+            print("User prompt:\n-----------------")
+            print(hosta_inspection['logs']["llm_api_messages_sent"][1]["content"][0]["text"])
+        if "llm_api_response" in hosta_inspection['logs'] and \
+            "choices" in hosta_inspection['logs']["llm_api_response"] and \
+                len(hosta_inspection['logs']["llm_api_response"]["choices"]) >= 1:
+            print("LLM response:\n-----------------")
+            print(hosta_inspection['logs']["llm_api_response"]["choices"][0]["message"]["content"])

@@ -1,36 +1,42 @@
 # -*- coding: utf-8 -*-
 
-# First install ollama
-# then run ollama pull llama3.2:3b
-
-import os
-import asyncio
-
 #########################################################
 #
 # Test model configuration
 #
 #########################################################
 
-from OpenHosta import DefaultModel, ask
+import os
+import asyncio
+from dotenv import load_dotenv
 
-PORT=11434
-MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1")
-MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
-MODEL_NAME = os.environ.get("MODEL_NAME", "qwen3:4b")
+load_dotenv()
 
-DefaultModel.model_name = MODEL_NAME
-DefaultModel.base_url = MODEL_BASE_URL
-DefaultModel.api_key = MODEL_API_KEY
+# To run these tests you need to set .env variables to define an LLM provider
+# e.g. for OpenAI:
+# OPENHOSTA_LLM_PROVIDER=openai
+# OPENHOSTA_OPENAI_API_KEY=your_api_key
+
+# you also need to install pytest and python-dotenv:
+# pip install pytest python-dotenv
+
+# To run the tests, use the command:
+# pytest OpenHosta/tests/functionnalTests/test_ask.py
+
+
+from OpenHosta import config
+
+config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
+config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
+config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
+
+from OpenHosta import ask
+ask("hello world!")
 
 from OpenHosta import closure, closure_async
 
 increment=closure("add one to this number")
-
 increment(29865.1)
-
-ask("hello world!")
-
 
 #########################################################
 #
@@ -60,14 +66,14 @@ increment=closure("add one to this number")
 
 assert increment(2) == 3
 
-from OpenHosta import print_last_prompt, print_last_response
+
+from OpenHosta import print_last_prompt, print_last_decoding
 
 print('Should print "No prompt found for this function."')
 print_last_prompt(increment)
-print_last_response(increment)
+print_last_decoding(increment)
 
 rnd_flt=closure("return a random float")
-
 assert type(rnd_flt()) == float
 
 hello_async=closure_async("say hello in a foreign language")
@@ -96,7 +102,7 @@ assert "Londres" in sentence
 
 print("Should print content")
 print_last_prompt(capitalize_cities)
-print_last_response(capitalize_cities)
+print_last_decoding(capitalize_cities)
 
 from typing import Dict
 
@@ -113,7 +119,6 @@ def find_people_dict(sentence:str)->Dict[str, int]:
          value: the estimated age
     """
     return emulate()
-
 
 def find_people_dict(sentence:str):
     """

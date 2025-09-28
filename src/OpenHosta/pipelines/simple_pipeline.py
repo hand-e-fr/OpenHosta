@@ -1,15 +1,13 @@
 from typing import Dict, List, Tuple, Any
 from abc import ABC, abstractmethod
-import json
-import inspect
 
 from ..models import Model, ModelCapabilities
 
 from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_PROMPT
-from ..core.analizer import encode_function, get_thinking_and_data_sections
+from ..core.analizer import encode_function
 from ..core.type_converter import type_returned_data
 
-Flow = List[Tuple[str, MetaPrompt]]
+MetaDialog = List[Tuple[str, MetaPrompt]]
 
 class Pipeline(ABC):
     """
@@ -20,7 +18,7 @@ class Pipeline(ABC):
     """
     def __init__(self):
         super().__init__()
-        self.model: Model = None
+        self.model_list:List[Model] = []
         self.llm_args = {}
 
     @abstractmethod
@@ -34,7 +32,7 @@ class Pipeline(ABC):
         pass
 
     @abstractmethod
-    def pull(self, response_dict) -> Any:
+    def pull(self, inspection, response_dict) -> Any:
         """
         Convert the model response into a python object.
 
@@ -42,6 +40,31 @@ class Pipeline(ABC):
             The model response converted into the expected python object.
         """
         pass
+    
+
+    def print_last_decoding(self, inspection):
+        """
+        Print the last answer recived from the LLM when using function `function_pointer`.
+        """
+        if "rational" in inspection['logs']:
+            print("[THINKING]")
+            print(inspection['logs']["rational"])
+        if "answer" in inspection['logs']:
+            print("[ANSWER]")
+            print(inspection['logs']["answer"])
+        if "raw_response" in inspection['logs']:
+            print("[RAW RESPONSE]")
+            print(inspection['logs']["raw_response"])
+        if "response_string" in inspection['logs']:
+            print("[RESPONSE STRING]")
+            print(inspection['logs']["response_string"])
+        if "response_data" in inspection['logs']:
+            print("[RESPONSE DATA]")
+            print(inspection['logs']["response_data"])
+        else:
+            print("[UNFINISHED]")
+            print("answer processing was interupted")
+    
 
 class OneTurnConversationPipeline(Pipeline):
     """
@@ -56,12 +79,13 @@ class OneTurnConversationPipeline(Pipeline):
 
         super().__init__()
 
-        self.model_list:List[Model] = model_list 
-        self.pipe_state = {}
-    
+        self.model_list:List[Model] = model_list     
+        self.emulate_meta_prompt = EMULATE_META_PROMPT
+        self.user_call_meta_prompt = USER_CALL_META_PROMPT
 
     def push_detect_missing_types(self, inspection):
         """Python Level"""
+        #TODO: improve type guessing and mege with closure type guessing
         if "type" not in inspection["analyse"] or inspection["analyse"]["type"] is None:
             Warning(f"No return type found for function {inspection["analyse"]["name"]}. Assuming str.")
             return_type = str
@@ -77,13 +101,13 @@ class OneTurnConversationPipeline(Pipeline):
         return inspection
 
 
-    def push_chose_model(self, inspection):
+    def push_choose_model(self, inspection):
         """OpenHosta Level"""
         
         # For now, we just take the first model
-        self.model = self.model_list[0]
+        inspection["model"] = self.model_list[0]
         
-        return self.model
+        return inspection["model"]
 
     def push_encode_inspected_data(self, inspection, model_capabilities: set[ModelCapabilities]):
         """Data & Schema Level"""
@@ -97,21 +121,22 @@ class OneTurnConversationPipeline(Pipeline):
     def push_select_meta_prompts(self, inspection):
         """Prompt Level""" 
         
-        default_meta_conversation:Flow = [
-            ('system',EMULATE_META_PROMPT, None),
-            ('user',  USER_CALL_META_PROMPT, None),
+        default_meta_conversation:MetaDialog = [
+            ('system',self.emulate_meta_prompt, None),
+            ('user',  self.user_call_meta_prompt, None),
         ]
         return default_meta_conversation
 
     def push(self, inspection) -> dict:
         
         # reset pipe state for new usage
-        self.inspection     = self.push_detect_missing_types(inspection)
-        self.model          = self.push_chose_model(self.inspection)
-        self.encoded_data   = self.push_encode_inspected_data(self.inspection, self.model.capabilities)
-        
-        meta_messages       = self.push_select_meta_prompts(self.inspection)
-        
+        inspection     = self.push_detect_missing_types(inspection)
+        model          = self.push_choose_model(inspection)
+        encoded_data   = self.push_encode_inspected_data(inspection, model.capabilities)
+        inspection["pipeline"] = self
+
+        meta_messages       = self.push_select_meta_prompts(inspection)
+
         messages = []
         
         inspection["logs"]["llm_api_messages_sent"] = messages
@@ -119,7 +144,7 @@ class OneTurnConversationPipeline(Pipeline):
         for role, meta_prompt, image in meta_messages:
             
             message_content = [
-                        {"type": "text",  "text" : meta_prompt.render(self.encoded_data) }
+                        {"type": "text",  "text" : meta_prompt.render(encoded_data) }
                     ]
             
             if image:
@@ -135,19 +160,21 @@ class OneTurnConversationPipeline(Pipeline):
         
         return messages
 
-
-    def pull_extract_messages(self, response_dict:dict) -> dict:
+    def pull_extract_messages(self, inspection, response_dict:dict) -> dict:
         """Prompt Level"""
-        return self.model.get_response_content(response_dict)
+        return inspection["model"].get_response_content(response_dict)
 
-    def pull_extract_data_section(self, raw_response:str) -> Any:
+    def pull_extract_data_section(self, inspection, raw_response:str) -> Any:
         """Data & Schema Level"""
 
-        thinking, response_string = get_thinking_and_data_sections(raw_response)
+        thinking, response_string = inspection["model"].get_thinking_and_data_sections(raw_response)
 
+        inspection["logs"]["rational"] = thinking
+        inspection["logs"]["answer"] = response_string
+        
         return response_string.strip()
 
-    def pull_type_data_section(self, response:Any) -> Any:
+    def pull_type_data_section(self, inspection, response:Any) -> Any:
         """Python Level"""
         l_ret_data = None
 
@@ -164,17 +191,22 @@ class OneTurnConversationPipeline(Pipeline):
             end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
             response = "\n".join(chunk_lines[start_line:end_line + 1])
 
-
-        l_ret_data = type_returned_data(response, self.inspection["analyse"]["type"])
+        l_ret_data = type_returned_data(response, inspection["analyse"]["type"])
 
         return l_ret_data
 
-    def pull(self, response_dict ):
-        self.inspection["logs"]["llm_api_response"] = response_dict
+    def pull(self, inspection, response_dict ):
+        inspection["logs"]["llm_api_response"] = response_dict
         
-        raw_response = self.pull_extract_messages(response_dict)
-        response_string = self.pull_extract_data_section(raw_response)
-        response_data = self.pull_type_data_section(response_string)
+        raw_response = self.pull_extract_messages(inspection, response_dict)
+        inspection["logs"]["raw_response"] = raw_response
+        
+        response_string = self.pull_extract_data_section(inspection, raw_response)
+        inspection["logs"]["response_string"] = response_string
+        
+        response_data = self.pull_type_data_section(inspection, response_string)
+        inspection["logs"]["response_data"] = response_data
+        
         return response_data
     
 

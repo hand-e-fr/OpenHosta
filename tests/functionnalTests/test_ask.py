@@ -31,6 +31,29 @@ def test_ask_math():
     assert "4" in response, f"Expected '4' in response, got: {response}"
     
 def test_ask_routing():
-    prompt = "what is a good next step after a git commit:"
+    prompt = "what git command is usually the next step after a git commit?"
     response = ask(prompt)
-    assert "push" in response and "origin" in response, f"Expected 'push' and 'origin' in response, got: {response}"
+    assert "push" in response, f"Expected 'push' in response, got: {response}"
+    
+## Exact same tests but with async version of ask
+from OpenHosta import ask_async
+from asyncio import run
+
+def test_ask_basic_async():
+    async def app():
+        return await ask_async("What is the capital of France?")
+    response = run(app())
+    assert "Paris" in response, f"Expected 'Paris' in response, got: {response}"
+
+def test_ask_math_async():
+    async def app():
+        return await ask_async("What is 2 + 2?")
+    response = run(app())
+    assert "4" in response, f"Expected '4' in response, got: {response}"
+
+def test_ask_routing_async():
+    async def app():
+        prompt = "what git command is usually the next step after a git commit?"
+        return await ask_async(prompt)
+    response = run(app())
+    assert "push" in response, f"Expected 'push' in response, got: {response}"

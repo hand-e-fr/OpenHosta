@@ -5,9 +5,6 @@ from OpenHosta import Model
 
 # Code -> LibOpenHosta -> Emulate -> Model
 # Code -> Compiled
-# Code -> Logger
-#                         Emulate -> Logger
-#                                    Model -> Logger
 
 # use dagster
 

@@ -15,7 +15,6 @@ except ImportError:
 is_torch_available = False
 try:
     import torch
-    import numpy
     is_torch_available = True
 except ImportError:
     is_torch_available = False

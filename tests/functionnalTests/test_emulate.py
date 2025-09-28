@@ -125,6 +125,101 @@ def test_emulate_dataclass():
     person = get_person_info("president of the USA in 1991")
     
     assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
+        
+## Exact same tests but with async version of ask
+from OpenHosta import emulate_async
+from asyncio import run
+
+def test_emulate_basic_async():
+    """
+    Test the async emulate function with a simple prompt that asks for the capital of a country.
+    """
+    async def app():
+        async def get_capital(country: str) -> str:
+            """
+            This function returns the capital of a given country.
+            """
+            return await emulate_async()
+        
+        return await get_capital("France")
+    
+    response = run(app())
+    assert "Paris" in response, f"Expected 'Paris' in response, got: {response}"
+    
+def test_emulate_math_async():
+    """
+    Test the async emulate function with a math operation.
+    The interesting part of this test is to check if the type detection works.
+    """
+    async def app():
+        async def get_math_result(number: float) -> float:
+            """
+            Returns the result of the following math operation: 
+            number + 2.
+            
+            Arguments:
+                - number (float): A number to add to 2.
+            Returns:
+                - float: The result of the addition.
+            """
+            return await emulate_async()
+        return await get_math_result(2.5)
+    response = run(app())
+    assert 4.5 == response, f"Expected '4.5' in response, got: {response}"
+    
+def test_emulate_routing_async():
+    """
+    Test the async emulate function with a prompt that asks for the next step after a git command.
+    """
+    # define return type as enumeration
+    from enum import StrEnum
+    class NextStep(StrEnum):
+        GIT_PUSH = "git push"
+        GIT_COMMIT = "git commit"
+        GIT_STATUS = "git status"
+        GIT_PULL = "git pull"
+        GIT_FETCH = "git fetch"
+    
+    async def app():    
+        async def get_next_step(command: str) -> NextStep:
+            """
+            This function returns the next step after a git command.
+            """
+            return await emulate_async()
+        
+        return await get_next_step("git commit -m 'Initial commit'")
+    next_step = run(app())
+
+    assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+    
+def test_emulate_dataclass_async():
+    """
+    Test the async emulate function with a dataclass as return type.
+    """
+    from dataclasses import dataclass
+
+    @dataclass
+    class Person:
+        firstname: str
+        lastname: str
+        age: int
+
+    async def app():
+        async def get_person_info(description: str) -> Person:
+            """
+            This function returns a Person object with the given description.
+            
+            Arguments:
+                - description (str): The description of the person.
+            Returns:
+                - Person: A Person object based on the description.
+            """
+            return await emulate_async()
+        
+        return await get_person_info("president of the USA in 1991")
+    
+    person = run(app())
+    
+    assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
     
     
-    print_last_prompt(get_person_info)
