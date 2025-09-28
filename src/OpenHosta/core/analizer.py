@@ -3,13 +3,17 @@ import inspect
 from ..models import ModelCapabilities
 from ..core.type_converter import nice_type_name, describe_type_as_python, describe_type_as_schema, BASIC_TYPES
 
-def hosta_analyse_update(inspection):
-    frame = inspection["frame"]
+def hosta_analyze_update(frame, inspection):
     analyse = inspection["analyse"]
-    if frame is not None:
-        args_info = inspect.getargvalues(frame)
-        analyse["args"] = [{"name":a["name"], "value":args_info.locals[a["name"]], "type":a["type"]} for a in analyse["args"]] 
-    return analyse
+    new_analyse = {
+        "name": analyse["name"],
+        "args": [],
+        "type": analyse["type"],
+        "doc":  analyse["doc"]
+    }
+    args_info = inspect.getargvalues(frame)
+    new_analyse["args"] = [{"name":a["name"], "value":args_info.locals[a["name"]], "type":a["type"]} for a in analyse["args"]] 
+    return new_analyse
 
 def hosta_analyze(frame=None, function_pointer=None):
     sig = inspect.signature(function_pointer)
