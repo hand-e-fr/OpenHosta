@@ -71,11 +71,11 @@ class TestEmulate:
         abracadabra = config.OpenAICompatibleModel(
             model_name="gpt-4o",
             base_url="https://api.openai.com/v1/chat/completions",
-            api_key=os.getenv("OPENAI_API_KEY")
+            api_key=os.getenv("OPENHOSTA_OPENAI_API_KEY")
         )
         
-        my_pipe = OneTurnConversationPipeline(model=abracadabra)
-        my_pipe.user_call_meta_prompt = "This is the python call:\n"+my_pipe.user_call_meta_prompt
+        my_pipe = OneTurnConversationPipeline(model_list=[abracadabra])
+        my_pipe.user_call_meta_prompt.source = "This is the python call:\n"+my_pipe.user_call_meta_prompt.source
         
         def randomSentence()->str:
             """
@@ -86,7 +86,7 @@ class TestEmulate:
         ret = randomSentence()
         ret_model = randomSentence.hosta_inspection["model"]
         print(ret_model)
-        assert "gpt-4o" in ret_model   
+        assert "gpt-4o" in ret_model.model_name 
 
 
     def test_FeaturesEmptyInfos(self):
@@ -223,7 +223,7 @@ class TestClosure:
     ])
     def test_BasicTyped(self, prompt, args, expected):
         ret = closure(prompt)(args)
-        assert isinstance(ret, expected)
+        assert type(ret) is expected
         
 
     def test_FeatureMultiArgs(self):
