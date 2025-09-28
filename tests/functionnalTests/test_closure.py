@@ -29,9 +29,9 @@ def test_closure_basic():
     assert "Paris" in response, f"Expected 'Paris' in response, got: {response}"
 
 def test_closure_math():
-    get_math = closure("What is 2 + this number?")
+    get_math = closure("What is 2.0 + this number?")
     response = get_math(2.5)
-    assert "4.5" in response, f"Expected '4.5' in response, got: {response}"
+    assert 4.5 == response, f"Expected '4.5' in response, got: {response}"
 
 def test_closure_routing():
     prompt = "what is a good next step after this command: (between 'git push', 'git commit', 'git status', 'git pull', 'git fetch')"
@@ -53,10 +53,10 @@ def test_closure_basic_async():
     
 def test_closure_math_async():
     async def app():
-        get_math = closure_async("What is 2 + this number?")
+        get_math = closure_async("What is 2.0 + this number?")
         return await get_math(2.5)
     response = run(app())
-    assert "4.5" in response, f"Expected '4.5' in response, got: {response}"
+    assert 4.5 == response, f"Expected '4.5' in response, got: {response}"
     
 def test_closure_routing_async():
     async def app():
