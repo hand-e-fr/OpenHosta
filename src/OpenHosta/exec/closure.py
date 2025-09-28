@@ -1,18 +1,33 @@
 from typing import Any, Optional
 
 from ..core.config import DefaultPipeline
-from ..core.hosta_inspector import get_caller_frame, get_hosta_inspection
-
-from ..core.meta_prompt import MetaPrompt
+from ..core.inspection import get_hosta_inspection, Inspection
 from ..pipelines import OneTurnConversationPipeline
 
-def guess_type(query: str, inspection) -> object:
-    """
-    So far this is not ported from V2
-    """
-    
-    return Any
+from ..exec.emulate import emulate
 
+from enum import Enum
+
+class ArgType(Enum):
+    str = "str"
+    int = "int"
+    float = "float"
+    bool = "bool"
+    Any = "Any"
+
+def get_most_appropriate_type(request:str) -> ArgType:
+    """
+    Deduce the most appropriate python type for a given request.
+    """
+    return emulate()
+
+def guess_type(inspection: Inspection) -> object:
+    try:
+        detected_type = get_most_appropriate_type(inspection["analyse"]["doc"])
+        return eval(detected_type.value, {"Any": Any})
+    except Exception as e:
+        print(f"Type detection failed for {inspection['analyse']['doc']}: {e}. Returning type 'Any'.")
+        return Any
 
 def closure_async(
     query_string,
@@ -23,21 +38,25 @@ def closure_async(
 
     inner_func_pointer = None
 
-    async def inner_func(*args, **kwargs):
-        _pipeline = pipeline
-        
+    async def inner_func(*args, **kwargs) -> Any:
+                
         # Get everything about the function you are emulating
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
 
+        return_type = inspection["analyse"]["type"]
+        if return_type in [None, Any]:
+            return_type = guess_type(inspection)
+            inspection["analyse"]["type"] = return_type
+            
         # Convert the inspection to a prompt
         messages = pipeline.push(inspection)
             
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = await _pipeline.model.api_call_async(messages, pipeline.llm_args | force_llm_args)
+        response_dict = await inspection["model"].api_call_async(messages, pipeline.llm_args | force_llm_args)
 
         # Convert the model response to a python object according to expected types
-        response_data = _pipeline.pull(response_dict)
+        response_data = pipeline.pull(inspection, response_dict)
         
         return response_data
 
@@ -54,23 +73,26 @@ def closure(
     
     inner_func_pointer = None
     
-    def inner_func(*args, **kwargs):
-
-        _pipeline = pipeline
+    def inner_func(*args, **kwargs) -> Any:
         
         # Get everything about the function you are emulating
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
+
+        return_type = inspection["analyse"]["type"]
+        if return_type in [None, Any]:
+            return_type = guess_type(inspection)
+            inspection["analyse"]["type"] = return_type
         
         # Convert the inspection to a prompt
         messages = pipeline.push(inspection)
             
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = _pipeline.model.api_call(messages, pipeline.llm_args | force_llm_args)
+        response_dict = inspection["model"].api_call(messages, pipeline.llm_args | force_llm_args)
 
         # Convert the model response to a python object according to expected types
-        response_data = _pipeline.pull(response_dict)
-        
+        response_data = inspection["pipeline"].pull(inspection, response_dict)
+
         return response_data
     
     inner_func_pointer = inner_func
@@ -79,12 +101,7 @@ def closure(
 
 
 def update_inspection(inspection, query_string, *args, **kwargs):
-
-    return_type = inspection["analyse"]["type"]
-    if return_type is None:
-        return_type = guess_type(query_string, *args, **kwargs)
-        
-    inspection["analyse"]["type"] = return_type
+    
     inspection["analyse"]["doc"] = query_string
     inspection["analyse"]["name"] = "lambda_function"
     inspection["analyse"]["args"]  = [{"name": f"arg_{i}", "type": type(arg), "value": arg} for i, arg in enumerate(args)]

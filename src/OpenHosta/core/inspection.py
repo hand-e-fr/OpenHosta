@@ -4,7 +4,9 @@ import inspect
 from types import FrameType, MethodType, FunctionType
 
 from ..utils.errors import FrameError
-from ..core.analizer import hosta_analyze, hosta_analyze_update
+from .analizer import hosta_analyze, hosta_analyze_update
+
+type Inspection = dict
 
 def identify_function_of_frame(function_frame):
     """
@@ -130,10 +132,12 @@ def get_hosta_inspection(frame=None, function_pointer=None):
         setattr(function_pointer, "hosta_inspection", inspection)
     else:
         if frame is None:
-            raise FrameError("Unable to identify argument values without frame.")
-        analyse = hosta_analyze_update(frame, inspection)
+            # We do not have argument types from the call (most likely a closure)
+            inspection["analyse"]["args"] = [] 
+        else:
+            analyse = hosta_analyze_update(frame, inspection)
+            inspection["analyse"] = analyse
         inspection["frame"] = frame
-        inspection["analyse"] = analyse
 
     return inspection
 

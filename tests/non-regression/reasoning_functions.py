@@ -1,9 +1,37 @@
 # -*- coding: utf-8 -*-
 
-# First install ollama
-# then run ollama pull llama3.2:3b
+#########################################################
+#
+# Test model configuration
+#
+#########################################################
 
 import os
+import asyncio
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# To run these tests you need to set .env variables to define an LLM provider
+# e.g. for OpenAI:
+# OPENHOSTA_LLM_PROVIDER=openai
+# OPENHOSTA_OPENAI_API_KEY=your_api_key
+
+# you also need to install pytest and python-dotenv:
+# pip install pytest python-dotenv
+
+# To run the tests, use the command:
+# pytest OpenHosta/tests/functionnalTests/test_ask.py
+
+
+from OpenHosta import config
+
+config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
+config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
+config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
+
+from OpenHosta.utils.import_handler import is_pydantic_available
+assert is_pydantic_available, "Pydantic shall be installed"
 
 #########################################################
 #
@@ -11,24 +39,8 @@ import os
 #
 #########################################################
 
-from OpenHosta import config
-
-PORT=11434
-#PORT=11436
-MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/chat/completions")
-MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
-MODEL_NAME = os.environ.get("MODEL_NAME", "DeepSeek-R1-huggingface")
-
-model=config.OpenAICompatibleModel(
-    model="DeepSeek-R1-huggingface",
-    json_output=False,
-    timeout=120, # 2 minutes, reasoning models can be slow
-    base_url=MODEL_BASE_URL,
-    api_key="none",
-    additionnal_headers={"Authorization":MODEL_API_KEY}
-)
-
-config.set_default_model(model)
+from OpenHosta import ask
+ask("hello world!")
 
 #########################################################
 #
@@ -52,7 +64,7 @@ sentence = capitalize_cities("En juin paris hilton a ouvert son nouveau restaura
 
 assert "Londres" in sentence
 
-from OpenHosta import print_last_prompt, print_last_response
+from OpenHosta import print_last_prompt, print_last_decoding
 
 print_last_prompt(capitalize_cities)
-print_last_response(capitalize_cities)
+print_last_decoding(capitalize_cities)

@@ -81,7 +81,7 @@ def encode_function_parameter_types(analyse):
             if not specifig_type_doc is None:
                 python_types_definition_list[nice_type_name(arg_type)] = specifig_type_doc
                 
-            specifig_type_json = describe_type_as_schema(arg_type, json_schema=True)
+            specifig_type_json = describe_type_as_schema(arg_type)
             if not specifig_type_json is None:
                 json_schema_types_definition_list[nice_type_name(arg_type)] = specifig_type_json
 
@@ -162,27 +162,3 @@ def encode_function_return_type_definition(analyse):
         "function_return_as_json_schema" : describe_type_as_schema(analyse["type"]),
         }
     
-def get_thinking_and_data_sections(
-                    response:str, 
-                    reasoning_start_and_stop_tags = ["<think>", "</think>"]) -> tuple[str, str]:
-    """
-    This function split response into rational and answer.
-
-    Special prompt may ask for chain-of-thought or models might be trained to reason first.
-
-    Args:
-        response (str): response from the model.
-
-    Returns:
-        tuple[str, str]: rational and answer.
-    """
-    response = response.strip()
-
-    if reasoning_start_and_stop_tags[0] in response and reasoning_start_and_stop_tags[1] in response:
-        chunks = response[8:].split(reasoning_start_and_stop_tags[1])
-        rational = chunks[0]
-        answer = reasoning_start_and_stop_tags[1].join(chunks[1:]) # in case there are multiple </think> tags
-    else:
-        rational, answer = "", response
-    
-    return rational, answer

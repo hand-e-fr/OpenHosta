@@ -1,9 +1,7 @@
 __version__ = "3.0.0"
 
-from .utils.import_handler import is_torch_available
-
 from .core import config
-from .core.logger import print_last_prompt
+from .core.logger import print_last_prompt, print_last_decoding
 from .core.meta_prompt import MetaPrompt
 
 from .exec.ask import ask, ask_async
@@ -18,23 +16,17 @@ from .core.config import DefaultModel
 import os
 
 all = (
-    "config",
+    "ask",
+    "ask_async",
     "emulate",
-    "Model",
-    "DefaultModel"
-    "OpenAICompatibleModel",
     "emulate_async",
     "closure",
     "closure_async",
-    "return_type",
-    "ask",
-    "ask_async",
-    "example",
-    "thought",
+    "config",
+    "Model",
+    "DefaultModel"
+    "OpenAICompatibleModel",
     "MetaPrompt",
     "print_last_prompt",
-    "generate_data",
-    "generate_data_async",
-    "HostaDataset",
-    "SourceType"
+    "print_last_decoding",
 )

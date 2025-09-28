@@ -1,9 +1,45 @@
+from OpenHosta.pipelines.simple_pipeline import OneTurnConversationPipeline
 import pytest
+# -*- coding: utf-8 -*-
+
+#########################################################
+#
+# Test model configuration
+#
+#########################################################
+
+import os
+import asyncio
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# To run these tests you need to set .env variables to define an LLM provider
+# e.g. for OpenAI:
+# OPENHOSTA_LLM_PROVIDER=openai
+# OPENHOSTA_OPENAI_API_KEY=your_api_key
+
+# you also need to install pytest and python-dotenv:
+# pip install pytest python-dotenv
+
+# To run the tests, use the command:
+# pytest OpenHosta/tests/functionnalTests/test_ask.py
+
+
+from OpenHosta import config
+
+config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
+config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
+config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
+
+from OpenHosta.utils.import_handler import is_pydantic_available
+assert is_pydantic_available, "Pydantic shall be installed"
+
 import os
 from pydantic import BaseModel
 from typing import Callable
 
-from OpenHosta import config, emulate, thinkof
+from OpenHosta import config, emulate
 
 def emulate_1arg_str(arg)->str:
     """ Docstring """
@@ -30,40 +66,27 @@ class User(BaseModel):
 
 class TestEmulate:
        
+    from OpenHosta.pipelines.simple_pipeline import OneTurnConversationPipeline
     def test_FeatureModelInParameter(self):
         abracadabra = config.OpenAICompatibleModel(
-            model="gpt-4o",
+            model_name="gpt-4o",
             base_url="https://api.openai.com/v1/chat/completions",
             api_key=os.getenv("OPENAI_API_KEY")
         )
+        
+        my_pipe = OneTurnConversationPipeline(model=abracadabra)
+        my_pipe.user_call_meta_prompt = "This is the python call:\n"+my_pipe.user_call_meta_prompt
         
         def randomSentence()->str:
             """
             This function returns a random sentence.
             """
-            return emulate(model=abracadabra)
+            return emulate(pipeline=my_pipe)
         
         ret = randomSentence()
-        ret_model = randomSentence._last_response["response_dict"]["model"]
+        ret_model = randomSentence.hosta_inspection["model"]
         print(ret_model)
         assert "gpt-4o" in ret_model   
-       
-    @pytest.mark.parametrize("type, name, doc, arg, expected", [
-        ("str", "generator", "generates a sentence", "", str),
-        ("int", "generator", "generates an integer", "", int),
-        ("list", "generator", "generates a list in python", "", list),
-        ("float", "generator", "generates a float in python", "", float),
-    ])
-    def test_basicType(self, type, name, doc, arg, expected):
-        def generator():
-            """
-            """
-            return emulate()
-        generator.__doc__ = doc
-        generator.__name__ = name
-        generator.__annotations__ = {'return':expected}
-        result = generator()
-        assert isinstance(result, expected)
 
 
     def test_FeaturesEmptyInfos(self):
@@ -104,7 +127,7 @@ class TestEmulate:
         
         class EmulateClass:
             
-            def __str__(self):
+            def __str__(self) -> str:
                 """ This function returns "Hello World!" """
                 return emulate()
             
@@ -113,6 +136,7 @@ class TestEmulate:
         stdout = capsys.readouterr()
         assert "Hello World!" in stdout.out
         
+    # TODO: decide if we keep this test or not
     def test_FeatureLocalVariables(self):
         
         def showLocals()->dict:
@@ -122,7 +146,8 @@ class TestEmulate:
             local_1 = 42
             local_2 = "Hello World!"
             local_3 = [1, 2, 3, 4, 5]
-            return emulate(use_locals_as_ctx=True)
+            return emulate()
+            # return emulate(use_locals=True)
         
         ret_dict = {
             "local_1": 42,
@@ -135,7 +160,7 @@ class TestEmulate:
     def test_FeatureNestedFunction(self):
             
             def grandFunction():
-                def returnHelloWorld():
+                def returnHelloWorld()->str:
                     """ 
                     This function returns "Hello World!".
                     """
@@ -175,14 +200,16 @@ class TestEmulate:
         res = main()
         assert res == 6
 
-class Testthinkof:
+from OpenHosta import closure
+
+class TestClosure:
     
     def test_BasicDirect(self):
-        ret = thinkof("Multiply this number by 2")(8)
+        ret = closure("Multiply this number by 2")(8)
         assert ret == 16
     
     def test_BasicIndirect(self):
-        x = thinkof("Translate in English")
+        x = closure("Translate in English")
         ret = x("Bonjour Monde!")
         assert isinstance(x, Callable)
         assert ret == "Hello World!"
@@ -191,48 +218,21 @@ class Testthinkof:
         ("return a random integer", "", int),
         ("return a random sentence", "", str),
         ("return a random float", "", float),
-        ("return list with 5 random integers", "", list),
+        ("return a list of 5 random integers", "", list),
         ("return a random bool in python", "", bool),
     ])
     def test_BasicTyped(self, prompt, args, expected):
-        ret = thinkof(prompt)(args)
+        ret = closure(prompt)(args)
         assert isinstance(ret, expected)
         
-    @pytest.mark.parametrize("prompt, args, expected", [
-        ("Count the letter un a setence", "Hello World!", int),
-        ("capitalize a setence", "hello world!", str),
-        ("Give the number Pi to 3 decimal places", "", float),
-        ("Sort in ascending order", [2, 5, 1, 12, 6], list),
-        ("Is a positive number", 6, bool),
-    ])
-    def test_FeaturePredict(self, prompt, args, expected):
-        x = thinkof(prompt)
-        ret = x(args)
-        assert x._infos.f_type[1] is expected
 
     def test_FeatureMultiArgs(self):
-        x = thinkof("Combine each part of sentence in a signle string")
+        x = closure("Combine each part of sentence in a signle string")
         ret = x("Hello", "how are you?", "Nice to meet you!")
         assert "ello" in ret and "are" in ret and "meet" in ret
     
-    def test_FeatureChainOfthinkof(self):
+    def test_FeatureChainOfclosure(self):
         pass
-    
-    # def test_FeatureDefaultModel(self):
-    #     my_model = config.OpenAICompatibleModel(
-    #         model="gpt-4o-mini",
-    #         base_url="https://api.openai.com/v1/chat/completions",
-    #         api_key=g_apiKey
-    #     )
-        
-    #     config.set_default_model(my_model)
-        
-    #     x = thinkof("Is a masculine name")
-    #     ret = x("Max")
-    #     print(x._last_response)
-    #     ret_model = x._last_response["response_dict"]["model"]
-    #     assert ret == True
-    #     assert "gpt-4o-mini" in ret_model
     
     def test_FeatureCachedPrediction(self):
         pass

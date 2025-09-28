@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from ..core.config import Model, DefaultPipeline
-from ..utils.errors import RequestError
 
 from ..core.meta_prompt import MetaPrompt
 
@@ -28,14 +27,10 @@ def ask(
         llm_args=api_args
     )
 
-    try:
-        response = response_dict["choices"][0]["message"]["content"]
-        
-        # No type detection
-        answer = response
-        
-    except Exception as e:
-        raise RequestError(f"[ask] Request failed:\n{e}")
+    response = response_dict["choices"][0]["message"]["content"]
+
+    # No type detection
+    answer = response
 
     return answer
     
@@ -62,14 +57,10 @@ async def ask_async(
         llm_args=api_args
     )
 
-    try:
-        response = response_dict["choices"][0]["message"]["content"]
-        
-        # No type detection
-        answer = response
-        
-    except Exception as e:
-        raise RequestError(f"[ask] Request failed:\n{e}")
+    response = response_dict["choices"][0]["message"]["content"]
+    
+    # No type detection
+    answer = response
 
     return answer
     

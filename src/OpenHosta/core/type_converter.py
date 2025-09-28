@@ -10,7 +10,6 @@ from typing import Any
 from dataclasses import is_dataclass
 from enum import Enum 
 
-import sys
 from sys import version_info
 
 from .pydantic_proxy import is_pydantic_available, BaseModel, convert_pydantic
@@ -49,9 +48,9 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             typed_value = untyped_response
 
     elif expected_type is str:
-        typed_value = typed_value
+        typed_value = untyped_response.strip("'").strip("\"")
     
-    if expected_type in BASIC_TYPES:
+    elif expected_type in BASIC_TYPES:
         try:
             typed_value = expected_type(untyped_response)
         except (ValueError, TypeError):
@@ -68,18 +67,29 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
                 typed_value = untyped_response
 
     elif issubclass(expected_type, Enum):
-        typed_value = expected_type(untyped_response)
+        selected_value = untyped_response.strip("'").strip("\"")
+        if selected_value.startswith(f"{expected_type.__name__}."):
+            # LLM returned the enum member name
+            typed_value = eval(selected_value, {expected_type.__name__: expected_type})
+        else:
+            # LLM returned the enum member value
+            typed_value = expected_type(selected_value)
         
     elif is_dataclass(expected_type):
         typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
         
     elif is_pydantic_available and issubclass(expected_type, BaseModel):
-         typed_value = convert_pydantic(json.loads(untyped_response), expected_type)
+        if untyped_response.startswith("{"):
+            typed_value = convert_pydantic(json.loads(untyped_response), expected_type)
+        elif untyped_response.startswith(expected_type.__name__):
+            typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+        else:
+            raise TypeError(f"Cannot convert response to pydantic model {expected_type.__name__}. use print_last_prompt to debug.")
 
     return typed_value
 
 BASIC_TYPES = [
-    int, float, complex, str, list, tuple, range, dict, set, frozenset,
+    int, float, complex, list, tuple, range, dict, set, frozenset,
     bool, bytes, bytearray, memoryview
 ]
 
@@ -149,6 +159,10 @@ def build_typing_as_json_schema(arg_type):
         return {"type": "boolean"}
     if arg_type is float:
         return {"type": "number"}
+    if arg_type is Any:
+        return {}
+    if arg_type is NoneType:
+        return {"type": "null"}
     
     # Gestion des listes (List)
     if typing.get_origin(arg_type) is list:
@@ -207,16 +221,16 @@ def build_types_as_json_schema(arg_type):
 
     return return_type_schema
 
-def nice_type_name(obj) -> str:
+def nice_type_name(p_type) -> str:
     """
     Get a nice name for the type to insert in function description for LLM.
     """
-    if is_typing_type(obj):
-        t=obj.__repr__()
+    if is_typing_type(p_type):
+        t=repr(p_type)
         t=t.replace("typing.", "")
         return t
     
-    if hasattr(obj, "__name__"):
-        return obj.__name__
+    if hasattr(p_type, "__name__"):
+        return p_type.__name__
 
-    return str(obj)
+    return str(p_type)

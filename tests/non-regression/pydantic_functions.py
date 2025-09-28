@@ -1,9 +1,34 @@
 # -*- coding: utf-8 -*-
 
-# First install ollama
-# then run ollama pull llama3.2:3b
+#########################################################
+#
+# Test model configuration
+#
+#########################################################
 
 import os
+import asyncio
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# To run these tests you need to set .env variables to define an LLM provider
+# e.g. for OpenAI:
+# OPENHOSTA_LLM_PROVIDER=openai
+# OPENHOSTA_OPENAI_API_KEY=your_api_key
+
+# you also need to install pytest and python-dotenv:
+# pip install pytest python-dotenv
+
+# To run the tests, use the command:
+# pytest OpenHosta/tests/functionnalTests/test_ask.py
+
+
+from OpenHosta import config
+
+config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
+config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
+config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
 
 from OpenHosta.utils.import_handler import is_pydantic_available
 assert is_pydantic_available, "Pydantic shall be installed"
@@ -14,23 +39,8 @@ assert is_pydantic_available, "Pydantic shall be installed"
 #
 #########################################################
 
-from OpenHosta import config
-
-PORT=11434
-#PORT=11436
-MODEL_BASE_URL=os.environ.get("MODEL_BASE_URL", f"http://127.0.0.1:{PORT}/v1/chat/completions")
-MODEL_API_KEY=os.environ.get("MODEL_API_KEY", "none")
-MODEL_NAME = os.environ.get("MODEL_NAME", "gemma2-9b-it")
-
-model=config.OpenAICompatibleModel(
-    model=MODEL_NAME,
-    max_async_calls=10,
-    base_url=MODEL_BASE_URL,
-    timeout=120, api_key="none",
-    additionnal_headers={"Authorization":MODEL_API_KEY}
-)
-
-config.set_default_model(model)
+from OpenHosta import ask
+ask("hello world!")
 
 #########################################################
 #
@@ -61,13 +71,14 @@ def find_people(sentence:str)->Person:
 
 fist_person = find_people("french president went with his wife brigite to london.")
 
-from OpenHosta import print_last_prompt, print_last_response
+from OpenHosta import print_last_prompt, print_last_decoding
 
 print_last_prompt(find_people)
-print_last_response(find_people)
+print_last_decoding(find_people)
 
 assert "rigit" in fist_person.name or "acron" in fist_person.name or "resident" in fist_person.name
 
+# TODO: this is still ko
 def find_people_list(sentence:str)->List[Person]:
     """
     This function find all people in a sentence.
@@ -83,6 +94,7 @@ person_list = find_people_list("french president went with his wife brigite to l
 
 assert any(["rigit" in person.name for person in person_list])
 
+# TODO: this is still ko
 def find_people_dict(sentence:str)->Dict[str, Person]:
     """
     This function find all people in a sentence.
