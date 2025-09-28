@@ -36,9 +36,6 @@ def test_emulate_basic():
     response = get_capital("France")
     assert "Paris" in response, f"Expected 'Paris' in response, got: {response}"
 
-
-from  OpenHosta.core.hosta_inspector import get_caller_frame, get_hosta_inspection
-
 def test_emulate_math():
     """
     Test the emulate function with a math operation.
@@ -58,12 +55,6 @@ def test_emulate_math():
     response = get_math_result(2.5)
     assert 4.5 == response, f"Expected '4.5' in response, got: {response}"
 
-
-    print_last_prompt(get_math_result)
-    from OpenHosta.core.hosta_inspector import get_hosta_inspection
-    inspection = get_hosta_inspection(function_pointer=get_math_result)
-
-from OpenHosta.pipelines import OneTurnConversationPipeline
 def test_emulate_basic():
     """
     Test the emulate function with a simple prompt that asks for the capital of a country.
@@ -131,7 +122,9 @@ def test_emulate_dataclass():
         """
         return emulate()
     
-    person = get_person_info("president of the USA")
+    person = get_person_info("president of the USA in 1991")
     
     assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
     
+    
+    print_last_prompt(get_person_info)
