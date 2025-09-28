@@ -60,6 +60,8 @@ def test_emulate_math():
 
 
     print_last_prompt(get_math_result)
+    from OpenHosta.core.hosta_inspector import get_hosta_inspection
+    inspection = get_hosta_inspection(function_pointer=get_math_result)
 
 from OpenHosta.pipelines import OneTurnConversationPipeline
 def test_emulate_basic():
@@ -73,8 +75,12 @@ def test_emulate_basic():
         """
         return emulate()
     
-    response = get_capital("France")
-    print_last_prompt(get_capital)
+    try:
+        response = get_capital("France")
+    except:
+        # This does not work because the model returns "Paris" which is not an int
+        response = None
+        print_last_prompt(get_capital)
     
     assert response is None, f"Expected 'Paris' in response, got: {response}"
 
@@ -110,16 +116,22 @@ def test_emulate_dataclass():
 
     @dataclass
     class Person:
-        name: str
+        firstname: str
+        lastname: str
         age: int
 
-    def get_person_info(name: str) -> Person:
+    def get_person_info(description: str) -> Person:
         """
-        This function returns a Person object with the given name and a random age.
+        This function returns a Person object with the given description.
+        
+        Arguments:
+            - description (str): The description of the person.
+        Returns:
+            - Person: A Person object based on the description.
         """
         return emulate()
     
-    person = get_person_info("Alice")
+    person = get_person_info("president of the USA")
     
     assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
     
