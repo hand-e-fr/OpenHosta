@@ -71,7 +71,7 @@ class TestEmulate:
         abracadabra = config.OpenAICompatibleModel(
             model_name="gpt-4o",
             base_url="https://api.openai.com/v1/chat/completions",
-            api_key=os.getenv("OPENHOSTA_OPENAI_API_KEY")
+            api_key=os.getenv("OPENAI_API_KEY")
         )
         
         my_pipe = OneTurnConversationPipeline(model_list=[abracadabra])
