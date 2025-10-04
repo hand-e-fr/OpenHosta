@@ -55,6 +55,8 @@ from typing import List, Dict, Optional
 
 class Person(BaseModel):
     name: str = Field(..., description="The full name (Firstname and Sirname ) of the person")
+    first_name: str = Field(..., description="The first name of the person")
+    sir_name: str = Field(..., description="The sir name of the person")
     age: Optional[int] = None
     birth_city: Optional[str] = None
 
@@ -69,14 +71,16 @@ def find_people(sentence:str)->Person:
     """
     return emulate()
 
-fist_person = find_people("french president went with his wife brigite to london.")
+config.DefaultModel.model_name = "gemma3:4b" # Fastest 100% type tests (7.7s)
+
+first_person = find_people("The french president went with his wife Brigite Macron to london.")
 
 from OpenHosta import print_last_prompt, print_last_decoding
 
 print_last_prompt(find_people)
 print_last_decoding(find_people)
 
-assert "rigit" in fist_person.name or "acron" in fist_person.name or "resident" in fist_person.name
+assert "rigit" in first_person.name or "acron" in first_person.name or "resident" in first_person.name
 
 # TODO: this is still ko
 def find_people_list(sentence:str)->List[Person]:
