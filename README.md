@@ -1,5 +1,5 @@
 # OpenHosta 
-v2.2.2 - Open-Source Project
+v3.0.0 - Open-Source Project
 
 <a href="https://colab.research.google.com/github/hand-e-fr/OpenHosta/blob/main/docs/openhosta_mistral_small.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/> Basic Usage - local LLM (Mistral-Small-2501)</a>
 <br/>
