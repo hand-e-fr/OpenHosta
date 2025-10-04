@@ -212,7 +212,7 @@ def build_typing_as_json_schema(arg_type):
         args =  typing.get_args(arg_type)
         item_type = args[0] if args else Any
         # Appelle récursivement la fonction pour obtenir le schéma des éléments
-        items_schema = build_typing_as_json_schema(item_type)
+        items_schema = describe_type_as_schema(item_type)
         return {
             "type": "array",
             "items": items_schema
@@ -229,7 +229,7 @@ def build_typing_as_json_schema(arg_type):
             raise TypeError("Only string keys are supported in Dict for JSON schema.")
         
         # Appelle récursivement la fonction pour obtenir le schéma des valeurs
-        value_schema = build_typing_as_json_schema(value_type)
+        value_schema = describe_type_as_schema(value_type)
         return {
             "type": "object",
             "properties": {},
@@ -238,11 +238,11 @@ def build_typing_as_json_schema(arg_type):
     elif typing.get_origin(arg_type) is typing.Union:
         args = typing.get_args(arg_type)
         if len(args) == 2 and args[1] is type(None):
-            return build_typing_as_json_schema(args[0])
+            return describe_type_as_schema(args[0])
         else:
             # Union of multiple types
             return {
-                "anyOf": [build_typing_as_json_schema(arg) for arg in args]
+                "anyOf": [describe_type_as_schema(arg) for arg in args]
             }
     elif typing.get_origin(arg_type) is typing.Literal:
         args = typing.get_args(arg_type)
@@ -251,12 +251,12 @@ def build_typing_as_json_schema(arg_type):
         }
     elif typing.get_origin(arg_type) is typing.Annotated:
         args = typing.get_args(arg_type)
-        return build_typing_as_json_schema(args[0])
+        return describe_type_as_schema(args[0])
     elif typing.get_origin(arg_type) is typing.TypeVar:
         args = typing.get_args(arg_type)
         if args:
             return {
-                "anyOf": [build_typing_as_json_schema(arg) for arg in args]
+                "anyOf": [describe_type_as_schema(arg) for arg in args]
             }
         else:
             return {}
