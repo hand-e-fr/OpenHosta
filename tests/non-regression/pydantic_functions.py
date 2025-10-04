@@ -71,8 +71,6 @@ def find_people(sentence:str)->Person:
     """
     return emulate()
 
-config.DefaultModel.model_name = "gemma3:4b" # Fastest 100% type tests (7.7s)
-
 first_person = find_people("The french president went with his wife Brigite Macron to london.")
 
 from OpenHosta import print_last_prompt, print_last_decoding
@@ -82,7 +80,7 @@ print_last_decoding(find_people)
 
 assert "rigit" in first_person.name or "acron" in first_person.name or "resident" in first_person.name
 
-# TODO: this is still ko
+# TODO: this is still ko. Il faut stacker les types lors du parcours recursif dans la structure
 def find_people_list(sentence:str)->List[Person]:
     """
     This function find all people in a sentence.
@@ -95,6 +93,9 @@ def find_people_list(sentence:str)->List[Person]:
     return emulate()
 
 person_list = find_people_list("french president went with his wife brigite to london")
+
+print_last_prompt(find_people_list)
+print_last_decoding(find_people_list)
 
 assert any(["rigit" in person.name for person in person_list])
 
