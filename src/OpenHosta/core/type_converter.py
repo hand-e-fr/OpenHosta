@@ -50,6 +50,9 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
     elif expected_type is str:
         typed_value = untyped_response.strip("'").strip("\"")
     
+    elif expected_type is bool:
+        # bool("False") is True as it is not an empty string... So it is not a BASIC_TYPES for decoding
+        typed_value = len(untyped_response) > 0 and untyped_response[0].lower() == "t"
     elif expected_type in BASIC_TYPES:
         try:
             typed_value = expected_type(untyped_response)
