@@ -80,8 +80,8 @@ class OneTurnConversationPipeline(Pipeline):
         super().__init__()
 
         self.model_list:List[Model] = model_list     
-        self.emulate_meta_prompt = EMULATE_META_PROMPT
-        self.user_call_meta_prompt = USER_CALL_META_PROMPT
+        self.emulate_meta_prompt = EMULATE_META_PROMPT.copy()
+        self.user_call_meta_prompt = USER_CALL_META_PROMPT.copy()
 
     def push_detect_missing_types(self, inspection):
         """Python Level"""

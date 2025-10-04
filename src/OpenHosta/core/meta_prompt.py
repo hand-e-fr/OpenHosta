@@ -42,6 +42,18 @@ class MetaPrompt:
         self._template_kargs = kargs
         self.template = Template(self._source, *args, **kargs)
 
+    def copy(self):
+        """
+        Create a copy of the meta-prompt.
+
+        Remember that in python everything is a reference, so if you modify the source of a MetaPrompt, all references to it will see the change.
+        Most likely you want to copy it first.
+
+        Returns:
+            MetaPrompt: A copy of the meta-prompt.
+        """
+        return MetaPrompt(self._source, *self._template_args, **self._template_kargs)
+
     @property
     def source(self):
         """
