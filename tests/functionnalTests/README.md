@@ -10,8 +10,10 @@ Open .env file and set your LLM API key:
 
 ```env
 DEFAULT_LLM_PROVIDER=openai
-OPENAI_API_KEY=your_api_key_here
+OPENHOSTA_DEFAULT_MODEL_API_KEY="sk-proj-..."
 ```
+
+> More details about .env configuration in the [configuration example](../.env.example).
 
 Then, run the following command to execute the functional tests:
 

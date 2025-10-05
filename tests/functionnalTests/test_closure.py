@@ -15,12 +15,7 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_closure.py
 
-from OpenHosta import closure, config
-
-
-config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
-config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
-config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
+from OpenHosta import closure
 
 # Basic test to check if the closure function works with a simple prompt
 def test_closure_basic():

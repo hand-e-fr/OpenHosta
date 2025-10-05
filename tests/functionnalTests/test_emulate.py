@@ -15,12 +15,9 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_emulate.py
 
-from OpenHosta import emulate, config
+from OpenHosta import emulate
 from OpenHosta import print_last_prompt
 
-config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
-config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
-config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
 
 # Basic test to check if the emulate function works with a simple prompt
 def test_emulate_basic():
