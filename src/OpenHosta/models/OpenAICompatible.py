@@ -72,7 +72,8 @@ class OpenAICompatibleModel(Model):
         else:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        for key, value in llm_args.items():
+        all_api_parameters = self.api_parameters | llm_args
+        for key, value in all_api_parameters.items():
             if key == "force_json_output" and value:
                 l_body["response_format"] = {"type": "json_object"}
             else:

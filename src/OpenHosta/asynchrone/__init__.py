@@ -6,6 +6,4 @@ all = (
     "ask",
     "emulate",
     "closure",
-    "predict",
-    "generate_data",
 )
