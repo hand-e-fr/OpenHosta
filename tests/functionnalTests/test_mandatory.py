@@ -26,12 +26,6 @@ load_dotenv()
 # pytest OpenHosta/tests/functionnalTests/test_ask.py
 
 
-from OpenHosta import config
-
-config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
-config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
-config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
-
 from OpenHosta.utils.import_handler import is_pydantic_available
 assert is_pydantic_available, "Pydantic shall be installed"
 
