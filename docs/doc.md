@@ -871,7 +871,7 @@ class LlamaModel(OpenAICompatibleModel):
             l_ret_data = json.loads(json_string)
         except json.JSONDecodeError as e:
             sys.stderr.write(
-                f"[OpenAICompatibleModel.get_response_content] JSONDecodeError: {e}\nContinuing the process.")
+                f"[OpenHosta/OpenAICompatibleModel.get_response_content] JSONDecodeError: {e}\nContinuing the process.")
             l_cleand = "\n".join(json_string.split("\n")[1:-1])
             l_ret_data = json.loads(l_cleand)
         return TypeConverter(function_metadata, l_ret_data).check()
