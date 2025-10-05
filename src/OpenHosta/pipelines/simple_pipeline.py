@@ -85,7 +85,7 @@ class OneTurnConversationPipeline(Pipeline):
 
     def push_detect_missing_types(self, inspection):
         """Python Level"""
-        #TODO: improve type guessing and mege with closure type guessing
+        #TODO: improve type guessing and merge with closure type guessing
         if "type" not in inspection["analyse"] or inspection["analyse"]["type"] is None:
             Warning(f"No return type found for function {inspection["analyse"]["name"]}. Assuming str.")
             return_type = str
@@ -170,8 +170,8 @@ class OneTurnConversationPipeline(Pipeline):
 
         thinking, response_string = inspection["model"].get_thinking_and_data_sections(raw_response)
 
-        inspection["logs"]["rational"] = thinking
-        inspection["logs"]["answer"] = response_string
+        inspection["logs"]["rational"] += thinking if thinking else ""
+        inspection["logs"]["answer"] += response_string
         
         return response_string.strip()
 
@@ -197,13 +197,18 @@ class OneTurnConversationPipeline(Pipeline):
         return l_ret_data
 
     def pull(self, inspection, response_dict ):
+        inspection["logs"]["rational"] = ""
+        inspection["logs"]["answer"] = ""
+        
         inspection["logs"]["llm_api_response"] = response_dict
         
         raw_response = self.pull_extract_messages(inspection, response_dict)
         inspection["logs"]["raw_response"] = raw_response
         
+        if 'reasoning' in response_dict.get("choices",[{}])[0].get("message", {}):
+            inspection["logs"]["rational"] += response_dict["choices"][0]["message"]["reasoning"]
+        
         response_string = self.pull_extract_data_section(inspection, raw_response)
-        inspection["logs"]["response_string"] = response_string
         
         response_data = self.pull_type_data_section(inspection, response_string)
         inspection["logs"]["response_data"] = response_data
