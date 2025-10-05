@@ -35,6 +35,7 @@ def closure_async(
     query_string,
     *,
     pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+    force_return_type: Optional[object] = None,
     force_llm_args: Optional[dict] = {}
     ):
 
@@ -46,6 +47,10 @@ def closure_async(
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
 
+        # Use return_type if provided, else try to guess it
+        if force_return_type is not None:
+            inspection["analyse"]["type"] = force_return_type
+    
         return_type = inspection["analyse"]["type"]
         if return_type in [None, Any]:
             return_type = guess_type(inspection)
@@ -66,10 +71,14 @@ def closure_async(
 
     return inner_func
 
+async def test_async(test_string:str):
+    return await closure_async(test_string, force_return_type=bool)()
+
 def closure(
     query_string,
     *,
     pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+    force_return_type: Optional[object] = None,
     force_llm_args: Optional[dict] = {}
     ):
     
@@ -81,6 +90,10 @@ def closure(
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
 
+        # Use return_type if provided, else try to guess it
+        if force_return_type is not None:
+            inspection["analyse"]["type"] = force_return_type
+    
         return_type = inspection["analyse"]["type"]
         if return_type in [None, Any]:
             return_type = guess_type(inspection)
@@ -101,6 +114,8 @@ def closure(
 
     return inner_func
 
+def test(test_string:str):
+    return closure(test_string, force_return_type=bool)()
 
 def update_inspection(inspection, query_string, *args, **kwargs):
     

@@ -128,14 +128,16 @@ class OpenAICompatibleModel(Model):
         Returns:
             tuple[str, str]: rational and answer.
         """
-        response = response.strip()
+        rational = ""
+        answer = ""
 
+        response = response.strip()
         if reasoning_start_and_stop_tags[0] in response and reasoning_start_and_stop_tags[1] in response:
             chunks = response[8:].split(reasoning_start_and_stop_tags[1])
-            rational = chunks[0]
-            answer = reasoning_start_and_stop_tags[1].join(chunks[1:]) # in case there are multiple </think> tags
+            rational += chunks[0]
+            answer += reasoning_start_and_stop_tags[1].join(chunks[1:]) # in case there are multiple </think> tags
         else:
-            rational, answer = "", response
+            answer += response
         
         return rational, answer
         
@@ -146,14 +148,18 @@ class OpenAICompatibleModel(Model):
         """
         if "llm_api_messages_sent" in hosta_inspection['logs'] and \
             len(hosta_inspection['logs']["llm_api_messages_sent"]) >= 1:
-            print("System prompt:\n-----------------")
+            print("\nSystem prompt:\n-----------------")
             print(hosta_inspection['logs']["llm_api_messages_sent"][0]["content"][0]["text"])
         if "llm_api_messages_sent" in hosta_inspection['logs'] and \
             len(hosta_inspection['logs']["llm_api_messages_sent"]) >= 2:
-            print("User prompt:\n-----------------")
+            print("\nUser prompt:\n-----------------")
             print(hosta_inspection['logs']["llm_api_messages_sent"][1]["content"][0]["text"])
+        if "rational" in hosta_inspection['logs'] and hosta_inspection['logs']["rational"]:
+            print("\nRational:\n-----------------")
+            print(hosta_inspection['logs']["rational"])
         if "llm_api_response" in hosta_inspection['logs'] and \
             "choices" in hosta_inspection['logs']["llm_api_response"] and \
                 len(hosta_inspection['logs']["llm_api_response"]["choices"]) >= 1:
-            print("LLM response:\n-----------------")
+            print("\nLLM response:\n-----------------")
             print(hosta_inspection['logs']["llm_api_response"]["choices"][0]["message"]["content"])
+

@@ -6,7 +6,7 @@ from .core.meta_prompt import MetaPrompt
 
 from .exec.ask import ask, ask_async
 from .exec.emulate import emulate, emulate_async
-from .exec.closure import closure, closure_async
+from .exec.closure import closure, closure_async, test, test_async
 
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
@@ -22,6 +22,8 @@ all = (
     "emulate_async",
     "closure",
     "closure_async",
+    "test",
+    "test_async",
     "config",
     "reload_dotenv",
     "Model",
