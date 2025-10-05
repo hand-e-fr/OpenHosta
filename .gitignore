@@ -21,3 +21,4 @@ mypy/
 linter.py
 tests/reports/*report.txt
 tests/functionnalTests/.env
+**/.env

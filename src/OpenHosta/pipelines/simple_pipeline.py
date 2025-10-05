@@ -105,9 +105,9 @@ class OneTurnConversationPipeline(Pipeline):
         """OpenHosta Level"""
         
         # For now, we just take the first model
-        inspection["model"] = self.model_list[0]
-        
-        return inspection["model"]
+        chosen_model = self.model_list[0]
+
+        return chosen_model
 
     def push_encode_inspected_data(self, inspection, model_capabilities: set[ModelCapabilities]):
         """Data & Schema Level"""
@@ -131,8 +131,9 @@ class OneTurnConversationPipeline(Pipeline):
         
         # reset pipe state for new usage
         inspection     = self.push_detect_missing_types(inspection)
-        model          = self.push_choose_model(inspection)
-        encoded_data   = self.push_encode_inspected_data(inspection, model.capabilities)
+        inspection["model"] = self.push_choose_model(inspection)
+        encoded_data   = self.push_encode_inspected_data(inspection, inspection["model"].capabilities)
+        
         inspection["pipeline"] = self
 
         meta_messages       = self.push_select_meta_prompts(inspection)

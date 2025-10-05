@@ -11,7 +11,7 @@ from .exec.closure import closure, closure_async
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
 
-from .core.config import DefaultModel
+from .core.config import DefaultModel, reload_dotenv
 
 import os
 
@@ -23,6 +23,7 @@ all = (
     "closure",
     "closure_async",
     "config",
+    "reload_dotenv",
     "Model",
     "DefaultModel"
     "OpenAICompatibleModel",
