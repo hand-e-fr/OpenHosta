@@ -1,18 +1,6 @@
 import pytest
-import re
-import os
-import sys
-import dotenv
-dotenv.load_dotenv()
 
-base_url = os.getenv("OPENHOSTA_BASE_URL", "http://localhost:11434/v1")
-api_key = os.getenv("OPENHOSTA_API_KEY", "none")
-
-from OpenHosta import config, emulate, ask
-
-config.DefaultModel.model_name = os.getenv("OPENHOSTA_MODEL_NAME", "gpt-4.1")
-config.DefaultModel.base_url = os.getenv("OPENHOSTA_BASE_URL", "https://api.openai.com/v1")
-config.DefaultModel.api_key = os.getenv("OPENHOSTA_OPENAI_API_KEY")
+from OpenHosta import emulate, ask, test
 
 answer = ask("Just say: The API to the model works!")
 assert "The API to the model works!" in answer
@@ -151,3 +139,7 @@ class TestTypes:
         
         assert return_none() is None
     
+    def test_testReturnType(self):        
+        ret = test("this is true")
+        assert type(ret) == bool
+        assert ret is True
