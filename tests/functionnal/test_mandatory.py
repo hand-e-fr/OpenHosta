@@ -230,3 +230,17 @@ class TestClosure:
     
     def test_FeatureCachedPrediction(self):
         pass
+
+from OpenHosta import test
+    
+class TestTestMandatory:
+    
+    def test_BasicMandatory(self):
+        name = "Louis"
+        if test(f"Is '{name}' a name ?"):
+            result = f"Yes, {name} is a name"
+        else:
+            result = f"No, {name} is not a name"
+        assert result.startswith("Yes"), "Louis should be recognized as a name"
+        
+        
