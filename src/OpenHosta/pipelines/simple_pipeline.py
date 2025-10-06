@@ -52,9 +52,6 @@ class Pipeline(ABC):
         if "answer" in inspection['logs']:
             print("[ANSWER]")
             print(inspection['logs']["answer"])
-        if "raw_response" in inspection['logs']:
-            print("[RAW RESPONSE]")
-            print(inspection['logs']["raw_response"])
         if "response_string" in inspection['logs']:
             print("[RESPONSE STRING]")
             print(inspection['logs']["response_string"])
@@ -121,9 +118,34 @@ class OneTurnConversationPipeline(Pipeline):
     def push_select_meta_prompts(self, inspection):
         """Prompt Level""" 
         
+        try:
+            # Find all images in args
+            import PIL
+            import base64
+            import io
+            img_format = "png"
+            size_limit = 800.0
+
+            image_list = []
+            for arg in inspection["analyse"]["args"]:
+                if arg["type"] is PIL.Image.Image:
+                    img:PIL.Image.Image = arg["value"]
+                    max_size = max(img.width, img.height)
+                    ratio = max(1, size_limit/max_size)
+                    if ratio == 1:
+                        image_resized = img
+                    else:
+                        image_resized = img.resize([int(img.width*ratio),int(img.height*ratio)])
+                    buffered= io.BytesIO()
+                    image_resized.save(buffered, )
+                    img_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                    image_list.append(f"data:image/{img_format};base64,{img_string}")
+        except:
+            image_list = []
+
         default_meta_conversation:MetaDialog = [
             ('system',self.emulate_meta_prompt, None),
-            ('user',  self.user_call_meta_prompt, None),
+            ('user',  self.user_call_meta_prompt, image_list),
         ]
         return default_meta_conversation
 
@@ -142,16 +164,17 @@ class OneTurnConversationPipeline(Pipeline):
         
         inspection["logs"]["llm_api_messages_sent"] = messages
         
-        for role, meta_prompt, image in meta_messages:
+        for role, meta_prompt, images in meta_messages:
             
             message_content = [
                         {"type": "text",  "text" : meta_prompt.render(encoded_data) }
                     ]
             
-            if image:
-                message_content += [
-                    {"type": "image_url", "image_url": image}
-                ]
+            if images and len(images) > 0:
+                for image in images:
+                    message_content += [
+                        {"type": "image_url", "image_url": image}
+                    ]
 
             messages += [{
                 "role": role,
@@ -173,16 +196,18 @@ class OneTurnConversationPipeline(Pipeline):
         inspection["logs"]["rational"] += thinking if thinking else ""
         inspection["logs"]["answer"] += response_string
         
+        # Check if encapsulated in code block
+        if response_string.endswith("```"):
+            chuncks = response_string.split("```")
+            response_string = chuncks[-2].strip()
+            # Remove chunk language and parameters
+            response_string = "\n".join(response_string.split("\n")[1:])
+
         return response_string.strip()
 
     def pull_type_data_section(self, inspection, response:Any) -> Any:
         """Python Level"""
         l_ret_data = None
-
-        # Check if encapsulated in code block
-        if response.endswith("```"):
-            chuncks = response.split("```")
-            response = chuncks[-2].strip()
             
         # Check if JSON object
         if "{" in response and "}" in response:
@@ -203,12 +228,12 @@ class OneTurnConversationPipeline(Pipeline):
         inspection["logs"]["llm_api_response"] = response_dict
         
         raw_response = self.pull_extract_messages(inspection, response_dict)
-        inspection["logs"]["raw_response"] = raw_response
         
         if 'reasoning' in response_dict.get("choices",[{}])[0].get("message", {}):
             inspection["logs"]["rational"] += response_dict["choices"][0]["message"]["reasoning"]
         
         response_string = self.pull_extract_data_section(inspection, raw_response)
+        inspection["logs"]["response_string"] = response_string
         
         response_data = self.pull_type_data_section(inspection, response_string)
         inspection["logs"]["response_data"] = response_data

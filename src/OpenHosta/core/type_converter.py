@@ -97,8 +97,14 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             # LLM returned the enum member name
             typed_value = eval(selected_value, {expected_type.__name__: expected_type}, {})
         else:
-            # LLM returned the enum member value
-            typed_value = expected_type(selected_value)
+            typed_value = None
+            for member in list(expected_type):
+                if selected_value == member.value:
+                    typed_value = expected_type(selected_value)
+                    break
+                elif selected_value == member.name:
+                    typed_value = eval(f"{expected_type.__name__}.{selected_value}", {expected_type.__name__: expected_type}, {})
+                    break
         
     elif is_dataclass(expected_type):
         typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
@@ -153,13 +159,20 @@ def describe_type_as_schema(arg_type):
 
 def describe_type_as_python(arg_type):
     type_definition = None
+
+    try:
+        from PIL.Image import Image as PILImageType
+        pil_available = True
+    except:
+        pil_available = False
     
     if arg_type in BASIC_TYPES or\
         is_typing_type(arg_type) or\
             arg_type == type:
         # Check if the type is a basic type or a typing alias
         type_definition = nice_type_name(arg_type)
-
+    elif pil_available and issubclass(arg_type, PILImageType):
+        pass
     elif issubclass(arg_type, Enum):
         type_definition = textwrap.dedent(f"""\
             # Python enum {arg_type.__name__} definition.
