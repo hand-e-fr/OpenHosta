@@ -119,25 +119,27 @@ class OneTurnConversationPipeline(Pipeline):
         """Prompt Level""" 
         
         try:
+
             # Find all images in args
             import PIL
             import base64
             import io
             img_format = "png"
-            size_limit = 800.0
+            size_limit = 1600.0
 
             image_list = []
             for arg in inspection["analyse"]["args"]:
                 if arg["type"] is PIL.Image.Image:
                     img:PIL.Image.Image = arg["value"]
                     max_size = max(img.width, img.height)
-                    ratio = max(1, size_limit/max_size)
+                    ratio = min(1, size_limit/max_size)
                     if ratio == 1:
                         image_resized = img
                     else:
                         image_resized = img.resize([int(img.width*ratio),int(img.height*ratio)])
+                        arg["value"] = image_resized
                     buffered= io.BytesIO()
-                    image_resized.save(buffered, )
+                    image_resized.save(buffered, img_format)
                     img_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
                     image_list.append(f"data:image/{img_format};base64,{img_string}")
         except:
@@ -154,11 +156,13 @@ class OneTurnConversationPipeline(Pipeline):
         # reset pipe state for new usage
         inspection     = self.push_detect_missing_types(inspection)
         inspection["model"] = self.push_choose_model(inspection)
-        encoded_data   = self.push_encode_inspected_data(inspection, inspection["model"].capabilities)
         
         inspection["pipeline"] = self
 
         meta_messages       = self.push_select_meta_prompts(inspection)
+
+        # This is after push_select_meta_prompts because we may have changed arg values (eg: resized images)
+        encoded_data   = self.push_encode_inspected_data(inspection, inspection["model"].capabilities)
 
         messages = []
         
@@ -173,7 +177,7 @@ class OneTurnConversationPipeline(Pipeline):
             if images and len(images) > 0:
                 for image in images:
                     message_content += [
-                        {"type": "image_url", "image_url": image}
+                        {"type": "image_url", "image_url": {"url": image}}
                     ]
 
             messages += [{
