@@ -19,7 +19,7 @@ class OpenAICompatibleModel(Model):
             base_url: str = "https://api.openai.com/v1", 
             chat_completion_url: str = "/chat/completions",
             api_key: str = None, 
-            timeout: int = 30,
+            timeout: int = 60,
         ):     
         super().__init__(
             max_async_calls=max_async_calls,

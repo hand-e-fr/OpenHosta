@@ -1,4 +1,4 @@
-from OpenHosta import test, closure, DefaultModel, reload_dotenv
+from OpenHosta import closure, DefaultModel, reload_dotenv
 reload_dotenv()
 # Works only with gpt-4o and gpt-4.1
 DefaultModel.api_parameters |= {"logprobs": True, "top_logprobs": 20}
