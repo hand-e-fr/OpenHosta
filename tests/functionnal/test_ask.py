@@ -1,4 +1,5 @@
 import os
+import time
 import pytest
 from dotenv import load_dotenv
 
@@ -53,3 +54,20 @@ def test_ask_routing_async():
         return await ask_async(prompt)
     response = run(app())
     assert "push" in response, f"Expected 'push' in response, got: {response}"
+
+
+def test_ask_speed():
+    """
+    Test the ask function with a very short prompt so that delay due to LLM is minimal.
+    """
+
+    t0 = time.time()
+    for i in range(10):
+        response = ask("Just answer with 1")
+    t1 = time.time()
+    
+    print(f"10 calls to ask took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
+    
+    assert '1' in response, f"Expected '1' in response, got: {response}"
+    assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+    
