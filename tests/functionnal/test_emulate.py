@@ -1,4 +1,5 @@
 import os
+import time
 import pytest
 from dotenv import load_dotenv
 
@@ -17,6 +18,7 @@ load_dotenv()
 
 from OpenHosta import emulate
 from OpenHosta import print_last_prompt
+from OpenHosta import OneTurnConversationPipeline, DefaultModel
 
 
 # Basic test to check if the emulate function works with a simple prompt
@@ -220,3 +222,50 @@ def test_emulate_dataclass_async():
     assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
     
     
+    def test_emulate_speed():
+        """
+        Test the emulate function with a very short prompt so that delay due to LLM is minimal.
+        """
+        EmptyPipeline = OneTurnConversationPipeline(model_list=[DefaultModel])
+        EmptyPipeline.emulate_meta_prompt.source = ""
+        EmptyPipeline.user_call_meta_prompt.source = "Just answer with 1"
+        
+        def answer_one()->int:
+            """
+            just write 1 in your answer
+            """
+            return emulate(pipeline=EmptyPipeline)
+
+        t0 = time.time()
+        for i in range(10):
+            response = answer_one()
+        t1 = time.time()
+        
+        print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
+        # print_last_prompt(answer_one)
+        
+        assert response == 1, f"Expected '1' in response, got: {response}"
+        assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+        
+    def test_emulate_speed():
+        """
+        Test the emulate function with a very short prompt so that delay due to LLM is minimal.
+        """
+        
+        def answer_one()->int:
+            """
+            just write 1 in your answer
+            """
+            return emulate()
+
+        t0 = time.time()
+        for i in range(10):
+            response = answer_one()
+        t1 = time.time()
+        
+        print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
+        # print_last_prompt(answer_one)
+        
+        assert response == 1, f"Expected '1' in response, got: {response}"
+        assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+                
