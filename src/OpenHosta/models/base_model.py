@@ -28,7 +28,7 @@ class Model:
         self.max_async_calls = max_async_calls
         self.async_executor = None
         
-        self.user_headers = additionnal_headers
+        self.additionnal_headers = additionnal_headers
         self.api_parameters = api_parameters
 
     def __exit__(self):

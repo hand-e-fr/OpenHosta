@@ -18,8 +18,7 @@ def emulate(
     based on its signature, docstring, and context.
     
     Args:
-        - model (Optional[Model]): The language model to use for emulation. If None, uses the default model.
-        - post_callback (Optional[Callable]): Optional callback function to process the model's output.
+        - pipeline (Optional[OneTurnConversationPipeline]): The pipeline used for emulation. If None, uses the default one.
         - force_llm_args: Additional keyword arguments to pass to the language model.
     
     Returns:
@@ -55,9 +54,8 @@ async def emulate_async(
     based on its signature, docstring, and context.
     
     Args:
-        - model (Optional[Model]): The language model to use for emulation. If None, uses the default model.
-        - post_callback (Optional[Callable]): Optional callback function to process the model's output.
-        - llm_args: Additional keyword arguments to pass to the language model.
+        - pipeline (Optional[OneTurnConversationPipeline]): The pipeline used for emulation. If None, uses the default one.
+        - force_llm_args: Additional keyword arguments to pass to the language model.
     
     Returns:
         - Any: The emulated function's return value, processed by the model and optionally modified by post_callback.

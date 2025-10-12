@@ -66,11 +66,12 @@ class OpenAICompatibleModel(Model):
         headers = {
             "Content-Type": "application/json"
         }
-        
-        if "azure.com" in self.base_url:
-            headers["api-key"] = f"{api_key}"
-        else:
+
+        if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
+
+        for key, value in self.additionnal_headers.items():
+            headers[key] = value
 
         all_api_parameters = self.api_parameters | llm_args
         for key, value in all_api_parameters.items():
