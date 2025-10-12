@@ -18,7 +18,7 @@ load_dotenv()
 
 from OpenHosta import emulate
 from OpenHosta import print_last_prompt
-from OpenHosta import OneTurnConversationPipeline, DefaultModel
+from OpenHosta import OneTurnConversationPipeline, config
 
 
 # Basic test to check if the emulate function works with a simple prompt
@@ -226,7 +226,7 @@ def test_emulate_dataclass_async():
         """
         Test the emulate function with a very short prompt so that delay due to LLM is minimal.
         """
-        EmptyPipeline = OneTurnConversationPipeline(model_list=[DefaultModel])
+        EmptyPipeline = OneTurnConversationPipeline(model_list=[config.DefaultModel])
         EmptyPipeline.emulate_meta_prompt.source = ""
         EmptyPipeline.user_call_meta_prompt.source = "Just answer with 1"
         

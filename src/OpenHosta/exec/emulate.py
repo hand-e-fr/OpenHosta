@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from ..core.inspection import get_caller_frame, get_hosta_inspection
-from ..core.config import DefaultPipeline
+from ..core.config import config
 from ..pipelines import OneTurnConversationPipeline
 
 def emulate(
         *,
-        pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+        pipeline: Optional[OneTurnConversationPipeline] = config.DefaultPipeline,
         force_llm_args: Optional[dict] = {},
         ) -> Any:
     """
@@ -45,7 +45,7 @@ def emulate(
 
 async def emulate_async(
         *,
-        pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+        pipeline: Optional[OneTurnConversationPipeline] = config.DefaultPipeline,
         force_llm_args: Optional[dict] = {},
         ) -> Any:
     """
