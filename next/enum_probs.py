@@ -1,3 +1,8 @@
+### This file describe a partial implementation of logprobes for enum return types.
+### It is not yet integrated in the main codebase, but it is a proof of concept
+### It show how we plan to get small embeddings for enum values and use them to improve the accuracy of the model.
+### This is important for vectorial memory
+
 from OpenHosta import closure, DefaultModel, reload_dotenv
 reload_dotenv()
 # Works only with gpt-4o and gpt-4.1
