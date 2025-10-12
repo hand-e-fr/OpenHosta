@@ -27,13 +27,32 @@
 ###         return emulate()
 
 
-def test():
-    pass
+# For agents we need local scope to be passed to the LLM
+ret_dict = {
+    "local_1": 42,
+    "local_2": "Hello World!",
+    "local_3": [1, 2, 3, 4, 5]
+}
+def showLocals()->dict:
+    """
+    This function return in a dict all his locals variable and arguments.
+    """
+    local_1 = ret_dict["local_1"]
+    local_2 = ret_dict["local_2"]
+    local_3 = ret_dict["local_3"]
+    return emulate()
+
+ret = showLocals()
+assert ret["local_1"] == ret_dict["local_1"]
+assert ret["local_2"] == ret_dict["local_2"]
+assert ret["local_3"] == ret_dict["local_3"]
 
 from OpenHosta import emulate, ask as load_context
 import requests
 
 from OpenHosta import print_last_decoding, print_last_prompt
+
+print_last_prompt(showLocals)
 
 class MyAgent:
     def __init__(self):
