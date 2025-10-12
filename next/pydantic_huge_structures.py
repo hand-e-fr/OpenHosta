@@ -22,3 +22,25 @@ foo(MyPydanticType(n="John", g="Male"), lang="fr")
 print_last_prompt(foo)
 print_last_decoding(foo)
 
+from pydantic import BaseModel
+from OpenHosta import emulate
+
+class Person(BaseModel):
+    name: str
+    age: int
+
+def find_first_name(sentence:str)->Person:
+    """
+    This function find in a text the name and the age of a person.
+
+    Args:
+        sentence: The text in which to search for information
+
+    Return:
+        A Pydantic model, but filled with the information. 
+        If the information is not found, fill with the values with “None”.
+    """
+    return emulate()
+
+find_first_name("My name is John and I am 30 years old")
+# Person(name='John', age=30)
