@@ -129,7 +129,9 @@ class OneTurnConversationPipeline(Pipeline):
 
             image_list = []
             for arg in inspection["analyse"]["args"]:
-                if arg["type"] is PIL.Image.Image:
+                is_pil_img = isinstance(arg["value"], PIL.Image.Image)
+
+                if is_pil_img:
                     img:PIL.Image.Image = arg["value"]
                     max_size = max(img.width, img.height)
                     ratio = min(1, size_limit/max_size)
