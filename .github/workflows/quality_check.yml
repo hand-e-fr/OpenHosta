@@ -44,10 +44,7 @@ jobs:
           python-version: "3.12"
           
       - name: Install dependencies
-        run: pip install .
-
-      - name: Install autopep8, pyflakes, isort
-        run: pip install autopep8 pyflakes isort
+        run: pip install .[dev]
         
       - name: Run autopep8
         run: python -m autopep8 --recursive --in-place src/OpenHosta
@@ -70,7 +67,7 @@ jobs:
           python-version: "3.12"
           
       - name: Install dependencies
-        run: pip install .[dev,pydantic]
+        run: pip install .[dev]
         
       - name: Run mypy
         run: python -m mypy src/OpenHosta
@@ -95,9 +92,10 @@ jobs:
           
       - name: Install dependencies
         run: pip install .[tests]
+
       - name: Run functionnal tests
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}         
+          OPENHOSTA_DEFAULT_MODEL_API_KEY: ${{ secrets.OPENAI_API_KEY }}         
         run: python -m pytest tests/functionnal -v --cov=OpenHosta
 
   notify:
