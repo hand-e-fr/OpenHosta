@@ -53,7 +53,7 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
         assert isinstance(typed_value, expected_type), f"Expected type {expected_type}, got {type(typed_value)}"
     elif expected_type in BASIC_TYPES:
         typed_value = ast.literal_eval(untyped_response)
-        assert isinstance(typed_value, expected_type), f"Expected type {expected_type}, got {type(typed_value)}"
+        assert typed_value is None or isinstance(typed_value, expected_type), f"Expected type {expected_type}, got {type(typed_value)}"
     elif is_typing_type(expected_type):
         # Handle typing types
         origin = typing.get_origin(expected_type)
@@ -63,13 +63,13 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             # List, Set, Frozenset
             item_type = args[0] if args else Any
             typed_value = eval(untyped_response, {origin.__name__: origin}, {})
-            assert isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
+            assert typed_value is None or isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
             typed_value = origin([type_returned_data(repr(item), item_type) for item in typed_value])
         elif origin is tuple:
             # Tuple
             item_types = args if args else (Any,)
             typed_value = eval(untyped_response, {origin.__name__: origin}, {})
-            assert isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
+            assert typed_value is None or isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
             if len(item_types) == 2 and item_types[1] is Ellipsis:
                 # Tuple of variable length
                 typed_value = origin([type_returned_data(repr(item), item_types[0]) for item in typed_value])

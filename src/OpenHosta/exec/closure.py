@@ -71,9 +71,6 @@ def closure_async(
 
     return inner_func
 
-async def test_async(test_string:str):
-    return await closure_async(test_string, force_return_type=bool)()
-
 def closure(
     query_string,
     *,
@@ -113,9 +110,6 @@ def closure(
     inner_func_pointer = inner_func
 
     return inner_func
-
-def test(test_string:str):
-    return closure(test_string, force_return_type=bool)()
 
 def update_inspection(inspection, query_string, *args, **kwargs):
     
