@@ -14,11 +14,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# To run these tests you need to set .env variables to define an LLM provider
-# e.g. for OpenAI:
-# OPENHOSTA_LLM_PROVIDER=openai
-# OPENHOSTA_OPENAI_API_KEY=your_api_key
-
 # you also need to install pytest and python-dotenv:
 # pip install pytest python-dotenv
 
@@ -58,14 +53,16 @@ class User(BaseModel):
     email: str
     age: int
 
+from OpenHosta import DefaultModel
+
 class TestEmulate:
        
     from OpenHosta.pipelines.simple_pipeline import OneTurnConversationPipeline
     def test_FeatureModelInParameter(self):
         abracadabra = config.OpenAICompatibleModel(
-            model_name="gpt-4o",
-            base_url="https://api.openai.com/v1/chat/completions",
-            api_key=os.getenv("OPENAI_API_KEY")
+            model_name=DefaultModel.model_name,
+            base_url=DefaultModel.base_url,
+            api_key=DefaultModel.api_key,
         )
         
         my_pipe = OneTurnConversationPipeline(model_list=[abracadabra])
@@ -78,9 +75,10 @@ class TestEmulate:
             return emulate(pipeline=my_pipe)
         
         ret = randomSentence()
+        assert isinstance(ret, str), f"Expected str, got {type(ret)}"
+        
         ret_model = randomSentence.hosta_inspection["model"]
-        print(ret_model)
-        assert "gpt-4o" in ret_model.model_name 
+        assert DefaultModel.model_name in ret_model.model_name 
 
 
     def test_FeaturesEmptyInfos(self):
@@ -233,7 +231,7 @@ class TestClosure:
 
 from OpenHosta import test
     
-class TestTestMandatory:
+class TestSemanticTests:
     
     def test_BasicMandatory(self):
         name = "Louis"
