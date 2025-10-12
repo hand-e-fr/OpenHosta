@@ -13,6 +13,8 @@ from .models import OpenAICompatibleModel
 
 from .core.config import DefaultModel, reload_dotenv
 
+from .pipelines import Pipeline, OneTurnConversationPipeline
+
 import os
 
 all = (
@@ -32,4 +34,6 @@ all = (
     "MetaPrompt",
     "print_last_prompt",
     "print_last_decoding",
+    "Pipeline",
+    "OneTurnConversationPipeline"
 )
