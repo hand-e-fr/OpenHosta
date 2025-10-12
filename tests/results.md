@@ -1,6 +1,12 @@
 With seed=42
 Hardware: RTX 5090 32GB VRAM
 
+This table could be generated with:
+```bash
+pytest tests/functionnal --junitxml=results.xml
+python3 tests/parse_junit.py results.xml > tests/results.md
+```
+
 | Test       | Model            | Duration | Passed | Failed | Comments
 |------------|------------------|----------|--------|--------|---------
 | functional | gpt-4.1 (OpenAI) | 50.2s    | 43     | 1      | 
