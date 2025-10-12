@@ -45,6 +45,9 @@ jobs:
           
       - name: Install dependencies
         run: pip install .
+
+      - name: Install autopep8, pyflakes, isort
+        run: pip install autopep8 pyflakes isort
         
       - name: Run autopep8
         run: python -m autopep8 --recursive --in-place src/OpenHosta
