@@ -1,18 +1,10 @@
 from __future__ import annotations
 
-from typing import Literal
-
 __all__ = (
     "RequestError",
     "ApiKeyError",
     "FrameError",
-    "InvalidStructureError"
 )
-
-OhErrorCodes = Literal[
-    ""
-]
-
 
 class OhErrorMixin(Exception):
     """ Base class for other customs exceptions """
@@ -35,10 +27,6 @@ class ApiKeyError(RequestError):
 
 class FrameError(OhErrorMixin):
     """ Raised when the frame inspection fail """
-
-
-class InvalidStructureError(OhErrorMixin):
-    """ Raised when the bosy's function aren't placed correctly """
 
 
 # création d'agent + multimodal + tools

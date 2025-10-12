@@ -1,7 +1,7 @@
 # Documentation
 ___
 
-Documentation for version: **2.2.2**
+Documentation for version: **3.0**
 
 Welcome to **OpenHosta** documentation :). Here you'll find all the **explanations** you need to understand the library, as well as **usage examples** and advanced **configuration** methods for the most complex tasks. You'll also find explanations of the source code for those interested in **contributing** to this project. Check the [Google Colab](https://colab.research.google.com/drive/1XKrPrhLlYJD-ULTA8WHzIMqTXkb3iIpb?usp=sharing) **test files** to help you take your first steps in discovering OpenHosta.
 
@@ -15,11 +15,13 @@ ___
 
 OpenHosta is a **Python library** designed to facilitate the integration of **LLMs** into the developer's environment, by adding a layer to the Python programming language without distorting it. It is based on the [**PMAC**](PMAC.md) concept, reimagining the **compilation** process in languages. All our functionalities respect the **syntax and paradigm** of this language. 
 
-The choice of LLM is mostly up to you, depending on your configuration level, moreover the vast majority are compatible. By default, OpenAI's **GPT-4o** is chosen. This has been tested by our team during development and **provides** a satisfaying level of functionality. 
+The choice of LLM is mostly up to you, depending on your configuration level, moreover the vast majority are compatible. By default, OpenAI's **GPT-4.1** is chosen. This has been tested by our team during development and **provides** a satisfaying level of functionality. 
 
-Whatever your configuration, make sure you own a **working API key** before proceeding. Keep in mind that each request will incur **costs** which are different depending on the model. You can find prices on distributor websites. Here are the prices for the OpenAI API: https://openai.com/api/pricing/
+If you do not have access to any remote LLM and do not have an NVIDIA GPU, we recommand that you try **Gemma3:4b** using ollama. Follow the [installation guide](installation.md) to set up ollama then configure `gemma3:4b` instead of `mistrall-small3.2`. It will be a bit slower and less accurate, but it will work even with image input.
 
-We've already mentioned a few concepts about **AI** or **computer science**. If some of them are **unclear** to you, please have a look at the *“references”* section, where a series of explanatory links or definitions will be listed to **help** you understand.
+If you have a stong GPU (at least 32GB of VRAM), we recommand that you install **Mistral-small3.2**.
+
+Keep in mind that each request will incur **costs** which are different depending on the model and its location. You can find prices on distributor websites. Here are the prices for the OpenAI API: https://openai.com/api/pricing/. You can also look at the power consumption of you CPU/GPU if you use a local model.
 
 Finally, if you like the project and are thinking of contributing, please refer to our [Contribution Guide](CONTRIBUTING.md)
 
@@ -27,11 +29,19 @@ Finally, if you like the project and are thinking of contributing, please refer 
 
 - **Beyond programming**
 
-OpenHosta enables you to create **complex functions**, including those that were previously **impossible**, by accommodating certain **ambiguities** in human language. It handles language processing related to **common sens** or other challenging parameters that are typically difficult to implement in Python. This tool **simplifies** tasks that would otherwise demand considerable time and expertise, thereby broadening the scope of **possibilities** in Python programming.
+OpenHosta enables you to create **complex functions**, including those that were previously **impossible**, by defining **semantic** functions in human language. It handles language processing related to **common sense** or other challenging parameters that are typically difficult to implement in native Python. This tool **simplifies** tasks that would otherwise demand considerable time and expertise, thereby broadening the scope of **possibilities** in Python programming.
+
+- **User-Friendly**
+
+You could argue that OpenHosta is a wrapper around LLMs, but it is much more than that. It is much simpler to learn than other toolkit like LangChain or LlamaIndex. With OpenHosta you can directly access your prompts and customize them. This is possible thanks to the very simple idea of the `MetaPrompt` class. It is a jinja2 template that you can edit to change the way OpenHosta interact with the LLM. After each call to the LLM you can print the conversation and the parsing steps to understand what happened.
 
 - **Python Ecosystem**
 
-OpenHosta integrates **fully** into Python syntax. Our main goal is to push programming to a **higher level**. For example, we send *docstrings*, commonly used in Python, to the **LLMs** context. We also integrate **advanced methods** such as *lambdas* and the compatibility with *Pydantic* and *typing*. 
+OpenHosta integrates **fully** into Python syntax. Our main goal is to push programming to a **higher level**. For example, we send *docstrings* and type annotations, commonly used in Python, to the **LLMs** context. We also integrate **advanced methods** such as *lambdas* and the compatibility with *Pydantic* and *typing*. 
+
+- **Reproductibility**
+
+Although LLMs are known to be **stochastic**, OpenHosta provides a way to make your results as **reproducible** as possible. You can set a **seed** for the random number generator of your local ollama installation, which will be used in all calls to the LLM. This allows you to get the same results when you run the same code multiple times, which is essential for **testing** and **debugging**.
 
 - **Open-Source**
 
@@ -69,43 +79,22 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [*Legal Framework*](#legal-framework)
   - [Table of Content](#table-of-content)
   - [Get Started](#get-started)
+    - [Make sure you have installed OpenHosta](#make-sure-you-have-installed-openhosta)
     - [OpenHosta Example](#openhosta-example)
-    - [Install OpenHosta](#install-openhosta)
-    - [Librairie Import](#librairie-import)
     - [Basic Setup](#basic-setup)
   - [Reasoning models](#reasoning-models)
+  - [Changing the MetaPrompt](#changing-the-metaprompt)
   - [`emulate` Function](#emulate-function)
   - [Asynchronous Mode](#asynchronous-mode)
     - [Supported types \& Pydantic](#supported-types--pydantic)
       - [Integration Details](#integration-details)
-    - [Body Functions](#body-functions)
-      - [`Example`](#example)
-      - [`Thought`](#thought)
-  - [`predict` Function](#predict-function)
-    - [Parameters](#parameters)
-  - [`PredictConfig` class](#predictconfig-class)
-    - [Features](#features)
-      - [**Path Management**](#path-management)
-      - [**Architecture Configuration**](#architecture-configuration)
-      - [**Training Configuration**](#training-configuration)
-      - [**Dataset Management**](#dataset-management)
-    - [Example Usage](#example-usage)
-  - [`thinkof` Function](#thinkof-function)
+  - [Closures or Lambda functions](#closures-or-lambda-functions)
   - [`ask` function](#ask-function)
-  - [`generate_data` function](#generate_data-function)
-    - [Parameters](#parameters-1)
-    - [Returns](#returns)
-    - [Raises](#raises)
-    - [Example](#example-1)
-    - [How It Works](#how-it-works)
   - [Advanced configuration](#advanced-configuration)
     - [Models](#models)
-      - [Inheriting from the Model Class](#inheriting-from-the-model-class)
+      - [Inheriting from the OpenAICompatibleModel Class](#inheriting-from-the-openaicompatiblemodel-class)
       - [Custom LLM Call Function](#custom-llm-call-function)
-      - [Custom Response Handling Function](#custom-response-handling-function)
-      - [Example Usage](#example-usage-1)
-    - [Prompts](#prompts)
-      - [Edit the prompt](#edit-the-prompt)
+      - [Example Usage](#example-usage)
       - [Show me the prompt !](#show-me-the-prompt-)
   - [References](#references)
 
@@ -114,6 +103,19 @@ Let's **get started**! First here's the **table of contents** to help you naviga
 ## Get Started
 
 For each part, you'll find functional examples to illustrate the features. If you have any questions, don't hesitate to visit the “Discussion” tab on GitHub.
+
+### Make sure you have installed OpenHosta
+
+Did you configure your environment variables correctly? If you haven't done so yet, please refer to the [installation guide](installation.md).
+
+If you need to change your .env file, you can find an example in the `tests` folder.
+
+You can reload your credentials from the .env without restarting your interpreter with:
+
+```python
+from OpenHosta import reload_dotenv
+reload_dotenv()
+```
 
 ### OpenHosta Example
 
@@ -130,73 +132,216 @@ result = translate("Hello World!", "French")
 print(result)
 ```
 
-### Install OpenHosta
-
-The installations process is described step-by-step in the [installation guide](installation.md).
-
-Once you've installed the OpenHosta library, you're ready to get started. We'll import the library and then look at the basic configurations.
-
-### Librairie Import
-
 ```python
-from OpenHosta import *
-```
+from OpenHosta import emulate
+from dataclasses import dataclass
 
-We recommend this import method, as it gives you all the important and stable features:
-  - All the tools to emulate Python function (`emulate` and all it's attached functions)
-  - All the tools to create specialized model (`predict` and all it's attached functions)
-  - All the others features useful in `OpenHosta` (`ask`, `thinkof`, tools for data generation...)
-  - Configuration tools
+@dataclass
+class Client:
+  name:str
+  surname:str
+  company:str
+  email:str
+  town:str
+  address:str
 
-But you can also import modules one by one.
 
-```python
-from OpenHosta import emulate, config
+def extract_client_name(text:str)->Client:
+    """
+    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
+    """
+    return emulate()
+
+client1 = extract_client_name("FROM: sebastien@somecorp.com\nTO: shipment@hand-e.fr\nObject: do not send mail support@somecorp.com\n\nto Hello bob, I am Sebastian from Paris, france. Could you send me a sample of your main product? my office address is 3 rue de la république, Lyon 1er")
+print(client1)
+# Client(name='Sebastian', surname='None', company='somecorp.com', email='sebastien@somecorp.com', town='Lyon', address='3 rue de la république, Lyon 1er')
 ```
 
 ### Basic Setup
 
 This section focuses on the *config* module.
 
-As previously mentioned, a default model is automatically assigned: GPT-4o. To use it, you first need to enter your API key.
+As previously mentioned, a default model is automatically assigned: GPT-4.1. To use it, you first need to enter your API key.
 
 Two methods for that, either you set an environment variable (see the [Installation guide](installation.md)), or you can set it with the following function:
 
+You can also change the default model with:
 ```python
-config.set_default_apiKey("put-your-api-key-here")
+from OpenHosta import config
+
+config.DefaultModel.base_url = "http://localhost:11434/v1"
+config.DefaultModel.model_name = "gpt-oss:20b"
+config.DefaultModel.api_key = "not used by ollama local api"
 ```
 
-Once you've done that, all OpenHosta's features are ready to use.
-
-If you want to use another model, you'll need to create an instance of the *Model* class.
+If you want to use handle many models, you'll need to create instances of the *OpenAICompatibleModel* class.
 
 ```python
-my_model = config.Model(
-    model="gpt-4o", 
+from OpenHosta import OpenAICompatibleModel, config
+
+my_model = OpenAICompatibleModel(
+    model_name="gpt-4o", 
     base_url="https://api.openai.com/v1/chat/completions",
     api_key="put-your-api-key-here"
 )
+
+config.DefaultModel = my_model # set it as the default model for all functions using default pipeline
 ```
 
-Note that some features like `thinkof` or `LLMSyntheticDataGenerator` specifically use the default model. So if you want to change it, use this:
-
-```python
-config.set_default_model(my_model)
-```
 
 ## Reasoning models
 
-When you use reasoning models like DeepSeek-R1, you need to disable JSON mode as the model will first output its chain of thought before producing the JSON. It is also a good idea to increase the timeout.
+When you use reasoning models like DeepSeek-R1, OpenHosta is automatically identifying the reasoning part and removes it before casting the output.
 
 ```python
-r1_650b_azure = Model(
-        base_url="https://DeepSeek-R1-lfvng.eastus.models.ai.azure.com/v1/chat/completions",
-        model="DeepSeek-R1",
-        timeout=180,
-        json_output=False,
-        api_key="..."
+from OpenHosta import OpenAICompatibleModel, config
+
+gpt_oss_20b = OpenAICompatibleModel(
+        base_url="http://localhost:11434/v1",
+        model_name="gpt-oss:20b",
+        timeout=180, # More time because the model can take a while to answer due to its reasoning part
+        api_key="none"
         )
-        
+
+config.DefaultModel = gpt_oss_20b
+
+def sum_numbers(a:int, b:int)->int:
+    """
+    This function returns the sum of two numbers.
+    """
+    return emulate()
+
+result = sum_numbers(12, 30)
+
+from OpenHosta import print_last_prompt
+
+print_last_prompt(sum_numbers)
+
+# Model
+# -----------------
+# name=gpt-oss:20b
+# basse_url=http://localhost:11434/v1
+
+
+# System prompt:
+# -----------------
+# You will act as a simulator for functions that cannot be implemented in actual code.
+
+# I'll provide you with function definitions described in Python syntax. 
+# These functions will have no body and may even be impossible to implement in real code, 
+# so do not attempt to generate the implementation.
+
+# Instead, imagine a realistic or reasonable output that matches the function description.
+# I'll ask questions by directly writing out function calls as one would call them in Python.
+# Respond with an appropriate return value, without adding any extra comments or explanations.
+# If the provided information isn't enough to determine a clear answer, respond simply with "None".
+# If assumptions need to be made, ensure they stay realistic, align with the provided description.
+
+# Here's the function definition:
+
+# ```python
+
+# def sum_numbers(a: int, b: int) -> int:
+#     """
+#     This function returns the sum of two numbers.
+#     """
+
+#     ...
+#     ...behavior to be simulated...
+#     ...
+
+#     return ...appropriate return value...
+# ```
+
+
+# User prompt:
+# -----------------
+
+# sum_numbers(a = 12, b = 30)
+
+# Rational:
+# -----------------
+# The user calls sum_numbers(a=12, b=30). Function returns sum of two numbers, so return 42. No other nuance.
+
+# LLM response:
+# -----------------
+# 42
+
+```
+
+We see the entire conversation with the LLM. The reasoning part is in the *Rational* section. OpenHosta automatically removes it before casting the output to the expected type (here `int`).
+
+## Changing the MetaPrompt
+
+You can change the MetaPrompt used by OpenHosta's default pipeline to interact with the LLM. This can be useful if you want to customize the behavior of OpenHosta or if you want to use a different prompt for a specific model.
+
+
+```python
+from OpenHosta import config, MetaPrompt
+
+# This is the Meta Prompt used by default for the system part of the conversation
+print(config.DefaultPipeline.emulate_meta_prompt)
+
+# This is the Meta Prompt used by default for the user part of the conversation
+print(config.DefaultPipeline.user_call_meta_prompt)
+
+# {% if variables_initialization %}# Values of parameters to be used
+# {{ variables_initialization }}{% endif %}
+# {{ function_name }}({{ function_call_arguments }})
+
+# Change the default MetaPrompt for the user part of the conversation.
+# This example was once usefull to prevent qwen models from thinking.
+config.DefaultPipeline.user_call_meta_prompt.source += """\n/no_think"""
+
+```
+
+You can also build your own MetaPrompt from scratch.
+
+```python
+from OpenHosta import MetaPrompt
+
+# This show how the indentation is removed with dedent. It makes your code more readable.
+def my_meta_prompt():
+    return MetaPrompt("""
+        Explain jinja2 syntax and why using dedent is usefull.
+        Try to return a Python code for the function `{{ function_name }}`.
+        """)
+
+new_prompt = my_meta_prompt()
+
+
+print(new_prompt)
+# Explain jinja2 syntax and why using dedent is usefull.
+# Try to return a Python code for the function `{{ function_name }}`.
+
+print(new_prompt.render(function_name="my_function"))
+# Explain jinja2 syntax and why using dedent is usefull.
+# Try to return a Python code for the function `my_function`.
+
+# Once you have created your MetaPrompt, you can set it as the default for the user part of the conversation.
+config.DefaultPipeline.user_call_meta_prompt = new_prompt
+```
+
+Let's see how this new MetaPrompt would work in practice.
+
+```python
+def my_function(a:int, b:int)->int:
+    """
+    This function returns the sum of two numbers.
+    """
+    return emulate()
+
+result = my_function(12, 30)
+
+print(result)
+# The model got confused and returned None.
+
+# You can now investigate what happened by printing the last prompt used.
+print_last_prompt(my_function)
+
+# You can also print the pipeline tying steps:
+from OpenHosta import print_last_decoding
+print_last_decoding(my_function)
 ```
 
 
@@ -218,11 +363,7 @@ def example_function(a:int, b:str)->List[str]:
   - **The docstring** is the other key element. This is where you describe the behavior of the function. Be precise and concise. Describe the input parameters and the nature of the output, as in a docstring. Feel free to try out lots of things, prompt engineering is not a closed science. :)
 
 ```python
-my_model = config.Model(
-    model="gpt-4o", 
-    base_url="https://api.openai.com/v1/chat/completions",
-    api_key="put-your-api-key-here"
-)
+from OpenHosta import emulate
 
 def find_name_age(sentence:str, id:dict)->dict:
     """
@@ -236,29 +377,23 @@ def find_name_age(sentence:str, id:dict)->dict:
         A dictionary identical to the one passed in parameter, but filled with the information. 
         If the information is not found, fill with the values with “None”.
     """
-    return emulate(model=my_model)
+    return emulate()
 
 ret = find_name_age("the captain's age is one year more than the cabin boy's, who is 22 years old", {"captain": 0, "cabin boy": 0})
 print(ret)
+# {'captain': 23, 'cabin boy': 22}
 ```
 
-Note that, as seen above, you can pass a previously configured model as an emulate parameter.
-
-Be careful, you can put regular instructions in your function and they will be executed. However, `emulate` can retrieves all the variables local to the functions and gives them to the LLM as a context with the `use_locals_as_ctx` parameter (set at `True`). If your emulated function is a class method, `emulate` can retrieves all the attributes of this class to also give them as context with the `use_self_as_ctx` parameter.
-
-Another parameter of `emulate` is `post_callback`. It take a callable as input and allows you to execute it to the output of the LLM. This can be useful for logging, error handling or formatting multiple emulated function's output with a single function. The callable passed take one argument which is the output of the LLM and must return another value. If the output of the LLM won't change during the execution of your callback, just return the value given in argument. 
-
-`emulate` also accepts other unspecified arguments: they correspond to the parameter of the LLM.
+`emulate` also accepts `force_llm_args` argument: they correspond to the parameter of the LLM provided in the API body.
 You can find theses in your model's offcial documentation, but here's a few common:
   - `temperature`
   - `top_p`
   - `max_tokens` 
   - (...)
 
-
 ## Asynchronous Mode
 
-`emulate` can also be used in asynchronous mode. This can be useful if you want to use OpenHosta in a web application or a bot.
+`emulate` can also be used in asynchronous mode. This can be useful if you want to use OpenHosta in a web application or a bot. It also simplifies the use of multiple calls to the LLM in parallel with `asyncio`.
 
 To use `emulate` in asynchronous mode, you need to use the `emulate` function from `OpenHosta.asynchrone` module with the `await` keyword. 
 It works the same way as `emulate`, but it returns an `awaitable` object. If you need to mix synchronous and asynchronous code, you can use the `emulate` and `emulate_async` functions together.
@@ -295,11 +430,10 @@ print(sentence)
 
 Functions that are available in asynchronous mode:
 
-- `emulate`
-- `ask`
-- `thinkof`
-- `predict`
-- `generate_data`
+  - `ask`
+  - `emulate`
+  - `closure`
+  - `test`
 
 ### Supported types & Pydantic
 
@@ -320,7 +454,10 @@ def analyze_text(text: str) -> Dict[str, List[Tuple[int, str]]]:
 analysis = analyze_text("Hello, World!")
 
 print(analysis)
+# {'Hello': [(5, 'Hello')], 'World': [(5, 'World')]}
+
 print(type(analysis))
+# <class 'dict'>
 ```
 
 It also includes a verification output that checks and converts the output to the specified type if necessary. Supported types include **Pydantic** models, all types from the **typing** module mentioned above, as well as built-in types such as `dict`, `int`, `float`, `str`, `list`, `set`, `frozenset`, `tuple`, and `bool`.
@@ -364,209 +501,14 @@ def find_first_name(sentence:str)->Person:
         If the information is not found, fill with the values with “None”.
     """
     return emulate()
+
+find_first_name("the captain's age is one year more than the first officer's age. The first officer is 30 years old")
+# Person(name='first officer', age=30)
 ```
 
-### Body Functions
+## Closures or Lambda functions
 
-In addition to the docstring-as-prompt, you can enhance your prompting with specialized functions. This way you can try different techniques like Zero/Few-shot prompting or Chain-of-Thought. If you're not familliar with theses concept, please check the [Reference](#references) section.
-
-#### `Example`
-
-The first of the body function is `example`. It allow you to give example to LLM.
-
-```python
-from OpenHosta import emulate, example
-
-def is_positive(sentence:str)->bool:
-    """
-    This function return True if the sentence in parameter is positive, False otherwise. 
-    """
-    example(sentence="Marc got a good mark in his exam.", hosta_out=True)
-    example(sentence="The weather is awful today !", hosta_out=False)
-    return emulate()
-
-print(is_positive("I can do it !")) # True
-
-# It will be write as follow in the final prompt:
-#######
-# Here are some examples of expected input and output:
-#[{'in_': {'sentence': 'Marc got a good mark in his exam.'}, 'out': True}, {'in_': {'sentence': 'The weather is awful today !'}, 'out': False}]
-```
-
-As shown above, `example` takes two types of argument. There are input parameters which must be named (kwargs) and exactly be the same number and type as in the function's definition. Finally, there's the “hosta_out” parameter. This corresponds to the expected LLM output.
-
-Giving inconsistent examples can severely impact LLM performance. But it can be a very good tool if it's used properly. 
-
-#### `Thought`
-
-The second body function is `thought`. It allows you to create chain of thought inside your prompt to enhance it's performance for more complex tasks.
-
-```python
-from OpenHosta import emulate, thought
-from typing import List, Optional
-
-def car_advice(query:str, car_available:List[str])->Optional[str]:
-    """
-    This function gives the best advice for the query in parameter. It must return the best car in the list "car_available" fitting the user's needs.
-    If no car fit the user's needs, this function returns None.
-    """
-    thought("identify the context and the need of the user")
-    thought("Look at the car available to find a car matching his needs")
-    thought("Return the name of the most relevant car, if no car is matching return None")
-    return emulate()
-
-car_list = [
-    "Lamborghini Aventador LP700-4",
-    "Volkswagen Coccinelle type 1",
-    "Ford Mustang 2024"
-]
-
-print(car_advice("I lives in the center of a big city with a lot of traffic, what do you recommend ?", car_list))
-# Volkswagen Coccinelle type 1
-print(car_advice("I would two buy a new car, but I would like an electric because I don't want to ruin my planet.", car_list))
-# None
-
-# It will be write as follow in the final prompt:
-#####
-# To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
-# [{'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}, {'task': 'identify the context and the need of the user'}, {'task': 'Look at the car available to find a car matching his needs'}, {'task': 'Return the most relevant car, if no car is matching return None'}]
-```
-
-## `predict` Function
-
-The `predict` function is the second main feature of OpenHosta ! This function allows you to create **specific neural networks** based on the specifications you provide. Here's a breakdown to help you understand it:
-
-
-
-The `predict` function can be used in function or class method by simply returns it. Its primary goal is to create a model tailored to the function it is called in. Currently, it supports two model types:
-
-- **Linear Regression**: For prediction tasks by simply returns an `int`or a `float` :
-  ```python
-  from OpenHosta import predict, config
-  
-  def example_linear_regression(years : int, profession : str) -> float:
-      """
-      this function predict the salary based on the profession years.
-      """
-      return predict(verbose=2)
-  
-  print(example_linear_regression(1, "engineer"))
-  ```
-- **Classification**: For classifying multiple values among predefined categories in a `Literal` from the typing module :
-  ```python
-  from typing import Literal
-  from OpenHosta import predict, config
-
-  output = Literal["Good", "Bad"]
-  
-  def example_classification(word: str) -> output:
-      """
-      this function detects if a words is good or bad
-      """
-      return predict(verbose=2)
-  
-  print(example_classification("Bad"))
-  ```
-
-The `predict` function currently supports only the following return types: `int`, `float`, and `str`.
-
-Additionally like you can see, `predict` can generate a dataset if none is provided in the [PredictConfig](#predictconfig-class), allowing users to see how a large language model (LLM) understands the problem and generates relevant data. By default, the data generation uses GPT-4o by OpenAI, the same oracle used in the [emulate](#emulate-function) function .
-
-
-
-### Parameters
-The `predict` function supports the following parameters:
-
-- `verbose`: Controls the level of output information:
-  - `0`: No output.
-  - `1`: Basic output (default).
-  - `2`: Detailed output.
-
-
-
-- `oracle`: Specifies the model used for data generation. If set to `None`, no model will be used to handle missing data generation.
-
-- `config`: Accepts a `Predictconfig` object for advanced configuration of model creation.
-
-## `PredictConfig` class
-
-The `PredictConfig` class provides advanced options for configuring the creation and management of *predict* models. Here’s a detailed breakdown:
-
-```python
-from OpenHosta import PredictConfig
-
-model_config = PredictConfig(
-    name="model_test",
-    path="./__hostacache__",
-    complexity=5,
-    growth_rate=1.5,
-    coef_layers=100,
-    epochs=100,
-    batch_size=32,
-    max_tokens=1,
-    dataset_path="./path_to_dataset.csv",
-    generated_data=100,
-    normalize=False
-)
-```
-
-### Features
-
-#### **Path Management**
-- `path` (`str`): Specifies where data will be stored. Default: `./__hostacache__/`.
-- `name` (`str`): Sets the directory name for storing model-related information. Default: the name of the Hosta-injected function.
-
-#### **Architecture Configuration**
-- `complexity` (`int`): Adjusts the model's complexity by adding or removing layers. Default: `5`.
-- `growth_rate` (`float`): Determines the rate of increase in layer size. Default: `1.5`.
-- `coef_layers` (`int`): Defines the maximum possible layer size based on the highest value between inputs and outputs. Default: `100`.
-
-#### **Training Configuration**
-- `normalize` (`bool`) : Specify if the data for training need to be normalize between -1 and 1. Default False, only possible with **Linear Regression** models
-- `epochs` (`int`): Sets the number of training iterations. Default: calculated based on dataset size and batch size.
-- `batch_size` (`int`): Specifies the number of examples processed before weight updates. Default: 5% of the dataset size if possible.
-
-#### **Dataset Management**
-- `max_tokens` (`int`): Limits the number of words a `str` input can contain, as the model adapts neuron sizes accordingly. Default: `1`.
-  - **Warning**: Current model architectures do not perform well with natural language processing tasks. For such cases, use the *emulate* feature instead. NLP architecture support is coming soon.
-- `dataset_path` (`str`): Provides a custom dataset path. Default: `None`, 
-  - **Warning**: Only `csv` and `jsonl` files are supported for now. Please set the prediction columns to `outputs`.
-- `generated_data` (`int`): Specifies the target number of data points for LLM generation (approximate). Default: `100`.
-
----
-
-### Example Usage
-
-```python
-from OpenHosta import predict, PredictConfig
-
-# Configuring the model
-config_predict = PredictConfig(
-    path="./__hostacache__",
-    name="test_openhosta",
-    complexity=5,
-    growth_rate=1.5,
-    coef_layers=100,
-    normalize=False,
-    epochs=45,
-    batch_size=64,
-    max_tokens=1,
-    dataset_path="./path_to_your_dataset.csv"
-)
-
-# Using the predict function with the configuration
-def demo_open_hosta(number: int, message: str) -> int:
-    """
-    this function is just here for an example :)
-    """
-    return predict(config=config_predict, oracle=None, verbose=2)
-
-print(demo_open_hosta(42, "Hello World!"))
-```
-
-## `thinkof` Function
-
-**Lambda** functions in Python provide a way to create small, anonymous functions. These are defined using the lambda keyword and can have any number of input parameters but only a single expression.
+**Lambda** functions in Python provide a way to create small, anonymous functions. These are defined using the lambda keyword and can have any number of input parameters but only a single expression. We implemented a similar feature in OpenHosta named `closure`.
 
 **Key Characteristics**
   - **Anonymous**: Lambda functions do not require a name, making them suitable for short-lived operations.
@@ -575,52 +517,56 @@ print(demo_open_hosta(42, "Hello World!"))
   
 For more information, please check https://python-reference.readthedocs.io/en/latest/docs/operators/lambda.html
 
-In an aim to integrate with Python syntax, we've developed the `thinkof` function. It replicates the same behavior as lambda.
+In an aim to integrate with Python syntax, we've developed the `closure` function. It replicates the same behavior as lambda.
 
 Here's how it works:
 
 ```python
-from OpenHosta import thinkof
+from OpenHosta import closure
 
-x = thinkof("Is it a masculine name")
+x = closure("Is it a masculine name")
 print(x("John"))  # True
 
-result = thinkof("Multiply by two")(2)
+result = closure("Multiply by two")(2)
 print(result)   # 4
 ```
 
-In the example above, we can see two distinct ways of using `thinkof`. In the first example, you can store a lambda function in a variable and then use it. You can also call it directly by enclosing the arguments behind it in brackets. `thinkof` accepts multiple arguments and all types native to python. However, the content of the first bracket is always a string.
+In the example above, we can see two distinct ways of using `closure`. In the first example, you can store a lambda function in a variable and then use it. You can also call it directly by enclosing the arguments behind it in brackets. `closure` accepts multiple arguments and all types native to python. However, the content of the first bracket is always a string.
 
-The `thinkof` function has an initial pre-compilation stage where it predicts the type of the return value by making an initial call to an LLM. Execution time can therefore be increased the first time using the function, then the type is stored and reused for the next execution.
-You can retrieve the predicted return type with the `return_type()` function:
+The `closure` function has an initial pre-compilation stage where it predicts the type of the return value by making an initial call to an LLM. Execution time can therefore be increased the first time using the function, then the type is stored and reused for the next execution.
 
 ```python
-from OpenHosta import thinkof, return_type
+from OpenHosta import closure
 
-x = thinkof("Adds all integers")
-ret = x(2 ,3 ,6)
-print(return_type(x)) # int
+x = closure("Adds all integers")
+ret = x(2 ,3 ,6) # 11
 ```
-
-**Note** : ***this feature uses the default model.***
 
 ## `ask` function
 
-The function `ask` is a sort of a *side* function In OpenHosta. Its only use is to make a simple LLM call without the OpenHosta's meta-prompt. It simplies the process af an API call.
+The function `ask` is a sort of a *side* function In OpenHosta. Its only use is to make a simple LLM call without the OpenHosta's meta-prompt. It simplies the process af an API call and the parsing of the response. It is useful for quick tests or interactively from a notebook.
 
 ```python
-from OpenHosta import ask, Model
+from OpenHosta import ask
 
-print(
-    ask(
-        system="You're a helpful assistant.",
-        user="Write me a cool story.",
-        max_tokens=200
-    )
-)
+print(ask("Do you know about scikit-learn?"))
+
+# Yes, I know about **scikit-learn**!
+
+# **Scikit-learn** (often imported as `sklearn`) is one of the most popular open-source Python libraries for **machine learning** and **data analysis**. It provides a wide range of simple and efficient tools for data mining and data modeling, built on top of **NumPy**, **SciPy**, and **matplotlib**.
+
+# ### Common Features
+
+# - **Supervised learning** (classification and regression)
+# - **Unsupervised learning** (clustering, dimensionality reduction)
+# - **Model selection** (cross-validation, grid search)
+# - **Data preprocessing** (scaling, encoding, imputation)
+# - Built-in datasets
+# - **Pipelines** for automating workflows
+# [...]
 ```
 
-The "traditional" would be like this:
+This is equivalent to the following OpenAI API call:
 
 ```python
 import openai
@@ -629,97 +575,24 @@ openai.api_key = "your-api-key-here"
 
 messages = [
     {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Write me a cool story."}
+    {"role": "user", "content": "Do you know about scikit-learn?"}
 ]
 
 response = openai.ChatCompletion.create(
-    model="gpt-4o",
+    model="gpt-4.1",
     messages=messages
 )
 
 print(response['choices'][0]['message']['content'])
 ```
 
-As seen above takes 2 or more argument. The two first arguments are mandatory. `system` correspond to the system prompt to the LLM, same as the `user` parameter. You can also set the `model` parameter to a custom Model instance. It also handle all LLM parmaters (`max_tokens`, `n`, `top_p`...).
-
-**Note** : ***this feature uses the default model.***
-
-## `generate_data` function
-
-Generate a dataset based on a given function and the number of samples. This function uses a synthetic data generator to create realistic input-output pairs for a given callable Python function based on its defined parameters, examples, and return type.
-
-### Parameters
-
-- **`function_pointer`** (`Callable`):  
-  The target function used to generate the dataset. This function must take specific inputs and return outputs to be used for creating the dataset.  
-  Proper type annotations and a clear docstring for the `function_pointer` are recommended to enhance the quality of generated data.
-
-- **`num_samples`** (`int`):  
-  The number of samples to generate. If the number exceeds 100, the function intelligently splits the data requests into manageable chunks.
-
-- **`oracle`** (`Optional[Model]`, Optional):  
-  The model or "oracle" used to assist with generating synthetic data.  
-  By default, the function uses the system's predefined default model.
-
-- **`verbose`** (`Union[Literal[0, 1, 2], bool]`, default=`2`):  
-  Defines the verbosity level for logging the data generation process:  
-  - `0` or `False`: No logging.
-  - `1`: Minimal logging.
-  - `2` or `True`: Detailed logging, providing insights during data generation.
-
-### Returns
-
-- **`HostaDataset`**:  
-  An instance of `HostaDataset`, representing the generated dataset. This dataset can be saved to disk (CSV, JSON, JSONL) or iterated over for input-output pairs.
-
-### Raises
-
-- **`TypeError`**:  
-  Raised if the provided `function_pointer` is not callable or lacks sufficient information to generate data (such as missing type annotations).
-
-### Example
-
-The following example demonstrates how to define a function, generate synthetic data using `generate_data`, and save the resulting dataset.
+You can leverage `MetaPrompt` to customize the system prompt:
 
 ```python
-from typing import Literal
-from OpenHosta import generate_data, HostaDataset, example, emulate, SourceType
-
-def detect_mood(message: str) -> Literal["positive", "negative", "neutral"]:
-    """
-    Analyze the mood conveyed in a text message.
-    """
-    # Provide pre-defined examples to guide synthetic data generation
-    example(message="I feel lonely...", hosta_out="negative")
-    example(message="I am happy!", hosta_out="positive")
-    example(message="I have a cat", hosta_out="neutral")
-    return emulate()
-
-# Generate a dataset with 50 examples
-dataset: HostaDataset = generate_data(detect_mood, 50)
-
-# Save the dataset as a CSV file
-dataset.save("detect_mood.csv", SourceType.CSV)
-
-# Print each input-output pair in the dataset
-correct = 0
-
-for data in dataset.data:
-    print(data.input[0].strip('"')+ f"expected {data.output} got " + detect_mood(data.input[0].strip('"')))
-    if data.output == detect_mood(data.input[0].strip('"')):
-        correct += 1
-
-print(f"Accuracy: {correct}/{len(dataset.data)}, {correct/len(dataset.data)*100}%")
-```
-
-### How It Works
-
-- **Define the Function**:  
-  The target function (`detect_mood` in the example) must be well-defined, preferably with type annotations and examples to guide the data generation process.
-- **Generate Synthetic Data**:
-  Use `generate_data` to produce a dataset by specifying the number of samples and optionally overriding the default model with a custom `oracle`.
-- **Save or Process Dataset**:  
-  The returned dataset (`HostaDataset` instance) provides methods to save it in various formats (CSV, JSON, JSONL) or iterate over its contents for further analysis.
+from OpenHosta import ask, MetaPrompt
+system_prompt = MetaPrompt("You are a helpful assistant specialized in {domain}.")
+print(ask("What is overfitting?", system=system_prompt.render(domain="machine learning")))
+``` 
 
 ## Advanced configuration
 
@@ -727,71 +600,46 @@ print(f"Accuracy: {correct}/{len(dataset.data)}, {correct/len(dataset.data)*100}
 
 This section explains how to customize the program to make its own LLM call and response handling functions. This can be useful if you need a specific functionality that is not provided by the standard library, or to enable compatibility with a specific LLM. 
 
-#### Inheriting from the Model Class
+#### Inheriting from the OpenAICompatibleModel Class
 
-The first step is to inherit from the Model class to create your own configuration class. The Model class provides a base for the library's configuration, including connection settings to the LLM and response handling functions.
+The first step is to inherit from the OpenAICompatibleModel class to create your own configuration class. The OpenAICompatibleModel class provides a base for the library's configuration, including connection settings to the LLM and response handling functions.
 
 ```python
-from OpenHosta import Model
+from OpenHosta import OpenAICompatibleModel
 
-class MyModel(Model):
+class MyModel(OpenAICompatibleModel):
     # Your code here
 ```
 
-In the example above, we have created a new class `MyModel` that inherits from the Model class. This means that `MyModel` has access to all the methods and attributes of the Model class. You can now add your own functions to this class to customize the OpenHosta's configuration.
+In the example above, we have created a new class `MyModel` that inherits from the OpenAICompatibleModel class. This means that `MyModel` has access to all the methods and attributes of the OpenAICompatibleModel class. You can now add your own functions to this class to customize the OpenHosta's configuration.
 You can also override an existing function to modify its behavior. It is important to keep input/output components identical in order to avoid errors when interacting with calling functions.
 
 #### Custom LLM Call Function
 
-To create your own LLM call function, you need to override the `api_call` method of the Model class. This method is called every time the library needs to communicate with the LLM.
+To create your own LLM call function, you need to override the `api_call` method of the OpenAICompatibleModel class. This method is called every time the library needs to communicate with the LLM.
 
 ```python
 from typing import Dict, List
-from OpenHosta import Model
+from OpenHosta import OpenAICompatibleModel
 
-class MyModel(Model):
+class MyModel(OpenAICompatibleModel):
     def api_call(
         self,
-        messages: List[Dict[str, str]],
-        json_output: bool = True,
-        **llm_args
+        messages: list[dict[str, str]],
+        llm_args:dict = {}
     ) -> Dict:
         # Your code here
         # Call the LLM and return the response
         return response
 ```
 
-In the example above, we have overridden the "api_call" method of the Model class to create our own LLM call function.
+In the example above, we have overridden the "api_call" method of the OpenAICompatibleModel class to create our own LLM call function.
 The "api_call" method takes four arguments:
 
 - **message**: The parsed message sent to the LLM.
-- **json_output**: A boolean enabling the json format return option in the LLM call.
 - **llm_args**: All the options given by the LLM's distributor. (ex. max_token, temperature, top_p...)
 
 The "api_call" method returns a response object that contains the LLM's response to the user prompt.
-
-#### Custom Response Handling Function
-
-To create your own response handling function, you need to override the "response_parser" method of the Model class. This method is called every time the library receives a response from the LLM.
-
-```python
-from typing import Dict, Any
-from OpenHosta import Model, FunctionMetadata, TypeConverter
-
-class MyModel(Model):
-    def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
-        # Your code here
-        # Process the LLM response and return the result
-        return TypeConverter(function_metadata, l_ret_data).check()
-```
-
-In the example above, we have overridden the `response_parser` method of the Model class to create our own response handling function. 
-The "response_parser" method takes three arguments:
-
-- **response**: The response object returned by the LLM.
-- **function_metadata**: The object containing all the useful information about the emulated function.
-
-The "response_parser" method returns the processed return value. This is the value returned by the emulated function.
 
 #### Example Usage
 
@@ -799,64 +647,60 @@ You can now create an instance of the class you've just created and use it in al
 
 With this method, you can now make OpenHosta compatible with a large number of API.
 
-**Here's an example of of a custom Model class for Llama models:**
+**Here's an example of of a custom OpenAICompatibleModel class for Llama models:**
 
 ```python
-from typing import Any, Dict, List
-from OpenHosta import emulate, Model, TypeConverter, FunctionMetadata, example
-from OpenHosta.utils.errors import RequestError
+from typing import Dict
+from OpenHosta import emulate, OpenAICompatibleModel, OneTurnConversationPipeline
 import requests
-import json
-import sys
 
-class LlamaModel(Model):
-    
-    def __init__(self, model: str = None, base_url: str = None, api_key: str = None, timeout: int = 30):
-        super().__init__(model, base_url, api_key, timeout)
-        
-    def api_call(self, messages: List[Dict[str, str]], json_output: bool = True, **llm_args) -> Dict:
+class LlamaModel(OpenAICompatibleModel):
+            
+    def api_call(
+        self,
+        messages: list[dict[str, str]],
+        llm_args:dict = {  "stream": False}
+    ) -> Dict:
         l_body = {
-            "model": self.model,
-            "messages": messages,
+            "model": self.model_name,
+            "prompt": "\n".join([str(x) for x in messages]),
             "stream": False
         }
         headers = {
             "Content-Type": "application/json"
         }
- 
-        if json_output:
-            l_body["format"] = "json"
-        for key, value in llm_args.items():
-            l_body[key] = value
+
+        all_api_parameters = self.api_parameters | llm_args
+        for key, value in all_api_parameters.items():
+            if key == "force_json_output" and value:
+                l_body["response_format"] = {"type": "json_object"}
+            else:
+                l_body[key] = value
+                
         try:
-            response = requests.post(self.base_url, headers=headers, json=l_body, timeout=self.timeout)
+            full_url = f"{self.base_url}{self.chat_completion_url}"
+            response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
 
             if response.status_code != 200:
                 response_text = response.text
-                raise RequestError(
-                    f"[Model.api_call] API call was unsuccessful.\n"
-                    f"Status cod: {response.status_code }:\n{response_text}"
+                raise Exception(
+                    f"[OpenAICompatibleModel.api_call] API call was unsuccessful.\n"
+                    f"Status code: {response.status_code }:\n{response_text}"
                 )
             self._nb_requests += 1
             return response.json()
         except Exception as e:
-            raise RequestError(f"[Model.api_call] Request failed:\n{e}\n\n")
-        
-    def response_parser(self, response: Dict, function_metadata: FunctionMetadata) -> Any:
-        json_string = response["message"]["content"]
-        try:
-            l_ret_data = json.loads(json_string)
-        except json.JSONDecodeError as e:
-            sys.stderr.write(
-                f"[Model.response_parser] JSONDecodeError: {e}\nContinuing the process.")
-            l_cleand = "\n".join(json_string.split("\n")[1:-1])
-            l_ret_data = json.loads(l_cleand)
-        return TypeConverter(function_metadata, l_ret_data).check()
+            raise Exception(f"[OpenAICompatibleModel.api_call] Request failed:\n{e}\n\n")
+
+    def get_response_content(self, response_dict: Dict) -> str:
+        json_string = response_dict["response"]
+        return json_string
         
 
 mymodel = LlamaModel(
-    model="llama3.2:1B",
-    base_url="http://localhost:11434/api/chat",
+    model_name="gemma3:4b",
+    base_url="http://localhost:11434",
+    chat_completion_url="/api/generate",
     api_key="..."
 )
 
@@ -864,26 +708,24 @@ def capitalize(sentence:str)->str:
     """
     This function capitalize a sentence in parameter.
     """
-    example(sentence="foo bar", hosta_out="Foo Bar")
-    return emulate(model=mymodel)
+    return emulate(pipeline=OneTurnConversationPipeline(model_list=[mymodel]))
 
 
 print(capitalize("hello world!"))
+# Hello world!
 ```
-
-If the API request model is similar to OpenAI API, it can also work without class inheritance.
 
 **Another example to work with Ollama:**
 
 ```python
-from OpenHosta import config, ask
+from OpenHosta import OpenAICompatibleModel, ask, config
 
-ollama_local_model=config.Model(
-    model="gemma2:9b",
-    base_url="http://localhost:11434/v1/chat/completions",
-    api_key="not-empty-string"
+ollama_local_model=OpenAICompatibleModel(
+    model_name="gemma3:4b",
+    base_url="http://localhost:11434/v1",
+    api_key="none"
 )
-config.set_default_model(ollama_local_model)
+config.DefaultModel = ollama_local_model
 
 ask("hello")
 ```
@@ -891,25 +733,25 @@ ask("hello")
 **Now with Microsoft Azure:**
 
 ```python
-from OpenHosta import config, ask
+from OpenHosta import config, ask, OpenAICompatibleModel
 
-azure_model=config.Model(
-    model="gpt-4o",
-    base_url="https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME/chat/completions?api-version=2024-06-01",
-    api_key="Provide Azure OpenAI API key here"
-)
-config.set_default_model(azure_model)
+azure_redentials={
+    'Client_id': "some specific guid",
+    'Client_secret': "some specific secret",
+}
+
+azure_model = OpenAICompatibleModel(
+    base_url="https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_NAME", 
+    chat_completion_url="/chat/completions?api-version=2023-07-01-preview",
+    model_name="gpt-4o",
+    additionnal_headers=azure_redentials,
+    api_key="unused key"
+    )
+
+config.DefaultModel = azure_model
 
 ask("hello")
 ```
-
-### Prompts
-
-#### Edit the prompt
-
-`emulate` works by putting the emulated function's parsed data in a meta-prompt in jinja2 designed to give the best performance and ensure a constant ouptput format.
-
-You can find the prompt template at [meta_prompt.py](../src/OpenHosta/utils/meta_prompt.py) file.
 
 #### Show me the prompt !
 

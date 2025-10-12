@@ -1,20 +1,12 @@
 from ..exec.ask import ask_async as ask
 from ..exec.emulate import emulate_async as emulate
-from ..exec.thinkof import thinkof_async as thinkof
+from ..exec.closure import closure_async as closure
+from ..semantics.operators import test_async as test
 
-from ..utils.import_handler import is_predict_enabled
-
-if is_predict_enabled:
-    from ..exec.predict.predict import predict_async as predict
-    from ..exec.generate_data import generate_data_async as generate_data
-else:
-    from ..exec.predict.stubs import predict_async as predict
-    from ..exec.predict.stubs import generate_data_async as generate_data
 
 all = (
     "ask",
     "emulate",
-    "thinkof",
-    "predict",
-    "generate_data",
+    "closure",
+    "test",
 )
