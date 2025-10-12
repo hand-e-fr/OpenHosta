@@ -10,14 +10,48 @@ except Exception as e:
 from ..pipelines import OneTurnConversationPipeline
 from ..models import Model, OpenAICompatibleModel
 
-DefaultModel = OpenAICompatibleModel(
-        model_name="gpt-4o", 
-        base_url="https://api.openai.com/v1")
+# Config shall be a class so that any reference to default model or default pipeline are updated during runtime
+# (no copy)
 
-DefaultPipeline = OneTurnConversationPipeline(
-    model_list=[DefaultModel]
-)
-     
+class Config:
+    def __init__(self):
+        self._DefaultModel = OpenAICompatibleModel(
+            model_name="gpt-4o",
+            base_url="https://api.openai.com/v1"
+        )
+        
+        self._DefaultPipeline = OneTurnConversationPipeline(
+            model_list=[self._DefaultModel]
+        )
+        
+    # Add getter and setter for DefaultModel and DefaultPipeline
+    @property
+    def DefaultModel(self) -> Model:
+        return self._DefaultModel
+
+    @property
+    def DefaultPipeline(self) -> OneTurnConversationPipeline:
+        return self._DefaultPipeline
+    
+    @DefaultModel.setter
+    def DefaultModel(self, model: OpenAICompatibleModel):
+        if not isinstance(model, OpenAICompatibleModel):
+            raise ValueError("DefaultModel must be an instance of OpenAICompatibleModel")
+        self._DefaultModel.api_parameters = model.api_parameters
+        self._DefaultModel.model_name = model.model_name
+        self._DefaultModel.base_url = model.base_url
+
+    @DefaultPipeline.setter
+    def DefaultPipeline(self, pipeline: OneTurnConversationPipeline):
+        if not isinstance(pipeline, OneTurnConversationPipeline):
+            raise ValueError("DefaultPipeline must be an instance of OneTurnConversationPipeline")
+        self._DefaultPipeline.model_list = pipeline.model_list
+        self._DefaultPipeline.llm_args = pipeline.llm_args
+        self._DefaultPipeline.user_call_meta_prompt = pipeline.user_call_meta_prompt
+        self._DefaultPipeline.emulate_meta_prompt = pipeline.emulate_meta_prompt
+    
+config = Config()  
+        
 def reload_dotenv(override: bool = True, dotenv_path="./.env"):
     def recursive_find_dotenv(path):
         if os.path.isfile(os.path.join(path, ".env")):
@@ -54,9 +88,9 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         return False
     
     if load_dotenv(dotenv_path=dotenv_path, override=override):
-        DefaultModel.api_key = os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
-        DefaultModel.base_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_BASE_URL", "https://api.openai.com/v1")
-        DefaultModel.model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4.1")
+        config.DefaultModel.api_key = os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
+        config.DefaultModel.base_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_BASE_URL", "https://api.openai.com/v1")
+        config.DefaultModel.model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4.1")
 
         TEMPERATURE =       os.getenv("OPENHOSTA_DEFAULT_MODEL_TEMPERATURE", None)
         TOP_P =             os.getenv("OPENHOSTA_DEFAULT_MODEL_TOP_P", None)
@@ -64,16 +98,14 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         SEED =              os.getenv("OPENHOSTA_DEFAULT_MODEL_SEED", None)
         
         if TEMPERATURE is not None:
-            DefaultPipeline.model_list[0].api_parameters |= {"temperature": float(TEMPERATURE)}
+            config.DefaultPipeline.model_list[0].api_parameters |= {"temperature": float(TEMPERATURE)}
         if TOP_P is not None:
-            DefaultPipeline.model_list[0].api_parameters |= {"top_p": float(TOP_P)}
+            config.DefaultPipeline.model_list[0].api_parameters |= {"top_p": float(TOP_P)}
         if MAX_TOKENS is not None:
-            DefaultPipeline.model_list[0].api_parameters |= {"max_tokens": int(MAX_TOKENS)}
+            config.DefaultPipeline.model_list[0].api_parameters |= {"max_tokens": int(MAX_TOKENS)}
         if SEED is not None:
-            DefaultPipeline.model_list[0].api_parameters |= {"seed": int(SEED)}
-            
-        DefaultPipeline.model_list = [DefaultModel]
-        
+            config.DefaultPipeline.model_list[0].api_parameters |= {"seed": int(SEED)}
+                    
         return True
 
     else:

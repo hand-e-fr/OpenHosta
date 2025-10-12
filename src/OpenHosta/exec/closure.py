@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from ..core.config import DefaultPipeline
+from ..core.config import config
 from ..core.inspection import get_hosta_inspection, Inspection
 from ..pipelines import OneTurnConversationPipeline
 
@@ -34,7 +34,7 @@ def guess_type(inspection: Inspection) -> object:
 def closure_async(
     query_string,
     *,
-    pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+    pipeline: Optional[OneTurnConversationPipeline] = config.DefaultPipeline,
     force_return_type: Optional[object] = None,
     force_llm_args: Optional[dict] = {}
     ):
@@ -74,7 +74,7 @@ def closure_async(
 def closure(
     query_string,
     *,
-    pipeline: Optional[OneTurnConversationPipeline] = DefaultPipeline,
+    pipeline: Optional[OneTurnConversationPipeline] = config.DefaultPipeline,
     force_return_type: Optional[object] = None,
     force_llm_args: Optional[dict] = {}
     ):

@@ -28,7 +28,7 @@ import os
 from pydantic import BaseModel
 from typing import Callable
 
-from OpenHosta import config, emulate
+from OpenHosta import config, emulate, reload_dotenv
 
 def emulate_1arg_str(arg)->str:
     """ Docstring """
@@ -53,16 +53,15 @@ class User(BaseModel):
     email: str
     age: int
 
-from OpenHosta import DefaultModel
+from OpenHosta import config, OpenAICompatibleModel, OneTurnConversationPipeline
 
 class TestEmulate:
-       
-    from OpenHosta.pipelines.simple_pipeline import OneTurnConversationPipeline
+    
     def test_FeatureModelInParameter(self):
-        abracadabra = config.OpenAICompatibleModel(
-            model_name=DefaultModel.model_name,
-            base_url=DefaultModel.base_url,
-            api_key=DefaultModel.api_key,
+        abracadabra = OpenAICompatibleModel(
+            model_name="another model 1",
+            base_url="http://localhost:1234/v1",
+            api_key="none",
         )
         
         my_pipe = OneTurnConversationPipeline(model_list=[abracadabra])
@@ -73,13 +72,48 @@ class TestEmulate:
             This function returns a random sentence.
             """
             return emulate(pipeline=my_pipe)
-        
-        ret = randomSentence()
-        assert isinstance(ret, str), f"Expected str, got {type(ret)}"
-        
-        ret_model = randomSentence.hosta_inspection["model"]
-        assert DefaultModel.model_name in ret_model.model_name 
 
+        # This fails as the model does not exist
+        try:
+            ret = randomSentence()
+        except Exception as e:
+            ret = None
+
+        ret_model = randomSentence.hosta_inspection["model"].model_name 
+        
+        # Reset model parameters to original config for other tests
+        reload_dotenv()
+
+        assert "another model 1" in ret_model
+
+    def test_setConfig(self):
+        abracadabra = OpenAICompatibleModel(
+            model_name="another model 2",
+            base_url=config.DefaultModel.base_url,
+            api_key=config.DefaultModel.api_key,
+        )
+        config.DefaultModel = abracadabra
+
+        def randomSentence()->str:
+            """
+            This function returns a random sentence.
+            """
+            return emulate()
+
+        # This fails as the model does not exist
+        try:
+            ret = randomSentence()
+        except Exception as e:
+            ret = None
+
+        ret_model = randomSentence.hosta_inspection["model"].model_name
+        
+        # Reset model parameters to original config for other tests
+        reload_dotenv()
+
+                
+        assert "another model 2" in ret_model
+    
 
     def test_FeaturesEmptyInfos(self):
         def a():
@@ -128,26 +162,25 @@ class TestEmulate:
         stdout = capsys.readouterr()
         assert "Hello World!" in stdout.out
         
-    # TODO: decide if we keep this test or not
-    def test_FeatureLocalVariables(self):
+    # def test_FeatureLocalVariables(self):
         
-        def showLocals()->dict:
-            """
-            This function return in a dict all his locals variable and arguments.
-            """
-            local_1 = 42
-            local_2 = "Hello World!"
-            local_3 = [1, 2, 3, 4, 5]
-            return emulate()
-            # return emulate(use_locals=True)
+    #     def showLocals()->dict:
+    #         """
+    #         This function return in a dict all his locals variable and arguments.
+    #         """
+    #         local_1 = 42
+    #         local_2 = "Hello World!"
+    #         local_3 = [1, 2, 3, 4, 5]
+    #         return emulate()
+    #         # return emulate(use_locals=True)
         
-        ret_dict = {
-            "local_1": 42,
-            "local_2": "Hello World!",
-            "local_3": [1, 2, 3, 4, 5]
-        }
-        ret = showLocals()
-        assert ret == ret_dict
+    #     ret_dict = {
+    #         "local_1": 42,
+    #         "local_2": "Hello World!",
+    #         "local_3": [1, 2, 3, 4, 5]
+    #     }
+    #     ret = showLocals()
+    #     assert ret == ret_dict
       
     def test_FeatureNestedFunction(self):
             

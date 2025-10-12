@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..core.config import Model, DefaultPipeline
+from ..core.config import Model, config
 
 from ..core.meta_prompt import MetaPrompt
 
@@ -13,9 +13,9 @@ def ask(
     json_output=False,
     **api_args
 ) -> Any:
-    
-    model = DefaultPipeline.model_list[0]    
-    
+
+    model = config.DefaultModel
+
     message = []
     if system is not None:
         message.append({"role": "system", "content": system.render()})
@@ -43,8 +43,7 @@ async def ask_async(
     **api_args
 ) -> Any:
     
-    model = DefaultPipeline.model_list[0]    
-
+    model = config.DefaultModel
 
     message = []
     if system is not None:
