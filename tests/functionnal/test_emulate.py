@@ -1,0 +1,271 @@
+import os
+import time
+import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# To run these tests you need to set .env variables to define an LLM provider
+# e.g. for OpenAI:
+# OPENHOSTA_LLM_PROVIDER=openai
+# OPENHOSTA_OPENAI_API_KEY=your_api_key
+
+# you also need to install pytest and python-dotenv:
+# pip install pytest python-dotenv
+
+# To run the tests, use the command:
+# pytest OpenHosta/tests/functionnalTests/test_emulate.py
+
+from OpenHosta import emulate
+from OpenHosta import print_last_prompt
+from OpenHosta import OneTurnConversationPipeline, config
+
+
+# Basic test to check if the emulate function works with a simple prompt
+def test_emulate_basic():
+    """
+    Test the emulate function with a simple prompt that asks for the capital of a country.
+    """
+    def get_capital(country: str) -> str:
+        """
+        This function returns the capital of a given country.
+        """
+        return emulate()
+    
+    response = get_capital("France")
+    assert "Paris" in response, f"Expected 'Paris' in response, got: {response}"
+
+def test_emulate_math():
+    """
+    Test the emulate function with a math operation.
+    The interesting part of this test is to check if the type detection works.
+    """
+    def get_math_result(number: float) -> float:
+        """
+        Returns the result of the following math operation: 
+        number + 2.
+        
+        Arguments:
+            - number (float): A number to add to 2.
+        Returns:
+            - float: The result of the addition.
+        """
+        return emulate()
+    response = get_math_result(2.5)
+    assert 4.5 == response, f"Expected '4.5' in response, got: {response}"
+
+def test_emulate_basic():
+    """
+    Test the emulate function with a simple prompt that asks for the capital of a country.
+    """
+    
+    def get_capital(country: str) -> int:
+        """
+        This function returns the capital of a given country.
+        """
+        return emulate()
+    
+    try:
+        response = get_capital("France")
+    except:
+        # This does not work because the model returns "Paris" which is not an int
+        response = None
+        print_last_prompt(get_capital)
+    
+    assert response is None, f"Expected 'Paris' in response, got: {response}"
+
+def test_emulate_routing():
+    """
+    Test the emulate function with a prompt that asks for the next step after a git command.
+    """
+    
+    # define return type as enumeration
+    from enum import StrEnum
+    class NextStep(StrEnum):
+        GIT_PUSH = "git push"
+        GIT_COMMIT = "git commit"
+        GIT_STATUS = "git status"
+        GIT_PULL = "git pull"
+        GIT_FETCH = "git fetch"
+    
+    def get_next_step(command: str) -> NextStep:
+        """
+        This function returns the next step after a git command.
+        """
+        return emulate()
+    
+    next_step = get_next_step("git commit -m 'Initial commit'")
+
+    assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+    
+def test_emulate_dataclass():
+    """
+    Test the emulate function with a dataclass as return type.
+    """
+    from dataclasses import dataclass
+
+    @dataclass
+    class Person:
+        firstname: str
+        lastname: str
+        age: int
+
+    def get_person_info(description: str) -> Person:
+        """
+        This function returns a Person object with the given description.
+        
+        Arguments:
+            - description (str): The description of the person.
+        Returns:
+            - Person: A Person object based on the description.
+        """
+        return emulate()
+    
+    person = get_person_info("president of the USA in 1991")
+    
+    assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
+        
+## Exact same tests but with async version of ask
+from OpenHosta import emulate_async
+from asyncio import run
+
+def test_emulate_basic_async():
+    """
+    Test the async emulate function with a simple prompt that asks for the capital of a country.
+    """
+    async def app():
+        async def get_capital(country: str) -> str:
+            """
+            This function returns the capital of a given country.
+            """
+            return await emulate_async()
+        
+        return await get_capital("France")
+    
+    response = run(app())
+    assert "Paris" in response, f"Expected 'Paris' in response, got: {response}"
+    
+def test_emulate_math_async():
+    """
+    Test the async emulate function with a math operation.
+    The interesting part of this test is to check if the type detection works.
+    """
+    async def app():
+        async def get_math_result(number: float) -> float:
+            """
+            Returns the result of the following math operation: 
+            number + 2.
+            
+            Arguments:
+                - number (float): A number to add to 2.
+            Returns:
+                - float: The result of the addition.
+            """
+            return await emulate_async()
+        return await get_math_result(2.5)
+    response = run(app())
+    assert 4.5 == response, f"Expected '4.5' in response, got: {response}"
+    
+def test_emulate_routing_async():
+    """
+    Test the async emulate function with a prompt that asks for the next step after a git command.
+    """
+    # define return type as enumeration
+    from enum import StrEnum
+    class NextStep(StrEnum):
+        GIT_PUSH = "git push"
+        GIT_COMMIT = "git commit"
+        GIT_STATUS = "git status"
+        GIT_PULL = "git pull"
+        GIT_FETCH = "git fetch"
+    
+    async def app():    
+        async def get_next_step(command: str) -> NextStep:
+            """
+            This function returns the next step after a git command.
+            """
+            return await emulate_async()
+        
+        return await get_next_step("git commit -m 'Initial commit'")
+    next_step = run(app())
+
+    assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+    
+def test_emulate_dataclass_async():
+    """
+    Test the async emulate function with a dataclass as return type.
+    """
+    from dataclasses import dataclass
+
+    @dataclass
+    class Person:
+        firstname: str
+        lastname: str
+        age: int
+
+    async def app():
+        async def get_person_info(description: str) -> Person:
+            """
+            This function returns a Person object with the given description.
+            
+            Arguments:
+                - description (str): The description of the person.
+            Returns:
+                - Person: A Person object based on the description.
+            """
+            return await emulate_async()
+        
+        return await get_person_info("president of the USA in 1991")
+    
+    person = run(app())
+    
+    assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
+    
+    
+    def test_emulate_speed():
+        """
+        Test the emulate function with a very short prompt so that delay due to LLM is minimal.
+        """
+        EmptyPipeline = OneTurnConversationPipeline(model_list=[config.DefaultModel])
+        EmptyPipeline.emulate_meta_prompt.source = ""
+        EmptyPipeline.user_call_meta_prompt.source = "Just answer with 1"
+        
+        def answer_one()->int:
+            """
+            just write 1 in your answer
+            """
+            return emulate(pipeline=EmptyPipeline)
+
+        t0 = time.time()
+        for i in range(10):
+            response = answer_one()
+        t1 = time.time()
+        
+        print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
+        # print_last_prompt(answer_one)
+        
+        assert response == 1, f"Expected '1' in response, got: {response}"
+        assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+        
+    def test_emulate_speed():
+        """
+        Test the emulate function with a very short prompt so that delay due to LLM is minimal.
+        """
+        
+        def answer_one()->int:
+            """
+            just write 1 in your answer
+            """
+            return emulate()
+
+        t0 = time.time()
+        for i in range(10):
+            response = answer_one()
+        t1 = time.time()
+        
+        print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
+        # print_last_prompt(answer_one)
+        
+        assert response == 1, f"Expected '1' in response, got: {response}"
+        assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+                
