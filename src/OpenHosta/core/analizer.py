@@ -108,6 +108,14 @@ def encode_function_parameter_values(analyse):
         # math.pi is 17 char, I decide to cut at 20 
         str_value = repr(value)
         if len(str_value) > 20:
+            try:
+                import PIL
+                if isinstance(value, PIL.Image.Image):
+                    # Add a comment to explain that the image content is in the message
+                    str_value += f" # the real content of `{call_arg}` image is provided as an image in the message"
+            except:
+                # PIL is not available. It cannot be an image
+                pass
             variable_definition_list += [call_arg+"="+str_value+"\n"]
         else:
             # We do not show default values as this could contradict values from call
