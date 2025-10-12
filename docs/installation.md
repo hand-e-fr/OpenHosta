@@ -1,11 +1,13 @@
 # Installation Guide
 
-The `OpenHosta` python package contains multiple features which you can install via PyPI or GitHub. However, you may need to install other packages depending on how you use `OpenHosta`. Indeed, some `OpenHosta` features require additional dependencies to be used. You'll also need to set up your API key for easier use.
+The `OpenHosta` python package contains multiple features which you can install via PyPI or GitHub.
+Some features will be available only if you install additional packages like `pydantic` for advanced objects or `pillow` for image processing. You'll also need to set up a local model or configure an API key to a remote model if you do not have the right to install a model locally.
+
 All this will be detailed in this document.
 
 ## Prerequisites
 
-1. **Python 3.10 | 3.11 | 3.12**
+1. **Python 3.10 | 3.11 | 3.12 | 3.13**
    - Download and install Python from [python.org](https://www.python.org/downloads/).
 
 2. **pip**
@@ -13,6 +15,7 @@ All this will be detailed in this document.
      ```sh
      pip --version
      ```
+     > You can also use `uv` that is a bit more modern: https://pypi.org/project/uv/
 
 ## OpenHosta Installation
 
@@ -29,22 +32,10 @@ All this will be detailed in this document.
   1. Clone the Git repository:
 
   ```sh
-  git clone https://github.com/hand-e-fr/OpenHosta.git
+  pip install https://github.com/hand-e-fr/OpenHosta.git
   ```
 
-  1. Navigate to the directory:
-
-  ```sh
-  cd OpenHosta
-  ```
-
-  3. Install the package.
-
-  ```sh
-  pip install .
-  ```
-
-  4. Verify installation
+  2. Verify installation
 
   ```sh
   python -c "import OpenHosta; print(OpenHosta.__version__)"
@@ -54,83 +45,113 @@ Installing OpenHosta with GitHub gives you access to all the source code, allowi
 
 ## Additional Dependencies
 
-You can install additional dependencies to use deeper features of `OpenHosta`. You'll need to add the following options.
+You can use additional dependencies to unlock more features.
 
 ```sh
-pip install -U OpenHosta[all] # With pip
-```
-*or* 
-```sh
-pip install .[all] # With GitHub
+# This will enable the image processing features (PIL.Image)
+pip install pillow # tested with version 11.0.0
 ```
 
-### `predict`
-
-Adds the `predict` function and all its features.
 ```sh
-pip install -U OpenHosta[predict]
-```
-
-### `pydantic`
-
-Adds the `pydantic` compatibility with all functions.
-```sh
-pip install OpenHosta[pydantic]
-```
-*or*
-```sh
-pip install pydantic # Basically the same
-```
-
-### `dev`
-
-*Not inclued in "all"*
-
-Adds all the useful OpenHosta development tools for those who'd like to contribute.
-```sh
-pip install .[dev] # Useful only with the GitHub install, yon won't need it if you're not interested in contributing for OpenHosta 
+pip install pydantic # tested with version 2.11.7
 ```
 
 ### `tests`
 
-*Not inclued in "all"*
+In order to run the tests, you need to clone the repository and install additional packages.
+
+Cloning the repository:
+```sh
+git clone https://github.com/hand-e-fr/OpenHosta.git OpenHosta.git
+cd OpenHosta.git
+```
 
 Adds all the package used for executing the `OpenHosta`'s tests.
+
 ```sh
-pip install .[tests] # Also only useful with the GitHub install
+pip install .[tests] # Also only useful if you are in a cloned repo
 ```
-
-### Combining Options
-
-All options can be combined as needed.
-
-For example, if you're a contributor, it might be useful to install `dev` and `tests` packages:
-```sh
-pip install .[dev, tests]
-```
-Note that the `pydantic` and `predict` packages combined are the same as `all`.
 
 ## API Key Setup
 
-1. Get API key from your favorite provider. As default model we use OpenAI `GPT-4o`, you can get a key from https://platform.openai.com/account/api-keys
+1. Get API key from your favorite provider. As default model we use OpenAI `GPT-4.1`, you can get a key from https://platform.openai.com/account/api-keys
 2. Then all you have to do is set a environment variable containing this API key:
    - Windows:
     ```sh
-    setx OPENAI_API_KEY "your-openai-api-key"
+    setx OPENHOSTA_DEFAULT_MODEL_API_KEY "your-openai-api-key"
     ```
    - MacOS/Linux:
     ```sh
     # in your .bashrc or .zshrc
-    export OPENAI_API_KEY='your-anthropic-api-key'
+    export OPENHOSTA_DEFAULT_MODEL_API_KEY='your-anthropic-api-key'
     ```
+
+We recommand to configure the default model in a .env file in your working directory or in any parent directory.
+OpenHosta will automatically load it if present.
+
+```env
+OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"
+OPENHOSTA_DEFAULT_MODEL_API_KEY="put-your-api-key-here"
+```
+
+## Local Models
+
+You can use local models with OpenHosta using [Ollama](https://ollama.com/).
+
+1. Install Ollama by following the instructions on their [official website](https://ollama.com/).
+    ```sh
+    # For MacOS or Linux
+    curl -fsSL https://ollama.com/install.sh | sh
+    ```
+
+2. Download and install a model using Ollama. For example, to install the `mistral-small3.2` model, run:
+   
+   ```sh
+   ollama pull mistral-small3.2
+   ```
+
+3. Set the model in your environment variables:
+```sh
+# under Linux or MacOS
+export OPENHOSTA_DEFAULT_MODEL_NAME="mistral-small3.2"
+export OPENHOSTA_DEFAULT_MODEL_BASE_URL="http://localhost:11434/v1"
+export OPENHOSTA_DEFAULT_MODEL_API_KEY="none"
+```
+
+```
+# Windows
+setx OPENHOSTA_DEFAULT_MODEL_NAME "mistral-small3.2"
+setx OPENHOSTA_DEFAULT_MODEL_BASE_URL "http://localhost:11434/v1"
+setx OPENHOSTA_DEFAULT_MODEL_API_KEY "none"
+```
+
+or using a `.env` file in your working directory:
+```env
+# Recommended way as it will be loaded automatically by OpenHosta and is compatible with all OS
+OPENHOSTA_DEFAULT_MODEL_NAME="mistral-small3.2"
+OPENHOSTA_DEFAULT_MODEL_BASE_URL="http://localhost:11434/v1"
+OPENHOSTA_DEFAULT_MODEL_API_KEY="none"
+```
+
+Verify that everything is working by running a simple script:
+
+```python
+from OpenHosta import ask
+ask("Do you know what is your name as a model? If yes just answer with the name.")
+# you should get 'Mistral Small 3.2' as an answer
+```
 
 ## Common Issues
 
 If you encounter a problem, try these few method that may fix it:
 
 - Update pip: ``pip install --upgrade pip``
-- Use virtual environment
+- Use virtual environment with `uv` or `venv`
 - Try ``pip3`` instead of ``pip``
 - Use ``sudo`` (Unix) or run as administrator (Windows) if permission errors occur
 
 For more help and if the problem persist, please file an issue on GitHub.
+
+## Where to go next?
+
+it is time for you to check [OpenHosta's documentation](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/doc.md) for more detailled informations or exemples.
