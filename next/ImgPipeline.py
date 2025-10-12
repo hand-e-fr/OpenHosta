@@ -27,7 +27,7 @@ class DocumentTypes(Enum):
 
 #TODO: do not forget to rotate the image if needed
 
-# Tested with OPENHOSTA_DEFAULT_MODEL_NAME="mistral-small3.2:24b" on ollama 0.11.8-rc0
+# Tested with OPENHOSTA_DEFAULT_MODEL_NAME="mistral-small3.2:24b" on ollama 0.12.5
 from OpenHosta import closure
 img0= Image.open("/home/ebatt/Images/IMG_6461.jpg")
 describe = closure("describe the image")
