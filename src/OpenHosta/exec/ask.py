@@ -8,7 +8,7 @@ from ..core.meta_prompt import MetaPrompt
 
 def ask(
     user: str,
-    system: Optional[MetaPrompt] = None,
+    system: Optional[str] = "You are a helpful assistant.",
     model: Optional[Model] = None,
     json_output=False,
     **api_args
@@ -18,7 +18,7 @@ def ask(
 
     message = []
     if system is not None:
-        message.append({"role": "system", "content": system.render()})
+        message.append({"role": "system", "content": system})
     message.append({"role": "user", "content": user})   
 
     api_args["force_json_output"] = json_output
@@ -37,7 +37,7 @@ def ask(
 
 async def ask_async(
     user: str,
-    system: Optional[str] = MetaPrompt("You are an helpful assistant."),
+    system: Optional[str] = "You are a helpful assistant.",
     model: Optional[Model] = None,
     json_output=False,
     **api_args
@@ -47,7 +47,7 @@ async def ask_async(
 
     message = []
     if system is not None:
-        message.append({"role": "system", "content": system.render()})
+        message.append({"role": "system", "content": system})
     message.append({"role": "user", "content": user})   
 
     api_args["force_json_output"] = json_output
