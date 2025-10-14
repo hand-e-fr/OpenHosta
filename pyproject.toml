@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OpenHosta"
-version = "3.0.0"
+version = "3.0.1"
 description = "A lightweight library integrating LLM natively into Python"
 keywords = ["AI", "GPT", "Natural language", "Autommatic", "Easy"]
 authors = [
@@ -15,7 +15,7 @@ authors = [
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.8,<=3.13"
+requires-python = ">=3.8,<=3.14"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python",
@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
