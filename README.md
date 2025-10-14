@@ -1,6 +1,6 @@
 # OpenHosta 
 
-v3.0.0 - Integrates Inria Comments
+v3.0 - Integrates Inria Comments
 
 <br/>You can read the doc or directly have a look at [tests files](https://github.com/hand-e-fr/OpenHosta/tree/main/tests/) for multiples exemples.
 
@@ -82,6 +82,14 @@ result
 
 You can install OpenHosta either via pip or via GitHub.
 
+We encourage you to use a virtual environment. You can create one with:
+```sh
+python -m venv .venv
+source .venv/bin/activate # On Windows use `.venv\Scripts\activate`
+```
+
+Then you can install OpenHosta with one of the following commands:
+
 ```sh
 pip install OpenHosta
 ```
@@ -89,7 +97,7 @@ pip install OpenHosta
 or
 
 ```sh
-pip install https://github.com/hand-e-fr/OpenHosta.git
+pip install "git+https://github.com/hand-e-fr/OpenHosta.git"
 ```
 
 or for a specific branch
@@ -106,6 +114,7 @@ You shall set your API credentials either via environment variables or directly 
 For now we assume that you have an OpenAI API key and that you have set it in .env like this:
 
 ```env
+# This is the content of your .env file to be placed in the root of your project
 OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"
 OPENHOSTA_DEFAULT_MODEL_API_KEY="put-your-api-key-here"
 ```

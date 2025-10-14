@@ -1,4 +1,4 @@
-### In version 3.0.0 of OpenHosta, we support simple Pydantic objects.
+### In version 3.0 of OpenHosta, we support simple Pydantic objects.
 ### This is a simple example of how to use it.
 ###
 ### The main limitations are:
