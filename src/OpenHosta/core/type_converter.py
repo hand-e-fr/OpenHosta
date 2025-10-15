@@ -13,6 +13,7 @@ from enum import Enum
 from sys import version_info
 
 from .pydantic_proxy import is_pydantic_available, BaseModel
+from .pydantic_proxy import reconstruct_pydantic_class_string_auto
 
 if version_info.major == 3 and version_info.minor > 9:
     from types import NoneType
@@ -173,6 +174,8 @@ def describe_type_as_python(arg_type):
         type_definition = nice_type_name(arg_type)
     elif pil_available and issubclass(arg_type, PILImageType):
         pass
+    elif is_pydantic_available and issubclass(arg_type, BaseModel):
+        type_definition = f"# Pydantic model {arg_type.__name__} definition.\n" + reconstruct_pydantic_class_string_auto(arg_type)
     elif issubclass(arg_type, Enum):
         type_definition = textwrap.dedent(f"""\
             # Python enum {arg_type.__name__} definition.
