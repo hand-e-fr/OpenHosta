@@ -29,14 +29,7 @@ if is_pydantic_available:
         
         return tuple(kwargs_to_check)
 
-    # On appelle la fonction une seule fois pour créer notre constante
     PYDANTIC_FIELD_KWARGS_AUTO = get_pydantic_field_kwargs()
-
-    print(f"Arguments de Field détectés dynamiquement : {PYDANTIC_FIELD_KWARGS_AUTO}")
-    print("-" * 20)
-
-
-    # --- Étape 2 : Utiliser cette liste dans la fonction de reconstruction ---
     
     def reconstruct_pydantic_class_string_auto(cls: type[pydantic.BaseModel]) -> str:
         """
