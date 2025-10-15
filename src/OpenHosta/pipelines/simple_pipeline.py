@@ -70,15 +70,25 @@ class OneTurnConversationPipeline(Pipeline):
     """
 
     def __init__(self, 
-                 model_list:List[Model]=None):
+                 model_list:List[Model]=None,
+                 emulate_meta_prompt:MetaPrompt=None,
+                 user_call_meta_prompt:MetaPrompt=None):
         
         assert len(model_list) > 0, "You shall provide at least one model."
 
         super().__init__()
 
-        self.model_list:List[Model] = model_list     
-        self.emulate_meta_prompt = EMULATE_META_PROMPT.copy()
-        self.user_call_meta_prompt = USER_CALL_META_PROMPT.copy()
+        self.model_list:List[Model] = model_list
+        
+        if emulate_meta_prompt is not None:
+            self.emulate_meta_prompt = emulate_meta_prompt
+        else:
+            self.emulate_meta_prompt = EMULATE_META_PROMPT.copy()
+            
+        if user_call_meta_prompt is not None:
+            self.user_call_meta_prompt = user_call_meta_prompt
+        else:
+            self.user_call_meta_prompt = USER_CALL_META_PROMPT.copy()
 
     def push_detect_missing_types(self, inspection):
         """Python Level"""
@@ -165,6 +175,9 @@ class OneTurnConversationPipeline(Pipeline):
 
         # This is after push_select_meta_prompts because we may have changed arg values (eg: resized images)
         encoded_data   = self.push_encode_inspected_data(inspection, inspection["model"].capabilities)
+
+        inspection["data_for_metaprompt"] = encoded_data
+        inspection["meta_prompts"] = meta_messages
 
         messages = []
         
