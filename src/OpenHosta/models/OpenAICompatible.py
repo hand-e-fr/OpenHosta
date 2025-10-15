@@ -6,7 +6,7 @@ import requests
 
 from ..core.inspection import Inspection
 from ..models import Model, ModelCapabilities
-from ..utils.errors import ApiKeyError, RequestError
+from ..utils.errors import ApiKeyError, RequestError, RateLimitError
 
 class OpenAICompatibleModel(Model):
 
@@ -79,25 +79,23 @@ class OpenAICompatibleModel(Model):
                 l_body["response_format"] = {"type": "json_object"}
             else:
                 l_body[key] = value
-        try:
-            full_url = f"{self.base_url}{self.chat_completion_url}"
-
-            response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
-
-            if response.status_code  != 200:
-                response_text = response.text
-                if "invalid_api_key" in response_text:
-                    raise ApiKeyError("[Model.api_call] Incorrect API key.")
-                else:
-                    raise RequestError(f"[Model.api_call] Request failed with status code {response.status_code}:\n{response_text}\n\n")
-                
-            self._nb_requests += 1
-            response_dict = response.json()
         
-        except Exception as e:
-            print(f"[Model.api_call] Request failed:\n{e}\n\n")
-            raise e
+        full_url = f"{self.base_url}{self.chat_completion_url}"
 
+        response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
+
+        if response.status_code == 200:
+            pass
+        elif response.status_code == 429:
+            raise RateLimitError(f"[Model.api_call] Rate limit exceeded (HTTP 429). {response.text}")
+        elif response.status_code == 401:
+            raise ApiKeyError(f"[Model.api_call] Unauthorized (HTTP 401). Check your API key. {response.text}")
+        else:
+            raise RequestError(f"[Model.api_call] Request failed with status code {response.status_code}:\n{response.text}\n\n")
+            
+        self._nb_requests += 1
+        response_dict = response.json()
+    
         return response_dict
     
     def get_consumption(self, response_dict) -> dict:
