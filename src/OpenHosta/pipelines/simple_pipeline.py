@@ -217,11 +217,14 @@ class OneTurnConversationPipeline(Pipeline):
         
         # Check if encapsulated in code block
         if response_string.endswith("```"):
-            chuncks = response_string.split("```")
-            response_string = chuncks[-2].strip()
+            response_lines = response_string.split("\n")
+            section_pos = [i for i,v in enumerate(response_lines) if v.startswith("```")]
+            chunk = response_lines[(section_pos[-2]+1):section_pos[-1]]
             # Remove chunk language and parameters
-            response_string = "\n".join(response_string.split("\n")[1:])
+            response_string = "\n".join(chunk)
 
+        inspection["logs"]["clean_answer"] += response_string
+        
         return response_string.strip()
 
     def pull_type_data_section(self, inspection, response:Any) -> Any:
@@ -243,6 +246,7 @@ class OneTurnConversationPipeline(Pipeline):
     def pull(self, inspection, response_dict ):
         inspection["logs"]["rational"] = ""
         inspection["logs"]["answer"] = ""
+        inspection["logs"]["clean_answer"] = ""
         
         inspection["logs"]["llm_api_response"] = response_dict
         
