@@ -8,11 +8,14 @@ import typing
 
 from typing import Any
 from dataclasses import is_dataclass
-from enum import Enum 
+from enum import Enum
 
 from sys import version_info
 
 from .pydantic_proxy import is_pydantic_available, BaseModel
+
+from ..validators import Validator
+
 
 if version_info.major == 3 and version_info.minor > 9:
     from types import NoneType
@@ -27,9 +30,40 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
     """
     Convert the untyped response to the expected type.
     """
-    
+
     typed_value = None
-    
+
+    # Check if expected_type is a Validator subclass
+    if isinstance(expected_type, type) and issubclass(expected_type, Validator):
+        # Step 1: Create temporary instance to get base_type
+        temp_instance = object.__new__(expected_type)
+        base_type = temp_instance._get_base_type()
+
+        # Step 2: Check if LLM returned the class name (e.g., 'EmailValidator("text")')
+        # If so, extract the actual value from inside the parentheses
+        cleaned_response = untyped_response.strip()
+        class_name = expected_type.__name__
+
+        if cleaned_response.startswith(class_name + "(") and cleaned_response.endswith(")"):
+            # Extract value inside: EmailValidator("text") → "text"
+            start = len(class_name) + 1  # After "EmailValidator("
+            end = -1  # Before ")"
+            untyped_response = cleaned_response[start:end]
+
+        # Step 3: Parse using base_type (recursive call)
+        try:
+            parsed_value = type_returned_data(untyped_response, base_type)
+        except Exception as e:
+            raise TypeError(
+                f"Failed to parse as {base_type.__name__} for {expected_type.__name__}: {e}"
+            )
+
+        # Step 4: Validate using Validator (may raise TypeError or ValidationError)
+        validated = expected_type(parsed_value)
+
+        # Step 5: Return the base type value (not the Validator instance)
+        return validated.value
+
     if expected_type is None \
         or expected_type is inspect._empty:
         typed_value = None

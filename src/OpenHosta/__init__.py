@@ -16,6 +16,8 @@ from .core.config import reload_dotenv
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
+from .validators import Validator, ValidationError
+
 import os
 
 DefaultModel = config.DefaultModel
@@ -40,5 +42,6 @@ all = (
     "print_last_prompt",
     "print_last_decoding",
     "Pipeline",
-    "OneTurnConversationPipeline"
+    "Validator",
+    "ValidationError"
 )
