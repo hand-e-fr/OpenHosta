@@ -1,6 +1,6 @@
 import pytest
 
-from OpenHosta import emulate, ask, test
+from OpenHosta import emulate, ask, test as oh_test
 
 answer = ask("Just say: The API to the model works!")
 assert "The API to the model works!" in answer
@@ -140,6 +140,6 @@ class TestTypes:
         assert return_none() is None
     
     def test_testReturnType(self):        
-        ret = test("this is true")
+        ret = oh_test("this is true")
         assert type(ret) == bool
         assert ret is True
