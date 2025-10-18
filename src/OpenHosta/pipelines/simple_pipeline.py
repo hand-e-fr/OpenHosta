@@ -77,6 +77,8 @@ class OneTurnConversationPipeline(Pipeline):
         assert len(model_list) > 0, "You shall provide at least one model."
 
         super().__init__()
+        
+        self.image_size_limit = 1600  # pixels
 
         self.model_list:List[Model] = model_list
         
@@ -129,13 +131,18 @@ class OneTurnConversationPipeline(Pipeline):
         """Prompt Level""" 
         
         try:
-
             # Find all images in args
-            import PIL
+            import PIL.Image
+            pil_is_loaded = True
+        except:
+            image_list = []
+            pil_is_loaded = False
+                        
+        if pil_is_loaded:
             import base64
             import io
-            img_format = "png"
-            size_limit = 1600.0
+            img_format = self.model_list[0].preferred_image_format if self.model_list[0].preferred_image_format else "png"
+            size_limit = float(self.image_size_limit)
 
             image_list = []
             for arg in inspection["analyse"]["args"]:
@@ -154,8 +161,7 @@ class OneTurnConversationPipeline(Pipeline):
                     image_resized.save(buffered, img_format)
                     img_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
                     image_list.append(f"data:image/{img_format};base64,{img_string}")
-        except:
-            image_list = []
+
 
         default_meta_conversation:MetaDialog = [
             ('system',self.emulate_meta_prompt, None),
@@ -230,15 +236,6 @@ class OneTurnConversationPipeline(Pipeline):
     def pull_type_data_section(self, inspection, response:Any) -> Any:
         """Python Level"""
         l_ret_data = None
-            
-        # Check if JSON object
-        if "{" in response and "}" in response:
-            chunk_lines = response.split("\n")
-            # find first line with { and last line with }
-            start_line = next(i for i, line in enumerate(chunk_lines) if "{" in line)
-            end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
-            response = "\n".join(chunk_lines[start_line:end_line + 1])
-
         l_ret_data = type_returned_data(response, inspection["analyse"]["type"])
 
         return l_ret_data
