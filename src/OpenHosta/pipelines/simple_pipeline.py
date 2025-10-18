@@ -235,7 +235,6 @@ class OneTurnConversationPipeline(Pipeline):
 
     def pull_type_data_section(self, inspection, response:Any) -> Any:
         """Python Level"""
-        l_ret_data = None
         l_ret_data = type_returned_data(response, inspection["analyse"]["type"])
 
         return l_ret_data

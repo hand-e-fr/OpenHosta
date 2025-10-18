@@ -60,7 +60,8 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             item_type = args[0] if args else Any
             typed_value = eval(untyped_response, {origin.__name__: origin}, {})
             assert typed_value is None or isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
-            typed_value = origin([type_returned_data(repr(item), item_type) for item in typed_value])
+            if typed_value is not None:
+                typed_value = origin([type_returned_data(repr(item), item_type) for item in typed_value])
         elif origin is tuple:
             # Tuple
             item_types = args if args else (Any,)
@@ -86,7 +87,11 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
         
         else:
             # Unsupported typing type
-            raise TypeError(f"Unsupported typing type: {expected_type}") 
+            try:
+                typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+            except Exception as e:
+                raise TypeError(f"Cannot convert response to type {expected_type}. use print_last_prompt to debug.") from e
+        
     elif isinstance(expected_type, type) and issubclass(expected_type, Enum):
         selected_value = untyped_response.strip("'").strip("\"")
         if selected_value.startswith(f"{expected_type.__name__}."):
@@ -129,7 +134,13 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
         else:
             raise TypeError(f"Cannot convert response to pydantic model {expected_type.__name__}. use print_last_prompt to debug.")
-
+    else:
+        # try python eval
+        try:
+            typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+        except Exception as e:
+            raise TypeError(f"Cannot convert response to type {expected_type}. use print_last_prompt to debug.") from e
+        
     return typed_value
 
 BASIC_TYPES = [
@@ -272,7 +283,8 @@ def build_typing_as_json_schema(arg_type):
         else:
             return {}
 
-    raise TypeError(f"Type '{arg_type}' is not supported.")
+    else:
+        return {"type": "object"}
 
 
 def build_types_as_json_schema(arg_type):
