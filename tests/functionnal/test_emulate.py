@@ -17,7 +17,6 @@ load_dotenv()
 # pytest OpenHosta/tests/functionnalTests/test_emulate.py
 
 from OpenHosta import emulate
-from OpenHosta import print_last_prompt
 from OpenHosta import OneTurnConversationPipeline, config
 
 
@@ -70,7 +69,6 @@ def test_emulate_basic():
     except:
         # This does not work because the model returns "Paris" which is not an int
         response = None
-        print_last_prompt(get_capital)
     
     assert response is None, f"Expected 'Paris' in response, got: {response}"
 
@@ -242,7 +240,6 @@ def test_emulate_dataclass_async():
         t1 = time.time()
         
         print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
-        # print_last_prompt(answer_one)
         
         assert response == 1, f"Expected '1' in response, got: {response}"
         assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
@@ -264,7 +261,6 @@ def test_emulate_dataclass_async():
         t1 = time.time()
         
         print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
-        # print_last_prompt(answer_one)
         
         assert response == 1, f"Expected '1' in response, got: {response}"
         assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
