@@ -13,6 +13,7 @@ from enum import Enum
 from sys import version_info
 
 from .pydantic_proxy import is_pydantic_available, BaseModel
+from .pydantic_proxy import reconstruct_pydantic_class_string_auto
 
 if version_info.major == 3 and version_info.minor > 9:
     from types import NoneType
@@ -30,21 +31,16 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
     
     typed_value = None
     
-    if expected_type is None \
+    if expected_type is None:
+        expected_type == Any
+    
+    if  expected_type is NoneType \
         or expected_type is inspect._empty:
         typed_value = None
 
     elif expected_type in [Any]:
         
-        # Try JSON
-        if untyped_response.startswith("{"):
-            try:
-                typed_value = json.loads(untyped_response)                
-            except json.JSONDecodeError as e:
-                # Brocken JSON, keep as string
-                typed_value = untyped_response
-        else:
-            typed_value = ast.literal_eval(untyped_response)
+        typed_value = ast.literal_eval(untyped_response)
 
     elif expected_type is str:
         typed_value = untyped_response.strip("'").strip("\"")
@@ -64,7 +60,8 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             item_type = args[0] if args else Any
             typed_value = eval(untyped_response, {origin.__name__: origin}, {})
             assert typed_value is None or isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
-            typed_value = origin([type_returned_data(repr(item), item_type) for item in typed_value])
+            if typed_value is not None:
+                typed_value = origin([type_returned_data(repr(item), item_type) for item in typed_value])
         elif origin is tuple:
             # Tuple
             item_types = args if args else (Any,)
@@ -90,8 +87,12 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
         
         else:
             # Unsupported typing type
-            raise TypeError(f"Unsupported typing type: {expected_type}") 
-    elif issubclass(expected_type, Enum):
+            try:
+                typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+            except Exception as e:
+                raise TypeError(f"Cannot convert response to type {expected_type}. use print_last_prompt to debug.") from e
+        
+    elif isinstance(expected_type, type) and issubclass(expected_type, Enum):
         selected_value = untyped_response.strip("'").strip("\"")
         if selected_value.startswith(f"{expected_type.__name__}."):
             # LLM returned the enum member name
@@ -109,7 +110,7 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
     elif is_dataclass(expected_type):
         typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
         
-    elif is_pydantic_available and issubclass(expected_type, BaseModel):
+    elif is_pydantic_available and isinstance(expected_type, type) and issubclass(expected_type, BaseModel):
         if untyped_response.startswith("{"):
             dict_typed_value = None
             # Assume native python:
@@ -133,7 +134,13 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
         else:
             raise TypeError(f"Cannot convert response to pydantic model {expected_type.__name__}. use print_last_prompt to debug.")
-
+    else:
+        # try python eval
+        try:
+            typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+        except Exception as e:
+            raise TypeError(f"Cannot convert response to type {expected_type}. use print_last_prompt to debug.") from e
+        
     return typed_value
 
 BASIC_TYPES = [
@@ -146,7 +153,7 @@ def describe_type_as_schema(arg_type):
     Describe a Python type as a JSON schema.
     """
     # Check if arg_type is pydantic model
-    if is_pydantic_available and issubclass(arg_type, BaseModel):
+    if is_pydantic_available and isinstance(arg_type, type) and issubclass(arg_type, BaseModel):
         response = arg_type.model_json_schema()
     elif arg_type in BASIC_TYPES:
         response = build_types_as_json_schema(arg_type)
@@ -171,8 +178,10 @@ def describe_type_as_python(arg_type):
             arg_type == type:
         # Check if the type is a basic type or a typing alias
         type_definition = nice_type_name(arg_type)
-    elif pil_available and issubclass(arg_type, PILImageType):
+    elif pil_available and isinstance(arg_type, type) and issubclass(arg_type, PILImageType):
         pass
+    elif is_pydantic_available and isinstance(arg_type, type) and issubclass(arg_type, BaseModel):
+        type_definition = f"# Pydantic model {arg_type.__name__} definition.\n" + reconstruct_pydantic_class_string_auto(arg_type)
     elif issubclass(arg_type, Enum):
         type_definition = textwrap.dedent(f"""\
             # Python enum {arg_type.__name__} definition.
@@ -274,7 +283,8 @@ def build_typing_as_json_schema(arg_type):
         else:
             return {}
 
-    raise TypeError(f"Type '{arg_type}' is not supported.")
+    else:
+        return {"type": "object"}
 
 
 def build_types_as_json_schema(arg_type):

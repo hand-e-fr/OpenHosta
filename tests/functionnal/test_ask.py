@@ -16,6 +16,7 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_ask.py
 
+
 from OpenHosta import ask
 
 # Basic test to check if the ask function works with a simple prompt
@@ -25,6 +26,10 @@ def test_ask_basic():
     
 def test_ask_math():
     response = ask("What is 2 + 2?")
+    assert "4" in response, f"Expected '4' in response, got: {response}"
+
+def test_ask_math_with_arg():
+    response = ask("solve this equation", "2 + 2")
     assert "4" in response, f"Expected '4' in response, got: {response}"
     
 def test_ask_routing():

@@ -128,3 +128,53 @@ document_subject("The document is about the history of science and technology.")
 get_enum_logprobes(function_pointer=document_subject)
 
 document_subject("The first part is about the history of medical science. The second part is more specifically about the development of vaccines and their impact on public health")
+
+
+
+#------------------------------------
+
+import math
+
+# The idea would be to make a decorator
+
+# Not yet supported by ollama, supported by gpt-4o and gpt-4.1
+def as_probabilistic(function_pointer=None, inspection=None):
+    
+    if inspection is None and function_pointer is not None:
+        if not hasattr(function_pointer, "hosta_inspection"):
+            raise ValueError("Function pointer does not have hosta_inspection attribute. Did you call this function at least once?")
+        inspection = function_pointer.hosta_inspection 
+    elif inspection is not None:
+        pass
+    else:
+        raise ValueError("Either function_pointer or inspection must be provided")
+
+    response_dict = inspection["logs"]["llm_api_response"]
+    return_type = inspection["analyse"]["type"]
+    
+    logp_sequence = response_dict["choices"][0]["logprobs"]["content"]
+    if len(logp_sequence) <= 0:
+        print(f"Warning: not enough logprobs ({len(logp_sequence)})")
+        return {}
+    if logp_sequence[0]['token'] in ["'", '"']:
+        logp_list = logp_sequence[1]
+    else:
+        logp_list = logp_sequence[0]
+    
+    assert issubclass(return_type, Enum), "Return type is not an Enum"
+    
+    # TODO: make it recursive to handle multiple tokens per enum value
+    logprobes = {}
+    token_list = [l["token"] for l in logp_list['top_logprobs']]
+    for v in list(return_type):
+        logprobes[v] = min([math.exp(x['logprob']) for x in logp_list['top_logprobs']])*1.1
+        max_match_length = 0
+        
+        # Find the longest token that matches the start of the enum value
+        for pos, token in enumerate(token_list):
+            if (str(v.value).startswith(token) or v.name.startswith(token)) and len(token) > max_match_length:
+                # print(f"Found match for {v} with token '{token}' (len {len(token)})")
+                max_match_length = len(token)
+                logprobes[v] = math.exp(logp_list['top_logprobs'][pos]['logprob'])
+        # print(f"Final logprob for {v} is {logprobes[v]}")
+    return logprobes

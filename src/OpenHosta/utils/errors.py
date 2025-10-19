@@ -20,6 +20,8 @@ class OhErrorMixin(Exception):
 class RequestError(OhErrorMixin):
     """ Raised when a request to a llm went wrong """
 
+class RateLimitError(RequestError):
+    """ Raised when rate limit is exceeded """
 
 class ApiKeyError(RequestError):
     """ Raised when API key is missing or incorrect """

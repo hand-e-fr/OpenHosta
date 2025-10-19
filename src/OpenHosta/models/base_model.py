@@ -30,6 +30,8 @@ class Model:
         
         self.additionnal_headers = additionnal_headers
         self.api_parameters = api_parameters
+        
+        self.preferred_image_format = "png"
 
     def __exit__(self):
         if self.async_executor is not None:
