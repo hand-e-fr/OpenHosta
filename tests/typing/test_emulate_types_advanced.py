@@ -60,13 +60,16 @@ class TestTypes:
         assert type(response) == list
         assert type(response[0]) == int
         
-        def return_int_list(a: List[int]) -> List[float]:
+        def return_float_list(a: List[int]) -> List[float]:
             """
-            This function returns a list of integers
+            This function returns a list of floats
             """
             return emulate()
-        
-        assert return_int_list([1.0, 2, 3])[0] == float        
+
+        response = return_float_list([1, 2, 3])
+        assert type(response) == list
+        assert type(response[0]) == float
+
 
     def test_TypingTuple(self):
         def return_mixed_tuple(a: Tuple[int, str]) -> Tuple[int, str]:
@@ -153,9 +156,9 @@ class TestTypes:
             This function returns a named tuple
             """
             return emulate()
-        
-        with pytest.raises(ValueError):
-            return_named_tuple(TestNamedTuple("John", 30))
+
+        result = return_named_tuple(TestNamedTuple("John", 30))
+        assert type(result) == tuple or type(result) == TestNamedTuple
 
     def test_TypingTypedDict(self):
         class TestTypedDict(TypedDict):
@@ -168,7 +171,9 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_typed_dict({"name": "John", "age": 30})) == dict
+        response = return_typed_dict({"name": "John", "age": 30})
+        
+        assert type(response) == dict
 
     def test_TypingAny(self):
         def return_any(a: Any) -> Any:

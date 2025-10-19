@@ -26,7 +26,7 @@ class Config:
         
     # Add getter and setter for DefaultModel and DefaultPipeline
     @property
-    def DefaultModel(self) -> Model:
+    def DefaultModel(self) -> OpenAICompatibleModel:
         return self._DefaultModel
 
     @property

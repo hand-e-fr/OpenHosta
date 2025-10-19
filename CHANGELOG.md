@@ -2,6 +2,20 @@
 
 All significant changes to this project will be documented in this file.
 
+## **V3.0.0 - 2024-10**
+
+- **Breaking Changes**
+  - Minor interface changes in `ask` and `emulate` functions parameters.
+  
+- **Features**
+  - Added support for image generation models.
+  - Improved function inspection and default prompt that allows small models <4B to be compatible with OpenHosta.
+  - Add `test()` function that always return a `boolean` and accept image parameters for image models.
+  - It is now possible to have a fully reproducible `emulate` call by setting the seed in the .env file or in the `OpenAICompatibleModel` parameters.
+  - Global improvements in order to answer to Inria audit. 
+
+> Changelog is now maintained in the GitHub Releases section.
+
 ---
 ## **v2.2.2**
 - **Fixes**

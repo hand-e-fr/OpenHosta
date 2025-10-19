@@ -70,15 +70,27 @@ class OneTurnConversationPipeline(Pipeline):
     """
 
     def __init__(self, 
-                 model_list:List[Model]=None):
+                 model_list:List[Model]=None,
+                 emulate_meta_prompt:MetaPrompt=None,
+                 user_call_meta_prompt:MetaPrompt=None):
         
         assert len(model_list) > 0, "You shall provide at least one model."
 
         super().__init__()
+        
+        self.image_size_limit = 1600  # pixels
 
-        self.model_list:List[Model] = model_list     
-        self.emulate_meta_prompt = EMULATE_META_PROMPT.copy()
-        self.user_call_meta_prompt = USER_CALL_META_PROMPT.copy()
+        self.model_list:List[Model] = model_list
+        
+        if emulate_meta_prompt is not None:
+            self.emulate_meta_prompt = emulate_meta_prompt
+        else:
+            self.emulate_meta_prompt = EMULATE_META_PROMPT.copy()
+            
+        if user_call_meta_prompt is not None:
+            self.user_call_meta_prompt = user_call_meta_prompt
+        else:
+            self.user_call_meta_prompt = USER_CALL_META_PROMPT.copy()
 
     def push_detect_missing_types(self, inspection):
         """Python Level"""
@@ -119,13 +131,18 @@ class OneTurnConversationPipeline(Pipeline):
         """Prompt Level""" 
         
         try:
-
             # Find all images in args
-            import PIL
+            import PIL.Image
+            pil_is_loaded = True
+        except:
+            image_list = []
+            pil_is_loaded = False
+                        
+        if pil_is_loaded:
             import base64
             import io
-            img_format = "png"
-            size_limit = 1600.0
+            img_format = self.model_list[0].preferred_image_format if self.model_list[0].preferred_image_format else "png"
+            size_limit = float(self.image_size_limit)
 
             image_list = []
             for arg in inspection["analyse"]["args"]:
@@ -144,8 +161,7 @@ class OneTurnConversationPipeline(Pipeline):
                     image_resized.save(buffered, img_format)
                     img_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
                     image_list.append(f"data:image/{img_format};base64,{img_string}")
-        except:
-            image_list = []
+
 
         default_meta_conversation:MetaDialog = [
             ('system',self.emulate_meta_prompt, None),
@@ -165,6 +181,9 @@ class OneTurnConversationPipeline(Pipeline):
 
         # This is after push_select_meta_prompts because we may have changed arg values (eg: resized images)
         encoded_data   = self.push_encode_inspected_data(inspection, inspection["model"].capabilities)
+
+        inspection["data_for_metaprompt"] = encoded_data
+        inspection["meta_prompts"] = meta_messages
 
         messages = []
         
@@ -204,25 +223,18 @@ class OneTurnConversationPipeline(Pipeline):
         
         # Check if encapsulated in code block
         if response_string.endswith("```"):
-            chuncks = response_string.split("```")
-            response_string = chuncks[-2].strip()
+            response_lines = response_string.split("\n")
+            section_pos = [i for i,v in enumerate(response_lines) if v.startswith("```")]
+            chunk = response_lines[(section_pos[-2]+1):section_pos[-1]]
             # Remove chunk language and parameters
-            response_string = "\n".join(response_string.split("\n")[1:])
+            response_string = "\n".join(chunk)
 
+        inspection["logs"]["clean_answer"] += response_string
+        
         return response_string.strip()
 
     def pull_type_data_section(self, inspection, response:Any) -> Any:
         """Python Level"""
-        l_ret_data = None
-            
-        # Check if JSON object
-        if "{" in response and "}" in response:
-            chunk_lines = response.split("\n")
-            # find first line with { and last line with }
-            start_line = next(i for i, line in enumerate(chunk_lines) if "{" in line)
-            end_line = len(chunk_lines) - next(i for i, line in enumerate(reversed(chunk_lines)) if "}" in line) - 1
-            response = "\n".join(chunk_lines[start_line:end_line + 1])
-
         l_ret_data = type_returned_data(response, inspection["analyse"]["type"])
 
         return l_ret_data
@@ -230,6 +242,7 @@ class OneTurnConversationPipeline(Pipeline):
     def pull(self, inspection, response_dict ):
         inspection["logs"]["rational"] = ""
         inspection["logs"]["answer"] = ""
+        inspection["logs"]["clean_answer"] = ""
         
         inspection["logs"]["llm_api_response"] = response_dict
         
