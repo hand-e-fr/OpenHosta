@@ -5,6 +5,7 @@ import json
 import textwrap
 import ast
 import typing
+import types
 
 from typing import Any
 from dataclasses import is_dataclass
@@ -34,6 +35,18 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
     if expected_type is None:
         expected_type == Any
     
+    if untyped_response == "None":
+        # Check if None is acceptable
+        if typing.get_origin(expected_type) in [typing.Union, types.UnionType]:
+            args = typing.get_args(expected_type)
+            if NoneType in args:
+                return None
+
+        elif expected_type in [Any, type(None)]:
+            return None
+
+        raise ValueError(f"The LLM return is None. If None is acceptable for your application, add -> {expected_type} | None to ")
+                
     if  expected_type is NoneType \
         or expected_type is inspect._empty:
         typed_value = None
@@ -84,7 +97,10 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             typed_value = eval(untyped_response, {origin.__name__: origin}, {})
             assert isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
             typed_value = {type_returned_data(repr(k), key_type): type_returned_data(repr(v), value_type) for k, v in typed_value.items()}
-        
+        elif origin in [typing.Union, types.UnionType]:
+            typed_value = eval(untyped_response, {}, {})
+            args_types = [typing.get_origin(a) for a in args] + list(args)
+            assert type(typed_value) in args_types, f"Expected type in {args_types}, got {type(typed_value)}"
         else:
             # Unsupported typing type
             try:
@@ -182,7 +198,7 @@ def describe_type_as_python(arg_type):
         pass
     elif is_pydantic_available and isinstance(arg_type, type) and issubclass(arg_type, BaseModel):
         type_definition = f"# Pydantic model {arg_type.__name__} definition.\n" + reconstruct_pydantic_class_string_auto(arg_type)
-    elif issubclass(arg_type, Enum):
+    elif isinstance(arg_type, type) and issubclass(arg_type, Enum):
         type_definition = textwrap.dedent(f"""\
             # Python enum {arg_type.__name__} definition.
             # When you return a {arg_type.__name__}, print the enum member value as a string. I will identify the corresponding enum member.
