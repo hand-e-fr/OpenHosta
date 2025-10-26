@@ -46,6 +46,7 @@ def closure_async(
         # Get everything about the function you are emulating
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
+        setattr(inner_func_pointer, "hosta_inspection", inspection)
 
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
@@ -86,6 +87,7 @@ def closure(
         # Get everything about the function you are emulating
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
+        setattr(inner_func_pointer, "hosta_inspection", inspection)
 
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
