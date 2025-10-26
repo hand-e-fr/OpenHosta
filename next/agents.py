@@ -27,6 +27,16 @@
 ###         return emulate()
 
 
+
+##### TODO:
+# AgentList object to manage multiple agents
+# Agent.clear() to clear memory
+# Agent.save() to save memory to disk
+# Agent.load() to load memory from disk
+# Agent.internal_thinking_logs = [...] to store internal thoughts
+# Agent.working_documents = [...] to store working documents
+# Agent.chat_history = [...] to store chat history with other agents or users
+
 # For agents we need local scope to be passed to the LLM
 ret_dict = {
     "local_1": 42,
