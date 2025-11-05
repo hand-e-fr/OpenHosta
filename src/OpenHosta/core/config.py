@@ -37,9 +37,11 @@ class Config:
     def DefaultModel(self, model: OpenAICompatibleModel):
         if not isinstance(model, OpenAICompatibleModel):
             raise ValueError("DefaultModel must be an instance of OpenAICompatibleModel")
-        self._DefaultModel.api_parameters = model.api_parameters
-        self._DefaultModel.model_name = model.model_name
-        self._DefaultModel.base_url = model.base_url
+        
+        # copy each attribute to avoid reference issues
+        for name, value in vars(model).items():
+            if  name[0] != '_':  # avoid copying private attributes
+                setattr(self._DefaultModel, name, value)
 
     @DefaultPipeline.setter
     def DefaultPipeline(self, pipeline: OneTurnConversationPipeline):

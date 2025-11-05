@@ -70,7 +70,7 @@ class TestMultiModal:
              'ILUCHIENBLOUPE',
              'POULESOURSONTL',
              'PIRATECMUILOLM', 
-             'CULBUTOIOPOINTS'
+             'CULBUTOIOPINTS'
             ]
         
         MAX_MISMATCHES = 1
@@ -80,6 +80,7 @@ class TestMultiModal:
             Convert an image of a character grid into a list of strings.
             Each string represents a row of characters.
             Rows does not have meaning. Just extract the characters as they are in the image.
+            All rows shall have the same length.
             
             Arguments:
                 image (PIL.Image.Image): The input image containing the character grid.
@@ -106,9 +107,10 @@ class TestMultiModal:
             if expected_line == lines[i]:
                 count_ok_lines += 1
             else:
-                missmatch_info = f" (expected: '{expected_line}' got: '{lines[i]}')\n"
+                missmatch_info += f" (expected: '{expected_line}' got: '{lines[i]}')\n"
 
-        assert count_ok_lines >= len(expected_lines) - MAX_MISMATCHES , f"Too many mismatches in extracted lines{missmatch_info}"
+        min_expected_lines = len(expected_lines) - MAX_MISMATCHES
+        assert count_ok_lines >= min_expected_lines, f"Too many mismatches in extracted lines{missmatch_info}"
 
     def test_AskWithImageAndText(self):
                 
