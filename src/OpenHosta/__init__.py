@@ -16,6 +16,9 @@ from .core.config import reload_dotenv
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
+from .utils.uncertainty import safe, max_uncertainty
+from .utils.errors import UncertaintyError
+
 import os
 
 DefaultModel = config.DefaultModel
@@ -40,5 +43,8 @@ all = (
     "print_last_prompt",
     "print_last_decoding",
     "Pipeline",
-    "OneTurnConversationPipeline"
+    "OneTurnConversationPipeline",
+    "safe",
+    "max_uncertainty",
+    "UncertaintyError",
 )

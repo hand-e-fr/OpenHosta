@@ -36,6 +36,10 @@ def emulate(
     
     # Convert the inspection to a prompt
     messages = pipeline.push(inspection)
+    
+    # Get additional arguments for the model API call given by function decorators
+    if hasattr(inspection["function"], "force_llm_args"):
+        force_llm_args = inspection["function"].force_llm_args | force_llm_args
 
     try:
         # This is the api call to the model, nothing more. Easy to debug and test.
@@ -78,6 +82,10 @@ async def emulate_async(
     # Convert the inspection to a prompt
     messages = pipeline.push(inspection)
     
+    # Get additional arguments for the model API call given by function decorators
+    if hasattr(inspection["function"], "force_llm_args"):
+        force_llm_args = inspection["function"].force_llm_args | force_llm_args
+
     try:
         # This is the api call to the model, nothing more. Easy to debug and test.
         response_dict = await inspection["model"].api_call_async(messages, pipeline.llm_args | force_llm_args)
