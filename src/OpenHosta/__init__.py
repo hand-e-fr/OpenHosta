@@ -1,4 +1,4 @@
-__version__ = "3.0.2"
+__version__ = "3.0.3"
 
 from .core.config import config
 from .core.logger import print_last_prompt, print_last_decoding

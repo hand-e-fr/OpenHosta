@@ -28,7 +28,7 @@ class TestSemanticTests:
         assert result.startswith("Yes"), "Louis should be recognized as a name"
     
     def test_WithDatastructures(self):
-        names_1 = ["Louis", "Apple", "Marie"]
+        names_1 = ["Louis", "ever", "Marie"]
         names_2 = ["Louis", "Martin", "Marie"]
         
         if oh_test("all words are names", names_1):
