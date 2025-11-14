@@ -116,6 +116,6 @@ def update_inspection(inspection, query_string, *args, **kwargs):
     inspection["analyse"]["doc"] = query_string
     inspection["analyse"]["name"] = "lambda_function"
     inspection["analyse"]["args"]  = [{"name": f"arg_{i}", "type": type(arg), "value": arg} for i, arg in enumerate(args)]
-    inspection["analyse"]["args"] += [{"name": name,       "type": type(arg), "value": arg} for name, arg in enumerate(kwargs.values())]
+    inspection["analyse"]["args"] += [{"name": name,       "type": type(arg), "value": arg} for name, arg in kwargs.items()]
 
     return inspection
