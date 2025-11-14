@@ -103,7 +103,7 @@ EMULATE_META_PROMPT=MetaPrompt(
     Instead, imagine a realistic or reasonable output that matches the function description.
     I'll ask questions by directly writing out function calls as one would call them in Python.
     Respond with an appropriate return value{% if use_json_mode %} formatted as valid JSON{% endif %}, without adding any extra comments or explanations.
-    If the provided information isn't enough to determine a clear answer, respond simply with "None".
+    {% if return_none_allowed %}If the provided information isn't enough to determine a clear answer, respond simply with "None".{% endif %}
     If assumptions need to be made, ensure they stay realistic, align with the provided description.
 
     {% if allow_thinking %}If unable to determine a clear answer or if assumptions need to be made, 
