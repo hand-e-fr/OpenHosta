@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "OpenHosta"
-version = "3.0.2"
+version = "3.0.3"
 description = "A lightweight library integrating LLM natively into Python"
 keywords = ["AI", "GPT", "Natural language", "Autommatic", "Easy"]
 authors = [
