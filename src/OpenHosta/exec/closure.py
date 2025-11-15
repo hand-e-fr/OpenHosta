@@ -39,6 +39,7 @@ def closure_async(
     force_llm_args: Optional[dict] = {}
     ):
 
+    _force_llm_args = force_llm_args
     inner_func_pointer = None
 
     async def inner_func(*args, **kwargs) -> Any:
@@ -48,6 +49,10 @@ def closure_async(
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
         setattr(inner_func_pointer, "hosta_inspection", inspection)
 
+        # Get additional arguments for the model API call given by function decorators
+        if hasattr(inspection["function"], "force_llm_args"):
+            force_llm_args = inspection["function"].force_llm_args | _force_llm_args
+            
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
             inspection["analyse"]["type"] = force_return_type
@@ -80,6 +85,8 @@ def closure(
     force_llm_args: Optional[dict] = {}
     ):
     
+    _force_llm_args = force_llm_args
+    
     inner_func_pointer = None
     
     def inner_func(*args, **kwargs) -> Any:
@@ -89,6 +96,10 @@ def closure(
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
         setattr(inner_func_pointer, "hosta_inspection", inspection)
 
+        # Get additional arguments for the model API call given by function decorators
+        if hasattr(inspection["function"], "force_llm_args"):
+            force_llm_args = inspection["function"].force_llm_args | _force_llm_args
+            
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
             inspection["analyse"]["type"] = force_return_type
