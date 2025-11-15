@@ -149,7 +149,14 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
         
     return logprobes
 
-def max_uncertainty(threshold:float=0.8):
+def max_uncertainty(threshold:float=None, acceptable_log_uncertainty:float=None):
+
+    if acceptable_log_uncertainty is not None:
+        _threshold = math.pow(10, acceptable_log_uncertainty)
+    elif threshold is not None:
+        _threshold = threshold
+    else:
+        _threshold = 0.1
 
     def configuration_decorator(function_pointer):
         
@@ -160,10 +167,7 @@ def max_uncertainty(threshold:float=0.8):
             setattr(function_pointer, "force_llm_args", {"logprobs": True, "top_logprobs": 20})
             
             # Call the function
-            try:
-                result = function_pointer(*args, **kwargs)
-            except Exception as e:
-                print("Error during function execution:", e)
+            result = function_pointer(*args, **kwargs)
                 
             setattr(inner_func_pointer, "hosta_inspection", function_pointer.hosta_inspection)
 
@@ -173,7 +177,7 @@ def max_uncertainty(threshold:float=0.8):
             normalized_probability = normalized_probs(logprobes)  
             function_pointer.hosta_inspection["logs"]["enum_normalized_probs"] = normalized_probability
                
-            if not has_discriminative_value(normalized_probability, threshold=threshold):
+            if not has_discriminative_value(normalized_probability, threshold=1-_threshold):
                 raise UncertaintyError(f"The model did not return a discriminative value for the enum return type. Risk of hallucination. Selected value probabilities: {normalized_probability}, required threshold: {threshold}")
 
             return result
@@ -188,15 +192,28 @@ class ReproducibleSettings:
     def __init__(self, reproducible: bool = False, acceptable_log_uncertainty: float = -2, seed: int = 42):
         self.reproducible = reproducible
         self.acceptable_log_uncertainty = acceptable_log_uncertainty
-        self.selected_path_certainty = 1.0
+        self.cumulated_uncertainty = 0.0
         self.seed = seed
         self.contextvar = None
         self.trace = []
+        
+class ReproducibleContextManager:
+    def __init__(self, settings: ReproducibleSettings):
+        self.settings = settings
 
-def safe(acceptable_log_uncertainty: float = -2, seed: int = 42):
+    def __enter__(self):
+        self.token = self.settings.contextvar.set(self.settings)
 
-    settings = ReproducibleSettings(reproducible=True, acceptable_log_uncertainty=acceptable_log_uncertainty, seed=seed)
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.settings.contextvar.reset(self.token)
+        
+
+def safe(acceptable_cumulated_log_uncertainty: float = -2, seed: int = 42):
+
+    settings = ReproducibleSettings(reproducible=True, acceptable_log_uncertainty=acceptable_cumulated_log_uncertainty, seed=seed)
     reproducible_settings = contextvars.ContextVar("reproducible_settings", default=settings)
     settings.contextvar = reproducible_settings
+    
+    # this is the implementatiotn with a global reproducible_settings instead of contextvar?
     
     return settings
