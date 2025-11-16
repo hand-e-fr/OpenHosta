@@ -7,7 +7,7 @@ from OpenHosta import emulate, closure
 from OpenHosta import max_uncertainty, UncertaintyError
 from OpenHosta import safe
 
-from OpenHosta import print_last_prompt, print_last_uncertainty
+from OpenHosta import print_last_prompt, print_last_uncertainty, print_last_probability_distribution
 
 
 from enum import Enum, auto
@@ -46,19 +46,25 @@ def test_safe_emulate_success():
         GIT_PUSH = "git push"
         GIT_COMMIT = "git commit"
         GIT_STATUS = "git status"
-        GIT_PULL = "git pull"
         GIT_FETCH = "git fetch"
+        GIT_PULL = "git pull"
+        OTHER = "other"
     
     @max_uncertainty(threshold=0.1)    
     def get_next_step(command: str) -> NextStep:
         """
         This function returns the next step after a git command.
         """
-        return emulate()
+        return emulate(force_llm_args={"reasoning_effort": "low"})
 
     next_step = get_next_step("git commit -m 'Initial commit'")
+    #next_step = get_next_step("je cherche un café")
+
+    #print_last_prompt(get_next_step)
 
     assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+
+    print_last_probability_distribution(get_next_step)    
     
     assert get_next_step.hosta_inspection["logs"]["enum_normalized_probs"][NextStep.GIT_PUSH] > 0.9, \
         f"Expected high confidence for 'git push', got: {get_next_step.hosta_inspection['logs']['enum_normalized_probs']}"
