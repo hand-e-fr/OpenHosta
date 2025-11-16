@@ -23,6 +23,17 @@ def print_last_decoding(function_pointer:Callable):
     else:
         print("No prompt found for this function.")
 
+def print_last_probability_distribution(function_pointer):
+    """
+    Print the last probability distribution log when using function `function_pointer`.
+    """
+    if hasattr(function_pointer, "hosta_inspection") and \
+        "enum_normalized_probs" in function_pointer.hosta_inspection["logs"]:
+        nomalized_probs = function_pointer.hosta_inspection["logs"]["enum_normalized_probs"]
+
+        for k,v in nomalized_probs.items():
+            print(f"Value: {k:<10}, Probability: {v:.4f}")
+
 def print_last_uncertainty(function_pointer):
     """
     Print the last uncertainty log when using function `function_pointer`.
@@ -32,7 +43,7 @@ def print_last_uncertainty(function_pointer):
         nomalized_probs = function_pointer.hosta_inspection["logs"]["enum_normalized_probs"]
 
         for k,v in nomalized_probs.items():
-            print(f"Value: {k:<10}, Probability: {v}")
+            print(f"Value: {k:<10}, Uncertainty: {1-v}")
             
     else:
         print("No uncertainty logs found.")

@@ -125,7 +125,18 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
     if len(logp_list) <= 0:
         print(f"Warning: not enough logprobs ({len(logp_list)})")
         return {}
-
+    
+    # vllm fix: jump to <|message|> token
+    if "<|message|>" in [t['token'] for t in logp_list]:
+        last_message_index = max(i for i,t in enumerate(logp_list) if t['token'] == "<|message|>")
+        logp_list = logp_list[last_message_index+1:]
+    if "<|return|>" in [t['token'] for t in logp_list]:
+        first_return_index = min(i for i,t in enumerate(logp_list) if t['token'] == "<|return|>")
+        logp_list = logp_list[:first_return_index]
+    if "<|im_end|>" in [t['token'] for t in logp_list]:
+        first_imend_index = min(i for i,t in enumerate(logp_list) if t['token'] == "<|im_end|>")
+        logp_list = logp_list[:first_imend_index]
+        
     possible_outcomes = [(
         str(v.value),
         f'"{v.value}"', 
@@ -142,10 +153,13 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
     prior_prob_list = {}
     previouse_string = ""
     for prediction in logp_list:
-        #print(f"Stepping through prediction token: '{prediction['token']}'")
         logprobes = posterior_probability(prediction, possible_outcomes, prior_prob_list=prior_prob_list, previouse_string=previouse_string)
+        #print(f"Logprobes after token '{prediction['token']}': {logprobes}")
         prior_prob_list = {k: math.exp(v) for k,v in logprobes.items()}
         previouse_string += prediction['token']
+    
+    if all([previouse_string not in v for v in possible_outcomes]):
+        raise UncertaintyError(f"The generated string '{previouse_string}' does not match any of the possible enum outcomes. Risk of hallucination.")
         
     return logprobes
 

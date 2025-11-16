@@ -249,8 +249,12 @@ class OneTurnConversationPipeline(Pipeline):
         raw_response = self.pull_extract_messages(inspection, response_dict)
         
         if 'reasoning' in response_dict.get("choices",[{}])[0].get("message", {}):
-            inspection["logs"]["rational"] += response_dict["choices"][0]["message"]["reasoning"]
-        
+            inspection["logs"]["rational"] += str(response_dict["choices"][0]["message"]["reasoning"])
+
+        # This is for gpt-oss-20b on vllm 0.11            
+        if 'reasoning_content' in response_dict.get("choices",[{}])[0].get("message", {}):
+            inspection["logs"]["rational"] += str(response_dict["choices"][0]["message"]["reasoning_content"])
+           
         response_string = self.pull_extract_data_section(inspection, raw_response)
         inspection["logs"]["response_string"] = response_string
         
