@@ -56,7 +56,7 @@ from OpenHosta import max_uncertainty, print_last_probability_distribution, prin
 from OpenHosta import MetaPrompt, OneTurnConversationPipeline, config
 
 
-def BestDate(assertion:str)->str:
+def BestDate(assertion:str)->int:
     """
     This function return the best year for a given assertion.
     """
@@ -81,6 +81,11 @@ def prod(lst):
 def possible_aswers_count(function_pointer) -> int:
     return prod([len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]) for i,x in enumerate(function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]) if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )])
 
+def get_uncertainty(function_pointer) -> float:
+    p0 = 1
+    p1 = prod([len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]) for i,x in enumerate(function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]) if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )])
+    return  1 - p0 / p1
+
 def print_path(function_pointer):
     print([(" ".join([y['token'] for y in x['top_logprobs'] if y['logprob']  > -11 ]), x["logprob"], len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]), min(y['logprob'] for y in x['top_logprobs'])) for i,x in enumerate(function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]) if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )  ])
 
@@ -90,12 +95,50 @@ answer = BestDate("Emmanuel BATT's birth year")
 answer = BestDate("The fall of the Berlin Wall")
 answer = BestDate("l'année ne naissance du christ")
 p0 = possible_aswers_count(BestDate)
+p0 
 
 print_path(BestDate)
 
 answer = BestDate(None)
 p1 = possible_aswers_count(BestDate)
 
+print_path(BestDate)
+
 import math
-uncertainty = min(1, 1 - ((p1 - p0 + 1) / p1))
-print(f"Estimated log uncertainty: {math.log(uncertainty):04f} (p0={p0}, p1={p1})")
+uncertainty = min(math.exp(-1e-11), 1 - ((p1 - p0 + 1) / p1))
+print(f"Estimated uncertainty: {uncertainty:04f}. Logprob of beeing corect: {math.log(1-uncertainty)} (p0={p0}, p1={p1})")
+
+get_uncertainty(BestDate)
+# In only one prompt 1/1 = 1
+
+BestDate("un siècle après -58 ")
+print_path(BestDate)
+
+def president_name(country:str, year:int)->str:
+    """
+    Return the name of the president
+    """
+    return emulate(force_llm_args={"logprobs":True, "top_logprobs":20})
+
+
+president_name("lichtenstein", 1956)
+get_uncertainty(president_name)
+print_path(president_name)
+
+
+def first_sentence_of(subject:str)->str:
+    """
+    Return the first sentence of a writing on the subject
+    """
+    return emulate(force_llm_args={"logprobs":True, "top_logprobs":20})
+
+
+first_sentence_of("la belle au bois dormant")
+possible_aswers_count(first_sentence_of)
+first_sentence_of(None)
+possible_aswers_count(first_sentence_of)
+get_uncertainty(first_sentence_of)
+print_path(first_sentence_of)
+
+# Il faut pondérer par proba de chaque route pour négligrer les faibles branches.
+# proba des chemins qui match la réponse vs les chemins envisagés
