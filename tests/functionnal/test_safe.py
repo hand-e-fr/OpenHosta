@@ -55,7 +55,7 @@ def test_safe_emulate_success():
         """
         This function returns the next step after a git command.
         """
-        return emulate(force_llm_args={"reasoning_effort": "low"})
+        return emulate()
 
     next_step = get_next_step("git commit -m 'Initial commit'")
     #next_step = get_next_step("je cherche un café")
