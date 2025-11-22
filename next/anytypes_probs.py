@@ -13,7 +13,7 @@
 from OpenHosta import emulate, max_uncertainty, print_last_uncertainty
 
 
-@max_uncertainty(threshold=0.9)
+# @max_uncertainty(threshold=0.9)
 def name_of_president(country:str, year:int)->str:
     """
     Returns the name of the president of the given country.
@@ -36,8 +36,6 @@ answer = name_of_president("France", 2021)
 # ! We need to decide how to separate tokens that are assumed to be acceptable path. We use Enthropy thresholding for that:
 #  - Tokens with probability higher than (1 / number_of_possible_answers) are considered acceptable.
 # log(1/150000) = -11.92 
-
-[(x["token"], x["logprob"], len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]), min(y['logprob'] for y in x['top_logprobs'])) for x in get_next_step.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]]
     
 print_last_uncertainty(name_of_president)
 
@@ -52,10 +50,127 @@ print_last_uncertainty(name_of_president)
 
 
 from OpenHosta import max_uncertainty, print_last_probability_distribution, print_last_prompt
+from OpenHosta.utils.uncertainty import get_enum_logprobes, normalized_probs, has_discriminative_value, UncertaintyError
 
-from OpenHosta import MetaPrompt, OneTurnConversationPipeline, config
+from OpenHosta import config
+config.DefaultModel.model_name
 
+import math
 
+def get_certainty(function_pointer, vocabulary_sie=150000) -> float:
+    """
+    Calculates an uncertainty score based on the branching factor of log probabilities
+    in the LLM response.
+    
+    The score represents 1 - (1 / total_likely_paths).
+    """
+    # 1. Extract the nested data source safely
+    # This replaces: function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
+    try:
+        response_logprobs = function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
+    except (KeyError, IndexError, AttributeError):
+        # Handle cases where data is missing
+        return 0.0
+
+    selected_proportion = 1
+    above_random_branches = 1
+
+    # 2. Iterate through tokens to calculate branching options
+    for i, token_data in enumerate(response_logprobs):
+        token_text = token_data.get("token", "")
+        
+        # Condition: Skip the first token if it starts with a quote (' or ")
+        # Original: if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )
+        is_start_quote = (i == 0) and (token_text.startswith("'") or token_text.startswith('"'))
+        
+        if is_start_quote:
+            continue
+
+        # 3. Count "likely" alternatives for this token
+        # Original: len([y['logprob'] for y in x['top_logprobs'] if y['logprob'] > -11 ])
+        top_logprobs = token_data.get("top_logprobs", [])
+        
+        # Filter for probabilities greater than random (uniform distrubution over vocabulary size)
+        likely_alternatives = [
+            p for p in top_logprobs 
+            if p.get('logprob', -float('inf')) > math.log(1/vocabulary_sie)
+        ]
+        
+        above_random_branches *= len(likely_alternatives) 
+        
+        valid_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives if token_text.startswith(t['token']))
+        total_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives)
+        
+        if total_mass == 0:
+            step_probability = 1
+        else:
+            step_probability = valid_mass / total_mass 
+        
+        # We ignore other brnaches that could have lead to the same meaning.
+        # Ideally we should considere them as valid as the uncertainty is on knwoledge and not on format
+        selected_proportion *= step_probability
+        
+    return selected_proportion, above_random_branches   
+
+def max_uncertainty_any(threshold:float=None, acceptable_log_uncertainty:float=None):
+
+    if acceptable_log_uncertainty is not None:
+        _threshold = math.pow(10, acceptable_log_uncertainty)
+    elif threshold is not None:
+        _threshold = threshold
+    else:
+        _threshold = 0.1
+
+    def configuration_decorator(function_pointer):
+        
+        inner_func_pointer = None
+        
+        def wrapper(*args, **kwargs):
+            
+            setattr(function_pointer, "force_llm_args", {"logprobs": True, "top_logprobs": 20})
+            
+            # Call the function
+            result = function_pointer(*args, **kwargs)
+                
+            setattr(inner_func_pointer, "hosta_inspection", function_pointer.hosta_inspection)
+            
+            selected_answer_certainty, above_random_branches = get_certainty(function_pointer)
+            
+            function_pointer.hosta_inspection["logs"]["enum_normalized_probs"] = {
+                "unique_answer":selected_answer_certainty, 
+                "multiple_answers":1-selected_answer_certainty, 
+                }
+            
+            certainty = (selected_answer_certainty * above_random_branches ) / ( above_random_branches ) if above_random_branches > 0 else 1
+            uncertainty = 1 - certainty
+
+            print(f"Selected value probabilities: {selected_answer_certainty}, \n \
+                    Uncertainty: {uncertainty} \n \
+                    Required threshold: { 1 - _threshold}. \n \
+                    - unique_answer probability: {selected_answer_certainty} \n \
+                    - multiple_answers probability:{1-selected_answer_certainty} \n \
+                    Above random answers: {above_random_branches} \n \
+                    Estimates aswers: {1 + above_random_branches * (1-selected_answer_certainty):02f}")
+
+               
+            if uncertainty > _threshold:
+                raise UncertaintyError(
+                    f"The model did not return a discriminative value for the enum return type. Risk of hallucination.\n \
+                    Selected value probabilities: {selected_answer_certainty}, \n \
+                    Uncertainty: {uncertainty} \n \
+                    Required threshold: { 1 - _threshold}. \n \
+                    Above random answers: {above_random_branches} \n \
+                    Estimates aswers: {1 + above_random_branches * (1-selected_answer_certainty):02f}")
+
+            return result
+        
+        inner_func_pointer = wrapper        
+
+        return wrapper
+    
+    return configuration_decorator
+
+@max_uncertainty_any()
 def BestDate(assertion:str)->int:
     """
     This function return the best year for a given assertion.
@@ -65,54 +180,28 @@ def BestDate(assertion:str)->int:
 answer = BestDate("The fall of the Berlin Wall")
 # returns something like "1989"
 
+print_last_probability_distribution(BestDate)
+
 answer = BestDate("Emmanuel BATT's birth year")
+
+a = []
+for i in range(200):
+    a.append( BestDate("Emmanuel BATT's birth year"))
+print(len(set(a)))
+
 print(answer)
 
-[(x["token"], x["logprob"], len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]), min(y['logprob'] for y in x['top_logprobs'])) for x in BestDate.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]]
-
-BestDate.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"][0]
-
-def prod(lst):
-    result = 1
-    for x in lst:
-        result *= x
-    return result
-
-def possible_aswers_count(function_pointer) -> int:
-    return prod([len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]) for i,x in enumerate(function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]) if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )])
-
-def get_uncertainty(function_pointer) -> float:
-    p0 = 1
-    p1 = prod([len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]) for i,x in enumerate(function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]) if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )])
-    return  1 - p0 / p1
-
-def print_path(function_pointer):
-    print([(" ".join([y['token'] for y in x['top_logprobs'] if y['logprob']  > -11 ]), x["logprob"], len([y['logprob'] for y in x['top_logprobs'] if y['logprob']  > -11 ]), min(y['logprob'] for y in x['top_logprobs'])) for i,x in enumerate(function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]) if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )  ])
-
-answer = BestDate("Emmanuel BATT's birth year")
-
-
-answer = BestDate("The fall of the Berlin Wall")
 answer = BestDate("l'année ne naissance du christ")
-p0 = possible_aswers_count(BestDate)
-p0 
 
-print_path(BestDate)
+a = []
+for i in range(20):
+    a.append( BestDate("l'année ne naissance du christ"))
+print(len(set(a)))
 
-answer = BestDate(None)
-p1 = possible_aswers_count(BestDate)
-
-print_path(BestDate)
-
-import math
-uncertainty = min(math.exp(-1e-11), 1 - ((p1 - p0 + 1) / p1))
-print(f"Estimated uncertainty: {uncertainty:04f}. Logprob of beeing corect: {math.log(1-uncertainty)} (p0={p0}, p1={p1})")
-
-get_uncertainty(BestDate)
+answer = BestDate('random')
 # In only one prompt 1/1 = 1
 
 BestDate("un siècle après -58 ")
-print_path(BestDate)
 
 def president_name(country:str, year:int)->str:
     """
@@ -122,8 +211,6 @@ def president_name(country:str, year:int)->str:
 
 
 president_name("lichtenstein", 1956)
-get_uncertainty(president_name)
-print_path(president_name)
 
 
 def first_sentence_of(subject:str)->str:
@@ -134,11 +221,7 @@ def first_sentence_of(subject:str)->str:
 
 
 first_sentence_of("la belle au bois dormant")
-possible_aswers_count(first_sentence_of)
 first_sentence_of(None)
-possible_aswers_count(first_sentence_of)
-get_uncertainty(first_sentence_of)
-print_path(first_sentence_of)
 
 # Il faut pondérer par proba de chaque route pour négligrer les faibles branches.
 # proba des chemins qui match la réponse vs les chemins envisagés
