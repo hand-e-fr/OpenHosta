@@ -120,7 +120,9 @@ def max_uncertainty_any(threshold:float=None, acceptable_log_uncertainty:float=N
         _threshold = threshold
     else:
         _threshold = 0.1
-
+        
+    outer_function = None
+        
     def configuration_decorator(function_pointer):
         
         inner_func_pointer = None
@@ -132,6 +134,7 @@ def max_uncertainty_any(threshold:float=None, acceptable_log_uncertainty:float=N
             # Call the function
             result = function_pointer(*args, **kwargs)
                 
+            setattr(inner_func_pointer, "hosta_injected", function_pointer)
             setattr(inner_func_pointer, "hosta_inspection", function_pointer.hosta_inspection)
             
             selected_answer_certainty, above_random_branches = get_certainty(function_pointer)
@@ -164,9 +167,12 @@ def max_uncertainty_any(threshold:float=None, acceptable_log_uncertainty:float=N
 
             return result
         
-        inner_func_pointer = wrapper        
+        inner_func_pointer = wrapper
+        setattr(outer_function, "inner_func_pointer", inner_func_pointer)
 
         return wrapper
+    
+    outer_function = configuration_decorator
     
     return configuration_decorator
 
@@ -225,3 +231,42 @@ first_sentence_of(None)
 
 # Il faut pondérer par proba de chaque route pour négligrer les faibles branches.
 # proba des chemins qui match la réponse vs les chemins envisagés
+
+from OpenHosta import OneTurnConversationPipeline, config, MetaPrompt
+pipe = OneTurnConversationPipeline(model_list=[config.DefaultModel])
+
+pipe.user_call_meta_prompt = MetaPrompt("""
+{% if force_answer_start %}# Your answer has been truncated. This is a second attempt to complete it. Can you provide the full answer knowing that is started with {{ force_answer_start }}{% endif %}
+{% if variables_initialization %}# Values of parameters to be used
+{{ variables_initialization }}{% endif %}
+{{ function_name }}({{ function_call_arguments }})
+""")
+    
+
+@max_uncertainty_any(threshold=1)
+def question(prompt:str)->str:
+    """
+    Answer to a question
+    """
+    return emulate(pipeline=pipe)
+
+dir(question.hosta_injected)
+question.hosta_injected.force_template_data = {"force_answer_start": None}
+question.hosta_injected.force_template_data = {"force_answer_start": "'Emma"}
+
+question("qui a été élu président de la république française en 2021 ?")
+
+print_last_prompt( question )
+
+# Convert token to token id using 
+question.hosta_injected.force_llm_args = {"logit_bias": {}}
+
+question.hosta_injected.force_template_data = {"force_answer_start": None}
+question.hosta_injected.force_template_data = {"force_answer_start": '\'"p\''}
+question("propose moi une couleur au hasard")
+[(p["top_logprobs"][0]["token"], math.exp(p["top_logprobs"][0]["logprob"])) for p in question.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"] ]
+
+for v in [[(x["token"],f"{math.exp(x["logprob"]):.4f}" ) for x in sorted(p["top_logprobs"], key=lambda item: item["logprob"], reverse=True)[:10]] for p in question.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"] ]:
+    print(v)
+    
+print_last_prompt( question )

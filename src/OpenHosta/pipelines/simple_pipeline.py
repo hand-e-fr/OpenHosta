@@ -182,6 +182,10 @@ class OneTurnConversationPipeline(Pipeline):
         # This is after push_select_meta_prompts because we may have changed arg values (eg: resized images)
         encoded_data   = self.push_encode_inspected_data(inspection, inspection["model"].capabilities)
 
+        if hasattr(inspection["function"], "force_template_data"):
+            print("[OneTurnConversationPipeline] Merging force_template_data into encoded_data: ", inspection["function"].force_template_data)
+            encoded_data |= inspection["function"].force_template_data 
+        
         inspection["data_for_metaprompt"] = encoded_data
         inspection["meta_prompts"] = meta_messages
 
