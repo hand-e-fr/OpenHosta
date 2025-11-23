@@ -10,10 +10,9 @@
 # - Si Rdata est proche de Rnull, confiance proche de 0 => le LLM n'a pas su utiliser l'entrée pour éliminer des réponses possibles
 # - Si Rdata est proche de 1, confiance proche de 1 => le LLM a éliminé presque toutes les réponses possibles, il est donc très confiant.
 
-from OpenHosta import emulate, max_uncertainty, print_last_uncertainty
+from OpenHosta import emulate, max_uncertainty, print_last_prompt
 
-
-# @max_uncertainty(threshold=0.9)
+@max_uncertainty(threshold=0.9)
 def name_of_president(country:str, year:int)->str:
     """
     Returns the name of the president of the given country.
@@ -37,7 +36,7 @@ answer = name_of_president("France", 2021)
 #  - Tokens with probability higher than (1 / number_of_possible_answers) are considered acceptable.
 # log(1/150000) = -11.92 
     
-print_last_uncertainty(name_of_president)
+print_last_prompt(name_of_president)
 
 # This returns both estimations:
 # name_of_president:
@@ -46,137 +45,12 @@ print_last_uncertainty(name_of_president)
 # Uncertainty is estimated as (50 - 5 + 1) / 50 = 0.92
 # The model is pretty confident in its answer, as it has eliminated most of the possible answers
 
+from OpenHosta import max_uncertainty, print_last_prompt, print_last_uncertainty
 
-
-
-from OpenHosta import max_uncertainty, print_last_probability_distribution, print_last_prompt
-from OpenHosta.utils.uncertainty import get_enum_logprobes, normalized_probs, has_discriminative_value, UncertaintyError
-
-from OpenHosta import config
+from OpenHosta import config, emulate
 config.DefaultModel.model_name
 
-import math
-
-def get_certainty(function_pointer, vocabulary_sie=150000) -> float:
-    """
-    Calculates an uncertainty score based on the branching factor of log probabilities
-    in the LLM response.
-    
-    The score represents 1 - (1 / total_likely_paths).
-    """
-    # 1. Extract the nested data source safely
-    # This replaces: function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
-    try:
-        response_logprobs = function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
-    except (KeyError, IndexError, AttributeError):
-        # Handle cases where data is missing
-        return 0.0
-
-    selected_proportion = 1
-    above_random_branches = 1
-
-    # 2. Iterate through tokens to calculate branching options
-    for i, token_data in enumerate(response_logprobs):
-        token_text = token_data.get("token", "")
-        
-        # Condition: Skip the first token if it starts with a quote (' or ")
-        # Original: if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )
-        is_start_quote = (i == 0) and (token_text.startswith("'") or token_text.startswith('"'))
-        
-        if is_start_quote:
-            continue
-
-        # 3. Count "likely" alternatives for this token
-        # Original: len([y['logprob'] for y in x['top_logprobs'] if y['logprob'] > -11 ])
-        top_logprobs = token_data.get("top_logprobs", [])
-        
-        # Filter for probabilities greater than random (uniform distrubution over vocabulary size)
-        likely_alternatives = [
-            p for p in top_logprobs 
-            if p.get('logprob', -float('inf')) > math.log(1/vocabulary_sie)
-        ]
-        
-        above_random_branches *= len(likely_alternatives) 
-        
-        valid_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives if token_text.startswith(t['token']))
-        total_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives)
-        
-        if total_mass == 0:
-            step_probability = 1
-        else:
-            step_probability = valid_mass / total_mass 
-        
-        # We ignore other brnaches that could have lead to the same meaning.
-        # Ideally we should considere them as valid as the uncertainty is on knwoledge and not on format
-        selected_proportion *= step_probability
-        
-    return selected_proportion, above_random_branches   
-
-def max_uncertainty_any(threshold:float=None, acceptable_log_uncertainty:float=None):
-
-    if acceptable_log_uncertainty is not None:
-        _threshold = math.pow(10, acceptable_log_uncertainty)
-    elif threshold is not None:
-        _threshold = threshold
-    else:
-        _threshold = 0.1
-        
-    outer_function = None
-        
-    def configuration_decorator(function_pointer):
-        
-        inner_func_pointer = None
-        
-        def wrapper(*args, **kwargs):
-            
-            setattr(function_pointer, "force_llm_args", {"logprobs": True, "top_logprobs": 20})
-            
-            # Call the function
-            result = function_pointer(*args, **kwargs)
-                
-            setattr(inner_func_pointer, "hosta_injected", function_pointer)
-            setattr(inner_func_pointer, "hosta_inspection", function_pointer.hosta_inspection)
-            
-            selected_answer_certainty, above_random_branches = get_certainty(function_pointer)
-            
-            function_pointer.hosta_inspection["logs"]["enum_normalized_probs"] = {
-                "unique_answer":selected_answer_certainty, 
-                "multiple_answers":1-selected_answer_certainty, 
-                }
-            
-            certainty = (selected_answer_certainty * above_random_branches ) / ( above_random_branches ) if above_random_branches > 0 else 1
-            uncertainty = 1 - certainty
-
-            print(f"Selected value probabilities: {selected_answer_certainty}, \n \
-                    Uncertainty: {uncertainty} \n \
-                    Required threshold: { 1 - _threshold}. \n \
-                    - unique_answer probability: {selected_answer_certainty} \n \
-                    - multiple_answers probability:{1-selected_answer_certainty} \n \
-                    Above random answers: {above_random_branches} \n \
-                    Estimates aswers: {1 + above_random_branches * (1-selected_answer_certainty):02f}")
-
-               
-            if uncertainty > _threshold:
-                raise UncertaintyError(
-                    f"The model did not return a discriminative value for the enum return type. Risk of hallucination.\n \
-                    Selected value probabilities: {selected_answer_certainty}, \n \
-                    Uncertainty: {uncertainty} \n \
-                    Required threshold: { 1 - _threshold}. \n \
-                    Above random answers: {above_random_branches} \n \
-                    Estimates aswers: {1 + above_random_branches * (1-selected_answer_certainty):02f}")
-
-            return result
-        
-        inner_func_pointer = wrapper
-        setattr(outer_function, "inner_func_pointer", inner_func_pointer)
-
-        return wrapper
-    
-    outer_function = configuration_decorator
-    
-    return configuration_decorator
-
-@max_uncertainty_any()
+@max_uncertainty()
 def BestDate(assertion:str)->int:
     """
     This function return the best year for a given assertion.
@@ -186,26 +60,32 @@ def BestDate(assertion:str)->int:
 answer = BestDate("The fall of the Berlin Wall")
 # returns something like "1989"
 
-print_last_probability_distribution(BestDate)
+print_last_uncertainty(BestDate)
+print_last_prompt(BestDate)
 
 answer = BestDate("Emmanuel BATT's birth year")
-
-a = []
-for i in range(200):
-    a.append( BestDate("Emmanuel BATT's birth year"))
-print(len(set(a)))
-
-print(answer)
-
 answer = BestDate("l'année ne naissance du christ")
 
+from OpenHosta.utils.uncertainty import last_uncertainty
 a = []
-for i in range(20):
-    a.append( BestDate("l'année ne naissance du christ"))
+b = []
+for i in range(30):
+    #answer = BestDate("Célestine birth year")
+    answer = BestDate("l'année ne naissance du christ")
+    a.append(answer)
+    b.append(last_uncertainty(BestDate))
+
+import collections 
+collections.Counter(a)
+
 print(len(set(a)))
+print(b)
 
 answer = BestDate('random')
 # In only one prompt 1/1 = 1
+
+BestDate("le jour le plus long")
+print_last_uncertainty(BestDate)
 
 BestDate("un siècle après -58 ")
 
@@ -229,44 +109,39 @@ def first_sentence_of(subject:str)->str:
 first_sentence_of("la belle au bois dormant")
 first_sentence_of(None)
 
-# Il faut pondérer par proba de chaque route pour négligrer les faibles branches.
-# proba des chemins qui match la réponse vs les chemins envisagés
 
-from OpenHosta import OneTurnConversationPipeline, config, MetaPrompt
-pipe = OneTurnConversationPipeline(model_list=[config.DefaultModel])
-
-pipe.user_call_meta_prompt = MetaPrompt("""
-{% if force_answer_start %}# Your answer has been truncated. This is a second attempt to complete it. Can you provide the full answer knowing that is started with {{ force_answer_start }}{% endif %}
-{% if variables_initialization %}# Values of parameters to be used
-{{ variables_initialization }}{% endif %}
-{{ function_name }}({{ function_call_arguments }})
-""")
-    
-
-@max_uncertainty_any(threshold=1)
+@max_uncertainty()
 def question(prompt:str)->str:
     """
     Answer to a question
     """
-    return emulate(pipeline=pipe)
+    return emulate()
 
-dir(question.hosta_injected)
-question.hosta_injected.force_template_data = {"force_answer_start": None}
-question.hosta_injected.force_template_data = {"force_answer_start": "'Emma"}
+question("distance lune terre. donne juste la distance en km en notation scientifique avec 2 chiffre scinificatif.")
+question("distance lune terre. donne juste la distance en milliers de km.")
+print_last_uncertainty(question)
 
-question("qui a été élu président de la république française en 2021 ?")
+from dataclasses import dataclass
 
-print_last_prompt( question )
-
-# Convert token to token id using 
-question.hosta_injected.force_llm_args = {"logit_bias": {}}
-
-question.hosta_injected.force_template_data = {"force_answer_start": None}
-question.hosta_injected.force_template_data = {"force_answer_start": '\'"p\''}
-question("propose moi une couleur au hasard")
-[(p["top_logprobs"][0]["token"], math.exp(p["top_logprobs"][0]["logprob"])) for p in question.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"] ]
-
-for v in [[(x["token"],f"{math.exp(x["logprob"]):.4f}" ) for x in sorted(p["top_logprobs"], key=lambda item: item["logprob"], reverse=True)[:10]] for p in question.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"] ]:
-    print(v)
+@dataclass
+class Person:
+    name:str
+    last_name:str
     
-print_last_prompt( question )
+@max_uncertainty()
+def extract_name(snippet:str) -> Person:
+    """
+    Identify the person in a snippet of text.
+        
+    Return:
+       a Person object (str are in between ')
+    """
+    return emulate()
+
+extract_name("le gagnant des élections de 1986 est Jean-Edouard. il est le fils de Charles Dupond et a conservé le nom de famille")
+print_last_uncertainty(extract_name)
+
+import math
+i=1
+i+=1
+[(x["token"], math.exp(x["logprob"])) for x in sorted(extract_name.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"][i]["top_logprobs"], key=lambda x: -x["logprob"])[:4]]
