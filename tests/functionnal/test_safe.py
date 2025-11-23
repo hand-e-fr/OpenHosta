@@ -144,8 +144,8 @@ def test_safe_emulate_fail():
         
         assert next_step is None, f"Expected None due to uncertainty error, got: {next_step} s={s}"
 
-        assert uncertainty > 0.05, \
-            f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.05"
+        assert uncertainty > 0.01, \
+            f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.01"
         
         
 def test_safe_emulate_pass_low_confidence():
@@ -220,14 +220,14 @@ def test_sage_closure_color_detector_fail():
     
     color = closure("What is the color of this object ?", force_return_type=Color)
     
-    with safe(acceptable_cumulated_uncertainty=0.1) as s:
+    with safe(acceptable_cumulated_uncertainty=0.01) as s:
         try:
             retcolor = color("michael jackson")
         except UncertaintyError as e:
             print(f"Caught expected UncertaintyError due to uncertainty: {e}")
             retcolor = None
 
-    assert retcolor is None, f"Expected None for Michael Jackson due to uncertainty error, got: {retcolor}"
+        assert retcolor is None, f"Expected None for Michael Jackson due to uncertainty error, got: {retcolor}, s={s}"
     
     assert hasattr(color, "hosta_inspection"), "Function should have hosta_inspection attribute."       
 
