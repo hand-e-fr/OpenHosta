@@ -216,11 +216,11 @@ def test_safe_workflow_color_detector():
     ret =  IsThisInThat("the sky", "a clear day")    
     assert ret is Bool.TRUE, f"Expected TRUE for sky in clear day, got: {ret}"
     
-    ret = IsThisInThat("hand", "arm")
-    assert ret is Bool.TRUE, f"Expected TRUE for hand in arm, got: {ret}"
+    ret = IsThisInThat("finger", "hand")
+    assert ret is Bool.TRUE, f"Expected TRUE for finger in hand, got: {ret}"
     
-    ret = IsThisInThat("arm", "hand")
-    assert ret is Bool.FALSE, f"Expected FALSE for arm in hand, got: {ret}"
+    ret = IsThisInThat("hand", "finger")
+    assert ret is Bool.FALSE, f"Expected FALSE for hand in finger, got: {ret}"
 
     try:
         ret = IsThisInThat("red ball", "my hand")
