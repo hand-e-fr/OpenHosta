@@ -17,8 +17,8 @@ from .core.config import reload_dotenv
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
-from .utils.uncertainty import safe, max_uncertainty
-from .utils.errors import UncertaintyError
+from .core.uncertainty import safe
+from .core.errors import UncertaintyError
 
 import os
 
@@ -48,6 +48,5 @@ all = (
     "Pipeline",
     "OneTurnConversationPipeline",
     "safe",
-    "max_uncertainty",
     "UncertaintyError",
 )

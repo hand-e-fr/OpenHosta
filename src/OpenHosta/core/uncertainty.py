@@ -1,14 +1,16 @@
 
 import math
+import uuid
 import contextvars
 
 from typing import Dict
 from enum import Enum
 
-from .errors import ModelMissingLogprobsError
-from .errors import UncertaintyError
+from ..core.errors import ModelMissingLogprobsError
+from ..core.errors import UncertaintyError
 
-from ..core.analizer import hosta_analyze
+SAFE_CONTEXT_VAR_NAME = "reproducible_settings"
+reproducible_settings_ctxvar = contextvars.ContextVar(SAFE_CONTEXT_VAR_NAME, default={})
 
 def get_certainty(function_pointer, vocabulary_sie=200000) -> float:
     """
@@ -176,7 +178,7 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
 
     assert issubclass(return_type, Enum), f"Return type is not an Enum. Type: {return_type} is not allowed when checking uncertainty."
 
-    if "logprobs" not in response_dict["choices"][0]:
+    if "logprobs" not in response_dict["choices"][0] or not response_dict["choices"][0]["logprobs"]:
         raise ModelMissingLogprobsError("Model response does not contain logprobs. Make sure the model supports logprobs.")
     
     logp_list = response_dict["choices"][0]["logprobs"]["content"]
@@ -221,110 +223,44 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
         
     return logprobes
 
-
-def max_uncertainty(threshold:float=None, acceptable_log_uncertainty:float=None):
-
-    if acceptable_log_uncertainty is not None:
-        _threshold = math.exp(acceptable_log_uncertainty)
-    elif threshold is not None:
-        _threshold = threshold
-    else:
-        print("mx_uncertainty called with no threshold. All answers will be accepted. Use print_last_uncertainty() to see certainty.")
-        _threshold = 1
-        
-    def configuration_decorator(function_pointer):
-        
-        wrapper_function_pointer = None
-        
-        def wrapper(*args, **kwargs):
-            
-            setattr(function_pointer, "force_llm_args", {"logprobs": True, "top_logprobs": 20})
-            
-            # Call the function
-            result = function_pointer(*args, **kwargs)
-
-            # The wrapper shall look like an hosta injected function
-            setattr(wrapper_function_pointer, "hosta_injected", function_pointer)
-            for attr in dir(function_pointer):
-                if not attr.startswith("_"):
-                    # Report attr to wrapper
-                    setattr(wrapper_function_pointer, attr, getattr(function_pointer, attr))
-
-            analyse = hosta_analyze(function_pointer=function_pointer)
-            
-            if issubclass(analyse["type"], Enum):
-
-                logprobes = get_enum_logprobes(function_pointer=function_pointer)
-                function_pointer.hosta_inspection["logs"]["enum_logprobes"] = logprobes
-                    
-                normalized_probability = normalized_probs(logprobes)                  
-                uncertainty = sum([v for k,v in normalized_probability.items() if k != str(result.value)])
-
-            else:
-
-                selected_answer_certainty, above_random_branches = get_certainty(function_pointer)
-
-                certainty = selected_answer_certainty
-                uncertainty = 1 - certainty
-                
-                # Other possibles branches weighted by uncertainty
-                # The weight is used to inhibit branches that are very close to random 
-                not_generated_acceptable_answer_count = (above_random_branches - 1) * uncertainty 
-                
-                normalized_probability = {
-                    "unique_answer":selected_answer_certainty, 
-                    "multiple_answers":1-selected_answer_certainty, 
-                    }
-                
-                function_pointer.hosta_inspection["logs"]["uncertainty_counters"] = {
-                    "above_random_branches" : above_random_branches,
-                    "answer_count_estimation": 1 + not_generated_acceptable_answer_count
-                }
-            
-            function_pointer.hosta_inspection["logs"]["enum_normalized_probs"] = normalized_probability
-            function_pointer.hosta_inspection["logs"]["uncertainty"] = uncertainty
-
-            if uncertainty > _threshold:
-                raise UncertaintyError(f"Uncertainty above threshold. ({uncertainty} > {_threshold}). Risk of hallucination.")
-
-            return result
-                            
-        # This variable will be used from inside wrapper later on.     
-        wrapper_function_pointer = wrapper
-
-        return wrapper
-    
-    return configuration_decorator
-
 class ReproducibleSettings:
-    def __init__(self, reproducible: bool = False, acceptable_log_uncertainty: float = -2, seed: int = 42):
-        self.reproducible = reproducible
-        self.acceptable_log_uncertainty = acceptable_log_uncertainty
+    def __init__(self, acceptable_cumulated_uncertainty: float = 0.05, seed: int = 42):
+        self.acceptable_cumulated_uncertainty = acceptable_cumulated_uncertainty
         self.cumulated_uncertainty = 0.0
         self.seed = seed
-        self.contextvar = None
+        self.uuid = uuid.uuid4()
         self.trace = []
+        
+    def __repr__(self):
+        return f"""ReproducibleSettings(
+            acceptable_cumulated_uncertainty={self.acceptable_cumulated_uncertainty},
+            cumulated_uncertainty={self.cumulated_uncertainty}, 
+            seed={self.seed}, 
+            uuid={self.uuid})"""
         
 class ReproducibleContextManager:
     def __init__(self, settings: ReproducibleSettings):
         self.settings = settings
 
     def __enter__(self):
-        self.token = self.settings.contextvar.set(self.settings)
+        reproducible_settings:dict = reproducible_settings_ctxvar.get()
+        reproducible_settings[self.settings.uuid] = self.settings
+        
+        return self.settings
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.settings.contextvar.reset(self.token)
+        reproducible_settings:dict = reproducible_settings_ctxvar.get()
+        if self.settings.uuid in reproducible_settings:
+            del reproducible_settings[self.settings.uuid]
+
+def safe(acceptable_cumulated_uncertainty: float = 0.05, seed: int = 42):
+
+    settings = ReproducibleSettings(
+        acceptable_cumulated_uncertainty=acceptable_cumulated_uncertainty,
+        seed=seed
+    )
         
-
-def safe(acceptable_cumulated_log_uncertainty: float = -2, seed: int = 42):
-
-    settings = ReproducibleSettings(reproducible=True, acceptable_log_uncertainty=acceptable_cumulated_log_uncertainty, seed=seed)
-    reproducible_settings = contextvars.ContextVar("reproducible_settings", default=settings)
-    settings.contextvar = reproducible_settings
-    
-    # this is the implementatiotn with a global reproducible_settings instead of contextvar?
-    
-    return settings
+    return ReproducibleContextManager(settings)
 
 
 def last_uncertainty(function_pointer) -> float:
