@@ -13,6 +13,7 @@ class ModelCapabilities(Enum):
     TEXT2IMAGE = "TEXT2IMAGE"
     IMAGE2TEXT = "IMAGE2TEXT"
     IMAGE2IMAGE = "IMAGE2IMAGE"
+    LOGPROBS = "LOGPROBS" # To be set for vllm models
     
     THINK = "THINK"
     JSON_OUTPUT = "JSON_OUTPUT"

@@ -8,7 +8,7 @@ import asyncio
 from ..core.inspection import get_caller_frame, get_hosta_inspection
 from ..core.config import config
 from ..pipelines import OneTurnConversationPipeline
-from ..utils.errors import RateLimitError
+from ..core.errors import RateLimitError
 
 def emulate(
         *,
@@ -37,17 +37,13 @@ def emulate(
     # Convert the inspection to a prompt
     messages = pipeline.push(inspection)
     
-    # Get additional arguments for the model API call given by function decorators
-    if hasattr(inspection["function"], "force_llm_args"):
-        force_llm_args = inspection["function"].force_llm_args | force_llm_args
-
     try:
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = inspection["model"].api_call(messages, pipeline.llm_args | force_llm_args)
+        response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
     except RateLimitError as e:
         print("[emulate] Rate limit exceeded. We wait for 60s then retry.", e)
-        time.sleep(60)
-        response_dict = inspection["model"].api_call(messages, pipeline.llm_args | force_llm_args)
+        time.sleep(int(os.getenv("OPENHOSTA_RATE_LIMIT_WAIT_TIME", 60)))
+        response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
         
     # Convert the model response to a python object according to expected types
     response_data = pipeline.pull(inspection, response_dict)
@@ -82,17 +78,13 @@ async def emulate_async(
     # Convert the inspection to a prompt
     messages = pipeline.push(inspection)
     
-    # Get additional arguments for the model API call given by function decorators
-    if hasattr(inspection["function"], "force_llm_args"):
-        force_llm_args = inspection["function"].force_llm_args | force_llm_args
-
     try:
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = await inspection["model"].api_call_async(messages, pipeline.llm_args | force_llm_args)
+        response_dict = await inspection["model"].api_call_async(messages, inspection["force_llm_args"])
     except RateLimitError as e:
         print("[emulate] Rate limit exceeded. We wait for 60s then retry.", e)
-        await asyncio.sleep(60)
-        response_dict = inspection["model"].api_call(messages, pipeline.llm_args | force_llm_args)
+        await asyncio.sleep(int(os.getenv("OPENHOSTA_RATE_LIMIT_WAIT_TIME", 60)))
+        response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
         
     # Convert the model response to a python object according to expected types
     response_data = pipeline.pull(inspection, response_dict)

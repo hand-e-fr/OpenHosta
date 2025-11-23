@@ -66,7 +66,7 @@ print_last_prompt(BestDate)
 answer = BestDate("Emmanuel BATT's birth year")
 answer = BestDate("l'année ne naissance du christ")
 
-from OpenHosta.utils.uncertainty import last_uncertainty
+from OpenHosta.core.uncertainty import last_uncertainty
 a = []
 b = []
 for i in range(30):
