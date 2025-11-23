@@ -50,13 +50,13 @@ def print_last_uncertainty(function_pointer):
 
         for k,v in nomalized_probs.items():
             print(f"Value: {k:<10}, Certainty: {v}")
-            
-    if hasattr(function_pointer, "hosta_inspection") and \
-        "uncertainty_counters" in function_pointer.hosta_inspection["logs"]:
-            counters = function_pointer.hosta_inspection["logs"]["uncertainty_counters"]
-            print("------")
-            for k,v in counters.items():
-                print(f"{k:<20}: {v}")
+                
+        if hasattr(function_pointer, "hosta_inspection") and \
+            "uncertainty_counters" in function_pointer.hosta_inspection["logs"]:
+                counters = function_pointer.hosta_inspection["logs"]["uncertainty_counters"]
+                print("------")
+                for k,v in counters.items():
+                    print(f"{k:<20}: {v}")
             
     else:
         print("No uncertainty logs found.")
