@@ -133,7 +133,7 @@ def test_safe_emulate_fail():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=0.05) as s:
+    with safe(acceptable_cumulated_uncertainty=0.01) as s:
         try:
             next_step = get_location("do not run any git command. This question is unrelated to git.")
         except UncertaintyError as e:
@@ -142,10 +142,10 @@ def test_safe_emulate_fail():
         finally:
             uncertainty = s.cumulated_uncertainty
         
-    assert next_step is None, f"Expected None due to uncertainty error, got: {next_step}"
+        assert next_step is None, f"Expected None due to uncertainty error, got: {next_step} s={s}"
 
-    assert uncertainty > 0.05, \
-        f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.05"
+        assert uncertainty > 0.05, \
+            f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.05"
         
         
 def test_safe_emulate_pass_low_confidence():
@@ -256,7 +256,7 @@ def test_safe_workflow_color_detector():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=math.exp(-3)):
+    with safe(acceptable_cumulated_uncertainty=math.exp(-5)):
         ret =  IsThisInThat("the sky", "a clear day")    
     
         assert ret is Bool.TRUE, f"Expected TRUE for sky in clear day, got: {ret}"
