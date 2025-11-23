@@ -8,8 +8,14 @@ def print_last_prompt(function_pointer:Callable):
     Print the last prompt sent to the LLM when using function `function_pointer`.
     """
     if hasattr(function_pointer, "hosta_inspection") and 'model' in function_pointer.hosta_inspection:
+        
         print("Model\n-----------------\nname="+function_pointer.hosta_inspection['model'].model_name+"\nbasse_url="+function_pointer.hosta_inspection['model'].base_url+"\n")
         function_pointer.hosta_inspection['model'].print_last_prompt(function_pointer.hosta_inspection)
+    
+        if "enum_normalized_probs" in function_pointer.hosta_inspection["logs"]:
+            
+            print("-----------------")
+            print_last_uncertainty(function_pointer)        
     else:
         print("No prompt found for this function.")
 
@@ -43,7 +49,14 @@ def print_last_uncertainty(function_pointer):
         nomalized_probs = function_pointer.hosta_inspection["logs"]["enum_normalized_probs"]
 
         for k,v in nomalized_probs.items():
-            print(f"Value: {k:<10}, Uncertainty: {1-v}")
+            print(f"Value: {k:<10}, Certainty: {v}")
+            
+    if hasattr(function_pointer, "hosta_inspection") and \
+        "uncertainty_counters" in function_pointer.hosta_inspection["logs"]:
+            counters = function_pointer.hosta_inspection["logs"]["uncertainty_counters"]
+            print("------")
+            for k,v in counters.items():
+                print(f"{k:<20}: {v}")
             
     else:
         print("No uncertainty logs found.")

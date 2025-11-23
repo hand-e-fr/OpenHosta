@@ -8,6 +8,64 @@ from enum import Enum
 from .errors import ModelMissingLogprobsError
 from .errors import UncertaintyError
 
+from ..core.analizer import hosta_analyze
+
+def get_certainty(function_pointer, vocabulary_sie=200000) -> float:
+    """
+    Calculates an uncertainty score based on the branching factor of log probabilities
+    in the LLM response.
+    
+    The score represents 1 - (1 / total_likely_paths).
+    """
+    # 1. Extract the nested data source safely
+    # This replaces: function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
+    try:
+        response_logprobs = function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
+    except (KeyError, IndexError, AttributeError):
+        # Handle cases where data is missing
+        return 0.0
+
+    selected_proportion = 1
+    above_random_branches = 1
+
+    # 2. Iterate through tokens to calculate branching options
+    for i, token_data in enumerate(response_logprobs):
+        token_text = token_data.get("token", "")
+        
+        # Condition: Skip the first token if it starts with a quote (' or ")
+        # Original: if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )
+        is_start_quote = (i == 0) and (token_text.startswith("'") or token_text.startswith('"'))
+        
+        if is_start_quote:
+            continue
+
+        # 3. Count "likely" alternatives for this token
+        # Original: len([y['logprob'] for y in x['top_logprobs'] if y['logprob'] > -11 ])
+        top_logprobs = token_data.get("top_logprobs", [])
+        
+        # Filter for probabilities greater than random (uniform distrubution over vocabulary size)
+        likely_alternatives = [
+            p for p in top_logprobs 
+            if p.get('logprob', -float('inf')) > math.log(1/vocabulary_sie)
+        ]
+        
+        above_random_branches *= len(likely_alternatives) 
+        
+        valid_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives if token_text.startswith(t['token']))
+        total_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives)
+        
+        if total_mass == 0:
+            step_probability = 1
+        else:
+            step_probability = valid_mass / total_mass 
+        
+        # We ignore other brnaches that could have lead to the same meaning.
+        # Ideally we should considere them as valid as the uncertainty is on knwoledge and not on format
+        selected_proportion *= step_probability
+        
+    return selected_proportion, above_random_branches   
+
+
 def posterior_probability(prediction, possible_outcomes, prior_prob_list:Dict[str,float] = {}, previouse_string = "") -> dict:
 
     # Fill prior_prob_list with uniform distribution if empty
@@ -163,40 +221,103 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
         
     return logprobes
 
+
 def max_uncertainty(threshold:float=None, acceptable_log_uncertainty:float=None):
 
     if acceptable_log_uncertainty is not None:
-        _threshold = math.pow(10, acceptable_log_uncertainty)
+        _threshold = math.exp(acceptable_log_uncertainty)
     elif threshold is not None:
         _threshold = threshold
     else:
-        _threshold = 0.1
-
+        print("mx_uncertainty called with no threshold. All answers will be accepted. Use print_last_uncertainty() to see certainty.")
+        _threshold = 1
+        
     def configuration_decorator(function_pointer):
         
-        inner_func_pointer = None
+        wrapper_function_pointer = None
         
-        def wrapper(*args, **kwargs):
+        def wrapper_enum(*args, **kwargs):
             
             setattr(function_pointer, "force_llm_args", {"logprobs": True, "top_logprobs": 20})
             
             # Call the function
             result = function_pointer(*args, **kwargs)
-                
-            setattr(inner_func_pointer, "hosta_inspection", function_pointer.hosta_inspection)
+
+            # The wrapper shall look like an hosta injected function
+            setattr(wrapper_function_pointer, "hosta_injected", function_pointer)
+            for attr in dir(function_pointer):
+                if not attr.startswith("_"):
+                    # Report attr to wrapper
+                    setattr(wrapper_function_pointer, attr, getattr(function_pointer, attr))
 
             logprobes = get_enum_logprobes(function_pointer=function_pointer)
             function_pointer.hosta_inspection["logs"]["enum_logprobes"] = logprobes
                    
             normalized_probability = normalized_probs(logprobes)  
             function_pointer.hosta_inspection["logs"]["enum_normalized_probs"] = normalized_probability
-               
+            
+            uncertainty = sum([v for k,v in normalized_probability.items() if k != str(result.value)])
+            function_pointer.hosta_inspection["logs"]["uncertainty"] = uncertainty
+            
             if not has_discriminative_value(normalized_probability, threshold=1-_threshold):
-                raise UncertaintyError(f"The model did not return a discriminative value for the enum return type. Risk of hallucination. Selected value probabilities: {normalized_probability}, required threshold: {threshold}")
+                raise UncertaintyError(f"The model did not return a discriminative value for the enum return type. Risk of hallucination. Selected value probabilities: {normalized_probability}, required threshold: {_threshold}")
 
             return result
         
-        inner_func_pointer = wrapper        
+
+        def wrapper_any(*args, **kwargs):
+            
+            setattr(function_pointer, "force_llm_args", {"logprobs": True, "top_logprobs": 20})
+            
+            # Call the function
+            result = function_pointer(*args, **kwargs)
+                
+            # The wrapper shall look like an hosta injected function
+            setattr(wrapper_function_pointer, "hosta_injected", function_pointer)
+            for attr in dir(function_pointer):
+                if not attr.startswith("_"):
+                    # Report attr to wrapper
+                    setattr(wrapper_function_pointer, attr, getattr(function_pointer, attr))
+            
+            selected_answer_certainty, above_random_branches = get_certainty(function_pointer)
+
+            certainty = selected_answer_certainty
+            uncertainty = 1 - certainty
+            function_pointer.hosta_inspection["logs"]["uncertainty"] = uncertainty
+            
+            # Other possibles branches weighted by uncertainty
+            # The weight is used to inhibit branches that are very close to random 
+            not_generated_acceptable_answer_count = (above_random_branches - 1) * uncertainty 
+            
+            function_pointer.hosta_inspection["logs"]["enum_normalized_probs"] = {
+                "unique_answer":selected_answer_certainty, 
+                "multiple_answers":1-selected_answer_certainty, 
+                }
+            
+            
+            function_pointer.hosta_inspection["logs"]["uncertainty_counters"] = {
+                "above_random_branches" : above_random_branches,
+                "answer_count_estimation": 1 + not_generated_acceptable_answer_count
+            }
+               
+            if uncertainty > _threshold:
+                raise UncertaintyError(
+                    f"The model did not return a discriminative value for the enum return type. Risk of hallucination.\n \
+                    Selected value probabilities: {selected_answer_certainty}, \n \
+                    It is below threshold: {1 - _threshold}\n \
+                    Above random answers: {above_random_branches} \n \
+                    Estimates aswers: {1 + not_generated_acceptable_answer_count}")
+
+            return result
+                
+        analyse = hosta_analyze(function_pointer=function_pointer)
+        
+        if issubclass(analyse["type"], Enum):
+            wrapper = wrapper_enum
+        else:
+            wrapper = wrapper_any            
+        
+        wrapper_function_pointer = wrapper
 
         return wrapper
     
@@ -231,3 +352,11 @@ def safe(acceptable_cumulated_log_uncertainty: float = -2, seed: int = 42):
     # this is the implementatiotn with a global reproducible_settings instead of contextvar?
     
     return settings
+
+
+def last_uncertainty(function_pointer) -> float:
+    if hasattr(function_pointer, "hosta_inspection") and \
+        "uncertainty" in function_pointer.hosta_inspection["logs"]:
+        return function_pointer.hosta_inspection["logs"]["uncertainty"]
+    else:
+        return 0

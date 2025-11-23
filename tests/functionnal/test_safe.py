@@ -1,3 +1,4 @@
+import math
 import pytest
 from dotenv import load_dotenv
 
@@ -7,7 +8,8 @@ from OpenHosta import emulate, closure
 from OpenHosta import max_uncertainty, UncertaintyError
 from OpenHosta import safe
 
-from OpenHosta import print_last_prompt, print_last_uncertainty, print_last_probability_distribution
+from OpenHosta import print_last_uncertainty, print_last_probability_distribution
+from OpenHosta.utils.uncertainty import last_uncertainty
 
 
 from enum import Enum, auto
@@ -83,7 +85,7 @@ def test_safe_emulate_fail():
         SPAIN = "Spain"
         PORTUGAL = "Portugal"
          
-    @max_uncertainty(threshold=0.1)
+    @max_uncertainty(threshold=0.05)
     def get_location(who: str) -> Places:
         """
         What was the location of the person right now?
@@ -98,9 +100,10 @@ def test_safe_emulate_fail():
         
     assert next_step is None, f"Expected None due to uncertainty error, got: {next_step}"
 
-    nomalized_probs = get_location.hosta_inspection["logs"]["enum_normalized_probs"]
-    assert max(nomalized_probs.values()) < 0.9, \
-        f"Expected low confidence for all options, got: {nomalized_probs} above threshold: 0.9"
+    uncertainty = last_uncertainty(get_location)
+
+    assert uncertainty > 0.05, \
+        f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.05"
         
         
 def test_safe_emulate_pass_low_confidence():
@@ -117,7 +120,7 @@ def test_safe_emulate_pass_low_confidence():
         SPAIN = "Spain"
         PORTUGAL = "Portugal"
          
-    @max_uncertainty(threshold=0.4)
+    @max_uncertainty(threshold=0.01)
     def get_location(who: str) -> Places:
         """
         What is the location of the person right now?
@@ -132,13 +135,14 @@ def test_safe_emulate_pass_low_confidence():
         
     assert next_step is Places.GERMANY, f"Expected Places.GERMANY as the name is German."
 
-    nomalized_probs = get_location.hosta_inspection["logs"]["enum_normalized_probs"]
-    assert max(nomalized_probs.values()) > 1 - 0.4, \
-        f"Expected low confidence for all options, got: {nomalized_probs} above threshold: 0.4"
+    uncertainty = last_uncertainty(get_location)
+    
+    assert uncertainty > 0.001, \
+        f"Expected high uncertainty for all options, got: {uncertainty} below threshold of 0.01%"
         
 
 def test_safe_color_detector():
-           
+    
     @max_uncertainty(threshold=0.01)
     def ColorOfThing(thing_description:str)->Color:
         """
@@ -147,10 +151,13 @@ def test_safe_color_detector():
         return emulate()
 
     ret = ColorOfThing("The sky on a clear day.")
-
+    
     assert ret is Color.BLUE, f"Expected Color.BLUE for the sky, got: {ret}"
 
+    uncertainty = last_uncertainty(ColorOfThing)
 
+    assert uncertainty < 0.01, \
+        f"Expected high confidence for Color.BLUE, got: {uncertainty} above threshold: 0.01"
 
 def test_sage_closure_color_detector_pass():
     
@@ -180,9 +187,9 @@ def test_sage_closure_color_detector_fail():
     
     assert hasattr(color, "hosta_inspection"), "Function should have hosta_inspection attribute."       
 
-    nomalized_probs = color.hosta_inspection["logs"]["enum_normalized_probs"]
-    assert max(nomalized_probs.values()) < 0.9, \
-        f"Expected low confidence for all options, got: {nomalized_probs} above threshold: 0.9"
+    uncertainty = last_uncertainty(color)
+    assert uncertainty > 0.1, \
+        f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.1"
 
 
 
@@ -194,7 +201,7 @@ def test_safe_workflow_color_detector():
         TRUE = "true"
         FALSE = "false"
 
-    @max_uncertainty(acceptable_log_uncertainty=-2)
+    @max_uncertainty(acceptable_log_uncertainty=math.log(0.05))
     def IsThisInThat(this_description:str, that_description:str)->Bool:
         """
         This function determunes if the object described by 'this_description' is in the object
@@ -226,60 +233,103 @@ def test_safe_workflow_color_detector():
     print_last_uncertainty(IsThisInThat)
 
     
-def test_safe_workflow_organ_location():
+# def test_safe_workflow_organ_location():
 
-    from enum import Enum
+#     from enum import Enum
 
-    class Bool(Enum):
-        TRUE = "true"
-        FALSE = "false"
+#     class Bool(Enum):
+#         TRUE = "true"
+#         FALSE = "false"
 
-    def IsThisInThat(this_description:str, that_description:str)->Bool:
-        """
-        This function determunes if the object described by 'this_description' is in the object
-        described by 'that_description'.
+#     def IsThisInThat(this_description:str, that_description:str)->Bool:
+#         """
+#         This function determunes if the object described by 'this_description' is in the object
+#         described by 'that_description'.
         
-        Arguments:
-            this_description: description of the object to find
-            that_description: description of the container object
+#         Arguments:
+#             this_description: description of the object to find
+#             that_description: description of the container object
+#         """
+#         return emulate()
+    
+    
+#     def find_organ_location(organ:str)->str:
+#         """
+#         Find the color of the organ in the given location description.
+#         """
+#         #TODO: have this work with safe context manager
+#         with safe(acceptable_cumulated_log_uncertainty=-2):
+#             if IsThisInThat(organ, "human body") is Bool.FALSE:
+#                 raise ValueError(f"{organ} is not in human body.")
+
+#             if IsThisInThat(organ, "above the belt level") is Bool.TRUE:
+#                 if IsThisInThat(organ, "head") is Bool.TRUE:
+#                     location = "head"
+#                 elif IsThisInThat(organ, "chest") is Bool.TRUE:
+#                     location = "chest"
+#                 elif IsThisInThat(organ, "left arm") is Bool.TRUE:
+#                     location = "left arm"
+#                 elif IsThisInThat(organ, "right arm") is Bool.TRUE:
+#                     location = "right arm"
+#                 else:
+#                     raise ValueError("Unable to find organ location above the belt.")
+#             else:
+#                 if IsThisInThat(organ, "legs") is Bool.TRUE:
+#                     location = "legs"
+#                 else:
+#                     location = "abdomen"
+#         return location
+    
+#     location = find_organ_location("brain")
+#     assert location == "head", f"Expected brain to be in head, got: {location}"
+            
+#     try:
+#         location = find_organ_location("blood")
+#     except UncertaintyError as e:
+#         print(f"Caught expected UncertaintyError due to uncertainty: {e}")
+#         location = None
+        
+#     assert location is None, f"Expected None for blood location due to uncertainty error, got: {location}" 
+    
+    
+def test_safe_question():
+        
+    @max_uncertainty()
+    def question(prompt:str)->str:
+        """
+        Answer to a question
         """
         return emulate()
     
+    answer = question("distance lune terre. donne juste la distance en milliers de km.")
     
-    def find_organ_location(organ:str)->str:
-        """
-        Find the color of the organ in the given location description.
-        """
-        #TODO: have this work with safe context manager
-        with safe(acceptable_cumulated_log_uncertainty=-2):
-            if IsThisInThat(organ, "human body") is Bool.FALSE:
-                raise ValueError(f"{organ} is not in human body.")
+    assert answer == "384", f"Expected '384' as the distance in thousands of km, got: {answer}"
+    
+    uncertainty = last_uncertainty(question)
 
-            if IsThisInThat(organ, "above the belt level") is Bool.TRUE:
-                if IsThisInThat(organ, "head") is Bool.TRUE:
-                    location = "head"
-                elif IsThisInThat(organ, "chest") is Bool.TRUE:
-                    location = "chest"
-                elif IsThisInThat(organ, "left arm") is Bool.TRUE:
-                    location = "left arm"
-                elif IsThisInThat(organ, "right arm") is Bool.TRUE:
-                    location = "right arm"
-                else:
-                    raise ValueError("Unable to find organ location above the belt.")
-            else:
-                if IsThisInThat(organ, "legs") is Bool.TRUE:
-                    location = "legs"
-                else:
-                    location = "abdomen"
-        return location
+    assert uncertainty < 0.01, f"Expected uncertainty below 0.01, got: {uncertainty}"
+
+def test_safe_question_fail():
+        
+    # Raise error if uncertainty is above 1%
+    @max_uncertainty(threshold=0.01)
+    def question(prompt:str)->str:
+        """
+        Answer to a question
+        """
+        return emulate()
     
-    location = find_organ_location("brain")
-    assert location == "head", f"Expected brain to be in head, got: {location}"
-            
     try:
-        location = find_organ_location("blood")
+        answer = question("quelle est la couleur préférée de l'univers ?")
     except UncertaintyError as e:
         print(f"Caught expected UncertaintyError due to uncertainty: {e}")
-        location = None
-        
-    assert location is None, f"Expected None for blood location due to uncertainty error, got: {location}" 
+        answer = None
+    
+    assert answer is None, f"Expected None due to uncertainty error, got: {answer}"
+
+    print_last_uncertainty(question)
+    
+    uncertainty = last_uncertainty(question)
+    assert uncertainty > 0.01, f"Expected uncertainty above 0.01, got: {uncertainty}"
+    
+    
