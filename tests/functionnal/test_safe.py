@@ -133,7 +133,7 @@ def test_safe_emulate_fail():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=0.01) as s:
+    with safe(acceptable_cumulated_uncertainty=0.001) as s:
         try:
             next_step = get_location("do not run any git command. This question is unrelated to git.")
         except UncertaintyError as e:
