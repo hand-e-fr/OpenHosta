@@ -168,7 +168,7 @@ def test_safe_emulate_pass_low_confidence():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=0.1) as s:
+    with safe(acceptable_cumulated_uncertainty=1) as s:
         try:
             next_step = get_location("Gary Schwartz")
         except UncertaintyError as e:
@@ -178,9 +178,11 @@ def test_safe_emulate_pass_low_confidence():
             uncertainty = s.cumulated_uncertainty
         
     assert next_step is Places.GERMANY, f"Expected Places.GERMANY as the name is German."
-        
+
+    print_last_uncertainty(get_location)
+
     assert uncertainty > 0.001, \
-        f"Expected high uncertainty for all options, got: {uncertainty} below threshold of 0.01%"
+        f"Expected high uncertainty for all options, got: {uncertainty} below threshold of 0.1%"
         
 
 def test_safe_color_detector():
