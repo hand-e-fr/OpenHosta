@@ -1,5 +1,7 @@
 
 import inspect
+
+from typing import Union
 from ..models import ModelCapabilities
 from ..core.type_converter import nice_type_name, describe_type_as_python, describe_type_as_schema, BASIC_TYPES
 
@@ -158,9 +160,20 @@ def encode_function_parameter_names(analyse):
 
 
 def encode_function_return_type(analyse):
+    # if None is acceptable for return type, set return_none_allowed in meta prompt
+    return_type = analyse["type"]
+    if return_type is not None and hasattr(return_type, "__origin__") and return_type.__origin__ is Union:
+        args = return_type.__args__
+        if type(None) in args:
+            return_none_allowed = True
+        else:
+            return_none_allowed = False
+    else:
+        return_none_allowed = False    
     return {
         "function_return_type": analyse["type"],
         "function_return_type_name": nice_type_name(analyse["type"]),
+        "return_none_allowed": return_none_allowed,
     }
     
 def encode_function_return_type_definition(analyse):

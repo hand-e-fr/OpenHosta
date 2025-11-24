@@ -15,6 +15,7 @@
 
 # In this case, Guard is a better name than Constraint as verification appends after the creation of the data by the LLM.
 # We could use Constraint for regular expressions that would bias the generation of the LLM's tokens to respect the constraint.
+import ast
 from OpenHosta.semantics import Guard 
 
 class SentenceType(Guard):
@@ -129,3 +130,122 @@ def my_workflow(user_input:str) -> InsultType:
     SomeInsult:SentenceType = thought("Make an insult about the story")
     return emulate()
 
+
+
+
+#################################################
+
+
+import abc
+
+class Guarded(abc.ABC):
+    """
+    Classe de base abstraite qui garantit que toute classe enfant
+    implémente une méthode de validation `_check`.
+    """
+    def __new__(cls, *args, **kwargs):
+
+        # Si plusieurs arguments sont passés, on leve une erreur
+        if len(args) + len(kwargs) > 1:
+            raise TypeError("Guarded classes accept only one positional or keyword argument 'value'.")
+        
+        value = args[0] if args else kwargs.get('value', None)
+
+        # On appelle la validation
+        cls._check(value)
+
+        # On crée l'instance de datetime
+        instance = super().__new__(cls, *args, **kwargs)
+
+        return instance
+
+    @abc.abstractmethod
+    @classmethod
+    def _check(cls, value:str):
+        """
+        Méthode de validation à surcharger par les classes enfants.
+        
+        Cette méthode doit lever une exception (par ex. ValueError) si l'état
+        de l'objet n'est pas valide.
+        """
+        pass
+    
+class GuardedInt(Guarded, int):
+    """Hérite du contrat de Guarded et du comportement de int."""
+
+    # Implémentation obligatoire de la méthode abstraite
+    @classmethod
+    def _check(cls, value:str):
+        print(f"-> check() pour GuardedInt: {value}")
+        if not value.isdigit():
+            raise ValueError("La valeur doit être un entier valide.")
+        
+
+
+class NonToxicComment(Guarded, str):
+    
+    Guard=Guard().use(ToxicLanguage(threshold=0.5, validation_method="sentence", on_fail="exception"))
+    
+    # Implémentation obligatoire de la méthode abstraite
+    @classmethod
+    def _check(cls, value:str):
+        if not cls.Guard.validate(value):
+            raise ValueError("La valeur doit être un entier valide.")
+        
+        
+        
+g = GuardedInt("s42")  # Valide
+g = GuardedInt("42")  # Valide
+type(g) # <class '__main__.GuardedInt'>
+isinstance(g, int) # True
+
+
+
+
+
+####################
+
+
+class NonToxicComment(MultiGuarded, str):
+    @classmethod
+    def _check(cls, value: str):
+        if "idiot" in value.lower():
+            raise ValueError("Le commentaire ne doit pas être toxique.")
+
+class NonInsultingComment(MultiGuarded, str):
+    @classmethod
+    def _check(cls, value: str):
+        if "nul" in value.lower():
+            raise ValueError("Le commentaire ne doit pas contenir d'insultes.")
+
+class FrenchSentence(MultiGuarded, str):
+    @classmethod
+    def _check(cls, value: str):
+        if not value.endswith('.'):
+            raise ValueError("Le commentaire doit être une phrase française valide (terminer par un point).")
+
+# La classe finale qui hérite de toutes les validations
+class SafeComment(NonToxicComment, NonInsultingComment, FrenchSentence):
+    pass
+
+
+
+#####
+
+from OpenHosta import emulate
+
+def generate_function(description: str) -> str:
+    """Generate a Python function based on description. Return only the function code."""
+    return emulate()
+
+code_def = generate_function("Create a function that adds two numbers")
+print(code_def)
+
+# convert the code_def string into a function object
+compiled_code = compile(code_def, filename="<ast>", mode="exec")
+
+# set up a local namespace to capture the function definition
+local_namespace = {}
+exec(compiled_code, globals(), local_namespace)
+
+local_namespace

@@ -1,7 +1,8 @@
-__version__ = "3.0.3"
+__version__ = "3.0.4"
 
 from .core.config import config
 from .core.logger import print_last_prompt, print_last_decoding
+from .core.logger import print_last_probability_distribution, print_last_uncertainty
 from .core.meta_prompt import MetaPrompt
 
 from .exec.ask import ask, ask_async
@@ -15,6 +16,9 @@ from .models import OpenAICompatibleModel
 from .core.config import reload_dotenv
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
+
+from .core.uncertainty import safe
+from .core.errors import UncertaintyError
 
 import os
 
@@ -39,6 +43,10 @@ all = (
     "MetaPrompt",
     "print_last_prompt",
     "print_last_decoding",
+    "print_last_probability_distribution",
+    "print_last_uncertainty",
     "Pipeline",
-    "OneTurnConversationPipeline"
+    "OneTurnConversationPipeline",
+    "safe",
+    "UncertaintyError",
 )

@@ -1,4 +1,5 @@
 import pytest
+from typing import Any
 
 from OpenHosta import emulate, ask, test as oh_test
 
@@ -131,7 +132,7 @@ class TestTypes:
         assert type(return_byte(bytearray("hi mom", encoding='utf-8'))) == bytearray
         
     def test_NativeNone(self):
-        def return_none():
+        def return_none() -> Any :
             """
             This function returns None
             """   
@@ -143,3 +144,15 @@ class TestTypes:
         ret = oh_test("this is true")
         assert type(ret) == bool
         assert ret is True
+        
+    
+    def test_MaybeNone(self):
+        def return_none_if_go(text:str) -> Any :
+            """
+            This function returns None if the input contains GO
+            """   
+            return emulate()
+        
+        assert return_none_if_go("GO") is None
+        assert return_none_if_go("sO") is not None
+            

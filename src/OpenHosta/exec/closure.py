@@ -39,6 +39,7 @@ def closure_async(
     force_llm_args: Optional[dict] = {}
     ):
 
+    _force_llm_args = force_llm_args
     inner_func_pointer = None
 
     async def inner_func(*args, **kwargs) -> Any:
@@ -46,7 +47,8 @@ def closure_async(
         # Get everything about the function you are emulating
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
-
+        setattr(inner_func_pointer, "hosta_inspection", inspection)
+            
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
             inspection["analyse"]["type"] = force_return_type
@@ -56,11 +58,13 @@ def closure_async(
             return_type = guess_type(inspection)
             inspection["analyse"]["type"] = return_type
             
+        inspection["force_llm_args"] |= _force_llm_args
+        
         # Convert the inspection to a prompt
         messages = pipeline.push(inspection)
-            
+
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = await inspection["model"].api_call_async(messages, pipeline.llm_args | force_llm_args)
+        response_dict = await inspection["model"].api_call_async(messages, inspection["force_llm_args"])
 
         # Convert the model response to a python object according to expected types
         response_data = pipeline.pull(inspection, response_dict)
@@ -79,6 +83,8 @@ def closure(
     force_llm_args: Optional[dict] = {}
     ):
     
+    _force_llm_args = force_llm_args
+    
     inner_func_pointer = None
     
     def inner_func(*args, **kwargs) -> Any:
@@ -86,7 +92,8 @@ def closure(
         # Get everything about the function you are emulating
         inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
         inspection = update_inspection(inspection, query_string, *args, **kwargs)
-
+        setattr(inner_func_pointer, "hosta_inspection", inspection)
+            
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
             inspection["analyse"]["type"] = force_return_type
@@ -98,9 +105,11 @@ def closure(
         
         # Convert the inspection to a prompt
         messages = pipeline.push(inspection)
+        
+        inspection["force_llm_args"] |= _force_llm_args
             
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = inspection["model"].api_call(messages, pipeline.llm_args | force_llm_args)
+        response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
 
         # Convert the model response to a python object according to expected types
         response_data = inspection["pipeline"].pull(inspection, response_dict)
