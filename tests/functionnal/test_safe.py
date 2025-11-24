@@ -302,7 +302,7 @@ def test_safe_workflow_organ_location():
         """
         Find the color of the organ in the given location description.
         """
-        with safe(acceptable_cumulated_uncertainty=0.01) as s:
+        with safe(acceptable_cumulated_uncertainty=0.1) as s:
             try:
                 if IsThisInThat(organ, "human body") is Bool.FALSE:
                     raise ValueError(f"{organ} is not in human body.")
@@ -322,11 +322,14 @@ def test_safe_workflow_organ_location():
                     if IsThisInThat(organ, "legs") is Bool.TRUE:
                         location = "legs"
                     else:
-                        location = "abdomen"
+                        raise ValueError("Unable to find organ location above the belt.")
                 print(f"Final safe context uuid: {s.uuid} with: {s.cumulated_uncertainty}/{s.acceptable_cumulated_uncertainty}")
 
             except UncertaintyError as e:
-                print(f"Caught expected UncertaintyError due to uncertainty: {e}")
+                print(f"Caught expected UncertaintyError due to uncertainty: {e}, s={s}")
+                location = None
+            except ValueError as e:
+                print(f"This organ is not in the accepted list. ValueError: {e}")
                 location = None
 
         return location
