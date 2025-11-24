@@ -116,7 +116,7 @@ class TestEmulate:
     
 
     def test_FeaturesEmptyInfos(self):
-        def a():
+        def a() -> None | str:
             return emulate()
         res = a()
         assert res is None
@@ -130,7 +130,7 @@ class TestEmulate:
             return wrapper
         
         @decorator
-        def returntNone():
+        def returntNone() -> None | str:
             """ This function returns None """
             return emulate()
         

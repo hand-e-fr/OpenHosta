@@ -3,7 +3,7 @@ import inspect
 
 from types import FrameType, MethodType, FunctionType
 
-from ..utils.errors import FrameError
+from ..core.errors import FrameError
 from .analizer import hosta_analyze, hosta_analyze_update
 
 type Inspection = dict
@@ -125,6 +125,7 @@ def get_hosta_inspection(frame=None, function_pointer=None):
             "frame": frame,
             "analyse": analyse,
             "logs": {},
+            "force_llm_args": {},
             "counters": {},
             "prompt_data":{},
             "pipe": None
@@ -139,6 +140,9 @@ def get_hosta_inspection(frame=None, function_pointer=None):
             inspection["analyse"] = analyse
         inspection["frame"] = frame
 
+    if hasattr(function_pointer, "force_llm_args"):
+        inspection["force_llm_args"] |= function_pointer.force_llm_args
+        
     return inspection
 
 def get_last_frame(function_pointer):
