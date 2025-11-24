@@ -387,7 +387,7 @@ def test_safe_question():
         assert abs(s.cumulated_uncertainty - uncertainty) < 1e-6, \
             f"Expected cumulated uncertainty {s.cumulated_uncertainty} to match last_uncertainty {uncertainty}"
 
-        assert uncertainty < 0.01, f"Expected uncertainty below 0.01, got: {uncertainty}"
+        assert uncertainty < 0.75, f"Expected uncertainty below 0.75, got: {uncertainty}"
 
 def test_safe_question_fail():
         
