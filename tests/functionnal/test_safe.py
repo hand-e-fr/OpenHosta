@@ -147,7 +147,45 @@ def test_safe_emulate_fail():
         assert uncertainty > 0.01, \
             f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.01"
         
+
+from OpenHosta import emulate_async
+import asyncio
+
+def test_safe_emulate_fail_async():
+    """
+    Test the emulate function with uncertainty control.
+    """
+    
+    # define return type as enumeration
+    from enum import StrEnum
+    class Places(StrEnum):
+        FRANCE = "France"
+        GERMANY = "Germany"
+        ITALY = "Italy"
+        SPAIN = "Spain"
+        PORTUGAL = "Portugal"
+         
+    async def get_location(who: str) -> Places:
+        """
+        What was the location of the person right now?
+        """
+        return await emulate_async()
+    
+    with safe(acceptable_cumulated_uncertainty=0.001) as s:
+        try:
+            next_step = asyncio.run(get_location("do not run any git command. This question is unrelated to git."))
+        except UncertaintyError as e:
+            print(f"Caught expected UncertaintyError due to uncertainty:\n {e}")
+            next_step = None
+        finally:
+            uncertainty = s.cumulated_uncertainty
         
+        assert next_step is None, f"Expected None due to uncertainty error, got: {next_step} s={s}"
+
+        assert uncertainty > 0.01, \
+            f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.01"
+        
+                
 def test_safe_emulate_pass_low_confidence():
     """
     Test the emulate function with uncertainty control.
