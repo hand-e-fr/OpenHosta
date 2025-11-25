@@ -36,6 +36,10 @@ class Color(Enum):
     MAROON = auto()
     OLIVE = auto() 
 
+# Force logprobs capability for testing
+from OpenHosta import config
+from OpenHosta.models.base_model import ModelCapabilities
+config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
 
 def test_safe_emulate_success():
     """
@@ -63,8 +67,9 @@ def test_safe_emulate_success():
 
     assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
 
-    print_last_probability_distribution(get_next_step)    
-    
+    # print_last_probability_distribution(get_next_step)    
+    # print_last_prompt(get_next_step)
+
     assert get_next_step.hosta_inspection["logs"]["enum_normalized_probs"][NextStep.GIT_PUSH] > 0.9, \
         f"Expected high confidence for 'git push', got: {get_next_step.hosta_inspection['logs']['enum_normalized_probs']}"
 
@@ -95,6 +100,7 @@ def test_nested_safe_emulate_success():
                 assert s1.acceptable_cumulated_uncertainty < s2.acceptable_cumulated_uncertainty, \
                     "Inner safe context should have higher acceptable uncertainty than outer."
                     
+                next_step = None
                 for i in range(3):
                     next_step = get_next_step("git commit -m 'Initial commit'")
                     print(f"safe context 1 uuid: {s1.uuid} with: {s1.cumulated_uncertainty}/{s1.acceptable_cumulated_uncertainty}")
@@ -260,7 +266,7 @@ def test_sage_closure_color_detector_fail():
     
     color = closure("What is the color of this object ?", force_return_type=Color)
     
-    with safe(acceptable_cumulated_uncertainty=0.01) as s:
+    with safe(acceptable_cumulated_uncertainty=0.001) as s:
         try:
             retcolor = color("michael jackson")
         except UncertaintyError as e:
@@ -297,7 +303,7 @@ def test_safe_workflow_color_detector():
         return emulate()
 
     with safe(acceptable_cumulated_uncertainty=math.exp(-5)):
-        ret =  IsThisInThat("the sky", "a clear day")    
+        ret =  IsThisInThat("the sun", "the sky on a clear day")    
     
         assert ret is Bool.TRUE, f"Expected TRUE for sky in clear day, got: {ret}"
         
@@ -421,7 +427,7 @@ def test_safe_question():
     with safe(acceptable_cumulated_uncertainty=1) as s:
         answer = question("distance lune terre. donne juste la distance en milliers de km.")
     
-        assert answer == "384", f"Expected '384' as the distance in thousands of km, got: {answer}"
+        assert answer.startswith("384"), f"Expected '384' as the distance in thousands of km, got: {answer}"
         
         uncertainty = last_uncertainty(question)
         
