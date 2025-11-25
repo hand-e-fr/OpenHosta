@@ -1,3 +1,30 @@
+# Pour un type donné il faut reconstruire les alternatives acceptables
+# dans le but de éterminier les tokens qui conduisent au même résulatat sémantique
+#
+# - pour l'input il suffit d'une fonction de sérialisation
+# - pour l'output il faut désérialiser, compter les alternatives et ajouter des gardes sémantiques
+# 
+# SemanticInt = SemanticType(int)
+# SemanticStr = SemanticType(str)
+# class SemanticInsult(SemanticStr):
+#    def guard_post_load(self, value:SemanticStr):
+#        """Check is str is an insulting sentence"""
+#        pass
+#
+# def bad_things() -> Tuple[SemanticInsult, Person, int]:
+#    pass
+#
+# Workflow:
+# - ast sur annotation
+# - existance des Names
+# - mapping des names (type) vers (SemanticType(type))
+# - les SemanticDict (collections) font des appels récurssifs aux sous types
+# - choix entre json et python en fonction du modèle et de la profondeur de nesting
+# - MetaPrompt (multi turn pour petit models et for nesting ?)
+# - redescente depuis llm output to type hieracrchy (str -> SemanticStr -> SemanticDict -> ...) => remonté de l'arbre ast depuis les noeuds vers la racine
+# 
+# Quid des semantic types de fonction ? Le LLM doit pouvoir ecrire des procédures -> formulate()
+
 from __future__ import annotations
 
 import inspect
@@ -20,6 +47,61 @@ if version_info.major == 3 and version_info.minor > 9:
     from types import NoneType
 else:
     NoneType = type(None)
+
+def test():
+
+    import ast
+    def test_ast():
+        p=ast.parse('def toto():\n  return Person(name="bob")\n\n-ds')
+        ast.dump(p)
+        p.body
+
+    from pydantic import BaseModel
+
+    class Data(BaseModel):
+        x:type=int
+
+    d = Data(x=Data)
+    str(d.model_dump(mode="python"))
+    m=ast.parse("{'x': Data}")
+    ast.dump(m)
+    d.model_dump(mode="json")
+
+class SemanticType:
+    def __init__(self, /, cls):
+        pass
+
+    def model_json_schema(self):
+        pass
+
+    def model_python_schema(self):
+        pass
+
+    def from_pydantic(self):
+        pass
+
+    def to_pydantic(self):
+        pass
+
+    def dumps(self):
+        pass
+
+    def guard_pre_load(self, value:str) -> bool:
+        pass
+
+    def guard_post_load(self, value:SemanticType) -> bool:
+        pass
+
+    def loads(self, s:str) -> SemanticType:
+        pass
+
+    def is_valid_completion(self, start:str, completion:str):
+        """
+        For the curent value of the type, is there a serialisation that starts with `start` that accepts `completion` as a subsequent token.
+        """
+        pass
+
+    
 
 def is_typing_type(arg_type):
     # Check if the type provided as argument exist in typing library
@@ -179,6 +261,7 @@ def describe_type_as_schema(arg_type):
         response = {"type": "string"}
 
     return response
+
 
 def describe_type_as_python(arg_type):
     type_definition = None
