@@ -11,7 +11,8 @@ from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_P
 from ..core.analizer import encode_function
 from ..core.type_converter import type_returned_data
 
-from ..core.uncertainty import get_certainty, get_enum_logprobes, normalized_probs, UncertaintyError, ReproducibleSettings, reproducible_settings_ctxvar
+from ..core.errors import UncertaintyError, UnreproducibleError
+from ..core.uncertainty import get_certainty, get_enum_logprobes, normalized_probs, ReproducibleSettings, reproducible_settings_ctxvar
 
 MetaDialog = List[Tuple[str, MetaPrompt]]
 
@@ -193,8 +194,18 @@ class OneTurnConversationPipeline(Pipeline):
         if len(reproducible_settings) == 0:
             return inspection
         
-        if inspection["model"].model_name in ["gpt-4o", "gpt-4o-mini", "gpt-4.1"] or \
-           inspection["model"].capabilities & {ModelCapabilities.LOGPROBS}:
+        # All seeds must be the same
+        seeds = [ v.seed for v in reproducible_settings.values() if v.seed is not None]
+        seed = seeds[0] if len(seeds) > 0 else None
+        
+        for s in seeds:
+            if s != seed:
+                raise UnreproducibleError(f"All seeds in safe context must be the same. Otherwise LLM call will be unreproducible. Found seeds: {seeds}")
+        
+        if seed is not None:
+            inspection["force_llm_args"] |= {"seed": seed}
+        
+        if inspection["model"].capabilities & {ModelCapabilities.LOGPROBS}:
             inspection["force_llm_args"] |= {"logprobs": True, "top_logprobs": 20}
         else:
             raise UncertaintyError(f"Model {inspection['model'].model_name} does not support logprobs. Cannot compute uncertainty.")
@@ -252,6 +263,7 @@ class OneTurnConversationPipeline(Pipeline):
             v.trace.append( {
                 "function_name":inspection["analyse"]["name"],
                 "function_args":inspection["analyse"]["args"],
+                "function_return":result,
                 "function_uncertainty": uncertainty} )
             
             if v.cumulated_uncertainty > v.acceptable_cumulated_uncertainty:
