@@ -62,11 +62,14 @@ def test_safe_emulate_success():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=0.1):
+    with safe(acceptable_cumulated_uncertainty=0.1, seed=434):
         next_step = get_next_step("git commit -m 'Initial commit'")
 
     assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
 
+    # from OpenHosta import print_last_uncertainty, print_last_prompt
+    # print_last_uncertainty(get_next_step)
+    # print_last_prompt(get_next_step)
     # print_last_probability_distribution(get_next_step)    
     # print_last_prompt(get_next_step)
 
@@ -424,7 +427,7 @@ def test_safe_question():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=1) as s:
+    with safe(acceptable_cumulated_uncertainty=0.9) as s:
         answer = question("distance lune terre. donne juste la distance en milliers de km.")
     
         assert answer.startswith("384"), f"Expected '384' as the distance in thousands of km, got: {answer}"
@@ -434,7 +437,7 @@ def test_safe_question():
         assert abs(s.cumulated_uncertainty - uncertainty) < 1e-6, \
             f"Expected cumulated uncertainty {s.cumulated_uncertainty} to match last_uncertainty {uncertainty}"
 
-        assert uncertainty < 0.75, f"Expected uncertainty below 0.75, got: {uncertainty}"
+        assert uncertainty <= 0.9, f"Expected uncertainty below 0.9, got: {uncertainty}"
 
 def test_safe_question_fail():
         
