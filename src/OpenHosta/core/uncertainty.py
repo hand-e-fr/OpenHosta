@@ -52,6 +52,10 @@ def get_certainty(function_pointer, vocabulary_size=200_000) -> Tuple[float, int
     except (KeyError, IndexError, AttributeError):
         return 0.0, 0
 
+    return get_naive_certainty(response_logprobs, vocabulary_size=vocabulary_size)
+
+def get_naive_certainty(response_logprobs, vocabulary_size=200_000) -> Tuple[float, int]:
+    
     selected_proportion = 1.0
     above_random_branches = 1
 
@@ -201,6 +205,24 @@ def get_enum_logprobes(*, function_pointer=None, inspection=None) -> dict:
     # Use the new helper to trim control tokens
     logp_list = _trim_logp_list(logp_list)
 
+    if "rational" in inspection["logs"]:
+        rational = inspection["logs"]["rational"]
+        answer_part = []
+        rational_part = []
+        for token_data in logp_list:
+            if rational.startswith(token_data['token']):
+                rational = rational[len(token_data['token']):]
+                rational_part.append(token_data)
+            else:
+                answer_part.append(token_data)
+                
+        rational_certainty, branch_count = get_naive_certainty(rational_part)
+        print(f"Rational part uncertainty: {1 - rational_certainty:0.6f} over {branch_count} branches")
+        
+        logp_list = answer_part
+    else:
+        rational_uncertainty = 1
+        
     possible_outcomes = [(
         str(v.value),
         f'"{v.value}"', 
