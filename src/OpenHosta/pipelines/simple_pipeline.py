@@ -224,7 +224,7 @@ class OneTurnConversationPipeline(Pipeline):
         function_pointer = inspection["function"]
         result = inspection["logs"]["response_data"]
         
-        if issubclass(analyse["type"], Enum):
+        if isinstance(analyse["type"], type) and issubclass(analyse["type"], Enum):
 
             logprobes = get_enum_logprobes(function_pointer=function_pointer)
             inspection["logs"]["enum_logprobes"] = logprobes
@@ -233,6 +233,9 @@ class OneTurnConversationPipeline(Pipeline):
             uncertainty = sum([v for k,v in normalized_probability.items() if k != str(result.value)])
 
         else:
+            #TODO: regularisation avec le nombre d de branches possibles lorsque input = None (=> max uncertainty) et input explicitly ask for output (=> min uncertainty)
+            # How tho generate the most plausible answers as a reference?
+            # Save regularization for later use in inspection data
 
             selected_answer_certainty, above_random_branches = get_certainty(function_pointer)
 
