@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, List, Set
 
 import abc
 import asyncio
@@ -24,7 +24,7 @@ class Model:
                 additionnal_headers: Dict[str, Any] = {},
                 api_parameters:Dict[str, Any] = {},
                 ):
-        self.capabilities: set[ModelCapabilities] = set()
+        self.capabilities: Set[ModelCapabilities] = set()
         
         self.max_async_calls = max_async_calls
         self.async_executor = None
@@ -40,8 +40,8 @@ class Model:
         
     async def api_call_async(
         self,
-        messages: list[dict[str, str]],
-        llm_args:dict = {}
+        messages: List[dict[str, str]],
+        llm_args:Dict = {}
     ) -> Dict:
         response_dict = await asyncio.get_event_loop().run_in_executor(
                 self.get_executor(),
@@ -56,10 +56,20 @@ class Model:
         return self.async_executor
     
     @abc.abstractmethod
+    def models_on_same_api(self) -> List[str]:
+        """
+        List all models available on the same API.
+        
+        Returns:
+            List[str]: List of model names.
+        """
+        raise NotImplementedError("You need to implement 'models_on_same_api' in your subclass of Model")
+    
+    @abc.abstractmethod
     def  api_call(
         self,
-        messages: list[dict[str, str]],
-        llm_args:dict = {}
+        messages: List[Dict[str, str]],
+        llm_args:Dict = {}
     ) -> Dict:
         raise NotImplementedError("You need to implement 'api_call' in your subclass of Model")
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict, Set
+from typing import Any, Dict, List, Set, Tuple
 
 import os
 import requests
@@ -44,8 +44,8 @@ class OpenAICompatibleModel(Model):
     
     def api_call(
         self,
-        messages: list[dict[str, str]],
-        llm_args:dict = {}
+        messages: List[Dict[str, str]],
+        llm_args:Dict = {}
     ) -> Dict:
 
         if "force_json_output" in llm_args and ModelCapabilities.JSON_OUTPUT not in self.capabilities:
@@ -98,6 +98,49 @@ class OpenAICompatibleModel(Model):
     
         return response_dict
     
+    def models_on_same_api(self) -> List[str]:
+        """
+        List all models available on the same API.
+        
+        Returns:
+            List[str]: List of model names.
+        """
+
+        api_key = self.api_key
+        if api_key is None:
+            api_key = os.environ.get("OPENAI_API_KEY")
+
+        # Typical error from begginers
+        if api_key is None and "api.openai.com/v1" in self.base_url:
+            raise ApiKeyError("[model.api_call] Empty API key.")
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        for key, value in self.additionnal_headers.items():
+            headers[key] = value
+        
+        full_url = f"{self.base_url}/models"
+        
+        response = requests.get(full_url, headers=headers, timeout=self.timeout)
+        
+        if not response.ok:
+            raise RequestError(f"[Model.get_available_model_names] Request failed with status code {response.status_code}:\n{response.text}\n\n")
+        
+        model_list = []
+        if "data" in response.json():
+            for model in response.json()["data"]:
+                if model["object"] == "model":
+                    model_list.append(model["id"])
+                else:
+                    print(f"Ignoring {model["id"]}:", model)
+            
+        return model_list
+    
     def get_consumption(self, response_dict) -> dict:
         if "usage" in response_dict:
             self._used_tokens += int(response_dict["usage"]["total_tokens"])
@@ -115,7 +158,7 @@ class OpenAICompatibleModel(Model):
     def get_thinking_and_data_sections(
                         self,
                         response:str, 
-                        reasoning_start_and_stop_tags = ["<think>", "</think>"]) -> tuple[str, str]:
+                        reasoning_start_and_stop_tags = ["<think>", "</think>"]) -> Tuple[str, str]:
         """
         This function split response into rational and answer.
 
