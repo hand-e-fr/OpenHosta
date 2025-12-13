@@ -80,7 +80,7 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
             item_types = args if args else (Any,)
             typed_value = eval(untyped_response, {origin.__name__: origin}, {})
             assert typed_value is None or isinstance(typed_value, origin), f"Expected type {origin}, got {type(typed_value)}"
-            if len(item_types) == 2 and item_types[1] is Ellipsis:
+            if len(item_types) == 1 or ( len(item_types) == 2 and item_types[1] is Ellipsis ):
                 # Tuple of variable length
                 typed_value = origin([type_returned_data(repr(item), item_types[0]) for item in typed_value])
             else:
