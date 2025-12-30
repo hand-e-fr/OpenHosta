@@ -21,6 +21,21 @@ if version_info.major == 3 and version_info.minor > 9:
 else:
     NoneType = type(None)
 
+#### Refactor types to match semantic types
+
+def annotation_to_hosta_type(annotation: type) -> type:
+    """
+    Convert a Python type annotation to a Hosta type.
+    """
+    if annotation is None:
+        return Any
+    elif is_typing_type(annotation):
+        return Any
+    elif is_dataclass(annotation):
+        return Any
+    elif is_pydantic_available() and issubclass(annotation, BaseModel):
+        pass
+
 def is_typing_type(arg_type):
     # Check if the type provided as argument exist in typing library
     return str(arg_type).startswith("typing.")
