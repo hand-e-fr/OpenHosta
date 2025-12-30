@@ -14,6 +14,21 @@ from OpenHosta.core.uncertainty import last_uncertainty
 
 from enum import Enum, auto
 
+from PIL.Image import Image, open as pil_open
+from pathlib import Path
+
+try:
+    test_dir = Path(__file__).parent.parent
+except NameError:
+    print("In interactive mode, setting test_dir to current working directory. It shall be the tests folder.")
+    test_dir = Path.cwd()
+    
+if (test_dir / "assets").exists():
+    assets_dir = test_dir / "assets"
+else:
+    raise FileNotFoundError(f"Assets directory not found in {test_dir}. Cannot continue.")
+    
+
 class Color(Enum):
     NONE = auto()
     RED = auto()
@@ -463,3 +478,29 @@ def test_safe_question_fail():
     assert uncertainty > 0.01, f"Expected uncertainty above 0.01, got: {uncertainty}"
     
     
+    
+def test_safe_AskWithImageAndText(self):
+
+    img = pil_open(assets_dir / "hand_e_logo.jpeg")
+    
+    def get_company_name(logo_img:Image) -> str:
+        """
+        Identify the company name given the logo in parameter.
+        
+        Arguments:
+           logo_img (PIL.Image.Image): The logo image to identify.
+           
+        Returns:
+           str: The name of the company.
+        """
+        return emulate() 
+
+    with safe(acceptable_cumulated_uncertainty=1, seed=550) as s:
+        response = get_company_name(img)
+        print(response)
+        print(s)
+    
+    # print_last_prompt(get_company_name)
+    assert "hand" in response.lower(), "We should have recognized hand-e logo in the description"
+
+from OpenHosta.models import Model
