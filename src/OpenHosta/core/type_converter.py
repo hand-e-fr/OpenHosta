@@ -139,7 +139,14 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
                     break
         
     elif is_dataclass(expected_type):
-        typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+        if untyped_response.startswith("{"):
+            dict_typed_value = ast.literal_eval(untyped_response)
+            typed_value = expected_type(**dict_typed_value)
+            
+        elif untyped_response.startswith(expected_type.__name__):
+            typed_value = eval(untyped_response, {expected_type.__name__: expected_type}, {})
+        else:
+            raise TypeError(f"Cannot convert response to dataclass {expected_type.__name__}. use print_last to debug.")
         
     elif is_pydantic_available and isinstance(expected_type, type) and issubclass(expected_type, BaseModel):
         if untyped_response.startswith("{"):
