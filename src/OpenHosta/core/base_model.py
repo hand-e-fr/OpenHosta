@@ -46,7 +46,17 @@ class Model:
         if self.async_executor is not None:
             self.async_executor.shutdown()
     
-    def set_next_rate_limit(self, next_authorized_api_call_time:int):
+    def set_next_rate_limit(self, next_authorized_api_call_time:str):
+        if next_authorized_api_call_time.isdigit():
+            next_authorized_api_call_time = int(next_authorized_api_call_time)
+        elif next_authorized_api_call_time.endswith("s") and next_authorized_api_call_time[:-1].isdigit():
+            next_authorized_api_call_time = int(next_authorized_api_call_time[:-1])
+        elif next_authorized_api_call_time.endswith("ms"):
+            next_authorized_api_call_time = int(next_authorized_api_call_time[:-2]) / 1000
+        else:
+            print(f"Invalid next_authorized_api_call_time: {next_authorized_api_call_time}. Seto to 0")
+            next_authorized_api_call_time = 0
+            
         print(f"Set some delay before new API call. Waiting for {next_authorized_api_call_time}")
         self.delay_next_api_call_until = next_authorized_api_call_time + time.time()
     

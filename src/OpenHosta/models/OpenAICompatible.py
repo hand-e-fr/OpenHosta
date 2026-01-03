@@ -138,13 +138,12 @@ class OpenAICompatibleModel(Model):
 
         response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
 
-
         if "Retry-After" in response.headers:
             self.set_next_rate_limit(
-                next_authorized_api_call_time=int(response.headers["Retry-After"]))
+                next_authorized_api_call_time=response.headers["Retry-After"])
         elif 'x-ratelimit-reset-requests' in response.headers:
             self.set_next_rate_limit(
-                next_authorized_api_call_time=int(response.headers['x-ratelimit-reset-requests']))
+                next_authorized_api_call_time=response.headers['x-ratelimit-reset-requests'])
             
         if response.status_code == 200:
             pass
