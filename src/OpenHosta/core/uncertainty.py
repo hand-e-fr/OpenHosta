@@ -6,6 +6,7 @@ from typing import Dict, Tuple  # added Tuple
 
 from ..core.errors import ModelMissingLogprobsError
 from ..core.errors import UncertaintyError
+from ..core.inspection import Inspection
 
 from enum import Enum
 
@@ -48,7 +49,7 @@ def get_certainty(function_pointer, vocabulary_size=200_000) -> Tuple[float, int
     """
     # 1. Extract the nested data source safely
     try:
-        response_logprobs = function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
+        response_logprobs = function_pointer.hosta_inspection.logs["llm_api_response"]["choices"][0]["logprobs"]["content"]
     except (KeyError, IndexError, AttributeError):
         return 0.0, 0
 
@@ -178,8 +179,7 @@ def most_probable_value(logprob_distribution:dict)->str:
     sorted_probs = sorted(normalized_probs.items(), key=lambda item: item[1], reverse=True)
     return sorted_probs[0][0], sorted_probs[0][1]
 
-# Not yet supported by ollama, supported by gpt-4o and gpt-4.1
-def get_enum_logprobes(*, function_pointer=None, inspection=None) -> dict:
+def get_enum_logprobes(*, function_pointer=None, inspection:Inspection=None) -> dict:
     if inspection is None and function_pointer is not None:
         if not hasattr(function_pointer, "hosta_inspection"):
             raise ValueError("Function pointer does not have hosta_inspection attribute. Did you call this function at least once?")
@@ -189,8 +189,8 @@ def get_enum_logprobes(*, function_pointer=None, inspection=None) -> dict:
     else:
         raise ValueError("Either function_pointer or inspection must be provided")
     
-    response_dict = inspection["logs"]["llm_api_response"]
-    return_type = inspection["analyse"]["type"]
+    response_dict = inspection.logs["llm_api_response"]
+    return_type = inspection.analyse["type"]
 
     assert issubclass(return_type, Enum), f"Return type is not an Enum. Type: {return_type} is not allowed when checking uncertainty."
 
@@ -205,8 +205,8 @@ def get_enum_logprobes(*, function_pointer=None, inspection=None) -> dict:
     # Use the new helper to trim control tokens
     logp_list = _trim_logp_list(logp_list)
 
-    if "rational" in inspection["logs"]:
-        rational = inspection["logs"]["rational"]
+    if "rational" in inspection.logs:
+        rational = inspection.logs["rational"]
         answer_part = []
         rational_part = []
         for token_data in logp_list:
@@ -297,10 +297,9 @@ def safe(acceptable_cumulated_uncertainty: float = 0.05, seed: int = None):
         
     return ReproducibleContextManager(settings)
 
-
 def last_uncertainty(function_pointer) -> float:
     if hasattr(function_pointer, "hosta_inspection") and \
-        "uncertainty" in function_pointer.hosta_inspection["logs"]:
-        return function_pointer.hosta_inspection["logs"]["uncertainty"]
+        "uncertainty" in function_pointer.hosta_inspection.logs:
+        return function_pointer.hosta_inspection.logs["uncertainty"]
     else:
         return 0

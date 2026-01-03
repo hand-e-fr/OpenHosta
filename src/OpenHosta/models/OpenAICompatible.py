@@ -5,7 +5,7 @@ import os
 import requests
 
 from ..core.inspection import Inspection
-from ..models import Model, ModelCapabilities
+from ..core.base_model import Model, ModelCapabilities
 from ..core.errors import ApiKeyError, RequestError, RateLimitError
 
 class OpenAICompatibleModel(Model):
@@ -184,24 +184,24 @@ class OpenAICompatibleModel(Model):
         return rational, answer
         
 
-    def print_last_prompt(self, hosta_inspection:Inspection):
+    def print_last_prompt(self, inspection:Inspection):
         """
         Print the last prompt sent to the LLM when using function `function_pointer`.
         """
-        if "llm_api_messages_sent" in hosta_inspection['logs'] and \
-            len(hosta_inspection['logs']["llm_api_messages_sent"]) >= 1:
+        if "llm_api_messages_sent" in inspection.logs and \
+            len(inspection.logs["llm_api_messages_sent"]) >= 1:
             print("\nSystem prompt:\n-----------------")
-            print(hosta_inspection['logs']["llm_api_messages_sent"][0]["content"][0]["text"])
-        if "llm_api_messages_sent" in hosta_inspection['logs'] and \
-            len(hosta_inspection['logs']["llm_api_messages_sent"]) >= 2:
+            print(inspection.logs["llm_api_messages_sent"][0]["content"][0]["text"])
+        if "llm_api_messages_sent" in inspection.logs and \
+            len(inspection.logs["llm_api_messages_sent"]) >= 2:
             print("\nUser prompt:\n-----------------")
-            print(hosta_inspection['logs']["llm_api_messages_sent"][1]["content"][0]["text"])
-        if "rational" in hosta_inspection['logs'] and hosta_inspection['logs']["rational"]:
+            print(inspection.logs["llm_api_messages_sent"][1]["content"][0]["text"])
+        if "rational" in inspection.logs and inspection.logs["rational"]:
             print("\nRational:\n-----------------")
-            print(hosta_inspection['logs']["rational"])
-        if "llm_api_response" in hosta_inspection['logs'] and \
-            "choices" in hosta_inspection['logs']["llm_api_response"] and \
-                len(hosta_inspection['logs']["llm_api_response"]["choices"]) >= 1:
+            print(inspection.logs["rational"])
+        if "llm_api_response" in inspection.logs and \
+            "choices" in inspection.logs["llm_api_response"] and \
+                len(inspection.logs["llm_api_response"]["choices"]) >= 1:
             print("\nLLM response:\n-----------------")
-            print(hosta_inspection['logs']["llm_api_response"]["choices"][0]["message"]["content"])
+            print(inspection.logs["llm_api_response"]["choices"][0]["message"]["content"])
 

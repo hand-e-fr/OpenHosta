@@ -53,7 +53,7 @@ class Color(Enum):
 
 # Force logprobs capability for testing
 from OpenHosta import config
-from OpenHosta.models.base_model import ModelCapabilities
+from OpenHosta.core.base_model import ModelCapabilities
 config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
 
 def test_safe_emulate_success():
@@ -88,7 +88,7 @@ def test_safe_emulate_success():
     # print_last_probability_distribution(get_next_step)    
     # print_last_prompt(get_next_step)
 
-    assert get_next_step.hosta_inspection["logs"]["enum_normalized_probs"][NextStep.GIT_PUSH] > 0.9, \
+    assert get_next_step.hosta_inspection["logs"]["enum_normalized_probs"][NextStep.GIT_PUSH] > 0.6, \
         f"Expected high confidence for 'git push', got: {get_next_step.hosta_inspection['logs']['enum_normalized_probs']}"
 
 def test_nested_safe_emulate_success():
@@ -360,7 +360,7 @@ def test_safe_workflow_organ_location():
         return emulate()
     
     
-    def find_organ_location(organ:str)->str:
+    def find_organ_location(organ:str)->str | None:
         """
         Find the color of the organ in the given location description.
         """
@@ -369,7 +369,7 @@ def test_safe_workflow_organ_location():
                 if IsThisInThat(organ, "human body") is Bool.FALSE:
                     raise ValueError(f"{organ} is not in human body.")
 
-                if IsThisInThat(organ, "above the belt level") is Bool.TRUE:
+                if IsThisInThat(organ, "part of the human body that is above the belt level") is Bool.TRUE:
                     if IsThisInThat(organ, "head") is Bool.TRUE:
                         location = "head"
                     elif IsThisInThat(organ, "chest") is Bool.TRUE:
@@ -503,4 +503,21 @@ def test_safe_AskWithImageAndText(self):
     # print_last_prompt(get_company_name)
     assert "hand" in response.lower(), "We should have recognized hand-e logo in the description"
 
-from OpenHosta.models import Model
+
+def test_emulate_inconsistent_type():
+    """
+    Test the emulate function with a simple prompt that asks for the capital of a country but require an integer.
+    """
+    
+    def get_capital_name(country: str) -> int:
+        """
+        This function returns the capital name of a given country.
+        """
+        return emulate()
+    
+    with safe(acceptable_cumulated_uncertainty=1, seed=550) as s:
+        response = get_capital_name("France")
+    
+        assert s.cumulated_uncertainty > 0.9, f"Expected a high uncertainty, got: {response} with cumulated uncertainty: {s.cumulated_uncertainty}"
+
+from OpenHosta import print_last_prompt

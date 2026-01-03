@@ -40,7 +40,7 @@ def emulate(
     
     try:
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
+        response_dict = inspection. model.api_call(messages, inspection.force_llm_args)
     except RateLimitError as e:
         try:
             retry_delay = int(os.getenv("OPENHOSTA_RATE_LIMIT_WAIT_TIME", 60))
@@ -53,7 +53,7 @@ def emulate(
             raise e
         else:
             time.sleep(retry_delay)
-            response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
+            response_dict = inspection. model.api_call(messages, inspection.force_llm_args)
         
     # Convert the model response to a python object according to expected types
     response_data = pipeline.pull(inspection, response_dict)
@@ -90,7 +90,7 @@ async def emulate_async(
     
     try:
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = await inspection["model"].api_call_async(messages, inspection["force_llm_args"])
+        response_dict = await inspection. model.api_call_async(messages, inspection.force_llm_args)
     except RateLimitError as e:
         try:
             retry_delay = int(os.getenv("OPENHOSTA_RATE_LIMIT_WAIT_TIME", 60))
@@ -102,7 +102,7 @@ async def emulate_async(
             raise e
         else:
             await asyncio.sleep(retry_delay)
-            response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
+            response_dict = inspection. model.api_call(messages, inspection.force_llm_args)
         
     # Convert the model response to a python object according to expected types
     response_data = pipeline.pull(inspection, response_dict)
