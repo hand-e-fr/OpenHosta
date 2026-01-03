@@ -16,7 +16,8 @@ def ask(
     **named_other_args,
 ) -> Any:
 
-    model = config.DefaultModel
+    if model is None:
+        model = config.DefaultModel
 
     message = []
     if system is not None:
@@ -63,7 +64,7 @@ def ask(
         llm_args=force_llm_args
     )
 
-    response = response_dict["choices"][0]["message"]["content"]
+    response = model.get_response_content(response_dict)
 
     # No type detection
     answer = response
@@ -81,7 +82,8 @@ async def ask_async(
     **named_other_args,
 ) -> Any:
 
-    model = config.DefaultModel
+    if model is None:
+        model = config.DefaultModel
 
     message = []
     if system is not None:
@@ -124,11 +126,12 @@ async def ask_async(
 
     force_llm_args["force_json_output"] = force_json_output
 
-    response_dict = await model.api_call_async(messages=message,
+    response_dict = await model.api_call_async(
+        messages=message,
         llm_args=force_llm_args
     )
 
-    response = response_dict["choices"][0]["message"]["content"]
+    response = model.get_response_content(response_dict)
     
     # No type detection
     answer = response
