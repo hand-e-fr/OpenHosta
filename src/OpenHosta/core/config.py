@@ -85,15 +85,21 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
             OPENHOSTA_DEFAULT_MODEL_TEMPERATURE=0.7                    # Optional
             OPENHOSTA_DEFAULT_MODEL_TOP_P=0.9                          # Optional
             OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS=2048                    # Optional
+            OPENHOSTA_DEFAULT_MODEL_RATE_LIMIT_WAIT_TIME=60            # Optional. Set to 0 to prevent retry. Unit is seconds.
             OPENHOSTA_DEFAULT_MODEL_SEED=42                            # Optional. If set with a local LLM your application will be deterministic.
             ------------------
             """))        
         return False
     
     if load_dotenv(dotenv_path=dotenv_path, override=override):
-        config.DefaultModel.api_key = os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
-        config.DefaultModel.base_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_BASE_URL", "https://api.openai.com/v1")
-        config.DefaultModel.model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4.1")
+        _defaut_model:OpenAICompatibleModel = config.DefaultModel
+        _defaut_model.api_key = os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
+        _defaut_model.model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4.1")
+        _defaut_model.set_api_url(
+            os.getenv("OPENHOSTA_DEFAULT_MODEL_BASE_URL", "https://api.openai.com/v1"),
+            _defaut_model.model_name
+        )
+        _defaut_model.retry_delay = int(os.getenv("OPENHOSTA_DEFAULT_MODEL_RATE_LIMIT_WAIT_TIME", 60))
 
         TEMPERATURE =       os.getenv("OPENHOSTA_DEFAULT_MODEL_TEMPERATURE", None)
         TOP_P =             os.getenv("OPENHOSTA_DEFAULT_MODEL_TOP_P", None)
@@ -101,13 +107,13 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         SEED =              os.getenv("OPENHOSTA_DEFAULT_MODEL_SEED", None)
         
         if TEMPERATURE is not None:
-            config.DefaultPipeline.model_list[0].api_parameters |= {"temperature": float(TEMPERATURE)}
+            _defaut_model.api_parameters |= {"temperature": float(TEMPERATURE)}
         if TOP_P is not None:
-            config.DefaultPipeline.model_list[0].api_parameters |= {"top_p": float(TOP_P)}
+            _defaut_model.api_parameters |= {"top_p": float(TOP_P)}
         if MAX_TOKENS is not None:
-            config.DefaultPipeline.model_list[0].api_parameters |= {"max_tokens": int(MAX_TOKENS)}
+            _defaut_model.api_parameters |= {"max_tokens": int(MAX_TOKENS)}
         if SEED is not None:
-            config.DefaultPipeline.model_list[0].api_parameters |= {"seed": int(SEED)}
+            _defaut_model.api_parameters |= {"seed": int(SEED)}
                     
         return True
 

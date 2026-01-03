@@ -38,22 +38,7 @@ def emulate(
     # Convert the inspection to a prompt
     messages = pipeline.push(inspection)
     
-    try:
-        # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = inspection. model.api_call(messages, inspection.force_llm_args)
-    except RateLimitError as e:
-        try:
-            retry_delay = int(os.getenv("OPENHOSTA_RATE_LIMIT_WAIT_TIME", 60))
-        except:
-            retry_delay = 0
-
-        print(f"[emulate] Rate limit exceeded. We wait for {retry_delay}s then retry.", e)
-
-        if retry_delay == 0:
-            raise e
-        else:
-            time.sleep(retry_delay)
-            response_dict = inspection. model.api_call(messages, inspection.force_llm_args)
+    response_dict = inspection.model.api_call(messages, inspection.force_llm_args | force_llm_args)
         
     # Convert the model response to a python object according to expected types
     response_data = pipeline.pull(inspection, response_dict)
@@ -88,21 +73,8 @@ async def emulate_async(
     # Convert the inspection to a prompt
     messages = pipeline.push(inspection)
     
-    try:
-        # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = await inspection. model.api_call_async(messages, inspection.force_llm_args)
-    except RateLimitError as e:
-        try:
-            retry_delay = int(os.getenv("OPENHOSTA_RATE_LIMIT_WAIT_TIME", 60))
-        except:
-            retry_delay = 0
-
-        print(f"[emulate] Rate limit exceeded. We wait for {retry_delay}s then retry.", e)
-        if retry_delay == 0:
-            raise e
-        else:
-            await asyncio.sleep(retry_delay)
-            response_dict = inspection. model.api_call(messages, inspection.force_llm_args)
+    # This is the api call to the model, nothing more. Easy to debug and test.
+    response_dict = await inspection.model.api_call_async(messages, inspection.force_llm_args | force_llm_args)
         
     # Convert the model response to a python object according to expected types
     response_data = pipeline.pull(inspection, response_dict)
