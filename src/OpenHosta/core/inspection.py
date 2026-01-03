@@ -2,11 +2,70 @@ import sys
 import inspect
 
 from types import FrameType, MethodType, FunctionType
+from typing import Callable, Dict, Any
 
-from ..core.errors import FrameError
+from .base_model import Model
+from .errors import FrameError
 from .analizer import hosta_analyze, hosta_analyze_update
 
-type Inspection = dict
+class Inspection:
+    def __init__(self,
+                 function_pointer: Callable,
+                 frame,
+                 analyse
+                 ):
+        self.other_inspection : Dict[str, Any] = {}
+        
+        self.function_pointer: Callable = function_pointer
+        self.frame =  frame
+        self.analyse =  analyse
+        self.logs:Dict =  {}
+        self.force_llm_args:Dict =  {}
+        self.counters:Dict =  {}
+        self.prompt_data:Dict = {}
+        self.pipe =  None
+        self.model:Model = None
+        
+    def __getitem__(self, name):
+        """
+        This method is called when an attribute is accessed on the Inspection object.
+        It checks if the attribute exists in the other_inspection dictionary and returns it if it does.
+        Otherwise, it raises an AttributeError.
+        This is a deprecated method, and we should use the 'analyse' attribute instead.
+        @TODO: Remove this method in future versions.
+        """
+        # Print a warning as this is deprecated
+        print(f"Warning: Accessing '{name}' directly from Inspection is deprecated. Use the 'analyse' attribute instead.")
+                
+        if name in dir(self):
+            return getattr(self, name)
+        
+        if name in self.other_inspection:
+            print("This attribute is unknown to OpenHosta, but it was set by the user.")
+            return self.other_inspection[name]
+        
+        else:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+
+    def __setitem__(self, name, value):
+        """
+        This method is called when an attribute is set on the Inspection object.
+        It sets the attribute in the other_inspection dictionary.
+        This is a deprecated method, and we should use the 'analyse
+        """
+        
+        # Print a warning as this is deprecated
+        
+        print(f"Warning: Setting '{name}' directly on Inspection is deprecated. Use the 'analyse' attribute instead.")
+        
+
+        if name in dir(self):
+            return setattr(self, name, value)
+        
+        else:
+            print("This attribute is unknown to OpenHosta, but it will be set by the user.")
+            self.other_inspection[name] = value
 
 def identify_function_of_frame(function_frame):
     """
@@ -116,32 +175,26 @@ def get_hosta_inspection(frame=None, function_pointer=None):
     else:
         function_pointer = function_pointer
     
-    inspection = getattr(function_pointer, "hosta_inspection", None)
+    inspection: Inspection = getattr(function_pointer, "hosta_inspection", None)
     
     if inspection == None:
         analyse = hosta_analyze(frame, function_pointer)
-        inspection = {
-            "function":function_pointer,
-            "frame": frame,
-            "analyse": analyse,
-            "logs": {},
-            "force_llm_args": {},
-            "counters": {},
-            "prompt_data":{},
-            "pipe": None
-        }
+        inspection = Inspection(
+            function_pointer=function_pointer,
+            frame=frame,
+            analyse=analyse)
         setattr(function_pointer, "hosta_inspection", inspection)
     else:
         if frame is None:
             # We do not have argument types from the call (most likely a closure)
-            inspection["analyse"]["args"] = [] 
+            inspection.analyse["args"] = [] 
         else:
-            analyse = hosta_analyze_update(frame, inspection)
-            inspection["analyse"] = analyse
-        inspection["frame"] = frame
+            analyse = hosta_analyze_update(frame, inspection.analyse)
+            inspection.analyse = analyse
+        inspection.frame = frame
 
     if hasattr(function_pointer, "force_llm_args"):
-        inspection["force_llm_args"] |= function_pointer.force_llm_args
+        inspection.force_llm_args |= function_pointer.force_llm_args
         
     return inspection
 
@@ -153,11 +206,11 @@ def get_last_frame(function_pointer):
     If the function was never called, return None.
     """
 
-    inspection = getattr(function_pointer, "hosta_inspection", None)
+    inspection:Inspection = getattr(function_pointer, "hosta_inspection", None)
 
     if inspection == None:
         frame = None
     else:
-        frame = inspection["frame"]
+        frame = inspection.frame
 
     return frame

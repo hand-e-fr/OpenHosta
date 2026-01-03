@@ -7,8 +7,9 @@ try:
 except Exception as e:
     sys.stderr.write("[OpenHosta/CONFIG_ERROR] python-dotenv is not installed. It is a good practice to install it and store your credentials in a .env file.\n")
     
+from ..core.base_model import Model
 from ..pipelines import OneTurnConversationPipeline
-from ..models import Model, OpenAICompatibleModel
+from ..models import OpenAICompatibleModel
 
 # Config shall be a class so that any reference to default model or default pipeline are updated during runtime
 # (no copy)
@@ -26,7 +27,7 @@ class Config:
         
     # Add getter and setter for DefaultModel and DefaultPipeline
     @property
-    def DefaultModel(self) -> OpenAICompatibleModel:
+    def DefaultModel(self) -> Model:
         return self._DefaultModel
 
     @property
@@ -34,7 +35,7 @@ class Config:
         return self._DefaultPipeline
     
     @DefaultModel.setter
-    def DefaultModel(self, model: OpenAICompatibleModel):
+    def DefaultModel(self, model: Model):
         if not isinstance(model, OpenAICompatibleModel):
             raise ValueError("DefaultModel must be an instance of OpenAICompatibleModel")
         
