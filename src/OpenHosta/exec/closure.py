@@ -64,7 +64,7 @@ def closure_async(
         messages = pipeline.push(inspection)
 
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = await inspection. model.api_call_async(messages, inspection.force_llm_args)
+        response_dict = await inspection.model.api_call_async(messages, inspection.force_llm_args)
 
         # Convert the model response to a python object according to expected types
         response_data = pipeline.pull(inspection, response_dict)
@@ -109,10 +109,10 @@ def closure(
         inspection.force_llm_args |= _force_llm_args
             
         # This is the api call to the model, nothing more. Easy to debug and test.
-        response_dict = inspection. model.api_call(messages, inspection.force_llm_args)
+        response_dict = inspection.model.api_call(messages, inspection.force_llm_args)
 
         # Convert the model response to a python object according to expected types
-        response_data = inspection. pipeline.pull(inspection, response_dict)
+        response_data = inspection.pipeline.pull(inspection, response_dict)
 
         return response_data
     
