@@ -2,8 +2,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Set
 
 import abc
+import time 
 import asyncio
 from enum import Enum
+
+from ..core.errors import RateLimitError
 
 from  concurrent.futures import ThreadPoolExecutor
 
@@ -23,6 +26,7 @@ class Model:
                 max_async_calls = 7,
                 additionnal_headers: Dict[str, Any] = {},
                 api_parameters:Dict[str, Any] = {},
+                retry_delay:int = 60
                 ):
         self.capabilities: Set[ModelCapabilities] = set()
         
@@ -33,11 +37,19 @@ class Model:
         self.api_parameters = api_parameters
         
         self.preferred_image_format = "png"
+        
+        # Rate limiting
+        self.retry_delay = retry_delay
+        self.delay_next_api_call_until = 0
 
     def __exit__(self):
         if self.async_executor is not None:
             self.async_executor.shutdown()
-        
+    
+    def set_next_rate_limit(self, next_authorized_api_call_time:int):
+        print(f"Set some delay before new API call. Waiting for {next_authorized_api_call_time}")
+        self.delay_next_api_call_until = next_authorized_api_call_time + time.time()
+    
     async def api_call_async(
         self,
         messages: List[dict[str, str]],
@@ -65,13 +77,51 @@ class Model:
         """
         raise NotImplementedError("You need to implement 'models_on_same_api' in your subclass of Model")
     
-    @abc.abstractmethod
-    def  api_call(
+    def api_call(
         self,
         messages: List[Dict[str, str]],
         llm_args:Dict = {}
     ) -> Dict:
-        raise NotImplementedError("You need to implement 'api_call' in your subclass of Model")
+        now = time.time()
+        
+        time_to_wait = self.delay_next_api_call_until - now
+        if time_to_wait > 0:
+            print(f"Rate limit annouced. We wait for {time_to_wait}s before API call.")
+            time.sleep(time_to_wait)
+            
+        try:
+            # This is the api call to the model, nothing more. Easy to debug and test.
+            response_dict = self.api_call_without_retry(messages, llm_args)
+        except RateLimitError as e:
+    
+            if self.retry_delay == 0:
+                raise e
+            else:
+                now = time.time()
+                
+                time_to_wait = self.delay_next_api_call_until - now                
+                
+                if time_to_wait <= 0:
+                    # Delay other threads
+                    print(f"Rate limit exceeded. But no delay was annouced by the API. We wait for {self.retry_delay}.")
+                    self.delay_next_api_call_until = max(self.delay_next_api_call_until, now + self.retry_delay)
+                
+                # Delay this thread
+                time_to_wait = self.delay_next_api_call_until - now
+                if time_to_wait > 0:
+                    print(f"Request failed due to rate limit exceeded. We wait for {time_to_wait}s then retry.", e)
+                    time.sleep(time_to_wait)
+                response_dict = self.api_call_without_retry(messages, llm_args) 
+        
+        return response_dict
+    
+    @abc.abstractmethod
+    def  api_call_without_retry(
+        self,
+        messages: List[Dict[str, str]],
+        llm_args:Dict = {}
+    ) -> Dict:
+        raise NotImplementedError("You need to implement 'api_call_without_retry' in your subclass of Model")
 
     @abc.abstractmethod
     def get_consumption(self, response_dict) -> int:

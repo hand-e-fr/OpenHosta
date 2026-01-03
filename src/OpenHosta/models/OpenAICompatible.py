@@ -20,17 +20,18 @@ class OpenAICompatibleModel(Model):
             chat_completion_url: str = "/chat/completions",
             api_key: str = None, 
             timeout: int = 60,
+            retry_delay:int = None,            
         ):     
         super().__init__(
             max_async_calls=max_async_calls,
             additionnal_headers=additionnal_headers,
             api_parameters=api_parameters,
+            retry_delay=retry_delay
         )
 
         self.reasoning_start_and_stop_tags = ["<think>", "</think>"]
         self.model_name = model_name
-        self.base_url = base_url
-        self.chat_completion_url = chat_completion_url if not self.base_url.endswith(chat_completion_url) else ""
+        self.set_api_url(base_url, model_name, chat_completion_url)
         self.api_key = api_key
         self.timeout = timeout
 
@@ -42,7 +43,60 @@ class OpenAICompatibleModel(Model):
         if any(var is None for var in (model_name, base_url)):
             raise ValueError(f"[Model.__init__] Missing values.")
     
-    def api_call(
+    def set_api_url(self, url: str, model_name: str, chat_completions_url: str = "/chat/completions"):
+        # Handle Azure case
+        
+        schema, hostname, route, route_extention, query = None, None, None, None, None
+        
+        if "://" in url:
+            schema, url = url.split("://")
+            schema = schema + "://"
+        else:
+            schema = "http://"
+        
+        if '?' in url:
+            url, query = url.split("?")
+            query = "?"+query
+        else:
+            query = ""
+            
+        if chat_completions_url in url:
+            url, route_extention = url.split(chat_completions_url)
+            route_extention = chat_completions_url + route_extention
+        else:
+            route_extention = chat_completions_url
+            
+        if "/" in url:
+            parts = url.split("/")
+            hostname = parts[0]
+            route = "/"+"/".join(parts[1:])                
+        elif "127.0.0.1:11434" in url:
+            # Ollama detection
+            hostname = url
+            route = "/api/v1"
+        elif "127.0.0.1:8000" in url:
+            # Vllm detection
+            hostname = url
+            route = "/v1"
+        else:
+            route = ""
+
+        if "openai.azure.com" in hostname:
+            fix_azure_route = False
+            if route == "":
+                fix_azure_route = True
+                route = "/openai/deployments/" + model_name
+            if query == "":
+                fix_azure_route = True
+                query = "?api-version=2025-01-01-preview"
+
+            if fix_azure_route:
+                print(f"[OpenHosta] Fixing Azure route to: {schema}{hostname}{route}{route_extention}{query}")
+       
+        self.base_url = schema+hostname
+        self.chat_completion_url = route + route_extention + query
+    
+    def api_call_without_retry(
         self,
         messages: List[Dict[str, str]],
         llm_args:Dict = {}
@@ -57,7 +111,7 @@ class OpenAICompatibleModel(Model):
 
         # Typical error from begginers
         if api_key is None and "api.openai.com/v1" in self.base_url:
-            raise ApiKeyError("[model.api_call] Empty API key.")
+            raise ApiKeyError("[model.api_call_without_retry] Empty API key.")
         
         l_body = {
             "model": self.model_name,
@@ -84,14 +138,23 @@ class OpenAICompatibleModel(Model):
 
         response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
 
+
+        if "Retry-After" in response.headers:
+            self.set_next_rate_limit(
+                next_authorized_api_call_time=int(response.headers["Retry-After"]))
+        elif 'x-ratelimit-reset-requests' in response.headers:
+            self.set_next_rate_limit(
+                next_authorized_api_call_time=int(response.headers['x-ratelimit-reset-requests']))
+            
         if response.status_code == 200:
             pass
         elif response.status_code == 429:
-            raise RateLimitError(f"[Model.api_call] Rate limit exceeded (HTTP 429). {response.text}")
+            # print headers for debug
+            raise RateLimitError(f"[Model.api_call_without_retry] Rate limit exceeded (HTTP 429). {response.text}")
         elif response.status_code == 401:
-            raise ApiKeyError(f"[Model.api_call] Unauthorized (HTTP 401). Check your API key. {response.text}")
+            raise ApiKeyError(f"[Model.api_call_without_retry] Unauthorized (HTTP 401). Check your API key. {response.text}")
         else:
-            raise RequestError(f"[Model.api_call] Request failed with status code {response.status_code}:\n{response.text}\n\n")
+            raise RequestError(f"[Model.api_call_without_retry] Request failed with status code {response.status_code}:\nAPI URL: {full_url}\n{response.text}\n\n")
             
         self._nb_requests += 1
         response_dict = response.json()
@@ -112,7 +175,7 @@ class OpenAICompatibleModel(Model):
 
         # Typical error from begginers
         if api_key is None and "api.openai.com/v1" in self.base_url:
-            raise ApiKeyError("[model.api_call] Empty API key.")
+            raise ApiKeyError("[model.models_on_same_api] Empty API key.")
         
         headers = {
             "Content-Type": "application/json"
@@ -146,11 +209,19 @@ class OpenAICompatibleModel(Model):
             self._used_tokens += int(response_dict["usage"]["total_tokens"])
 
     def get_response_content(self, response_dict: Dict) -> str:
-
-        response = response_dict["choices"][0]["message"]["content"]
+        
+        assert "choices" in response_dict, f"[Model.get_response_content] Invalid response: {response_dict}"
+        assert len(response_dict["choices"]) > 0, f"[Model.get_response_content] Invalid response: {response_dict}"
+        assert "message" in response_dict["choices"][0], f"[Model.get_response_content] Invalid response: {response_dict}"
 
         if "text" in response_dict["choices"][0]["message"]:
             response = response_dict["choices"][0]["message"]["text"]
+        
+        elif "content" in response_dict["choices"][0]["message"]:
+            response = response_dict["choices"][0]["message"]["content"]
+            
+        else:
+            response = ""
 
         return response
     

@@ -15,7 +15,6 @@ from OpenHosta import OneTurnConversationPipeline, config
 from OpenHosta.core.inspection import get_caller_frame, get_hosta_inspection
 from OpenHosta.core.config import config
 from OpenHosta.pipelines import OneTurnConversationPipeline
-from OpenHosta.core.errors import RateLimitError
 
 def emulate_iterator(pipeline : OneTurnConversationPipeline = config.DefaultPipeline, max_generation = 100, min_probability = 1e-8, *args, **kwargs):
 
@@ -27,8 +26,6 @@ def emulate_iterator(pipeline : OneTurnConversationPipeline = config.DefaultPipe
 
     def _wrapper():
         
-        ## TODO: mettre le retry dans le modèle au niveau global
-
         ## TODO: top_k = 1 pour génération avec le toplogprob n°1
         ## Check for Unertainty error. if raised, continue 
         ## - Yield avec (cumulated_prob, answer)
@@ -46,7 +43,7 @@ def emulate_iterator(pipeline : OneTurnConversationPipeline = config.DefaultPipe
         
         try:
             # This is the api call to the model, nothing more. Easy to debug and test.
-            response_dict = inspection["model"].api_call(messages, inspection["force_llm_args"])
+            response_dict = inspection.model.api_call(messages, inspection["force_llm_args"])
         except RateLimitError as e:
             try:
                 retry_delay = int(os.getenv("OPENHOSTA_RATE_LIMIT_WAIT_TIME", 60))
