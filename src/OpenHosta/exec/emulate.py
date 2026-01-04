@@ -280,8 +280,13 @@ def emulate_iterator(
             if proba >= min_probability:
                 response_dict["choices"][0]["message"]["text"] = text
                 # Convert the model response to a python object according to expected types
-                response_data = pipeline.pull(inspection, response_dict)
-
+                try:
+                    response_data = pipeline.pull(inspection, response_dict)
+                except ValueError as e:
+                    if counted_generations <= 0:
+                        break                    
+                    continue
+                
                 is_new_answer = response_data not in results
                 results.append(response_data)
                 
