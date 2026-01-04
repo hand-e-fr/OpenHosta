@@ -18,24 +18,19 @@ def test_generate_basic():
     This test checks if the emulate function works with a simple prompt in iterator mode.
     """
     from OpenHosta import print_last_prompt
-    assistant_thinking_string = """Here is a random answer in asia """
-    assistant_thinking_string = """<think>
-    This time let's consider the answer that starts with '"""
+    
     def country_name() -> str:
         """
-        This function returns the name of a country.
+        This function returns the name of a country near France, chosen randomly.
 
         Returns:
             str: The name of a country.
         """
-        return emulate_iterator(max_generation=10, assistant_thinking_string=assistant_thinking_string)
+        return emulate_iterator()
 
-    it = country_name()
-    next(it)
-    for c in country_name():
-        print(c)
-        break
-    print_last_prompt(country_name)
+
+    for p in country_name():
+        print(p)
 
     def letters_of_the_alphabet() -> str:
         """
@@ -45,19 +40,23 @@ def test_generate_basic():
         Returns:
             str: The letter.
         """
-        return emulate_iterator(max_generation=4, assistant_thinking_string=assistant_thinking_string)
+        return emulate_iterator()
 
     for c in letters_of_the_alphabet():
         print(c)
-        break
-        
-    print_last_prompt(letters_of_the_alphabet)
-    
+            
     def get_city(country: str) -> str:
         """
-        This function returns the capital of a given country.
+        This function returns a city of that is in the country.
+        The city is chosen randomly.
+        
+        Args:
+           country (str): The name of the country.
         """
-        return emulate_iterator(max_generation=5,assistant_thinking_string=assistant_thinking_string)
+        return emulate_iterator()
 
-    for c in get_city("France"):
-        print(c)
+    for country in country_name():
+        for city in get_city(country):
+            print(f"{country:20s}: {city}")
+
+

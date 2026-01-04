@@ -23,7 +23,7 @@ class Inspection:
         self.force_llm_args:Dict =  {}
         self.counters:Dict =  {}
         self.prompt_data:Dict = {}
-        self.pipe =  None
+        self.pipeline =  None
         self.model:Model = None
         
     def __getitem__(self, name):
