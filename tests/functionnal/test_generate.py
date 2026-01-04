@@ -31,7 +31,37 @@ def test_generate_basic():
 
     for p in country_name():
         print(p)
+        
+    # This returns 19 names with qwen3-vl:8b-instruc (ollama)
+    def country_name() -> str:
+        """
+        This function returns the name of a country, chosen randomly.
 
+        Returns:
+            str: The name of a country spelled in English.
+        """
+        return emulate_iterator(min_probability=1e-6, max_generation=100)
+
+    def country_that_share_border_with(country: str) -> str:
+        """
+        This function returns the name of a country that shares a border with the given country, chosen randomly.
+        
+        Args:
+           country (str): The name of the country.
+        """
+        return emulate_iterator()
+
+    all = set()
+    for p in country_name():
+        all.add(p)
+        print(f"\n{p}\n-----")
+        for q in country_that_share_border_with(p):
+            all.add(q)
+            print(f"{p:20s} -> {q}")        
+    
+    len([x for x in all if len(x.split()) < 3])
+    print([x for x in all if len(x.split()) < 3])
+    
     def letters_of_the_alphabet() -> str:
         """
         This function returns a random letter of the alphabet.
