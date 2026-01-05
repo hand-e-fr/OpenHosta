@@ -96,7 +96,7 @@ class Model:
         
         time_to_wait = self.delay_next_api_call_until - now
         if time_to_wait > 0:
-            print(f"Rate limit annouced. We wait for {time_to_wait}s before API call.")
+            #print(f"Rate limit annouced. We wait for {time_to_wait}s before API call.")
             time.sleep(time_to_wait)
             
         try:
@@ -119,7 +119,7 @@ class Model:
                 # Delay this thread
                 time_to_wait = self.delay_next_api_call_until - now
                 if time_to_wait > 0:
-                    print(f"Request failed due to rate limit exceeded. We wait for {time_to_wait}s then retry.", e)
+                    #print(f"Request failed due to rate limit exceeded. We wait for {time_to_wait}s then retry.", e)
                     time.sleep(time_to_wait)
                 response_dict = self.api_call_without_retry(messages, llm_args) 
         
