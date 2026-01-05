@@ -74,15 +74,15 @@ def travel_branches_from_node(inspection: Inspection, messages: List, min_probab
         next_node = find_next_node(branches, best_porba_found=min_probability)
         # print(next_node)
         if next_node is not None:
-            val = fill_nodes(
+            for val in fill_nodes(
                 inspection=inspection,
                 messages=messages,
                 current_node=next_node,
                 min_probability=min_probability,
                 force_llm_args=force_llm_args
-                )
-            if val is not None:
-                yield val
+                ):
+                if val[0] is not None:
+                    yield val
                 
     
 def fill_nodes(
@@ -103,24 +103,26 @@ def fill_nodes(
     
         # Make sure we have an assistant message at the end    
         if messages[-1]["role"] != "assistant":
-            messages.append({"role": "assistant", "content": current_node["text"]})
+            messages.append({"role": "assistant", "content": [{'type': 'text', 'text': current_node["text"]}]})
         else:
-            messages[-1]["content"] = current_node["text"]
+            messages[-1]["content"] = [{'type': 'text', 'text': current_node["text"]}] 
     
         response_dict = model.api_call(messages, inspection.force_llm_args | force_llm_args | {"logprobs": True, "top_logprobs": 20, "max_tokens": 10})    
-
 
         if not "logprobs" in response_dict["choices"][0]:
             # Most likely an empty answer: terminal node
             return current_node["text"], current_node["selected_proportion"], response_dict
         else:
             response_logprobs = response_dict["choices"][0]["logprobs"]["content"]
-        
+                    
         # 2. Iterate through tokens to identify branching options
         max_depth_on_this_path = len(response_logprobs)
         above_threshold_branches = current_node["above_threshold_branches"]
         for depth, token_data in enumerate(response_logprobs):
             
+            if token_data["token"].strip().startswith("<|") and token_data["token"].strip().endswith("|>"):
+                break
+                            
             top_logprobs = token_data.get("top_logprobs", [])
             
             total_mass = sum(math.exp(t["logprob"]) for t in top_logprobs)
@@ -134,8 +136,20 @@ def fill_nodes(
                     
                 step_probability = 1.0 if total_mass == 0 else valid_mass / total_mass
                 selected_proportion = current_node["selected_proportion"]*step_probability
-                text = current_node["text"]+p["token"]
-                                  
+
+                if p["token"].strip().startswith("<|") and p["token"].strip().endswith("|>"):
+                    text = current_node["text"]
+                    children = []
+                    yield (text, selected_proportion, response_dict)
+                if depth >= max_depth_on_this_path-1 and p["token"] == token_data["token"]:
+                    children = []
+                    text = current_node["text"]+p["token"]
+                    yield (text, selected_proportion, response_dict)
+                else:
+                    text = current_node["text"]+p["token"]
+                    children = None
+                
+                      
                 #print(f"{depth:03d} {selected_proportion:0.10f} {step_probability:0.10f} [{p["token"]:10s}] {text}")
                                 
                 node = {
@@ -145,12 +159,9 @@ def fill_nodes(
                     "selected_proportion": selected_proportion,
                     "above_threshold_branches": above_threshold_branches, 
                     "logprob": p.get("logprob"), 
-                    "children": None 
+                    "children": children
                 }
                 
-                if depth >= max_depth_on_this_path-1 and p["token"] == token_data["token"]:
-                    node["children"] = []
-                    result = (text, selected_proportion, response_dict)
                 
                 current_node["children"].append(node)
             
@@ -158,10 +169,28 @@ def fill_nodes(
             if len(current_nodes) == 0:
                 print("No generation with proba above threshold:", token_data["token"], "in", [n["token"] for n in current_node["children"]], "at depth", depth)
                 break
+            
             current_node = current_nodes[0]
             current_node["children"] = []    
 
-    return result
+
+# TODO: faire la version async
+# TODO: permettre d'annoncer au llm les réponses déjà générées pour approfondir d'autres pistes (option active USER_META_PROMPT)
+
+# Define a decorator to emulate a function as an iterator
+def iterate_answers(
+    max_generation = 50,
+    min_probability = 1e-4,
+    ):
+    def decorator(inner_func_pointer):
+        def _iterator(*args, **kwargs):
+            inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
+            inspection.analyse["args"]  = [{"name": f"arg_{i}", "type": type(arg), "value": arg} for i, arg in enumerate(args)]
+            inspection.analyse["args"] += [{"name": name,       "type": type(arg), "value": arg} for name, arg in kwargs.items()]
+            # TODO: call the iteration loop
+            return None
+        return _iterator
+    return decorator
 
 def emulate_iterator(
     pipeline : OneTurnConversationPipeline = config.DefaultPipeline,
@@ -178,14 +207,13 @@ def emulate_iterator(
 
     def _iterator():
         
-        ## TODO: top_k = 1 pour génération avec le toplogprob n°1
-        ## Check for Unertainty error. if raised, continue 
-        ## - Yield avec (cumulated_prob, answer)
-        ## - split à chaque fois qu'il y a des logprobes > average logprob
-        ## - tri des branchements par proba
-        ## - génération de la branche avec la plus haute probabilité (ajout dans messages pour assistant)
+        ## TODO: gestion de la complétude de la génération
         ## !! si top_logprob[20] > average_logprob alors il faut raise un erreur qui indique que la génération est incomplete. Il faut ajouter une catégorie.
-        ## !! que faut il faire si le toplogprob n+1 est un substring d'un toplogprob [0..n] ? => générer la branche complete et regarder si le segement suivant (jusqu'au branchage suivant) est est identique en str. si oui: merge de la proba avec le précédent, sinon branche accepté 
+        
+        ## TODO: merge des branches similaires 
+        ## !! que faut il faire si le toplogprob n+1 est un substring d'un toplogprob [0..n] ? 
+        # => générer la branche complete et regarder si la data typée est est identique (hash).
+        # si oui: merge de la proba avec le précédent, sinon branche accepté 
         
         ## TODO: test si les prob sont similaires lorsque l'ordre des catégories est inversé
         ## 
@@ -207,10 +235,12 @@ def emulate_iterator(
     
             if proba >= min_probability:
                 response_dict["choices"][0]["message"]["text"] = text
+                response_dict["choices"][0]["message"]["content"] = [{'type': 'text', 'text': text}]
                 # Convert the model response to a python object according to expected types
                 try:
                     response_data = pipeline.pull(inspection, response_dict)
-                except ValueError as e:
+                except (TypeError, SyntaxError, ValueError) as e:
+                    print(f"{e.__class__.__name__} during pulling data from model response:", text)
                     if counted_generations <= 0:
                         break                    
                     continue
