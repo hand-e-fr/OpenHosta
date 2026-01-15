@@ -104,7 +104,7 @@ class OneTurnConversationPipeline(Pipeline):
         """Python Level"""
         #TODO: improve type guessing and merge with closure type guessing
         if "type" not in inspection.analyse or inspection.analyse["type"] is None:
-            Warning(f"No return type found for function {inspection.analyse["name"]}. Assuming str.")
+            Warning(f"No return type found for function "+inspection.analyse["name"]+"}. Assuming str.")
             return_type = str
         else:
             return_type = inspection.analyse["type"]
@@ -112,7 +112,7 @@ class OneTurnConversationPipeline(Pipeline):
         # Check each argument type
         for arg in inspection.analyse["args"]:
             if "type" not in arg or arg["type"] is None:
-                Warning(f"No type found for argument {arg["name"]}. Assuming str.")
+                Warning(f"No type found for argument "+arg["name"]+". Assuming str.")
                 arg["type"] = str    
                 
         return inspection
