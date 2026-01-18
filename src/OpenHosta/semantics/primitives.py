@@ -159,15 +159,63 @@ class GuardedPrimitive(ABC):
         pass
 
 
+def create_semantic_type(base_type: type, description: str = "", tolerance: float = 0.15):
+    """
+    Factory function to create a semantic type from a base Python type.
+    
+    This enables the documentation pattern:
+        SemanticType(str, "Tâche ménagère")
+    
+    Args:
+        base_type: The base Python type (str, int, float, bool)
+        description: Semantic description for the type
+        tolerance: Semantic tolerance for comparisons
+    
+    Returns:
+        A new class inheriting from the appropriate Semantic* type
+    """
+    # Import here to avoid circular imports
+    from .scalars import SemanticStr, SemanticInt, SemanticFloat, SemanticBool
+    
+    # Map base types to their semantic equivalents
+    type_mapping = {
+        str: SemanticStr,
+        int: SemanticInt,
+        float: SemanticFloat,
+        bool: SemanticBool,
+    }
+    
+    # Get the semantic base class
+    semantic_base = type_mapping.get(base_type)
+    if semantic_base is None:
+        raise TypeError(f"Unsupported base type: {base_type}. Supported: str, int, float, bool")
+    
+    # Create a dynamic class with the description embedded
+    class DynamicSemanticType(semantic_base):
+        _description_default = description
+        semantic_tolerance = tolerance
+        _type_en = f"{semantic_base._type_en} ({description})" if description else semantic_base._type_en
+    
+    # Give it a meaningful name for debugging
+    DynamicSemanticType.__name__ = f"SemanticType_{base_type.__name__}"
+    DynamicSemanticType.__qualname__ = f"SemanticType[{base_type.__name__}]"
+    
+    return DynamicSemanticType
+
+
 class SemanticType(GuardedPrimitive):
     """
     Classe de base pour les types sémantiques riches.
     Ajoute la capacité de COMPARAISON (Embeddings) au-dessus de la Validation.
     
-    Usage :
-    class Animal(SemanticType):
-        _type_en = "an animal"
-        semantic_tolerance = 0.15
+    Usage (as factory):
+        TaskType = SemanticType(str, "Tâche ménagère")
+        task = TaskType("Laver le sol")
+    
+    Usage (as base class):
+        class Animal(SemanticType):
+            _type_en = "an animal"
+            semantic_tolerance = 0.15
     """
 
     # --- Configuration Sémantique ---
@@ -177,7 +225,17 @@ class SemanticType(GuardedPrimitive):
     # Seuil en dessous duquel on bascule sur le LLM (hybride)
     HYBRID_SWITCH_TOLERANCE: float = 0.05
 
-    def __init__(self, value: Any, description: str = ""):
+    def __new__(cls, value: Any, description: str = "", tolerance: float = None):
+        # Factory pattern: SemanticType(str, "description") -> returns a CLASS
+        if isinstance(value, type) and value in (str, int, float, bool):
+            tol = tolerance if tolerance is not None else 0.15
+            return create_semantic_type(value, description, tol)
+        
+        # Normal instantiation: SemanticType(some_value, "description")
+        # This would fail as SemanticType is abstract, but subclasses can use it
+        return super().__new__(cls, value, description)
+
+    def __init__(self, value: Any, description: str = "", tolerance: float = None):
         # Note: __new__ a déjà fait le travail de casting/instanciation.
         # __init__ sert ici à initialiser le cache sémantique.
         # Pour les types immuables (str, int), ceci ne sera appelé qu'après création.

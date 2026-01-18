@@ -280,22 +280,44 @@ class SemanticSet:
     def _wrap_item(self, item: Any) -> Any:
         """Convertit un item brut en type sémantique si un type est défini."""
         if self._inner_type is not None:
-            # Si c'est déjà du bon type, on le garde
-            if isinstance(item, type(self._inner_type)):
-                return item
-            # Sinon on instancie via le type sémantique
-            return self._inner_type.__class__(item)
+            # If _inner_type is a class, use it directly
+            if isinstance(self._inner_type, type):
+                # Check if item is already an instance of this type
+                if isinstance(item, self._inner_type):
+                    return item
+                # Otherwise instantiate
+                return self._inner_type(item)
+            else:
+                # _inner_type is an instance - use its class
+                if isinstance(item, type(self._inner_type)):
+                    return item
+                return type(self._inner_type)(item)
         return item
     
     def _get_vector(self, item: Any) -> List[float]:
-        """Récupère le vecteur d'embedding d'un item."""
+        """Récupère le vecteur d'embedding d'un item, incluant le contexte sémantique."""
         from ..core.engine import get_embedding
         
         # Si l'item a déjà un vecteur (SemanticType), on l'utilise
         if hasattr(item, 'vector'):
             return item.vector
-        # Sinon on calcule l'embedding de sa représentation string
-        return get_embedding(str(item))
+        
+        # Build text with context if available
+        text = str(item)
+        
+        # Add semantic context from the type if available
+        if self._inner_type is not None:
+            context = None
+            if isinstance(self._inner_type, type):
+                context = getattr(self._inner_type, '_description_default', None)
+            else:
+                context = getattr(self._inner_type, '_description', None)
+            
+            if context:
+                # Prepend context to help disambiguate (e.g., "Fruit: orange" vs "Couleur: orange")
+                text = f"{context}: {text}"
+        
+        return get_embedding(text)
     
     def _cosine_similarity(self, vec_a: List[float], vec_b: List[float]) -> float:
         """Calcule la similarité cosinus entre deux vecteurs."""
