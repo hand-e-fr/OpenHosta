@@ -3,7 +3,7 @@ import inspect
 
 from typing import Union
 from ..models import ModelCapabilities
-from ..core.type_converter import nice_type_name, describe_type_as_python, BASIC_TYPES
+from ..core.type_converter import nice_type_name, describe_type_as_python
 
 def hosta_analyze_update(frame, inspection):
     analyse = inspection["analyse"]
@@ -71,14 +71,9 @@ def encode_function_parameter_types(analyse):
     
     for a in analyse["args"]:
         arg_type = a["type"]
-        if arg_type is inspect._empty or arg_type in BASIC_TYPES:
-            # Basic types are assumed to be known by the model
-            # and are not included in the prompt
-            pass
-        else:
-            specifig_type_doc = describe_type_as_python(arg_type)
-            if not specifig_type_doc is None:
-                python_types_definition_list[nice_type_name(arg_type)] = specifig_type_doc
+        specifig_type_doc = describe_type_as_python(arg_type)
+        if not specifig_type_doc is None:
+            python_types_definition_list[nice_type_name(arg_type)] = specifig_type_doc
                 
     return {
         "python_type_definition_dict":       "\n".join([f"```python\n# definition of type {k}:\n{v}\n```" for k,v in python_types_definition_list.items()])

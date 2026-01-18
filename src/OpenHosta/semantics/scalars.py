@@ -358,27 +358,26 @@ class SemanticByteArray(bytearray, GuardedPrimitive):
         return False, None
 
 
-class SemanticMemoryView(memoryview, GuardedPrimitive):
+class SemanticMemoryView(GuardedPrimitive):
     """
     Vue mémoire.
     Nécessite un objet bytes ou bytearray sous-jacent.
+    Note: memoryview n'est pas subclassable en Python, on retourne donc
+    l'objet memoryview natif directement.
     """
     _type_en = "a memoryview of bytes"
     _type_py = "memoryview"
     _type_json = {"type": "string"}
 
     def __new__(cls, value: Any, description: str = ""):
-        # memoryview est particulier, on ne peut pas hériter de __new__ standard facilement
-        # car memoryview(x) ne prend pas d'autres arguments.
-        # On utilise la mécanique GuardedPrimitive mais on adapte l'instanciation.
+        # memoryview n'est pas subclassable, on retourne donc directement
+        # l'objet memoryview natif validé par attempt().
+        # NOTE : On perdra les attributs _confidence/_source sur l'objet retourné
+        # car 'memoryview' est un type built-in immuable et "fermé" en C.
         result = cls.attempt(value, description)
         if not result.is_success:
-             raise ValueError(result.error_message)
-        
-        instance = super().__new__(cls, result.value)
-        instance._confidence = result.confidence
-        instance._source = result.source
-        return instance
+            raise ValueError(result.error_message)
+        return result.value
 
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[bool, Any]:
