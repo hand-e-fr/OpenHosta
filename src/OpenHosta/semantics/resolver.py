@@ -22,9 +22,7 @@ from .collections import (
     create_semantic_set, create_semantic_tuple
 )
 
-from .models import SemanticModel
-
-# Gestion Pydantic conditionnelle
+# Note: SemanticModel is imported locally in resolve() to avoid circular import
 try:
     from pydantic import BaseModel
     HAS_PYDANTIC = True
@@ -88,6 +86,8 @@ class TypeResolver:
         # 4. Pydantic Models & Dataclasses (On les convertit en SemanticModel à la volée)
         if (isinstance(annotation, type) and 
            ((HAS_PYDANTIC and issubclass(annotation, BaseModel)) or is_dataclass(annotation))):
+            # Import local pour éviter le cycle avec models.py
+            from .models import SemanticModel
             # Création dynamique d'un SemanticModel qui hérite du modèle original
             # Cela permet de préserver les validateurs Pydantic existants
             class WrappedModel(SemanticModel, annotation):

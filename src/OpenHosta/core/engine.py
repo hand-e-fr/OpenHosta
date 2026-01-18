@@ -196,3 +196,60 @@ def check_equality_llm(value_a: str, value_b: str, context: str, threshold: floa
         return "YES" in answer
     except Exception:
         return False
+
+
+# ==============================================================================
+# 6. LABEL SYNTHESIS (Pour SemanticSet clustering)
+# ==============================================================================
+
+PROMPT_SYNTHESIZE_LABEL = MetaPrompt("""\
+Given these semantically related items:
+{% for item in items %}- {{ item }}
+{% endfor %}
+{% if context %}Context: {{ context }}{% endif %}
+
+Generate a single short label (2-4 words in the same language as the items) that represents the common concept or theme.
+Return ONLY the label, nothing else.
+""")
+
+
+def synthesize_label(items: List[str], context: str = "") -> str:
+    """
+    Génère un label synthétique représentant le concept commun d'un groupe d'éléments.
+    
+    Args:
+        items: Liste de strings représentant les éléments du cluster
+        context: Description optionnelle du contexte (ex: "Tâche ménagère")
+    
+    Returns:
+        Un label court représentant le concept commun (ex: "Nettoyage des sols")
+    """
+    # Cas trivial : un seul élément
+    if len(items) == 1:
+        return items[0]
+    
+    # Cas sans modèle : on retourne le premier élément
+    model = get_model()
+    if not model or not HAS_OPENAI:
+        logger.warning("Running in MOCK mode for synthesize_label.")
+        return items[0]
+    
+    # Construction du prompt
+    prompt_content = PROMPT_SYNTHESIZE_LABEL.render(
+        items=items,
+        context=context
+    )
+    
+    try:
+        messages = [{"role": "user", "content": prompt_content}]
+        response = model.api_call(
+            messages,
+            llm_args={"max_tokens": 20, "temperature": 0.3}
+        )
+        label = model.get_response_content(response).strip()
+        # Nettoyage des guillemets éventuels
+        label = label.strip('"\'')
+        return label if label else items[0]
+    except Exception as e:
+        logger.error(f"Label synthesis failed: {e}")
+        return items[0]
