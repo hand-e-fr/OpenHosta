@@ -3,7 +3,7 @@ import inspect
 
 from typing import Union
 from ..models import ModelCapabilities
-from ..core.type_converter import nice_type_name, describe_type_as_python, describe_type_as_schema, BASIC_TYPES
+from ..core.type_converter import nice_type_name, describe_type_as_python, BASIC_TYPES
 
 def hosta_analyze_update(frame, inspection):
     analyse = inspection["analyse"]
@@ -64,9 +64,6 @@ def encode_function_documentation(analyse):
 
 def encode_function_parameter_types(analyse):
     
-    # Types of the arguments when type definition is too long
-    # to be included inline in the function call
-    json_schema_types_definition_list = {}    
     
     # Types of the arguments when type definition is too long
     # to be included inline in the function call
@@ -83,13 +80,8 @@ def encode_function_parameter_types(analyse):
             if not specifig_type_doc is None:
                 python_types_definition_list[nice_type_name(arg_type)] = specifig_type_doc
                 
-            specifig_type_json = describe_type_as_schema(arg_type)
-            if not specifig_type_json is None:
-                json_schema_types_definition_list[nice_type_name(arg_type)] = specifig_type_json
-
     return {
-        "python_type_definition_dict":       "\n".join([f"```python\n# definition of type {k}:\n{v}\n```" for k,v in python_types_definition_list.items()]),
-        "json_schema_type_definition_dict":  "\n\n".join([f"# JSON Schema of type {k}:\n```json\n{v}\n```" for k,v in json_schema_types_definition_list.items()]),
+        "python_type_definition_dict":       "\n".join([f"```python\n# definition of type {k}:\n{v}\n```" for k,v in python_types_definition_list.items()])
     }
 
 def encode_function_parameter_values(analyse):
@@ -179,7 +171,6 @@ def encode_function_return_type(analyse):
 def encode_function_return_type_definition(analyse):
 
     return {
-        "function_return_as_python_type" : describe_type_as_python(analyse["type"]),
-        "function_return_as_json_schema" : describe_type_as_schema(analyse["type"]),
+        "function_return_as_python_type" : describe_type_as_python(analyse["type"])
         }
     

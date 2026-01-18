@@ -164,21 +164,6 @@ BASIC_TYPES = [
     bool, bytes, bytearray, memoryview
 ]
 
-def describe_type_as_schema(arg_type):
-    """
-    Describe a Python type as a JSON schema.
-    """
-    # Check if arg_type is pydantic model
-    if is_pydantic_available and isinstance(arg_type, type) and issubclass(arg_type, BaseModel):
-        response = arg_type.model_json_schema()
-    elif arg_type in BASIC_TYPES:
-        response = build_types_as_json_schema(arg_type)
-    elif is_typing_type(arg_type):
-        response = build_typing_as_json_schema(arg_type)
-    else:
-        response = {"type": "string"}
-
-    return response
 
 def describe_type_as_python(arg_type):
     type_definition = None
@@ -224,114 +209,6 @@ def describe_type_as_python(arg_type):
 
     return type_definition
 
-def build_typing_as_json_schema(arg_type):
-    """
-    Génère un schéma JSON à partir d'un type Python (typing).
-    Gère les types de base (int, str, bool), List et Dict.
-    """
-    
-    # Types de base
-    if arg_type is int:
-        return {"type": "integer"}
-    if arg_type is str:
-        return {"type": "string"}
-    if arg_type is bool:
-        return {"type": "boolean"}
-    if arg_type is float:
-        return {"type": "number"}
-    if arg_type is Any:
-        return {}
-    if arg_type is NoneType:
-        return {"type": "null"}
-    
-    # Gestion des listes (List)
-    if typing.get_origin(arg_type) in [list, set, tuple, frozenset]:
-        # Récupère le type des éléments
-        args =  typing.get_args(arg_type)
-        item_type = args[0] if args else Any
-        # Appelle récursivement la fonction pour obtenir le schéma des éléments
-        items_schema = describe_type_as_schema(item_type)
-        return {
-            "type": "array",
-            "items": items_schema
-        }
-        
-    # Gestion des dictionnaires (Dict)
-    elif typing.get_origin(arg_type) is dict:
-        # Récupère les types de la clé et de la valeur
-        args =  typing.get_args(arg_type)
-        key_type = args[0] if args else Any
-        value_type = args[1] if len(args) > 1 else Any
-
-        if key_type is not str:
-            raise TypeError("Only string keys are supported in Dict for JSON schema.")
-        
-        # Appelle récursivement la fonction pour obtenir le schéma des valeurs
-        value_schema = describe_type_as_schema(value_type)
-        return {
-            "type": "object",
-            "properties": {},
-            "additionalProperties": value_schema
-        }
-    elif typing.get_origin(arg_type) is typing.Union:
-        args = typing.get_args(arg_type)
-        if len(args) == 2 and args[1] is type(None):
-            return describe_type_as_schema(args[0])
-        else:
-            # Union of multiple types
-            return {
-                "anyOf": [describe_type_as_schema(arg) for arg in args]
-            }
-    elif typing.get_origin(arg_type) is typing.Literal:
-        args = typing.get_args(arg_type)
-        return {
-            "enum": list(args)
-        }
-    elif typing.get_origin(arg_type) is typing.Annotated:
-        args = typing.get_args(arg_type)
-        return describe_type_as_schema(args[0])
-    elif typing.get_origin(arg_type) is typing.TypeVar:
-        args = typing.get_args(arg_type)
-        if args:
-            return {
-                "anyOf": [describe_type_as_schema(arg) for arg in args]
-            }
-        else:
-            return {}
-
-    else:
-        return {"type": "object"}
-
-
-def build_types_as_json_schema(arg_type):
-    
-    simple_types = {
-        int: "integer",
-        float: "number",
-        str: "string",
-        list: "array",
-        bool: "boolean",
-        dict: "object",
-        set: "array",
-        tuple: "array",
-        frozenset: "array",
-        bytes: "string",
-        complex: "string",
-        range: "string",
-        bytearray: "string",
-    }
-    
-    return_type_schema = ""
-    if arg_type in BASIC_TYPES:
-        if not arg_type in simple_types:
-            raise Exception(f"Unsupported type {arg_type}. Please use another type. Supported types are {simple_types.keys()}")
-        else:
-            return_type_schema = '{"type": "' + simple_types[arg_type] + '"}'
-    else:
-        # This is advanced types of user defined types
-        return_type_schema = f"{describe_type_as_schema(arg_type)}"
-
-    return return_type_schema
 
 def nice_type_name(p_type) -> str:
     """
