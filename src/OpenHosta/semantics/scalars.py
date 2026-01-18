@@ -107,6 +107,7 @@ class SemanticBool(int, SemanticType):
     Note : Hérite de int car bool n'est pas subclassable en Python.
     Accepte : True, "True", "Yes", "Oui", "Vrai", "1", "Active".
     """
+    __hash__ = GuardedPrimitive.__hash__
 
     _type_en = "a boolean value (true or false)"
     _type_py = "bool"
@@ -155,6 +156,7 @@ class SemanticStr(str, SemanticType):
     C'est le type par défaut. Son heuristique est très permissive,
     mais le LLM est utile pour corriger l'encodage, traduire, ou résumer.
     """
+    __hash__ = GuardedPrimitive.__hash__
 
     _type_en = "a string of text"
     _type_py = "str"
