@@ -1,12 +1,36 @@
-# src/OpenHosta/semantics/resolver.py
+import types
 import typing
-from typing import Any, Type, List, Dict, Union, Optional, get_origin, get_args
+
+from enum import Enum
+from typing import Any, Type, List, Dict, Union, Callable, get_origin, get_args
+from dataclasses import is_dataclass
 
 # Imports des primitives OpenHosta
 from .primitives import GuardedPrimitive
-from .scalars import SemanticInt, SemanticStr, SemanticBool, SemanticFloat
-# On importe les collections (qui contiennent la logique __class_getitem__)
-from .collections import SemanticList, SemanticDict
+
+from .scalars import (
+    SemanticInt, SemanticStr, SemanticBool, SemanticFloat,
+    SemanticComplex, SemanticBytes, SemanticByteArray, 
+    SemanticMemoryView, SemanticRange,    
+    create_semantic_enum, create_semantic_literal
+)
+
+from .code import SemanticCode
+
+from .collections import (
+    SemanticList, SemanticDict, SemanticSet, SemanticTuple,
+    create_semantic_set, create_semantic_tuple
+)
+
+from .models import SemanticModel
+
+# Gestion Pydantic conditionnelle
+try:
+    from pydantic import BaseModel
+    HAS_PYDANTIC = True
+except ImportError:
+    class BaseModel: pass
+    HAS_PYDANTIC = False
 
 class TypeResolver:
     """
@@ -21,8 +45,19 @@ class TypeResolver:
         str: SemanticStr,
         bool: SemanticBool,
         float: SemanticFloat,
-        list: SemanticList, # Liste générique (sans type interne)
-        dict: SemanticDict, # Dict générique
+        complex: SemanticComplex,
+        tuple: SemanticTuple,
+        list: SemanticList,
+        set: SemanticSet,
+        frozenset: SemanticSet, # On mappe frozenset sur SemanticSet pour l'extraction
+        dict: SemanticDict,
+        bytes: SemanticBytes,
+        bytearray: SemanticByteArray,
+        memoryview: SemanticMemoryView,
+        range: SemanticRange,
+        Callable: SemanticCode,
+        typing.Callable: SemanticCode,
+        types.FunctionType: SemanticCode,        
     }
 
     @classmethod
@@ -46,38 +81,70 @@ class TypeResolver:
         if annotation in cls._PRIMITIVE_MAP:
             return cls._PRIMITIVE_MAP[annotation]
 
-        # 3. Cas : Types Génériques (via module typing ou builtins python 3.9+)
+        # 3. Enums Python
+        if isinstance(annotation, type) and issubclass(annotation, Enum):
+            return create_semantic_enum(annotation)
+
+        # 4. Pydantic Models & Dataclasses (On les convertit en SemanticModel à la volée)
+        if (isinstance(annotation, type) and 
+           ((HAS_PYDANTIC and issubclass(annotation, BaseModel)) or is_dataclass(annotation))):
+            # Création dynamique d'un SemanticModel qui hérite du modèle original
+            # Cela permet de préserver les validateurs Pydantic existants
+            class WrappedModel(SemanticModel, annotation):
+                pass
+            WrappedModel.__name__ = f"Semantic_{annotation.__name__}"
+            WrappedModel.__doc__ = annotation.__doc__
+            return WrappedModel
+
+        # 5. Types Génériques (Typing)
         origin = get_origin(annotation)
         args = get_args(annotation)
 
         if origin is not None:
-            # --- GESTION DES LISTES (List[T], Iterable[T]...) ---
+            # List, Iterable, Sequence -> SemanticList
             if origin in (list, List, typing.Sequence, typing.Iterable):
-                inner_type = args[0] if args else str
-                resolved_inner = cls.resolve(inner_type)
-                
-                # On utilise la syntaxe [] qui déclenche la factory interne de SemanticList
-                return SemanticList[resolved_inner]
+                inner = cls.resolve(args[0]) if args else SemanticStr
+                return SemanticList[inner]
 
-            # --- GESTION DES DICTIONNAIRES (Dict[K, V], Mapping[K, V]...) ---
-            if origin in (dict, Dict, typing.Mapping):
-                key_type = args[0] if len(args) > 0 else str
-                val_type = args[1] if len(args) > 1 else str
-                
-                resolved_key = cls.resolve(key_type)
-                resolved_val = cls.resolve(val_type)
-                
-                # On déclenche la factory interne de SemanticDict
-                return SemanticDict[resolved_key, resolved_val]
+            # Set, Frozenset -> SemanticSet
+            if origin in (set, frozenset, typing.Set, typing.AbstractSet):
+                inner = cls.resolve(args[0]) if args else SemanticStr
+                return create_semantic_set(inner)
 
-            # --- GESTION DES OPTIONALS / UNIONS (Optional[T], Union[T, None]) ---
+            # Tuple -> SemanticTuple
+            if origin in (tuple, typing.Tuple):
+                if not args:
+                    return SemanticTuple
+                # Tuple[int, ...] (Variable)
+                if len(args) == 2 and args[1] is Ellipsis:
+                    return create_semantic_tuple([cls.resolve(args[0])], variable_length=True)
+                # Tuple[int, str] (Fixe)
+                else:
+                    return create_semantic_tuple([cls.resolve(arg) for arg in args], variable_length=False)
+
+            # Dict, Mapping -> SemanticDict
+            if origin in (dict, Dict, typing.Mapping, typing.MutableMapping):
+                k = cls.resolve(args[0]) if len(args) > 0 else SemanticStr
+                v = cls.resolve(args[1]) if len(args) > 1 else SemanticStr
+                return SemanticDict[k, v]
+
+            # Literal -> SemanticLiteral
+            if origin is typing.Literal:
+                return create_semantic_literal(args)
+
+            # Union / Optional
             if origin is Union:
-                # Simplification pour OpenHosta : On prend le premier type "non-None"
-                # Car le SemanticType gère déjà l'incertitude et le None via le casting
-                non_none_args = [arg for arg in args if arg is not type(None)]
-                if non_none_args:
-                    return cls.resolve(non_none_args[0])
+                # On filtre NoneType
+                non_none = [a for a in args if a is not type(None)]
+                if len(non_none) == 1:
+                    return cls.resolve(non_none[0])
+                # TODO: Support Union complexe (Union[int, str]) ?
+                # Pour l'instant on fallback sur le premier ou str
+                return cls.resolve(non_none[0]) if non_none else SemanticStr
 
-        # 4. Fallback : Si on ne comprend pas, on suppose que c'est du texte
-        # (Ou on pourrait lever une erreur selon la rigueur souhaitée)
+            # Annotated (souvent utilisé avec Pydantic)
+            if origin is typing.Annotated:
+                return cls.resolve(args[0])
+
+        # 6. Fallback
         return SemanticStr

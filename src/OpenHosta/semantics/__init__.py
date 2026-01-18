@@ -1,8 +1,9 @@
 # Facade Pattern : On expose tout au même niveau
 from .constants import Tolerance
 from .primitives import SemanticType
-from .scalars import SemanticInt, SemanticStr, SemanticBool, SemanticFloat
-from .collections import SemanticList, SemanticDict, SemanticSet
+from .scalars import SemanticInt, SemanticStr, SemanticBool, SemanticFloat, create_semantic_enum, create_semantic_literal
+from .collections import SemanticList, SemanticDict, SemanticSet, SemanticTuple
+from .collections import create_semantic_set, create_semantic_tuple
 from .models import SemanticModel
 
 # On expose aussi la méthode de résolution statique sur SemanticType
@@ -20,7 +21,17 @@ __all__ = [
     "SemanticFloat",
     "SemanticList", 
     "SemanticDict",
-    "SemanticSet"
+    "SemanticSet",
+    "create_semantic_set",
+    "create_semantic_tuple",
+    "SemanticTuple",
+    "create_semantic_enum",
+    "create_semantic_literal",
+    "SemanticLiteral",
+    "SemanticEnum",
+    "SemanticUnion",
+    "SemanticOptional",
+    "SemanticAny"
 ]
 
 

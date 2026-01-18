@@ -5,8 +5,24 @@ from typing import Any, Tuple, ClassVar, Dict, Optional
 import math
 
 # Imports internes (Moteur & Incertitude)
-from ..core.uncertainty import CastingResult
 from ..core.engine import iterate_cast_type, get_embedding, check_equality_llm
+
+from dataclasses import dataclass
+from typing import Any, Optional
+
+@dataclass
+class CastingResult:
+    is_success: bool
+    value: Any          # La valeur convertie (ex: 23) ou None
+    confidence: float   # Score de 0.0 à 1.0
+    source: str         # 'native', 'heuristic', 'llm'
+    error_message: Optional[str] = None
+    
+    def unwrap(self):
+        """Méthode utilitaire pour récupérer la valeur ou lever l'erreur."""
+        if not self.is_success:
+            raise ValueError(self.error_message)
+        return self.value
 
 class GuardedPrimitive(ABC):
     """
