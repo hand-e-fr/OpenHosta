@@ -199,7 +199,7 @@ class OpenAICompatibleModel(Model):
                 if model["object"] == "model":
                     model_list.append(model["id"])
                 else:
-                    print(f"Ignoring {model["id"]}:", model)
+                    print(f"Ignoring "+model["id"]+":", model)
             
         return model_list
     
