@@ -1,6 +1,5 @@
-# src/OpenHosta/semantics/collections.py
-
 import json
+
 from typing import Any, Tuple, Type, Dict, List, Union
 from .primitives import GuardedPrimitive
 from .scalars import SemanticStr # Type par défaut
@@ -238,3 +237,153 @@ class SemanticDict(dict, GuardedPrimitive):
             return super().__getitem__(found_key)
             
         raise KeyError(f"Key '{key}' not found (even semantically).")
+    
+# ==============================================================================
+# 3. SEMANTIC SET (L'Ensemble Unique)
+# ==============================================================================
+
+def create_semantic_set(inner_type: Type[GuardedPrimitive]) -> Type['SemanticSet']:
+    class ConcreteSemanticSet(SemanticSet):
+        _inner_semantic_type = inner_type
+        _type_en = f"a set (unique items) of {inner_type._type_en}s"
+        _type_py = f"Set[{inner_type._type_py}]"
+        _type_json = {"type": "array", "items": inner_type._type_json, "uniqueItems": True}
+
+        @classmethod
+        def _parse_native(cls, value: Any) -> Tuple[bool, Any]:
+            if not isinstance(value, (set, frozenset, list, tuple)):
+                return False, None
+            
+            validated_set = set()
+            for item in value:
+                is_valid, val = inner_type._parse_native(item)
+                if not is_valid: return False, None
+                validated_set.add(val)
+            return True, validated_set
+            
+        def __init__(self, value: Any, description: str = ""):
+            # Conversion des items
+            semantic_items = {self._inner_semantic_type(item) for item in value}
+            super().__init__(semantic_items) # SemanticSet hérite de set
+            self._description = description
+
+    ConcreteSemanticSet.__name__ = f"SemanticSet_{inner_type.__name__}"
+    return ConcreteSemanticSet
+
+class SemanticSet(set, GuardedPrimitive):
+    _inner_semantic_type = SemanticStr
+    _type_en = "a set of unique items"
+    _type_py = "Set[str]"
+    _type_json = {"type": "array", "uniqueItems": True}
+
+    @classmethod
+    def __class_getitem__(cls, item_type):
+        from .resolver import TypeResolver
+        return create_semantic_set(TypeResolver.resolve(item_type))
+    
+    @classmethod
+    def _parse_native(cls, value: Any) -> Tuple[bool, Any]:
+        if isinstance(value, (set, frozenset)):
+            return True, set(value)
+        return False, None
+        
+    @classmethod
+    def _parse_heuristic(cls, value: Any) -> Tuple[bool, Any]:
+        # Support de l'évaluation littérale des sets "{1, 2}"
+        if isinstance(value, str) and value.strip().startswith("{"):
+            try:
+                import ast
+                val = ast.literal_eval(value)
+                if isinstance(val, (set, list, tuple)):
+                    return cls._parse_native(val)
+            except: pass
+        return False, None
+
+
+# ==============================================================================
+# 4. SEMANTIC TUPLE (Le Tuple Structuré)
+# ==============================================================================
+
+def create_semantic_tuple(item_types: List[Type[GuardedPrimitive]], variable_length: bool = False) -> Type['SemanticTuple']:
+    """
+    Gère Tuple[int, str] (Fixed) ET Tuple[int, ...] (Variable)
+    """
+    
+    class ConcreteSemanticTuple(SemanticTuple):
+        _item_types = item_types
+        _is_variable = variable_length
+        
+        # Construction de la documentation dynamique
+        if variable_length:
+            _type_en = f"a tuple of variable length containing {item_types[0]._type_en}s"
+            _type_py = f"Tuple[{item_types[0]._type_py}, ...]"
+            _type_json = {"type": "array", "items": item_types[0]._type_json}
+        else:
+            names = [t._type_py for t in item_types]
+            _type_en = f"a fixed tuple of elements: {', '.join(names)}"
+            _type_py = f"Tuple[{', '.join(names)}]"
+            _type_json = {
+                "type": "array", 
+                "prefixItems": [t._type_json for t in item_types],
+                "minItems": len(item_types),
+                "maxItems": len(item_types)
+            }
+
+        @classmethod
+        def _parse_native(cls, value: Any) -> Tuple[bool, Any]:
+            if not isinstance(value, (list, tuple)): return False, None
+            
+            # Cas Tuple Variable: Tuple[int, ...]
+            if cls._is_variable:
+                target_type = cls._item_types[0]
+                validated = []
+                for item in value:
+                    ok, val = target_type._parse_native(item)
+                    if not ok: return False, None
+                    validated.append(val)
+                return True, tuple(validated)
+            
+            # Cas Tuple Fixe: Tuple[int, str]
+            if len(value) != len(cls._item_types): return False, None
+            
+            validated = []
+            for item, target_type in zip(value, cls._item_types):
+                ok, val = target_type._parse_native(item)
+                if not ok: return False, None
+                validated.append(val)
+            return True, tuple(validated)
+
+        def __init__(self, value: Any, description: str = ""):
+            final_list = []
+            if self._is_variable:
+                 # Variable logic
+                 target_t = self._item_types[0]
+                 final_list = [target_t(v) for v in value]
+            else:
+                # Fixed logic
+                for v, target_t in zip(value, self._item_types):
+                    final_list.append(target_t(v))
+            
+            super().__init__(tuple(final_list)) # Init du tuple natif
+            self._description = description
+
+    ConcreteSemanticTuple.__name__ = f"SemanticTuple_Fixed" if not variable_length else f"SemanticTuple_Var_{item_types[0].__name__}"
+    return ConcreteSemanticTuple
+
+class SemanticTuple(tuple, GuardedPrimitive):
+    _type_en = "a tuple"
+    _type_py = "tuple"
+    _type_json = {"type": "array"}
+    
+    @classmethod
+    def _parse_native(cls, v): return (True, tuple(v)) if isinstance(v, (list, tuple)) else (False, None)
+    
+    @classmethod
+    def _parse_heuristic(cls, v):
+         if isinstance(v, str) and v.startswith("("):
+            try:
+                import ast
+                val = ast.literal_eval(v)
+                if isinstance(val, tuple): return cls._parse_native(val)
+            except: pass
+         return False, None
