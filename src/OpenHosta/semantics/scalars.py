@@ -5,13 +5,14 @@ import ast
 from enum import Enum
 from typing import Any, Tuple, Type
 
-from .primitives import GuardedPrimitive
+from .primitives import GuardedPrimitive, SemanticType
 
-class SemanticInt(int, GuardedPrimitive):
+class SemanticInt(int, SemanticType):
     """
     Entier sémantique.
     Accepte : 42, "42", "quarante-deux", "42.0" (si entier), "1 000".
     """
+    __hash__ = GuardedPrimitive.__hash__
     
     # --- 1. CONFIGURATION LLM ---
     _type_en = "an integer number (whole number)"
@@ -58,11 +59,12 @@ class SemanticInt(int, GuardedPrimitive):
         return False, None
 
 
-class SemanticFloat(float, GuardedPrimitive):
+class SemanticFloat(float, SemanticType):
     """
     Nombre flottant sémantique.
     Accepte : 3.14, "3,14", "Pi environ", "10k".
     """
+    __hash__ = GuardedPrimitive.__hash__
 
     _type_en = "a floating point number"
     _type_py = "float"
@@ -99,7 +101,7 @@ class SemanticFloat(float, GuardedPrimitive):
             return False, None
 
 
-class SemanticBool(int, GuardedPrimitive):
+class SemanticBool(int, SemanticType):
     """
     Booléen sémantique.
     Note : Hérite de int car bool n'est pas subclassable en Python.
@@ -147,7 +149,7 @@ class SemanticBool(int, GuardedPrimitive):
         return False, None
 
 
-class SemanticStr(str, GuardedPrimitive):
+class SemanticStr(str, SemanticType):
     """
     Chaîne de caractères sémantique.
     C'est le type par défaut. Son heuristique est très permissive,

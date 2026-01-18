@@ -108,3 +108,136 @@ def test_semantic_context_orange():
     
     # Ils devraient être dans le même cluster (contexte: couleur)
     assert len(colors) == 1, f"[Couleur context] Expected 1 cluster for orange+marron, got {len(colors)}"
+
+
+# ==============================================================================
+# ADDITIONAL TEST CASES FOR EXTENDED COVERAGE
+# ==============================================================================
+
+class TestSemanticSetEmpty:
+    """Tests for empty SemanticSet behavior."""
+    
+    def test_empty_set_length(self):
+        """Empty set should have length 0."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        assert len(s) == 0
+    
+    def test_empty_set_repr(self):
+        """Empty set should represent as '{}'."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        assert repr(s) == "{}"
+    
+    def test_empty_set_members(self):
+        """Empty set members() should return empty list."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        assert s.members() == []
+    
+    def test_empty_set_clusters(self):
+        """Empty set clusters() should return empty list."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        assert s.clusters() == []
+
+
+class TestSemanticSetContains:
+    """Tests for SemanticSet __contains__ method."""
+    
+    def test_contains_exact_match(self):
+        """Exact string should be found."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet(tolerance=TOLERANCE_PERMISSIVE)
+        s.add("Pomme")
+        
+        assert "Pomme" in s
+    
+    def test_not_contains_unrelated(self):
+        """Completely unrelated item should not be found."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet(tolerance=TOLERANCE_NORMAL)
+        s.add("Pomme")
+        
+        # Use a very unrelated string
+        assert "XYZ123_RANDOM_STRING" not in s
+
+
+class TestSemanticSetMembersMethod:
+    """Tests for SemanticSet members() with label parameter."""
+    
+    def test_members_all(self):
+        """members() without label returns all members."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet(tolerance=0.0)  # Strict - each item separate cluster
+        s.add("A")
+        s.add("B")
+        
+        all_members = s.members()
+        assert len(all_members) == 2
+    
+    def test_members_nonexistent_label(self):
+        """members(label) with unknown label returns empty list."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        s.add("Item")
+        
+        result = s.members(label="NonExistentLabel")
+        assert result == []
+
+
+class TestSemanticSetClustersMethod:
+    """Tests for SemanticSet clusters() method."""
+    
+    def test_clusters_structure(self):
+        """clusters() should return list of dicts with label and members."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        s.add("Test")
+        
+        clusters = s.clusters()
+        assert len(clusters) == 1
+        assert 'label' in clusters[0]
+        assert 'members' in clusters[0]
+    
+    def test_clusters_members_type(self):
+        """Cluster members should be a list."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        s.add("Test")
+        
+        clusters = s.clusters()
+        assert isinstance(clusters[0]['members'], list)
+
+
+class TestSemanticSetIteration:
+    """Tests for SemanticSet iteration."""
+    
+    def test_iterate_over_labels(self):
+        """Iterating should yield cluster labels."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet(tolerance=0.0)  # Strict
+        s.add("Alpha")
+        s.add("Beta")
+        
+        labels = list(s)
+        assert len(labels) == 2
+    
+    def test_iterate_empty_set(self):
+        """Iterating empty set should yield nothing."""
+        from OpenHosta.semantics.collections import SemanticSet
+        
+        s = SemanticSet()
+        labels = list(s)
+        assert labels == []

@@ -42,6 +42,48 @@ class GuardedPrimitive(ABC):
     _type_py: ClassVar[str] = NotImplemented
     _type_json: ClassVar[Dict[str, Any]] = NotImplemented
 
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: Any) -> Any:
+        """
+        Intègre GuardedPrimitive avec Pydantic V2.
+        Permet la conversion automatique depuis n'importe quelle entrée.
+        """
+        from pydantic_core import core_schema
+        
+        return core_schema.with_info_before_validator_function(
+            cls._pydantic_validate,
+            core_schema.any_schema()
+        )
+
+    def __hash__(self):
+        """
+        Sécurité : On interdit le hachage car l'égalité est floue par défaut.
+        Cela empêche d'utiliser ces types dans un set() ou dict() natif.
+        """
+        raise TypeError(
+            f"'{self.__class__.__name__}' is not hashable because it uses fuzzy/semantic equality. "
+            "Use 'SemanticSet' or 'SemanticDict' instead of native collections."
+        )
+
+    @classmethod
+    def _pydantic_validate(cls, value: Any, _info: Any) -> Any:
+        # Si c'est déjà une instance, on la garde
+        if isinstance(value, cls):
+            return value
+        # Sinon on passe par le constructeur magique (pipeline)
+        return cls(value)
+
+    @classmethod
+    def __get_pydantic_json_schema__(cls, _core_schema: Any, handler: Any) -> Any:
+        """
+        Retourne le schéma JSON du type pour Pydantic/OpenAPI.
+        Utilise _type_json défini dans les sous-classes.
+        """
+        # On utilise le mapping _type_json s'il existe, sinon on délègue
+        if cls._type_json is not NotImplemented:
+            return cls._type_json
+        return handler(_core_schema)
+
     def __new__(cls, value: Any, description: str = ""):
         """
         Le constructeur 'Magique'. Il ne crée l'objet que si le pipeline réussit.
