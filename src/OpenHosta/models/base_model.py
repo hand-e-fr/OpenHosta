@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import abc
 import asyncio
+import random
 from enum import Enum
 
 from  concurrent.futures import ThreadPoolExecutor
@@ -14,6 +15,7 @@ class ModelCapabilities(Enum):
     IMAGE2TEXT = "IMAGE2TEXT"
     IMAGE2IMAGE = "IMAGE2IMAGE"
     LOGPROBS = "LOGPROBS" # To be set for vllm models
+    EMBEDDING = "EMBEDDING"  # For embedding API support
     
     THINK = "THINK"
     JSON_OUTPUT = "JSON_OUTPUT"
@@ -33,6 +35,7 @@ class Model:
         self.api_parameters = api_parameters
         
         self.preferred_image_format = "png"
+        self.embedding_similarity_min = 0.30  # Default min similarity for clustering
 
     def __exit__(self):
         if self.async_executor is not None:
@@ -73,3 +76,17 @@ class Model:
         """Parse the response_dict and return the data section"""
         pass
 
+    def embedding_api_call(self, texts: List[str]) -> List[List[float]]:
+        """
+        Call embedding API for a list of texts.
+        Returns a list of embedding vectors.
+        
+        Default implementation returns deterministic mock embeddings.
+        Subclasses should override this if they support embeddings.
+        """
+        result = []
+        for text in texts:
+            # Deterministic mock based on text hash
+            random.seed(hash(text) % (2**32))
+            result.append([random.random() for _ in range(1536)])
+        return result
