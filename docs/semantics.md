@@ -1,15 +1,25 @@
-Voici une documentation restructurée de manière progressive, conçue pour emmener un développeur du concept d'égalité stricte vers celui de convergence sémantique.
+
 📖 Documentation OpenHosta.semantics
+---
+
+
 OpenHosta.semantics est une bibliothèque qui permet de manipuler des données non plus par leur syntaxe (les lettres qui les composent), mais par leur sens (leur sémantique). Elle est optimisée pour les architectures d'agents et le traitement du langage naturel.
-I. Les Fondamentaux : Pourquoi la Sémantique ?
-1.1 Le passage au "Flou Maîtrisé"
+
+# I. Les Fondamentaux : Pourquoi la Sémantique ?
+
+##1.1 Le passage au "Flou Maîtrisé"
+
 En informatique classique, le test if "Chat" == "Félin": est toujours Faux. En sémantique, nous mesurons une distance. Si deux concepts sont assez proches, nous considérons qu'ils sont égaux.
-1.2 Le concept de semantic_tolerance
+
+## 1.2 Le concept de semantic_tolerance
+
 C'est le curseur qui définit la "souplesse" de votre code.
  * Tolerance = 0.0 : Équivalent au Python standard (stricte égalité).
  * Tolerance = 0.05 : Accepte les synonymes quasi parfaits.
  * Tolerance = 0.15 : Accepte des concepts élargis (ex: "Voiture" et "Automobile").
-II. L'Objet de Base : SemanticType
+
+## II. L'Objet de Base : SemanticType
+
 Le SemanticType est une classe qui définit un contexte. Il permet d'utiliser l'opérateur == de manière intelligente.
 from OpenHosta.semantics import SemanticType
 
