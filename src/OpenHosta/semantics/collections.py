@@ -314,11 +314,12 @@ class SemanticSet:
     
     def _tolerance_to_threshold(self, tolerance: float) -> float:
         """Convertit la tolérance utilisateur en seuil de similarité."""
-        # Tolérance 0.0 -> Seuil 0.99 (très strict)
-        # Tolérance 0.15 -> Seuil ~0.85
-        # Tolérance 0.5 -> Seuil 0.70
-        MIN_SIM = 0.70
+        # Get MIN_SIM from model (model-specific value)
+        from ..core.config import config
+        MIN_SIM = getattr(config.DefaultModel, 'embedding_similarity_min', 0.30)
         MAX_SIM = 0.99
+        # Tolérance 0.0 -> Seuil MAX_SIM (très strict)
+        # Tolérance 1.0 -> Seuil MIN_SIM (très permissif)
         return MAX_SIM - (tolerance * (MAX_SIM - MIN_SIM))
     
     def _find_matching_cluster(self, item_vector: List[float]) -> Optional[int]:

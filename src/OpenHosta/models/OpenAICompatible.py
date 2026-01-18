@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict, Set
+from typing import Any, Dict, Set, List
 
 import os
 import requests
@@ -18,6 +18,9 @@ class OpenAICompatibleModel(Model):
             capabilities:Set[ModelCapabilities] = {ModelCapabilities.TEXT2TEXT},
             base_url: str = "https://api.openai.com/v1", 
             chat_completion_url: str = "/chat/completions",
+            embedding_url: str = "/embeddings",
+            embedding_model_name: str = None,
+            embedding_similarity_min: float = 0.30,  # Min similarity threshold for clustering
             api_key: str = None, 
             timeout: int = 60,
         ):     
@@ -31,6 +34,9 @@ class OpenAICompatibleModel(Model):
         self.model_name = model_name
         self.base_url = base_url
         self.chat_completion_url = chat_completion_url if not self.base_url.endswith(chat_completion_url) else ""
+        self.embedding_url = embedding_url if not self.base_url.endswith(embedding_url) else ""
+        self.embedding_model_name = embedding_model_name or "text-embedding-3-small"
+        self.embedding_similarity_min = embedding_similarity_min
         self.api_key = api_key
         self.timeout = timeout
 
@@ -162,3 +168,55 @@ class OpenAICompatibleModel(Model):
             print("\nLLM response:\n-----------------")
             print(hosta_inspection['logs']["llm_api_response"]["choices"][0]["message"]["content"])
 
+    def embedding_api_call(self, texts: List[str]) -> List[List[float]]:
+        """
+        Call OpenAI-compatible embedding API.
+        
+        Args:
+            texts: List of strings to embed
+            
+        Returns:
+            List of embedding vectors (each a list of floats)
+        """
+        api_key = self.api_key
+        if api_key is None:
+            api_key = os.environ.get("OPENAI_API_KEY")
+        
+        # Build headers
+        headers = {
+            "Content-Type": "application/json"
+        }
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        
+        for key, value in self.additionnal_headers.items():
+            headers[key] = value
+        
+        # Build request body
+        body = {
+            "model": self.embedding_model_name,
+            "input": texts
+        }
+        
+        full_url = f"{self.base_url}{self.embedding_url}"
+        
+        try:
+            response = requests.post(full_url, headers=headers, json=body, timeout=self.timeout)
+            
+            if response.status_code == 200:
+                response_dict = response.json()
+                # Extract embeddings in order
+                embeddings = []
+                data = response_dict.get("data", [])
+                # Sort by index to ensure order matches input
+                data_sorted = sorted(data, key=lambda x: x.get("index", 0))
+                for item in data_sorted:
+                    embeddings.append(item.get("embedding", []))
+                return embeddings
+            else:
+                # API error - fall back to mock
+                return super().embedding_api_call(texts)
+                
+        except Exception:
+            # Network/timeout error - fall back to mock
+            return super().embedding_api_call(texts)

@@ -3,8 +3,21 @@ import logging
 import os
 import math
 import functools
+import random
 from typing import Any, Generator, Tuple, Dict, List, Optional
 from .meta_prompt import MetaPrompt
+
+# Logger pour ce module
+logger = logging.getLogger(__name__)
+
+
+def get_model():
+    """Get the default model from config. Returns None if unavailable."""
+    try:
+        from .config import config
+        return config.DefaultModel
+    except Exception:
+        return None
 
 # Stratégie 1 : Extraction Textuelle Libre
 PROMPT_CAST_TEXT = MetaPrompt("""\
@@ -77,9 +90,9 @@ def iterate_cast_type(
             user_desc=user_desc
         )
 
-    # 2. Mode Simulation (Si pas de modèle ou pas de clé)
-    if not model or not HAS_OPENAI:
-        logger.warning("Running in MOCK mode (No Model/OpenAI).")
+    # 2. Mode Simulation (Si pas de modèle)
+    if not model:
+        logger.warning("Running in MOCK mode (No Model available).")
         yield _mock_response(value, target_cls)
         return
 
@@ -149,25 +162,21 @@ def _calculate_uncertainty(logprobs_obj) -> float:
 def get_embedding(text: str) -> List[float]:
     """
     Génère un vecteur pour le texte donné.
-    Note: Model n'a pas encore de méthode standard embedding, on utilise le client interne.
+    Utilise la méthode embedding_api_call du modèle configuré.
     """
     model = get_model()
-    # On accède au client sous-jacent si c'est notre wrapper OpenAIModel
-    if isinstance(model, OpenAIModel) and model.client:
+    
+    if model is not None:
         try:
-            text = text.replace("\n", " ")
-            res = model.client.embeddings.create(
-                input=[text], 
-                model=EngineConfig.MODEL_EMBED_NAME
-            )
-            return res.data[0].embedding
+            text_cleaned = text.replace("\n", " ")
+            embeddings = model.embedding_api_call([text_cleaned])
+            if embeddings and len(embeddings) > 0:
+                return embeddings[0]
         except Exception as e:
-            logger.error(f"Embedding failed: {e}")
-            return []
-            
-    # Mock fallback
-    import random
-    random.seed(text)
+            logger.warning(f"Embedding API call failed: {e}, using mock fallback")
+    
+    # Mock fallback - deterministic based on text
+    random.seed(hash(text) % (2**32))
     return [random.random() for _ in range(1536)]
 
 
@@ -176,7 +185,7 @@ def check_equality_llm(value_a: str, value_b: str, context: str, threshold: floa
     Vérification sémantique fine via LLM.
     """
     model = get_model()
-    if not model or not HAS_OPENAI:
+    if not model:
         return value_a.lower() == value_b.lower()
 
     # Utilisation du MetaPrompt
@@ -230,7 +239,7 @@ def synthesize_label(items: List[str], context: str = "") -> str:
     
     # Cas sans modèle : on retourne le premier élément
     model = get_model()
-    if not model or not HAS_OPENAI:
+    if not model:
         logger.warning("Running in MOCK mode for synthesize_label.")
         return items[0]
     
