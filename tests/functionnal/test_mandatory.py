@@ -55,6 +55,14 @@ class User(BaseModel):
 
 from OpenHosta import config, OpenAICompatibleModel, OneTurnConversationPipeline
 
+class TestModel:
+    
+    def test_ModelListingOnApi(self):
+        
+        models = config.DefaultModel.models_on_same_api()
+        
+        assert models and len(models) > 0, "No model found"
+
 class TestEmulate:
     
     def test_FeatureModelInParameter(self):

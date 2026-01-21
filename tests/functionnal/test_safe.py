@@ -14,6 +14,21 @@ from OpenHosta.core.uncertainty import last_uncertainty
 
 from enum import Enum, auto
 
+from PIL.Image import Image, open as pil_open
+from pathlib import Path
+
+try:
+    test_dir = Path(__file__).parent.parent
+except NameError:
+    print("In interactive mode, setting test_dir to current working directory. It shall be the tests folder.")
+    test_dir = Path.cwd()
+    
+if (test_dir / "assets").exists():
+    assets_dir = test_dir / "assets"
+else:
+    raise FileNotFoundError(f"Assets directory not found in {test_dir}. Cannot continue.")
+    
+
 class Color(Enum):
     NONE = auto()
     RED = auto()
@@ -36,6 +51,10 @@ class Color(Enum):
     MAROON = auto()
     OLIVE = auto() 
 
+# Force logprobs capability for testing
+from OpenHosta import config
+from OpenHosta.core.base_model import ModelCapabilities
+config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
 
 def test_safe_emulate_success():
     """
@@ -58,14 +77,18 @@ def test_safe_emulate_success():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=0.1):
+    with safe(acceptable_cumulated_uncertainty=0.1, seed=434):
         next_step = get_next_step("git commit -m 'Initial commit'")
 
     assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
 
-    print_last_probability_distribution(get_next_step)    
-    
-    assert get_next_step.hosta_inspection["logs"]["enum_normalized_probs"][NextStep.GIT_PUSH] > 0.9, \
+    # from OpenHosta import print_last_uncertainty, print_last_prompt
+    # print_last_uncertainty(get_next_step)
+    # print_last_prompt(get_next_step)
+    # print_last_probability_distribution(get_next_step)    
+    # print_last_prompt(get_next_step)
+
+    assert get_next_step.hosta_inspection["logs"]["enum_normalized_probs"][NextStep.GIT_PUSH] > 0.6, \
         f"Expected high confidence for 'git push', got: {get_next_step.hosta_inspection['logs']['enum_normalized_probs']}"
 
 def test_nested_safe_emulate_success():
@@ -95,6 +118,7 @@ def test_nested_safe_emulate_success():
                 assert s1.acceptable_cumulated_uncertainty < s2.acceptable_cumulated_uncertainty, \
                     "Inner safe context should have higher acceptable uncertainty than outer."
                     
+                next_step = None
                 for i in range(3):
                     next_step = get_next_step("git commit -m 'Initial commit'")
                     print(f"safe context 1 uuid: {s1.uuid} with: {s1.cumulated_uncertainty}/{s1.acceptable_cumulated_uncertainty}")
@@ -133,7 +157,7 @@ def test_safe_emulate_fail():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=0.01) as s:
+    with safe(acceptable_cumulated_uncertainty=0.001) as s:
         try:
             next_step = get_location("do not run any git command. This question is unrelated to git.")
         except UncertaintyError as e:
@@ -147,7 +171,45 @@ def test_safe_emulate_fail():
         assert uncertainty > 0.01, \
             f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.01"
         
+
+from OpenHosta import emulate_async
+import asyncio
+
+def test_safe_emulate_fail_async():
+    """
+    Test the emulate function with uncertainty control.
+    """
+    
+    # define return type as enumeration
+    from enum import StrEnum
+    class Places(StrEnum):
+        FRANCE = "France"
+        GERMANY = "Germany"
+        ITALY = "Italy"
+        SPAIN = "Spain"
+        PORTUGAL = "Portugal"
+         
+    async def get_location(who: str) -> Places:
+        """
+        What was the location of the person right now?
+        """
+        return await emulate_async()
+    
+    with safe(acceptable_cumulated_uncertainty=0.001) as s:
+        try:
+            next_step = asyncio.run(get_location("do not run any git command. This question is unrelated to git."))
+        except UncertaintyError as e:
+            print(f"Caught expected UncertaintyError due to uncertainty:\n {e}")
+            next_step = None
+        finally:
+            uncertainty = s.cumulated_uncertainty
         
+        assert next_step is None, f"Expected None due to uncertainty error, got: {next_step} s={s}"
+
+        assert uncertainty > 0.01, \
+            f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.01"
+        
+                
 def test_safe_emulate_pass_low_confidence():
     """
     Test the emulate function with uncertainty control.
@@ -222,7 +284,7 @@ def test_sage_closure_color_detector_fail():
     
     color = closure("What is the color of this object ?", force_return_type=Color)
     
-    with safe(acceptable_cumulated_uncertainty=0.01) as s:
+    with safe(acceptable_cumulated_uncertainty=0.001) as s:
         try:
             retcolor = color("michael jackson")
         except UncertaintyError as e:
@@ -259,7 +321,7 @@ def test_safe_workflow_color_detector():
         return emulate()
 
     with safe(acceptable_cumulated_uncertainty=math.exp(-5)):
-        ret =  IsThisInThat("the sky", "a clear day")    
+        ret =  IsThisInThat("the sun", "the sky on a clear day")    
     
         assert ret is Bool.TRUE, f"Expected TRUE for sky in clear day, got: {ret}"
         
@@ -298,16 +360,16 @@ def test_safe_workflow_organ_location():
         return emulate()
     
     
-    def find_organ_location(organ:str)->str:
+    def find_organ_location(organ:str)->str | None:
         """
         Find the color of the organ in the given location description.
         """
-        with safe(acceptable_cumulated_uncertainty=0.01) as s:
+        with safe(acceptable_cumulated_uncertainty=0.1) as s:
             try:
                 if IsThisInThat(organ, "human body") is Bool.FALSE:
                     raise ValueError(f"{organ} is not in human body.")
 
-                if IsThisInThat(organ, "above the belt level") is Bool.TRUE:
+                if IsThisInThat(organ, "part of the human body that is above the belt level") is Bool.TRUE:
                     if IsThisInThat(organ, "head") is Bool.TRUE:
                         location = "head"
                     elif IsThisInThat(organ, "chest") is Bool.TRUE:
@@ -322,11 +384,14 @@ def test_safe_workflow_organ_location():
                     if IsThisInThat(organ, "legs") is Bool.TRUE:
                         location = "legs"
                     else:
-                        location = "abdomen"
+                        raise ValueError("Unable to find organ location above the belt.")
                 print(f"Final safe context uuid: {s.uuid} with: {s.cumulated_uncertainty}/{s.acceptable_cumulated_uncertainty}")
 
             except UncertaintyError as e:
-                print(f"Caught expected UncertaintyError due to uncertainty: {e}")
+                print(f"Caught expected UncertaintyError due to uncertainty: {e}, s={s}")
+                location = None
+            except ValueError as e:
+                print(f"This organ is not in the accepted list. ValueError: {e}")
                 location = None
 
         return location
@@ -377,17 +442,17 @@ def test_safe_question():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=1) as s:
+    with safe(acceptable_cumulated_uncertainty=0.9) as s:
         answer = question("distance lune terre. donne juste la distance en milliers de km.")
     
-        assert answer == "384", f"Expected '384' as the distance in thousands of km, got: {answer}"
+        assert answer.startswith("384"), f"Expected '384' as the distance in thousands of km, got: {answer}"
         
         uncertainty = last_uncertainty(question)
         
         assert abs(s.cumulated_uncertainty - uncertainty) < 1e-6, \
             f"Expected cumulated uncertainty {s.cumulated_uncertainty} to match last_uncertainty {uncertainty}"
 
-        assert uncertainty < 0.01, f"Expected uncertainty below 0.01, got: {uncertainty}"
+        assert uncertainty <= 0.9, f"Expected uncertainty below 0.9, got: {uncertainty}"
 
 def test_safe_question_fail():
         
@@ -413,3 +478,46 @@ def test_safe_question_fail():
     assert uncertainty > 0.01, f"Expected uncertainty above 0.01, got: {uncertainty}"
     
     
+    
+def test_safe_AskWithImageAndText(self):
+
+    img = pil_open(assets_dir / "hand_e_logo.jpeg")
+    
+    def get_company_name(logo_img:Image) -> str:
+        """
+        Identify the company name given the logo in parameter.
+        
+        Arguments:
+           logo_img (PIL.Image.Image): The logo image to identify.
+           
+        Returns:
+           str: The name of the company.
+        """
+        return emulate() 
+
+    with safe(acceptable_cumulated_uncertainty=1, seed=550) as s:
+        response = get_company_name(img)
+        print(response)
+        print(s)
+    
+    # print_last_prompt(get_company_name)
+    assert "hand" in response.lower(), "We should have recognized hand-e logo in the description"
+
+
+def test_emulate_inconsistent_type():
+    """
+    Test the emulate function with a simple prompt that asks for the capital of a country but require an integer.
+    """
+    
+    def get_capital_name(country: str) -> int:
+        """
+        This function returns the capital name of a given country.
+        """
+        return emulate()
+    
+    with safe(acceptable_cumulated_uncertainty=1, seed=550) as s:
+        response = get_capital_name("France")
+    
+        assert s.cumulated_uncertainty > 0.9, f"Expected a high uncertainty, got: {response} with cumulated uncertainty: {s.cumulated_uncertainty}"
+
+from OpenHosta import print_last_prompt

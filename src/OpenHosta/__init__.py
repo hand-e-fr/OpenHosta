@@ -7,6 +7,7 @@ from .core.meta_prompt import MetaPrompt
 
 from .exec.ask import ask, ask_async
 from .exec.emulate import emulate, emulate_async
+from .exec.emulate_iterator import emulate_iterator
 from .exec.closure import closure, closure_async
 from .semantics.operators import test, test_async
 
@@ -30,6 +31,7 @@ all = (
     "ask_async",
     "emulate",
     "emulate_async",
+    "emulate_iterator", 
     "closure",
     "closure_async",
     "test",

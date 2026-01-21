@@ -1,70 +1,87 @@
-
+import os
 import math
 import uuid
 import contextvars
-
-from typing import Dict
-from enum import Enum
+from typing import Dict, Tuple  # added Tuple
 
 from ..core.errors import ModelMissingLogprobsError
 from ..core.errors import UncertaintyError
+from ..core.inspection import Inspection
+
+from enum import Enum
 
 SAFE_CONTEXT_VAR_NAME = "reproducible_settings"
 reproducible_settings_ctxvar = contextvars.ContextVar(SAFE_CONTEXT_VAR_NAME, default={})
 
-def get_certainty(function_pointer, vocabulary_sie=200000) -> float:
+def _trim_logp_list(logp_list):
+    """
+    Remove special control tokens from a VLLM logprob list.
+    Returns the trimmed list.
+    """
+    # Helper to find first occurrence index of a token, if present
+    def _first_index(token):
+        tokens = [t['token'] for t in logp_list]
+        return min((i for i, t in enumerate(tokens) if t == token), default=None)
+
+    # Jump to the first token after <|message|>
+    if "<|message|>" in [t['token'] for t in logp_list]:
+        last_message_index = max(i for i, t in enumerate(logp_list) if t['token'] == "<|message|>")
+        logp_list = logp_list[last_message_index + 1:]
+
+    # Cut off at the first occurrence of each control token, if present
+    for ctrl_token in ("<|return|>", "<|im_end|>", "<｜end▁of▁sentence｜>"):
+        idx = _first_index(ctrl_token)
+        if idx is not None:
+            logp_list = logp_list[:idx]
+
+    return logp_list
+
+def get_certainty(function_pointer, vocabulary_size=200_000) -> Tuple[float, int]:
     """
     Calculates an uncertainty score based on the branching factor of log probabilities
     in the LLM response.
-    
-    The score represents 1 - (1 / total_likely_paths).
+
+    Returns:
+        (selected_proportion, above_random_branches)
+        where `selected_proportion` is the product of per‑token probabilities
+        and `above_random_branches` is the total number of likely alternatives
+        across all tokens.
     """
     # 1. Extract the nested data source safely
-    # This replaces: function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
     try:
-        response_logprobs = function_pointer.hosta_inspection["logs"]["llm_api_response"]["choices"][0]["logprobs"]["content"]
+        response_logprobs = function_pointer.hosta_inspection.logs["llm_api_response"]["choices"][0]["logprobs"]["content"]
     except (KeyError, IndexError, AttributeError):
-        # Handle cases where data is missing
-        return 0.0
+        return 0.0, 0
 
-    selected_proportion = 1
+    return get_naive_certainty(response_logprobs, vocabulary_size=vocabulary_size)
+
+def get_naive_certainty(response_logprobs, vocabulary_size=200_000) -> Tuple[float, int]:
+    
+    selected_proportion = 1.0
     above_random_branches = 1
 
     # 2. Iterate through tokens to calculate branching options
     for i, token_data in enumerate(response_logprobs):
         token_text = token_data.get("token", "")
-        
-        # Condition: Skip the first token if it starts with a quote (' or ")
-        # Original: if not (i == 0 and (x["token"].startswith("'") or x["token"].startswith('"')) )
-        is_start_quote = (i == 0) and (token_text.startswith("'") or token_text.startswith('"'))
-        
-        if is_start_quote:
+
+        # Skip the first token if it starts with a quote
+        if i == 0 and (token_text.startswith("'") or token_text.startswith('"')):
             continue
 
-        # 3. Count "likely" alternatives for this token
-        # Original: len([y['logprob'] for y in x['top_logprobs'] if y['logprob'] > -11 ])
         top_logprobs = token_data.get("top_logprobs", [])
-        
-        # Filter for probabilities greater than random (uniform distrubution over vocabulary size)
         likely_alternatives = [
-            p for p in top_logprobs 
-            if p.get('logprob', -float('inf')) > math.log(1/vocabulary_sie)
+            p for p in top_logprobs
+            if p.get('logprob', -float('inf')) > math.log(1 / vocabulary_size)
         ]
-        
-        above_random_branches *= len(likely_alternatives) 
-        
+
+        above_random_branches *= max(len(likely_alternatives), 1)
+
         valid_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives if token_text.startswith(t['token']))
         total_mass = sum(math.exp(t["logprob"]) for t in likely_alternatives)
-        
-        if total_mass == 0:
-            step_probability = 1
-        else:
-            step_probability = valid_mass / total_mass 
-        
-        # We ignore other brnaches that could have lead to the same meaning.
-        # Ideally we should considere them as valid as the uncertainty is on knwoledge and not on format
+
+        step_probability = 1.0 if total_mass == 0 else valid_mass / total_mass
         selected_proportion *= step_probability
-        
+
     return selected_proportion, above_random_branches   
 
 
@@ -162,8 +179,7 @@ def most_probable_value(logprob_distribution:dict)->str:
     sorted_probs = sorted(normalized_probs.items(), key=lambda item: item[1], reverse=True)
     return sorted_probs[0][0], sorted_probs[0][1]
 
-# Not yet supported by ollama, supported by gpt-4o and gpt-4.1
-def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
+def get_enum_logprobes(*, function_pointer=None, inspection:Inspection=None) -> dict:
     if inspection is None and function_pointer is not None:
         if not hasattr(function_pointer, "hosta_inspection"):
             raise ValueError("Function pointer does not have hosta_inspection attribute. Did you call this function at least once?")
@@ -173,8 +189,8 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
     else:
         raise ValueError("Either function_pointer or inspection must be provided")
     
-    response_dict = inspection["logs"]["llm_api_response"]
-    return_type = inspection["analyse"]["type"]
+    response_dict = inspection.logs["llm_api_response"]
+    return_type = inspection.analyse["type"]
 
     assert issubclass(return_type, Enum), f"Return type is not an Enum. Type: {return_type} is not allowed when checking uncertainty."
 
@@ -185,17 +201,27 @@ def get_enum_logprobes(*,function_pointer=None, inspection=None)->dict:
     if len(logp_list) <= 0:
         print(f"Warning: not enough logprobs ({len(logp_list)})")
         return {}
-    
-    # vllm fix: jump to <|message|> token
-    if "<|message|>" in [t['token'] for t in logp_list]:
-        last_message_index = max(i for i,t in enumerate(logp_list) if t['token'] == "<|message|>")
-        logp_list = logp_list[last_message_index+1:]
-    if "<|return|>" in [t['token'] for t in logp_list]:
-        first_return_index = min(i for i,t in enumerate(logp_list) if t['token'] == "<|return|>")
-        logp_list = logp_list[:first_return_index]
-    if "<|im_end|>" in [t['token'] for t in logp_list]:
-        first_imend_index = min(i for i,t in enumerate(logp_list) if t['token'] == "<|im_end|>")
-        logp_list = logp_list[:first_imend_index]
+
+    # Use the new helper to trim control tokens
+    logp_list = _trim_logp_list(logp_list)
+
+    if "rational" in inspection.logs:
+        rational = inspection.logs["rational"]
+        answer_part = []
+        rational_part = []
+        for token_data in logp_list:
+            if rational.startswith(token_data['token']):
+                rational = rational[len(token_data['token']):]
+                rational_part.append(token_data)
+            else:
+                answer_part.append(token_data)
+                
+        rational_certainty, branch_count = get_naive_certainty(rational_part)
+        print(f"Rational part uncertainty: {1 - rational_certainty:0.6f} over {branch_count} branches")
+        
+        logp_list = answer_part
+    else:
+        rational_uncertainty = 1
         
     possible_outcomes = [(
         str(v.value),
@@ -253,7 +279,16 @@ class ReproducibleContextManager:
         if self.settings.uuid in reproducible_settings:
             del reproducible_settings[self.settings.uuid]
 
-def safe(acceptable_cumulated_uncertainty: float = 0.05, seed: int = 42):
+def safe(acceptable_cumulated_uncertainty: float = 0.05, seed: int = None):
+
+    if seed is None and "OPENHOSTA_DEFAULT_MODEL_SEED" in os.environ:
+        try:
+            seed = int(os.environ["OPENHOSTA_DEFAULT_MODEL_SEED"])
+        except ValueError:
+            print(f"Warning: OPENHOSTA_DEFAULT_MODEL_SEED is not a valid integer: {os.environ['OPENHOSTA_DEFAULT_MODEL_SEED']}. Using default seed.")
+
+    if seed is None:
+        print("Warning: No seed provided for reproducible context. This will lead to non-reproducible results. This is not very safe.")
 
     settings = ReproducibleSettings(
         acceptable_cumulated_uncertainty=acceptable_cumulated_uncertainty,
@@ -262,10 +297,9 @@ def safe(acceptable_cumulated_uncertainty: float = 0.05, seed: int = 42):
         
     return ReproducibleContextManager(settings)
 
-
 def last_uncertainty(function_pointer) -> float:
     if hasattr(function_pointer, "hosta_inspection") and \
-        "uncertainty" in function_pointer.hosta_inspection["logs"]:
-        return function_pointer.hosta_inspection["logs"]["uncertainty"]
+        "uncertainty" in function_pointer.hosta_inspection.logs:
+        return function_pointer.hosta_inspection.logs["uncertainty"]
     else:
         return 0
