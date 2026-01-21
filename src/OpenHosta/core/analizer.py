@@ -2,11 +2,11 @@
 import inspect
 
 from typing import Union
-from ..models import ModelCapabilities
+
+from ..core.base_model import ModelCapabilities
 from ..core.type_converter import nice_type_name, describe_type_as_python
 
-def hosta_analyze_update(frame, inspection):
-    analyse = inspection["analyse"]
+def hosta_analyze_update(frame, analyse):
     new_analyse = {
         "name": analyse["name"],
         "args": [],

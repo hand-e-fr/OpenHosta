@@ -19,9 +19,11 @@ class ApiKeyError(RequestError):
 class FrameError(Exception):
     """ Raised when the frame inspection fail """
 
+class UnreproducibleError(Exception):
+    """ Raised when the model is unable to reproduce an answer within the safe reproducible context """
+    
 class UncertaintyError(Exception):
     """ Raised when the model is uncertain about its answer """
-    pass
 
 class ModelMissingCapabilityError(Exception):
     """ Raised when the model is missing a capability required for uncertainty estimation """

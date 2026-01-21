@@ -49,7 +49,7 @@ pipe.emulate_meta_prompt = MetaPrompt("""\
     {{ function_return_as_python_type }}
 
     def {{ function_name }}({{ function_args }}) -> {{ function_return_type_name }}:
-        """{{ function_doc }}"""
+        \"\"\"{{ function_doc }}\"\"\"
 
         ...
         ...behavior to be simulated...

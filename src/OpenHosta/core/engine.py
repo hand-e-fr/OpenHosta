@@ -38,9 +38,9 @@ You are a precise data extraction and conversion engine.
 Your goal is to extract information from the input and convert it into the requested format strictly.
 
 Output valid JSON matching this schema: {{ json_schema }}
+Context: {{ user_desc }}
 
 Input Data: '{{ value }}'
-Context: {{ user_desc }}
 
 Task: Extract the value matching the schema. Return ONLY the JSON object.
 """)
@@ -90,13 +90,7 @@ def iterate_cast_type(
             user_desc=user_desc
         )
 
-    # 2. Mode Simulation (Si pas de modèle)
-    if not model:
-        logger.warning("Running in MOCK mode (No Model available).")
-        yield _mock_response(value, target_cls)
-        return
-
-    # 3. Exécution via Model.api_call
+    # 2. Exécution via Model.api_call
     try:
         messages = [{"role": "user", "content": prompt_content}]
         

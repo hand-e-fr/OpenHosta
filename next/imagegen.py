@@ -1,0 +1,1 @@
+# Ajout de la capability image gen sur api huggingface et transformers (local)
