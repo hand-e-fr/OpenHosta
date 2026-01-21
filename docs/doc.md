@@ -82,6 +82,7 @@ Let's **get started**! First here's the **table of contents** to help you naviga
     - [Make sure you have installed OpenHosta](#make-sure-you-have-installed-openhosta)
     - [OpenHosta Example](#openhosta-example)
     - [Basic Setup](#basic-setup)
+  - [List of supported environnemnt variables](#list-of-supported-environnemnt-variables)
   - [Reasoning models](#reasoning-models)
   - [Changing the MetaPrompt](#changing-the-metaprompt)
   - [`emulate` Function](#emulate-function)
@@ -188,6 +189,18 @@ my_model = OpenAICompatibleModel(
 config.DefaultModel = my_model # set it as the default model for all functions using default pipeline
 ```
 
+## List of supported environnemnt variables 
+
+```
+OPENHOSTA_DEFAULT_MODEL_API_KEY="your_api_key"
+OPENHOSTA_DEFAULT_MODEL_BASE_URL="https://api.openai.com/v1" # Optional
+OPENHOSTA_DEFAULT_MODEL_NAME="gpt-5"                 # Default to "gpt-4.1" 
+OPENHOSTA_DEFAULT_MODEL_TEMPERATURE=0.7              # Optional
+OPENHOSTA_DEFAULT_MODEL_TOP_P=0.9                    # Optional
+OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS=2048              # Optional
+OPENHOSTA_DEFAULT_MODEL_SEED=42                      # Optional. If set with a local LLM your application will be deterministic.
+OPENHOSTA_RATE_LIMIT_WAIT_TIME=60                    # When OpenAI API return code 429 (RateLimitError) wait this ammount of seconds before retry. (0 for no retry)
+```
 
 ## Reasoning models
 

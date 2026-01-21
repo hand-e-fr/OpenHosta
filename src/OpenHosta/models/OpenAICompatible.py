@@ -6,7 +6,7 @@ import requests
 
 from ..core.inspection import Inspection
 from ..models import Model, ModelCapabilities
-from ..utils.errors import ApiKeyError, RequestError, RateLimitError
+from ..core.errors import ApiKeyError, RequestError, RateLimitError
 
 class OpenAICompatibleModel(Model):
 

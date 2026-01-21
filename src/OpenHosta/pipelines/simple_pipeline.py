@@ -1,4 +1,8 @@
+import contextvars
+from enum import Enum
+
 from typing import Dict, List, Tuple, Any
+
 from abc import ABC, abstractmethod
 
 from ..models import Model, ModelCapabilities
@@ -6,6 +10,8 @@ from ..models import Model, ModelCapabilities
 from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_PROMPT
 from ..core.analizer import encode_function
 from ..core.type_converter import type_returned_data
+
+from ..core.uncertainty import get_certainty, get_enum_logprobes, normalized_probs, UncertaintyError, ReproducibleSettings, reproducible_settings_ctxvar
 
 MetaDialog = List[Tuple[str, MetaPrompt]]
 
@@ -115,17 +121,25 @@ class OneTurnConversationPipeline(Pipeline):
         
         # For now, we just take the first model
         chosen_model = self.model_list[0]
-
+        inspection["model"] = chosen_model
+        
         return chosen_model
 
-    def push_encode_inspected_data(self, inspection, model_capabilities: set[ModelCapabilities]):
+    def push_encode_inspected_data(self, inspection):
         """Data & Schema Level"""
         
+        model_capabilities: set[ModelCapabilities] = inspection["model"].capabilities
         analyse = inspection["analyse"]
 
-        snippets = encode_function(analyse, model_capabilities)
+        encoded_data = encode_function(analyse, model_capabilities)
 
-        return snippets 
+        if hasattr(inspection["function"], "force_template_data"):
+            print("[OneTurnConversationPipeline] Merging force_template_data into encoded_data: ", inspection["function"].force_template_data)
+            encoded_data |= inspection["function"].force_template_data 
+        
+        inspection["data_for_metaprompt"] = encoded_data
+        
+        return encoded_data 
 
     def push_select_meta_prompts(self, inspection):
         """Prompt Level""" 
@@ -167,24 +181,132 @@ class OneTurnConversationPipeline(Pipeline):
             ('system',self.emulate_meta_prompt, None),
             ('user',  self.user_call_meta_prompt, image_list),
         ]
+
+        inspection["meta_prompts"] = default_meta_conversation
+
         return default_meta_conversation
-
-    def push(self, inspection) -> dict:
+    
+    def push_check_uncertainty(self, inspection) -> Any:
         
-        # reset pipe state for new usage
-        inspection     = self.push_detect_missing_types(inspection)
-        inspection["model"] = self.push_choose_model(inspection)
+        reproducible_settings:Dict[str, ReproducibleSettings] = reproducible_settings_ctxvar.get()
         
-        inspection["pipeline"] = self
+        if len(reproducible_settings) == 0:
+            return inspection
+        
+        if inspection["model"].model_name in ["gpt-4o", "gpt-4o-mini", "gpt-4.1"] or \
+           inspection["model"].capabilities & {ModelCapabilities.LOGPROBS}:
+            inspection["force_llm_args"] |= {"logprobs": True, "top_logprobs": 20}
+        else:
+            raise UncertaintyError(f"Model {inspection['model'].model_name} does not support logprobs. Cannot compute uncertainty.")
+    
+        return inspection
+    
+    
+    def pull_check_uncertainty(self, inspection) -> Any:
+        
+        reproducible_settings:Dict[str, ReproducibleSettings] = reproducible_settings_ctxvar.get()
+        
+        if len(reproducible_settings) == 0:
+            return inspection
 
-        meta_messages       = self.push_select_meta_prompts(inspection)
+        analyse = inspection["analyse"]
+        function_pointer = inspection["function"]
+        result = inspection["logs"]["response_data"]
+        
+        if issubclass(analyse["type"], Enum):
 
-        # This is after push_select_meta_prompts because we may have changed arg values (eg: resized images)
-        encoded_data   = self.push_encode_inspected_data(inspection, inspection["model"].capabilities)
+            logprobes = get_enum_logprobes(function_pointer=function_pointer)
+            inspection["logs"]["enum_logprobes"] = logprobes
+                
+            normalized_probability = normalized_probs(logprobes)                  
+            uncertainty = sum([v for k,v in normalized_probability.items() if k != str(result.value)])
 
-        inspection["data_for_metaprompt"] = encoded_data
-        inspection["meta_prompts"] = meta_messages
+        else:
 
+            selected_answer_certainty, above_random_branches = get_certainty(function_pointer)
+
+            certainty = selected_answer_certainty
+            uncertainty = 1 - certainty
+            
+            # Other possibles branches weighted by uncertainty
+            # The weight is used to inhibit branches that are very close to random 
+            not_generated_acceptable_answer_count = (above_random_branches - 1) * uncertainty 
+            
+            normalized_probability = {
+                "unique_answer":selected_answer_certainty, 
+                "multiple_answers":1-selected_answer_certainty, 
+                }
+            
+            inspection["logs"]["uncertainty_counters"] = {
+                "above_random_branches" : above_random_branches,
+                "answer_count_estimation": 1 + not_generated_acceptable_answer_count
+            }
+        
+        inspection["logs"]["enum_normalized_probs"] = normalized_probability
+        inspection["logs"]["uncertainty"] = uncertainty
+
+        prompt_hash = hash( str(inspection["logs"].get("llm_api_messages_sent", "")) )
+        for v in reproducible_settings.values():
+ 
+            v.cumulated_uncertainty += uncertainty
+            v.trace.append( {
+                "function_name":inspection["analyse"]["name"],
+                "function_args":inspection["analyse"]["args"],
+                "function_uncertainty": uncertainty} )
+            
+            if v.cumulated_uncertainty > v.acceptable_cumulated_uncertainty:
+                # Find most uncertain function call in the trace
+                trace_with_number = [ {"step": i, **x} for i, x in enumerate(v.trace)]
+                most_uncertain_call = max(trace_with_number, key=lambda x: x["function_uncertainty"])
+                raise UncertaintyError(f"""Uncertainty above threshold: {v.cumulated_uncertainty} > {v.acceptable_cumulated_uncertainty}). 
+                    Risk of hallucination.
+                    Most uncertain call: {most_uncertain_call}""")
+                
+        return inspection
+
+    def pull_extract_messages(self, inspection, response_dict:dict) -> dict:
+        """Prompt Level"""
+        
+        if 'reasoning' in response_dict.get("choices",[{}])[0].get("message", {}):
+            inspection["logs"]["rational"] += str(response_dict["choices"][0]["message"]["reasoning"])
+
+        # This is for gpt-oss-20b on vllm 0.11            
+        if 'reasoning_content' in response_dict.get("choices",[{}])[0].get("message", {}):
+            inspection["logs"]["rational"] += str(response_dict["choices"][0]["message"]["reasoning_content"])
+        
+        raw_response = inspection["model"].get_response_content(response_dict)
+        
+        return raw_response
+
+    def pull_extract_data_section(self, inspection, raw_response:str) -> Any:
+        """Data & Schema Level"""
+
+        thinking, response_string = inspection["model"].get_thinking_and_data_sections(raw_response)
+
+        inspection["logs"]["rational"] += thinking if thinking else ""
+        inspection["logs"]["answer"] += response_string
+        
+        # Check if encapsulated in code block
+        if response_string.endswith("```"):
+            response_lines = response_string.split("\n")
+            section_pos = [i for i,v in enumerate(response_lines) if v.startswith("```")]
+            chunk = response_lines[(section_pos[-2]+1):section_pos[-1]]
+            # Remove chunk language and parameters
+            response_string = "\n".join(chunk)
+
+        inspection["logs"]["clean_answer"] += response_string
+        inspection["logs"]["response_string"] = response_string
+
+        return response_string.strip()
+
+    def pull_type_data_section(self, inspection, response:Any) -> Any:
+        """Python Level"""
+        l_ret_data = type_returned_data(response, inspection["analyse"]["type"])
+        inspection["logs"]["response_data"] = l_ret_data
+
+        return l_ret_data
+
+    def push_build_messages(self, inspection, meta_messages:MetaDialog, encoded_data:dict) -> dict:
         messages = []
         
         inspection["logs"]["llm_api_messages_sent"] = messages
@@ -205,57 +327,34 @@ class OneTurnConversationPipeline(Pipeline):
                 "role": role,
                 "content": message_content
             }]
-
-        
         return messages
 
-    def pull_extract_messages(self, inspection, response_dict:dict) -> dict:
-        """Prompt Level"""
-        return inspection["model"].get_response_content(response_dict)
-
-    def pull_extract_data_section(self, inspection, raw_response:str) -> Any:
-        """Data & Schema Level"""
-
-        thinking, response_string = inspection["model"].get_thinking_and_data_sections(raw_response)
-
-        inspection["logs"]["rational"] += thinking if thinking else ""
-        inspection["logs"]["answer"] += response_string
+    def push(self, inspection) -> dict:
         
-        # Check if encapsulated in code block
-        if response_string.endswith("```"):
-            response_lines = response_string.split("\n")
-            section_pos = [i for i,v in enumerate(response_lines) if v.startswith("```")]
-            chunk = response_lines[(section_pos[-2]+1):section_pos[-1]]
-            # Remove chunk language and parameters
-            response_string = "\n".join(chunk)
-
-        inspection["logs"]["clean_answer"] += response_string
+        inspection["pipeline"] = self
         
-        return response_string.strip()
-
-    def pull_type_data_section(self, inspection, response:Any) -> Any:
-        """Python Level"""
-        l_ret_data = type_returned_data(response, inspection["analyse"]["type"])
-
-        return l_ret_data
-
+        # reset pipe state for new usage
+        inspection   = self.push_detect_missing_types(inspection)
+        chosen_model = self.push_choose_model(inspection)
+        inspection   = self.push_check_uncertainty(inspection)
+        
+        meta_messages  = self.push_select_meta_prompts(inspection)
+        # This is after push_select_meta_prompts because we may have changed arg values (eg: resized images)
+        encoded_data   = self.push_encode_inspected_data(inspection)
+        messages       = self.push_build_messages(inspection, meta_messages, encoded_data)
+        
+        return messages
+    
     def pull(self, inspection, response_dict ):
         inspection["logs"]["rational"] = ""
         inspection["logs"]["answer"] = ""
         inspection["logs"]["clean_answer"] = ""
-        
         inspection["logs"]["llm_api_response"] = response_dict
         
-        raw_response = self.pull_extract_messages(inspection, response_dict)
-        
-        if 'reasoning' in response_dict.get("choices",[{}])[0].get("message", {}):
-            inspection["logs"]["rational"] += response_dict["choices"][0]["message"]["reasoning"]
-        
+        raw_response    = self.pull_extract_messages(inspection, response_dict)
         response_string = self.pull_extract_data_section(inspection, raw_response)
-        inspection["logs"]["response_string"] = response_string
-        
-        response_data = self.pull_type_data_section(inspection, response_string)
-        inspection["logs"]["response_data"] = response_data
+        response_data   = self.pull_type_data_section(inspection, response_string)
+        inspection      = self.pull_check_uncertainty(inspection)
         
         return response_data
     
