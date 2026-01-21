@@ -201,7 +201,7 @@ def describe_type_as_python(arg_type):
     elif isinstance(arg_type, type) and issubclass(arg_type, Enum):
         type_definition = textwrap.dedent(f"""\
             # Python enum {arg_type.__name__} definition.
-            # When you return a {arg_type.__name__}, print the enum member value as a string. I will identify the corresponding enum member.
+            # When you return a {arg_type.__name__}, print the enum member value as a string in between quotes. I will identify the corresponding enum member.
             class {arg_type.__name__}({arg_type.__base__.__name__}):""")
         if arg_type.__doc__:
             type_definition += f'\n    """{arg_type.__doc__}"""'
