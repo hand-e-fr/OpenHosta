@@ -34,10 +34,21 @@ class Tolerance:
     # Accepte : "Plage" == "Vacances", "Pizza" == "Italie".
     CREATIVE: float = 0.30
 
+    # --- 5. TOLÉRANCE MAXIMALE (Le "Chaos" dans le respect du type python) ---
+    # Usage : Génération libre, Exploration aléatoire.
+    # Accepte : Tout sauf les types impossibles (ex: dict("44") est impossible).
+    TYPE_COMPLIANT: float = 1.0 - 1e-15
+
+    # --- 6. ERREUR DE TYPE (Le "Chaos" absolu) ---
+    ANYTHING: float = 1.0
+    
     @staticmethod
     def describe(value: float) -> str:
         """Retourne une description textuelle pour le debug."""
         if value <= Tolerance.STRICT: return "STRICT (Identité)"
         if value <= Tolerance.PRECISE: return "PRECISE (Logique)"
         if value <= Tolerance.FLEXIBLE: return "FLEXIBLE (Intention)"
-        return "CREATIVE (Thématique)"
+        if value <= Tolerance.CREATIVE: return "CREATIVE (Thématique)"
+        if value == Tolerance.ANYTHING: return "ANYTHING (Chaos)"
+
+        return "TYPE_COMPLIANT (Tout tant que le type est respecté)"
