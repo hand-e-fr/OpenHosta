@@ -30,7 +30,13 @@ def guess_type(inspection: Inspection) -> object:
         detected_type = get_most_appropriate_type(inspection.analyse["doc"])
         return eval(detected_type.value, {"Any": Any})
     except Exception as e:
-        print(f"Type detection failed for {inspection.analyse['doc']}: {e}. Returning type 'Any'.")
+        print( 
+            (f"Type detection failed for '" +
+            inspection.analyse['doc'] +
+            f"':\n{detected_type}\n{e}.\n" +
+            "Default to return type 'Any'."
+            )
+              )
         return Any
 
 def closure_async(
