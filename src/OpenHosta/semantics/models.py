@@ -2,8 +2,7 @@
 
 import json
 from typing import Any, Dict, Type, Optional, ClassVar, Union
-from .resolver import TypeResolver
-from ..core.engine import iterate_cast_type  # Pour l'extraction globale
+from ..guarded.resolver import TypeResolver
 
 # --- GESTION DE LA DÉPENDANCE PYDANTIC ---
 try:

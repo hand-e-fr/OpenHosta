@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..core.config import Model, config
+from ..defaults import Model, config
 
 from ..core.meta_prompt import MetaPrompt
     

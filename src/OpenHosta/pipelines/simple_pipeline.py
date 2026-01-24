@@ -5,15 +5,15 @@ from typing import Dict, List, Tuple, Any
 
 from abc import ABC, abstractmethod
 
-from ..core.base_model import Model, ModelCapabilities
-
-from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_PROMPT
-from ..core.analizer import encode_function
-from ..core.type_converter import type_returned_data
-from ..core.inspection import Inspection
 
 from ..core.errors import UncertaintyError, UnreproducibleError
+from ..core.analizer import encode_function
+from ..core.base_model import Model, ModelCapabilities
+from ..core.inspection import Inspection
+from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_PROMPT
 from ..core.uncertainty import get_certainty, get_enum_logprobes, normalized_probs, ReproducibleSettings, reproducible_settings_ctxvar
+
+from ..guarded.resolver import type_returned_data
 
 MetaDialog = List[Tuple[str, MetaPrompt]]
 

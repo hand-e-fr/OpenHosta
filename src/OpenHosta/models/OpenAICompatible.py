@@ -37,7 +37,7 @@ class OpenAICompatibleModel(Model):
 
         self.set_api_url(
             base_url, model_name, chat_completion_url,
-            embedding_url, embedding_model_name
+            embedding_url, embedding_model_name, embedding_similarity_min
             )
         
         self.api_key = api_key

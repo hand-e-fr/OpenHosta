@@ -6,7 +6,7 @@ from typing import Any, Tuple, Callable
 # Assurez-vous d'avoir importé GuardedPrimitive
 from .primitives import GuardedPrimitive
 
-class SemanticCode(GuardedPrimitive):
+class GuardedCode(GuardedPrimitive):
     """
     Code Python Exécutable.
     Prend une chaîne de caractères (définition de fonction), la compile,

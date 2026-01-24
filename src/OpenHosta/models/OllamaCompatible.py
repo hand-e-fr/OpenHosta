@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Set
 import requests
 import json
 from .OpenAICompatible import OpenAICompatibleModel
-from .base_model import ModelCapabilities
+from ..core.base_model import ModelCapabilities
 from ..core.errors import ApiKeyError, RateLimitError, RequestError
 
 class OllamaModel(OpenAICompatibleModel):

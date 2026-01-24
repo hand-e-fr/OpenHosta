@@ -1,8 +1,9 @@
 import json
 
 from typing import Any, Tuple, Type, Dict, List, Union, Optional
-from .primitives import GuardedPrimitive
-from .scalars import SemanticStr # Type par défaut
+
+from ..guarded.primitives import GuardedPrimitive
+from ..guarded.scalars import GuardedUtf8 # Type par défaut
 
 # ==============================================================================
 # 1. SEMANTIC LIST (La Liste Intelligente)
@@ -70,7 +71,7 @@ class SemanticList(list, GuardedPrimitive):
     """
     
     # Par défaut (si utilisé sans crochets), c'est une liste de String
-    _inner_semantic_type = SemanticStr
+    _inner_semantic_type = GuardedUtf8
     
     _type_en = "a list of text items"
     _type_py = "List[str]"
@@ -80,7 +81,7 @@ class SemanticList(list, GuardedPrimitive):
     def __class_getitem__(cls, item_type):
         """Intercepte SemanticList[Type]"""
         # Import local pour éviter cycle avec resolver.py
-        from .resolver import TypeResolver
+        from ..guarded.resolver import TypeResolver
         
         resolved_type = TypeResolver.resolve(item_type)
         return create_semantic_list(resolved_type)
@@ -165,14 +166,14 @@ def create_semantic_dict(key_type: Type[GuardedPrimitive], val_type: Type[Guarde
 class SemanticDict(dict, GuardedPrimitive):
     """
     Dictionnaire sémantique.
-    Syntaxe: SemanticDict[SemanticStr, SemanticInt]
+    Syntaxe: SemanticDict[GuardedUtf8, SemanticInt]
     
     Feature Clé: Recherche sémantique.
     Si d["cle"] échoue, on cherche une clé k telle que k == "cle" (égalité sémantique).
     """
     
-    _key_semantic_type = SemanticStr
-    _val_semantic_type = SemanticStr
+    _key_semantic_type = GuardedUtf8
+    _val_semantic_type = GuardedUtf8
     
     _type_en = "a dictionary (key-value pairs)"
     _type_py = "Dict[str, str]"
@@ -180,11 +181,11 @@ class SemanticDict(dict, GuardedPrimitive):
 
     @classmethod
     def __class_getitem__(cls, params):
-        from .resolver import TypeResolver
+        from ..guarded.resolver import TypeResolver
         
         # Gestion SemanticDict[KeyType, ValType] vs SemanticDict[ValType] (implied Str key)
         if not isinstance(params, tuple):
-            params = (SemanticStr, params)
+            params = (GuardedUtf8, params)
             
         K, V = params
         return create_semantic_dict(TypeResolver.resolve(K), TypeResolver.resolve(V))
@@ -274,7 +275,7 @@ class SemanticSet:
     @classmethod
     def __class_getitem__(cls, item_type):
         """Support de la syntaxe SemanticSet[Type] pour rétrocompatibilité."""
-        from .resolver import TypeResolver
+        from ..guarded.resolver import TypeResolver
         return create_semantic_set(TypeResolver.resolve(item_type))
     
     def _wrap_item(self, item: Any) -> Any:
@@ -337,7 +338,7 @@ class SemanticSet:
     def _tolerance_to_threshold(self, tolerance: float) -> float:
         """Convertit la tolérance utilisateur en seuil de similarité."""
         # Get MIN_SIM from model (model-specific value)
-        from ..core.config import config
+        from ..defaults import config
         MIN_SIM = getattr(config.DefaultModel, 'embedding_similarity_min', 0.30)
         MAX_SIM = 0.99
         # Tolérance 0.0 -> Seuil MAX_SIM (très strict)

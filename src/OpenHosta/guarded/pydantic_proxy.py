@@ -1,5 +1,12 @@
 from __future__ import annotations
-from ..utils.import_handler import is_pydantic_available
+
+
+is_pydantic_available = False
+try:
+    import pydantic
+    is_pydantic_available = True
+except:
+    pass
 
 if is_pydantic_available:
     from pydantic import BaseModel # imported by other modules

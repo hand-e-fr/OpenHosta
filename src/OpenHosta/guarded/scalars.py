@@ -3,20 +3,23 @@ import re
 import ast
 
 from enum import Enum
-from typing import Any, Tuple, Type
+from typing import Any, Tuple, Type, Literal
 
-from .primitives import GuardedPrimitive, SemanticType
+from .primitives import GuardedPrimitive
 
-class SemanticInt(int, SemanticType):
+"""
+Un semantic scaler dérive directement d'un GuardedPrimitive.
+
+"""
+
+class GuardedInt(GuardedPrimitive, int):
     """
     Entier sémantique.
     Accepte : 42, "42", "quarante-deux", "42.0" (si entier), "1 000".
-    """
-    __hash__ = GuardedPrimitive.__hash__
-    
+    """    
     # --- 1. CONFIGURATION LLM ---
     _type_en = "an integer number (whole number)"
-    _type_py = "int"
+    _type_py = int
     _type_json = {"type": "integer"}
 
     # --- 2. VALIDATION NATIVE ---
@@ -59,15 +62,13 @@ class SemanticInt(int, SemanticType):
         return False, None
 
 
-class SemanticFloat(float, SemanticType):
+class GuardedFloat(GuardedPrimitive, float):
     """
     Nombre flottant sémantique.
     Accepte : 3.14, "3,14", "Pi environ", "10k".
     """
-    __hash__ = GuardedPrimitive.__hash__
-
     _type_en = "a floating point number"
-    _type_py = "float"
+    _type_py = float
     _type_json = {"type": "number"}
 
     @classmethod
@@ -101,16 +102,14 @@ class SemanticFloat(float, SemanticType):
             return False, None
 
 
-class SemanticBool(int, SemanticType):
+class GuardedBool(GuardedPrimitive, int):
     """
     Booléen sémantique.
     Note : Hérite de int car bool n'est pas subclassable en Python.
     Accepte : True, "True", "Yes", "Oui", "Vrai", "1", "Active".
     """
-    __hash__ = GuardedPrimitive.__hash__
-
     _type_en = "a boolean value (true or false)"
-    _type_py = "bool"
+    _type_py = bool
     _type_json = {"type": "boolean"}
 
     def __new__(cls, value: Any, description: str = ""):
@@ -150,16 +149,14 @@ class SemanticBool(int, SemanticType):
         return False, None
 
 
-class SemanticStr(str, SemanticType):
+class GuardedUtf8(GuardedPrimitive, str):
     """
     Chaîne de caractères sémantique.
     C'est le type par défaut. Son heuristique est très permissive,
     mais le LLM est utile pour corriger l'encodage, traduire, ou résumer.
     """
-    __hash__ = GuardedPrimitive.__hash__
-
     _type_en = "a string of text"
-    _type_py = "str"
+    _type_py = str
     _type_json = {"type": "string"}
 
     @classmethod
@@ -177,104 +174,18 @@ class SemanticStr(str, SemanticType):
         return True, str(value)
     
 
-# ==============================================================================
-# 5. SEMANTIC ENUM (Choix Restreint)
-# ==============================================================================
+class GuardedSet(GuardedPrimitive, set):
+    pass
 
-def create_semantic_enum(enum_cls: Type[Enum]) -> Type[GuardedPrimitive]:
-    """
-    Wrappe un Enum Python existant dans une Semantic Primitive.
-    """
-    # Récupération des valeurs possibles
-    members = list(enum_cls)
-    allowed_values = [m.value for m in members]
-    allowed_names = [m.name for m in members]
-    
-    class SemanticEnumWrapper(enum_cls, GuardedPrimitive):
-        _type_en = f"one of these values: {allowed_names}"
-        _type_py = enum_cls.__name__
-        _type_json = {"enum": allowed_values if all(isinstance(v, (str, int)) for v in allowed_values) else allowed_names}
-
-        @classmethod
-        def _parse_native(cls, value: Any) -> Tuple[bool, Any]:
-            # 1. C'est déjà un membre de l'enum
-            if isinstance(value, enum_cls):
-                return True, value
-            # 2. C'est la valeur (ex: 1)
-            if value in allowed_values:
-                return True, enum_cls(value)
-            # 3. C'est le nom (ex: "STATUS_OK")
-            if isinstance(value, str) and value in allowed_names:
-                return True, enum_cls[value]
-            return False, None
-
-        @classmethod
-        def _parse_heuristic(cls, value: Any) -> Tuple[bool, Any]:
-            # Nettoyage basique (ex: " STATUS_OK " -> "STATUS_OK")
-            if isinstance(value, str):
-                cleaned = value.strip().strip('"').strip("'")
-                # Essai par nom
-                if cleaned in allowed_names:
-                    return True, enum_cls[cleaned]
-                # Essai par valeur stringifiée
-                for m in members:
-                    if str(m.value) == cleaned:
-                        return True, m
-            return False, None
-            
-        # Bypass __new__ de GuardedPrimitive car Enum a son propre métaclass magic
-        def __new__(cls, value, description=""):
-             # On utilise attempt() manuellement pour valider/caster
-             res = cls.attempt(value, description)
-             if not res.is_success:
-                 raise ValueError(res.error_message)
-             return res.value 
-
-    SemanticEnumWrapper.__name__ = f"Semantic_{enum_cls.__name__}"
-    return SemanticEnumWrapper
+class GuardedDict(GuardedPrimitive, dict):
+    pass
 
 
 # ==============================================================================
-# 6. SEMANTIC LITERAL (Valeurs Constantes)
+# 7. TYPES AVANCÉS (Complex, Bytes, ...)
 # ==============================================================================
 
-def create_semantic_literal(literals: Tuple[Any]) -> Type[GuardedPrimitive]:
-    """Gère typing.Literal['A', 'B']"""
-    
-    class SemanticLiteral(GuardedPrimitive):
-        _allowed = literals
-        _type_en = f"specifically one of: {literals}"
-        _type_py = f"Literal{literals}"
-        _type_json = {"enum": list(literals)}
-        
-        def __new__(cls, value, description=""):
-             res = cls.attempt(value, description)
-             if not res.is_success: raise ValueError(res.error_message)
-             return res.value # Retourne la valeur brute (int ou str), pas une instance de classe
-
-        @classmethod
-        def _parse_native(cls, value: Any) -> Tuple[bool, Any]:
-            return (True, value) if value in cls._allowed else (False, None)
-
-        @classmethod
-        def _parse_heuristic(cls, value: Any) -> Tuple[bool, Any]:
-            if isinstance(value, str):
-                v = value.strip().strip("'").strip('"')
-                if v in cls._allowed: return True, v
-                # Tentative de conversion numérique si le literal contient des nombres
-                try:
-                    if int(v) in cls._allowed: return True, int(v)
-                except: pass
-            return False, None
-
-    SemanticLiteral.__name__ = f"Literal_{len(literals)}"
-    return SemanticLiteral
-
-# ==============================================================================
-# 7. TYPES AVANCÉS (Complex, Bytes, Range)
-# ==============================================================================
-
-class SemanticComplex(complex, GuardedPrimitive):
+class GuardedComplex(GuardedPrimitive, complex):
     """
     Nombre complexe.
     Accepte : 1+2j, "1+2j", "(1+2j)".
@@ -302,7 +213,7 @@ class SemanticComplex(complex, GuardedPrimitive):
         return False, None
 
 
-class SemanticBytes(bytes, GuardedPrimitive):
+class GuardedBytes(GuardedPrimitive, bytes):
     """
     Séquence d'octets immuable.
     Accepte : b'hello', "b'hello'", ou une string brute (encodée en utf-8 par défaut).
@@ -339,7 +250,7 @@ class SemanticBytes(bytes, GuardedPrimitive):
         return False, None
 
 
-class SemanticByteArray(bytearray, GuardedPrimitive):
+class GuardedByteArray(GuardedPrimitive, bytearray):
     """
     Séquence d'octets mutable.
     """
@@ -361,8 +272,18 @@ class SemanticByteArray(bytearray, GuardedPrimitive):
             return True, bytearray(val)
         return False, None
 
+# ==============================================================================
+# 8. TYPES QUI NE PEUVENT PAS ÊTRE SUBCLASSES EN PYTHON (bool, Range, etc.)
+# ==============================================================================
 
-class SemanticMemoryView(GuardedPrimitive):
+class TypeProxy:
+    """
+    This is a proxy for types that cannot be subclassed directly in Python.
+    """
+    def __init__(self, value: any, proxy_for_type: type):
+        self.value = value
+
+class GuardedMemoryView(GuardedPrimitive, TypeProxy):
     """
     Vue mémoire.
     Nécessite un objet bytes ou bytearray sous-jacent.
@@ -370,7 +291,7 @@ class SemanticMemoryView(GuardedPrimitive):
     l'objet memoryview natif directement.
     """
     _type_en = "a memoryview of bytes"
-    _type_py = "memoryview"
+    _type_py = memoryview
     _type_json = {"type": "string"}
 
     def __new__(cls, value: Any, description: str = ""):
@@ -398,13 +319,13 @@ class SemanticMemoryView(GuardedPrimitive):
         return False, None
 
 
-class SemanticRange(GuardedPrimitive): 
+class GuardedRange(GuardedPrimitive): 
     # Attention: range n'est pas subclassable facilement comme int ou str.
     # On hérite de GuardedPrimitive mais on ne peut pas hériter de 'range'.
     # On va simuler le comportement ou retourner un objet range natif via __new__.
     
     _type_en = "a range object (start, stop, step)"
-    _type_py = "range"
+    _type_py = range
     _type_json = {"type": "string", "pattern": "^range\\(\\d+(, \\d+)*\\)$"}
 
     def __new__(cls, value: Any, description: str = ""):
@@ -448,3 +369,60 @@ class SemanticRange(GuardedPrimitive):
                 pass
                 
         return False, None
+
+
+# ==============================================================================
+# 5. SEMANTIC ENUM (Choix Restreint)
+# ==============================================================================
+
+def create_semantic_enum(enum_cls: Type[Enum]) -> Type[GuardedPrimitive]:
+    """
+    Wrappe un Enum Python existant dans une Semantic Primitive.
+    """
+    # Récupération des valeurs possibles
+    members = list(enum_cls)
+    allowed_values = [m.value for m in members]
+    allowed_names = [m.name for m in members]
+    
+    class GuardedEnumWrapper(enum_cls, GuardedPrimitive):
+        _type_en = f"one of these values: {allowed_names}"
+        _type_py = enum_cls.__name__
+        _type_json = {"enum": allowed_values if all(isinstance(v, (str, int)) for v in allowed_values) else allowed_names}
+
+        @classmethod
+        def _parse_native(cls, value: Any) -> Tuple[bool, Any]:
+            # 1. C'est déjà un membre de l'enum
+            if isinstance(value, enum_cls):
+                return True, value
+            # 2. C'est la valeur (ex: 1)
+            if value in allowed_values:
+                return True, enum_cls(value)
+            # 3. C'est le nom (ex: "STATUS_OK")
+            if isinstance(value, str) and value in allowed_names:
+                return True, enum_cls[value]
+            return False, None
+
+        @classmethod
+        def _parse_heuristic(cls, value: Any) -> Tuple[bool, Any]:
+            # Nettoyage basique (ex: " STATUS_OK " -> "STATUS_OK")
+            if isinstance(value, str):
+                cleaned = value.strip().strip('"').strip("'")
+                # Essai par nom
+                if cleaned in allowed_names:
+                    return True, enum_cls[cleaned]
+                # Essai par valeur stringifiée
+                for m in members:
+                    if str(m.value) == cleaned:
+                        return True, m
+            return False, None
+            
+        # Bypass __new__ de GuardedPrimitive car Enum a son propre métaclass magic
+        def __new__(cls, value, description=""):
+             # On utilise attempt() manuellement pour valider/caster
+             res = cls.attempt(value, description)
+             if not res.is_success:
+                 raise ValueError(res.error_message)
+             return res.value 
+
+    GuardedEnumWrapper.__name__ = f"Semantic_{enum_cls.__name__}"
+    return GuardedEnumWrapper

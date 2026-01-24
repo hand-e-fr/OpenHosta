@@ -4,7 +4,50 @@ import inspect
 from typing import Union
 
 from ..core.base_model import ModelCapabilities
-from ..core.type_converter import nice_type_name, describe_type_as_python
+
+def describe_type_as_python(p_type) -> str:
+    
+    type_description = ""
+    
+    prev_type = None
+    for c in p_type.__mro__:
+        if c.__name__ == "object":
+            continue
+        
+        if prev_type:
+            inherits_doc = f"inherits from {prev_type.__name__}"
+        else:
+            inherits_doc = ""
+        prev_type = c
+        
+        type_description += f"Type {c.__name__} {inherits_doc}"
+        if c.__doc__:
+            if len(inherits_doc) > 0:
+                type_description += " and"
+            type_description += f" is defined as:\n'''\n{c.__doc__}\n'''"
+            
+        type_description += "\n\n"
+            
+    return type_description
+                
+
+def is_typing_type(arg_type):
+    # Check if the type provided as argument exist in typing library
+    return str(arg_type).startswith("typing.")
+
+def nice_type_name(p_type) -> str:
+    """
+    Get a nice name for the type to insert in function description for LLM.
+    """
+    if is_typing_type(p_type):
+        t=repr(p_type)
+        t=t.replace("typing.", "")
+        return t
+    
+    if hasattr(p_type, "__name__"):
+        return p_type.__name__
+
+    return str(p_type)
 
 def hosta_analyze_update(frame, analyse):
     new_analyse = {
