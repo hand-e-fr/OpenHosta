@@ -111,4 +111,36 @@ def test_generate_basic():
         for city in get_city(country):
             print(f"{country:20s}: {city}")
 
+    def dis_bonjour_avec_fautes(phrase:str) -> str:
+        """
+        Reformule la phrase avec les fautes d'orthograph les plus fréquentes.
+        
+        Args:
+          phrase: La phrase à reformuler.
+        
+        Return:
+          la même phrase avec des fautes d'orthographes.
+        """
+        return emulate_iterator(min_probability=0.01)
 
+    for c in dis_bonjour_avec_fautes("les chats font pas des chiens"):
+        print(c)
+
+    @dataclass
+    class KG_LINK:
+        link:str
+        target:str    
+
+    def add_grah_link(source) -> KG_LINK:
+        """
+        Suggest linkes in a knowledge graph.
+        
+        Args:
+            source: The source node of the link.
+        Return:
+            KG_LINK: The link between the source and the target.
+        """
+        return emulate_iterator(min_probability=0.001)
+    
+    for link in add_grah_link("friction"):
+        print(link)

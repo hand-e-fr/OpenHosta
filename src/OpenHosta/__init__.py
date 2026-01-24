@@ -1,9 +1,13 @@
 __version__ = "3.0.4"
 
-from .core.config import config
+from .defaults import config
+from .defaults import reload_dotenv
+
 from .core.logger import print_last_prompt, print_last_decoding
 from .core.logger import print_last_probability_distribution, print_last_uncertainty
 from .core.meta_prompt import MetaPrompt
+from .core.uncertainty import safe
+from .core.errors import UncertaintyError
 
 from .exec.ask import ask, ask_async
 from .exec.emulate import emulate, emulate_async
@@ -14,17 +18,10 @@ from .semantics.operators import test, test_async
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
 
-from .core.config import reload_dotenv
-
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
-from .core.uncertainty import safe
-from .core.errors import UncertaintyError
-
-import os
-
-DefaultModel = config.DefaultModel
-DefaultPipeline = config.DefaultPipeline
+DefaultModel = defaults.config.DefaultModel
+DefaultPipeline = defaults.config.DefaultPipeline
 
 all = (
     "ask",

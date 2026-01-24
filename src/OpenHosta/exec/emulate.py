@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from ..defaults import config
+
 from ..core.inspection import get_caller_frame, get_hosta_inspection
-from ..core.config import config
 
 from ..pipelines import OneTurnConversationPipeline
 

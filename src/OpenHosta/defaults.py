@@ -7,9 +7,9 @@ try:
 except Exception as e:
     sys.stderr.write("[OpenHosta/CONFIG_ERROR] python-dotenv is not installed. It is a good practice to install it and store your credentials in a .env file.\n")
     
-from ..core.base_model import Model
-from ..pipelines import OneTurnConversationPipeline
-from ..models import OpenAICompatibleModel
+from .core.base_model import Model
+from .pipelines import OneTurnConversationPipeline
+from .models import OpenAICompatibleModel
 
 # Config shall be a class so that any reference to default model or default pipeline are updated during runtime
 # (no copy)
@@ -95,9 +95,18 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         _defaut_model:OpenAICompatibleModel = config.DefaultModel
         _defaut_model.api_key = os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
         _defaut_model.model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4.1")
+        _defaut_model.chat_completion_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_COMPLETION_URL", "/chat/completions")
+        _defaut_model.embedding_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_URL", "/embedding")
+        _defaut_model.embedding_model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_MODEL_NAME", "gpt-4.1")
+        _defaut_model.embedding_similarity_min = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_SIMILARITY_MIN", 0.30)
+
         _defaut_model.set_api_url(
             os.getenv("OPENHOSTA_DEFAULT_MODEL_BASE_URL", "https://api.openai.com/v1"),
-            _defaut_model.model_name
+            _defaut_model.model_name,
+            _defaut_model.chat_completion_url,
+            _defaut_model.embedding_url,
+            _defaut_model.embedding_model_name,
+            _defaut_model.embedding_similarity_min
         )
         _defaut_model.retry_delay = int(os.getenv("OPENHOSTA_DEFAULT_MODEL_RATE_LIMIT_WAIT_TIME", 60))
 

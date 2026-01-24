@@ -15,7 +15,7 @@ class TestTypeResolverPrimitives:
     def test_resolve_int(self):
         """int should resolve to SemanticInt."""
         from OpenHosta.semantics import SemanticType, SemanticInt
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(int)
         assert resolved is SemanticInt
@@ -23,7 +23,7 @@ class TestTypeResolverPrimitives:
     def test_resolve_str(self):
         """str should resolve to SemanticStr."""
         from OpenHosta.semantics import SemanticStr
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(str)
         assert resolved is SemanticStr
@@ -31,7 +31,7 @@ class TestTypeResolverPrimitives:
     def test_resolve_float(self):
         """float should resolve to SemanticFloat."""
         from OpenHosta.semantics import SemanticFloat
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(float)
         assert resolved is SemanticFloat
@@ -39,7 +39,7 @@ class TestTypeResolverPrimitives:
     def test_resolve_bool(self):
         """bool should resolve to SemanticBool."""
         from OpenHosta.semantics import SemanticBool
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(bool)
         assert resolved is SemanticBool
@@ -51,7 +51,7 @@ class TestTypeResolverIdempotence:
     def test_semantic_int_passthrough(self):
         """SemanticInt should resolve to itself."""
         from OpenHosta.semantics import SemanticInt
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(SemanticInt)
         assert resolved is SemanticInt
@@ -59,7 +59,7 @@ class TestTypeResolverIdempotence:
     def test_semantic_str_passthrough(self):
         """SemanticStr should resolve to itself."""
         from OpenHosta.semantics import SemanticStr
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(SemanticStr)
         assert resolved is SemanticStr
@@ -70,7 +70,7 @@ class TestTypeResolverGenerics:
     
     def test_resolve_list_int(self):
         """List[int] should resolve to SemanticList[SemanticInt]."""
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(List[int])
         # The resolved class should be a SemanticList variant
@@ -78,7 +78,7 @@ class TestTypeResolverGenerics:
     
     def test_resolve_dict_str_int(self):
         """Dict[str, int] should resolve to SemanticDict."""
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(Dict[str, int])
         assert hasattr(resolved, '_key_semantic_type')
@@ -86,7 +86,7 @@ class TestTypeResolverGenerics:
     
     def test_resolve_set(self):
         """Set[str] should resolve to SemanticSet variant."""
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(Set[str])
         # Should be a function result or class with SemanticSet behavior
@@ -94,7 +94,7 @@ class TestTypeResolverGenerics:
     
     def test_resolve_tuple_fixed(self):
         """Tuple[int, str] should resolve to fixed tuple."""
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(Tuple[int, str])
         assert hasattr(resolved, '_item_types')
@@ -106,7 +106,7 @@ class TestTypeResolverOptionalUnion:
     def test_resolve_optional_int(self):
         """Optional[int] should resolve (filtering None)."""
         from OpenHosta.semantics import SemanticInt
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(Optional[int])
         # Optional[int] = Union[int, None], should resolve to SemanticInt
@@ -115,7 +115,7 @@ class TestTypeResolverOptionalUnion:
     def test_resolve_union_single(self):
         """Union with single type (after NoneType filter) should resolve."""
         from OpenHosta.semantics import SemanticStr
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         resolved = TypeResolver.resolve(Union[str, None])
         assert resolved is SemanticStr
@@ -127,7 +127,7 @@ class TestTypeResolverFallback:
     def test_unknown_type_fallback_to_str(self):
         """Unknown types should fallback to SemanticStr."""
         from OpenHosta.semantics import SemanticStr
-        from OpenHosta.semantics.resolver import TypeResolver
+        from OpenHosta.guarded.resolver import TypeResolver
         
         class CustomClass:
             pass

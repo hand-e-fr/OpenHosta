@@ -55,7 +55,6 @@ class TestSemanticIntNative:
         # Should still work but through heuristic, not native
         assert result == 1
 
-
 class TestSemanticIntHeuristic:
     """Tests for SemanticInt heuristic parsing."""
     

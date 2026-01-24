@@ -1,10 +1,12 @@
 from typing import Any, Optional
 
-from ..core.config import config
+from ..defaults import config
+
 from ..core.inspection import get_hosta_inspection, Inspection
+
 from ..pipelines import OneTurnConversationPipeline
 
-from ..exec.emulate import emulate
+from .emulate import emulate
 
 from enum import Enum
 

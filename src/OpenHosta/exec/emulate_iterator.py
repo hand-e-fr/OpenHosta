@@ -5,9 +5,10 @@ from typing import List, Optional
 
 import math
 
+from ..defaults import config
+
 from ..core.inspection import Inspection, get_caller_frame, get_hosta_inspection
 from ..core.base_model import ModelCapabilities, Model
-from ..core.config import config
 
 from ..pipelines import OneTurnConversationPipeline
 
