@@ -11,16 +11,17 @@ from dataclasses import dataclass
 from typing import Any, Optional, Literal, Type
 
 AbstractionLevel = Literal["native", "heuristic", "semantic", "knowledge"]
+UncertaintyLevel = float
 
 @dataclass
 class CastingResult:
     is_success: bool
     
+    python_value: Any    # La valeur convertie (ex: 23) ou None
     uncertainty: float   # Score de 0.0 à 1.0
     abstraction: AbstractionLevel 
 
     original_input: Any
-    python_value: Any          # La valeur convertie (ex: 23) ou None
     python_type: Optional[type] = None
 
     error_message: Optional[str] = None
@@ -46,9 +47,9 @@ class GuardedPrimitive(ABC):
     _type_py: ClassVar[type] = NotImplemented
     _type_json: ClassVar[Dict[str, Any]] = NotImplemented
     _type_knowledge: ClassVar[str] = NotImplemented
+    _tolerance: ClassVar[Tolerance] = Tolerance.TYPE_COMPLIANT
 
-    _uncertainty: ClassVar[float] = NotImplemented
-    _tolerance: ClassVar[float] = NotImplemented
+    _uncertainty: ClassVar[UncertaintyLevel] = NotImplemented
     _input: ClassVar[Any] = NotImplemented
     _abstraction_level = ClassVar[AbstractionLevel]
     
@@ -56,13 +57,13 @@ class GuardedPrimitive(ABC):
         """
         Le constructeur 'Magique'. Il ne crée l'objet que si le analyseur sémantique réussit.
         """
-        
+                
         # 0. Use docsting as type definition in natural language (_type_en) if not defined 
         if cls._type_en == NotImplemented:
             cls._type_en = f"{cls.__doc__}"
         
         if tolerance is None:
-            cls._tolerance = Tolerance.CREATIVE
+            tolerance = cls._tolerance
             
         if cls._type_py is NotImplemented:
             for parent in cls.__mro__:
@@ -88,11 +89,12 @@ class GuardedPrimitive(ABC):
         instance._input = value
         instance._uncertainty = result.uncertainty
         instance._abstraction_level = result.abstraction
+        instance._python_value = result.python_value
         
         return instance
 
     @property
-    def uncertainty(self) -> float:
+    def uncertainty(self) -> UncertaintyLevel:
         """Score de confiance de la conversion (0.0 à 1.0)."""
         return getattr(self, '_uncertainty', 1.0)
 
@@ -101,13 +103,9 @@ class GuardedPrimitive(ABC):
         """Niveau d'abstracton utilisé pour la conversion (native, heuristic, vectorial, llm)."""
         return getattr(self, '_abstraction_level', 'unknown')
 
-    @property
     def unwrap(self):
-        """Méthode utilitaire pour récupérer la valeur ou lever l'erreur."""
-        if not self.is_success:
-            raise ValueError(self.error_message)
-        return self.value
-
+        """Méthode utilitaire pour récupérer la valeur."""
+        return getattr(self, "_python_value", None)
 
     @classmethod
     def attempt(cls, value: Any, tolerance: Tolerance = None) -> CastingResult:
@@ -123,56 +121,63 @@ class GuardedPrimitive(ABC):
         
         uncertainty, cleaned_native_val = cls._parse_native(value)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_native_val, uncertainty, 'native')
+            return CastingResult(True, cleaned_native_val, uncertainty, 'native', value, cls._type_py)
 
         uncertainty, cleaned_heuristic_val = cls._parse_heuristic(cleaned_native_val)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_heuristic_val, uncertainty, 'heuristic')
+            return CastingResult(True, cleaned_heuristic_val, uncertainty, 'heuristic', value, cls._type_py)
 
         uncertainty, cleaned_semantic_value = cls._parse_semantic(cleaned_heuristic_val)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_semantic_value, uncertainty, 'semantic')
+            return CastingResult(True, cleaned_semantic_value, uncertainty, 'semantic', value, cls._type_py)
 
         uncertainty, cleaned_knowledge_value = cls._parse_knowledge(cleaned_semantic_value)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_knowledge_value, uncertainty, 'knowledge')
+            return CastingResult(True, cleaned_knowledge_value, uncertainty, 'knowledge', value, cls._type_py)
 
-        return CastingResult(False, None, uncertainty, 'failed')
+        return CastingResult(False, None, Tolerance.ANYTHING, 'failed', value, cls._type_py)
     
     # --- Hooks Abstraits (À implémenter par SemanticInt, SemanticUtf8...) ---
     
     @classmethod
-    @abstractmethod
-    def _parse_native(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
         """Retourne (1.0, val) si value est DÉJÀ valide."""
-        pass
+        if type(value) == cls._type_py:
+            return UncertaintyLevel(Tolerance.STRICT), value
+        
+        return UncertaintyLevel(Tolerance.ANYTHING), value
 
     @classmethod
-    @abstractmethod
-    def _parse_heuristic(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
         """Tentative de nettoyage déterministe (Regex, Strip...).
         
         Retourne (uncertainty, cleaned_val) où uncertainty ∈ [0, 1]."""
-        pass
+        
+        value = str(value)
+        
+        try:
+            value = cls._type_py(value)
+            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), value
+        except Exception:
+            pass
+        
+        return UncertaintyLevel(Tolerance.ANYTHING), value
+        
     
     @classmethod
-    @abstractmethod
-    def _parse_semantic(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
         """
         Tentative de nettoyage via LLM.
-        if not not implementes of no LLM available,
-        
-        return the value unchanged with 0.5 uncertainty
         """
-        pass
+        return UncertaintyLevel(Tolerance.ANYTHING), value
+
         
     @classmethod
-    @abstractmethod
-    def _parse_knowledge(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_knowledge(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
         """
         Tentative de netoyage par une base de connaissance.
         """
-        pass
+        return UncertaintyLevel(Tolerance.ANYTHING), value
 
 
     ### Pydantic V2 Integration ###
@@ -208,52 +213,3 @@ class GuardedPrimitive(ABC):
         if cls._type_json is not NotImplemented:
             return cls._type_json
         return handler(_core_schema)
-
-def del_me():
-        MAX_RETRIES: int = 3
-
-        # --- ÉTAPE 3 : Moteur LLM (Coût: $$$) ---
-        # On délègue la complexité de l'appel API au moteur 'core'
-        # Le moteur lit cls._type_* pour construire le prompt.
-        iterator = iterate_cast_type(value, target_cls=cls, user_desc=description)
-        
-        retries = 0
-        for candidate_str, uncertainty in iterator:
-            uncertainty = 1.0 - uncertainty
-            
-            # Le LLM renvoie toujours du texte/json.
-            # Il faut vérifier si ce texte est valide techniquement pour le type natif.
-            # Ex: LLM renvoie "20", est-ce que int("20") marche via notre parser ?
-            
-            # On utilise _parse_native (ou une variante interne) pour valider le candidat
-            # Attention : Le candidat peut être une string qu'il faut caster
-            try:
-                # On suppose que le moteur renvoie un candidat "brut" (ex: "20")
-                # On tente de le parser comme une donnée native
-                is_valid_candidate, final_val = cls._parse_native(candidate_str)
-                
-                # Si _parse_native échoue sur "20" (car il attend un int), 
-                # on essaie de le caster via le constructeur du type parent si c'est une string
-                if not is_valid_candidate and isinstance(candidate_str, str):
-                    # Tentative de conversion basique (ex: int("20"))
-                    # Cela dépend de l'implémentation spécifique des enfants, 
-                    # mais ici on reste générique.
-                     pass 
-                     # Note: Pour une implémentation robuste, engine.py devrait renvoyer
-                     # des données déjà typées (ex: json.loads), ou on utilise _parse_heuristic
-                     # sur le retour du LLM.
-                     is_valid_candidate, final_val = cls._parse_heuristic(candidate_str)
-
-                if is_valid_candidate and uncertainty >= cls.CONFIDENCE_THRESHOLD:
-                    return CastingResult(True, final_val, uncertainty, 'llm')
-
-            except Exception:
-                pass # Le candidat du LLM était invalide, on continue/retry
-            
-            retries += 1
-            if retries >= cls.MAX_RETRIES:
-                break
-                
-        # --- ÉTAPE 4 : Échec ---
-        return CastingResult(False, None, 0.0, 'failed', "Confidence too low or parse error")
-

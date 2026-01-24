@@ -67,14 +67,14 @@ class TypeResolver:
         - GuardedInt -> GuardedInt (Idempotence)
         """
         
+        # 1. Cas : Types primitifs natifs (int, str, bool...)
+        if annotation in cls._PRIMITIVE_MAP:
+            return cls._PRIMITIVE_MAP[annotation]
+
         # 1. Cas : C'est déjà une classe Guarded (ou une sous-classe)
         # Ex: L'utilisateur passe directement GuardedInt ou CorporateEmail
         if isinstance(annotation, type) and issubclass(annotation, GuardedPrimitive):
             return annotation
-
-        # 2. Cas : Types primitifs natifs (int, str, bool...)
-        if annotation in cls._PRIMITIVE_MAP:
-            return cls._PRIMITIVE_MAP[annotation]
 
         # 3. Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
@@ -93,55 +93,55 @@ class TypeResolver:
         #     WrappedModel.__doc__ = annotation.__doc__
         #     return WrappedModel
 
-        # # 5. Types Génériques (Typing)
-        # origin = get_origin(annotation)
-        # args = get_args(annotation)
+        # 5. Types Génériques (Typing)
+        origin = get_origin(annotation)
+        args = get_args(annotation)
 
-        # if origin is not None:
-        #     # List, Iterable, Sequence -> GuardedList
-        #     if origin in (list, List, typing.Sequence, typing.Iterable):
-        #         inner = cls.resolve(args[0]) if args else GuardedUtf8
-        #         return GuardedList[inner]
+        if origin is not None:
+            # List, Iterable, Sequence -> GuardedList
+            if origin in (list, List, typing.Sequence, typing.Iterable):
+                inner = cls.resolve(args[0]) if args else GuardedUtf8
+                return GuardedList[inner]
 
-        #     # Set, Frozenset -> GuardedSet
-        #     if origin in (set, frozenset, typing.Set, typing.AbstractSet):
-        #         inner = cls.resolve(args[0]) if args else GuardedUtf8
-        #         return create_semantic_set(inner)
+            # Set, Frozenset -> GuardedSet
+            if origin in (set, frozenset, typing.Set, typing.AbstractSet):
+                inner = cls.resolve(args[0]) if args else GuardedUtf8
+                return GuardedSet[inner]
 
-        #     # Tuple -> GuardedTuple
-        #     if origin in (tuple, typing.Tuple):
-        #         if not args:
-        #             return GuardedTuple
-        #         # Tuple[int, ...] (Variable)
-        #         if len(args) == 2 and args[1] is Ellipsis:
-        #             return create_semantic_tuple([cls.resolve(args[0])], variable_length=True)
-        #         # Tuple[int, str] (Fixe)
-        #         else:
-        #             return create_semantic_tuple([cls.resolve(arg) for arg in args], variable_length=False)
+            # Tuple -> GuardedTuple
+            if origin in (tuple, typing.Tuple):
+                if not args:
+                    return GuardedTuple[GuardedAny]
+                # Tuple[int, ...] (Variable)
+                if len(args) == 2 and args[1] is Ellipsis:
+                    return create_semantic_tuple([cls.resolve(args[0])], variable_length=True)
+                # Tuple[int, str] (Fixe)
+                else:
+                    return create_semantic_tuple([cls.resolve(arg) for arg in args], variable_length=False)
 
-        #     # Dict, Mapping -> GuardedDict
-        #     if origin in (dict, Dict, typing.Mapping, typing.MutableMapping):
-        #         k = cls.resolve(args[0]) if len(args) > 0 else GuardedUtf8
-        #         v = cls.resolve(args[1]) if len(args) > 1 else GuardedUtf8
-        #         return GuardedDict[k, v]
+            # Dict, Mapping -> GuardedDict
+            if origin in (dict, Dict, typing.Mapping, typing.MutableMapping):
+                k = cls.resolve(args[0]) if len(args) > 0 else GuardedUtf8
+                v = cls.resolve(args[1]) if len(args) > 1 else GuardedUtf8
+                return GuardedDict[k, v]
 
-        #     # Literal -> GuardedLiteral
-        #     if origin is typing.Literal:
-        #         return create_semantic_literal(args)
+            # Literal -> GuardedLiteral
+            if origin is typing.Literal:
+                return create_semantic_literal(args)
 
-        #     # Union / Optional
-        #     if origin is Union:
-        #         # On filtre NoneType
-        #         non_none = [a for a in args if a is not type(None)]
-        #         if len(non_none) == 1:
-        #             return cls.resolve(non_none[0])
-        #         # TODO: Support Union complexe (Union[int, str]) ?
-        #         # Pour l'instant on fallback sur le premier ou str
-        #         return cls.resolve(non_none[0]) if non_none else GuardedUtf8
+            # Union / Optional
+            if origin is Union:
+                # On filtre NoneType
+                non_none = [a for a in args if a is not type(None)]
+                if len(non_none) == 1:
+                    return cls.resolve(non_none[0])
+                # TODO: Support Union complexe (Union[int, str]) ?
+                # Pour l'instant on fallback sur le premier ou str
+                return cls.resolve(non_none[0]) if non_none else GuardedUtf8
 
-        #     # Annotated (souvent utilisé avec Pydantic)
-        #     if origin is typing.Annotated:
-        #         return cls.resolve(args[0])
+            # Annotated (souvent utilisé avec Pydantic)
+            if origin is typing.Annotated:
+                return cls.resolve(args[0])
 
         # 6. Fallback
         return GuardedUtf8
@@ -155,7 +155,7 @@ def type_returned_data(untyped_response: str, expected_type: type) -> Any:
     
     semantic_type = TypeResolver.resolve(expected_type)
     convertion_report = semantic_type.attempt(untyped_response)
-    return convertion_report.unwrap()
+    return convertion_report.python_value
     
 def describe_type_as_python(arg_type):
 
