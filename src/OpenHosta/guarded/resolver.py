@@ -206,14 +206,16 @@ class TypeResolver:
                 return GuardedUtf8
 
             # Union / Optional
-            if origin is Union:
+            if origin is Union or (hasattr(typing, '_UnionGenericAlias') and isinstance(annotation, typing._UnionGenericAlias)):
                 # On filtre NoneType
                 non_none = [a for a in args if a is not type(None)]
                 if len(non_none) == 1:
                     return cls.resolve(non_none[0])
-                # TODO: Support Union complexe (Union[int, str]) ?
-                # Pour l'instant on fallback sur le premier ou str
-                return cls.resolve(non_none[0]) if non_none else GuardedUtf8
+                
+                # Support Union complexe (Union[int, str])
+                from .subclassableunions import guarded_union
+                resolved_args = [cls.resolve(a) for a in non_none]
+                return guarded_union(*resolved_args)
 
             # Annotated (souvent utilisé avec Pydantic)
             if origin is typing.Annotated:
