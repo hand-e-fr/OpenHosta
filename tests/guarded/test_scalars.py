@@ -1,8 +1,8 @@
 """Tests for GuardedInt, GuardedFloat, and GuardedUtf8."""
 
 import pytest
-from src.OpenHosta.guarded.constants import Tolerance
-from src.OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedFloat, GuardedUtf8
+from OpenHosta.guarded.constants import Tolerance
+from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedFloat, GuardedUtf8
 
 
 class TestGuardedInt:
@@ -32,8 +32,8 @@ class TestGuardedInt:
         """Test string with spaces."""
         num = GuardedInt("1 000")
         assert num == 1000
-        assert age.uncertainty <= Tolerance.FLEXIBLE
-        assert age.abstraction_level == 'heuristic'
+        assert num.uncertainty <= Tolerance.FLEXIBLE
+        assert num.abstraction_level == 'heuristic'
     
     def test_string_with_commas(self):
         """Test string with comma separators."""

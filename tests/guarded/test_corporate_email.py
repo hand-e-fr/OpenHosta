@@ -11,9 +11,9 @@ Démontre les 4 niveaux du pipeline :
 import re
 import pytest
 from typing import Tuple, Optional, Any
-from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
-from src.OpenHosta.guarded.constants import Tolerance
-from src.OpenHosta.guarded.primitives import UncertaintyLevel
+from OpenHosta.guarded.subclassablescalars import GuardedUtf8
+from OpenHosta.guarded.constants import Tolerance
+from OpenHosta.guarded.primitives import UncertaintyLevel
 
 
 # Simuler un annuaire d'entreprise
@@ -52,7 +52,7 @@ class CorporateEmail(GuardedUtf8):
         """Lazy initialization de la closure LLM."""
         if cls._llm_cast_email is None:
             try:
-                from src.OpenHosta.exec.closure import closure
+                from OpenHosta.exec.closure import closure
                 
                 meta_prompt = """
                 Convert the input text to a valid corporate email in the format: firstname.lastname@mycorp.com

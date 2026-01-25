@@ -1,5 +1,5 @@
 from typing import Any, Tuple, Optional
-from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, ProxyWrapper
+from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, ProxyWrapper, CastingResult
 
 class GuardedList(GuardedPrimitive, list):
     """
@@ -348,13 +348,46 @@ def guarded_dataclass(cls=None, **dataclass_kwargs):
         # Sauvegarder le __init__ original de la dataclass
         original_init = cls.__init__
         
-        class GuardedDataclassWrapper(cls):
+        class GuardedDataclassWrapper(GuardedPrimitive, cls):
             """Wrapper qui ajoute les capacités Guarded à une dataclass."""
             
             _type_en = f"an instance of {cls.__name__} dataclass"
             _type_py = cls
             _type_json = {"type": "object"}
             _tolerance = Tolerance.TYPE_COMPLIANT
+
+            def __new__(cls, *args, **kwargs):
+                # Si c'est un appel de casting (un seul argument positionnel, pas de kwargs)
+                if len(args) == 1 and len(kwargs) == 0:
+                    return super().__new__(cls, args[0])
+                
+                # Sinon c'est une instanciation directe (item = Item(name=...))
+                # On saute le pipeline de casting de GuardedPrimitive
+                instance = object.__new__(cls)
+                return instance
+
+            @classmethod
+            def attempt(cls, value: Any, tolerance: Tolerance = None) -> CastingResult:
+                """
+                Outrepasse attempt pour les dataclasses car elles gèrent
+                leur propre conversion dans __init__.
+                """
+                if tolerance is None:
+                    tolerance = cls._tolerance
+                
+                try:
+                    # Tenter d'instancier
+                    if isinstance(value, cls):
+                         return CastingResult(True, value, Tolerance.STRICT, 'native', value, cls, None)
+                    
+                    # Si c'est un dict, on considère ça comme heuristique
+                    if isinstance(value, dict):
+                         return CastingResult(True, value, Tolerance.FLEXIBLE, 'heuristic', value, cls, None)
+                    
+                    # Sinon, on tente tel quel mais avec une incertitude élevée
+                    return CastingResult(True, value, Tolerance.TYPE_COMPLIANT, 'heuristic', value, cls, None)
+                except Exception as e:
+                    return CastingResult(False, value, Tolerance.ANYTHING, 'failed', value, cls, str(e))
             
             def __init__(self, *args, **kwargs):
                 """
@@ -386,7 +419,7 @@ def guarded_dataclass(cls=None, **dataclass_kwargs):
                             field_values[field.name] = value
                     
                     # Appeler le __init__ parent avec les kwargs
-                    super(GuardedDataclassWrapper, self).__init__(**field_values)
+                    super(GuardedPrimitive, self).__init__(**field_values)
                     
                     # Ajouter les métadonnées Guarded
                     self._uncertainty = UncertaintyLevel(Tolerance.FLEXIBLE)
@@ -394,7 +427,8 @@ def guarded_dataclass(cls=None, **dataclass_kwargs):
                     self._input = data
                 else:
                     # Mode normal : kwargs ou args positionnels
-                    super(GuardedDataclassWrapper, self).__init__(*args, **kwargs)
+                    # On saute GuardedPrimitive.__init__ pour appeler le __init__ de la dataclass
+                    super(GuardedPrimitive, self).__init__(*args, **kwargs)
                     
                     # Ajouter les métadonnées Guarded
                     self._uncertainty = UncertaintyLevel(Tolerance.STRICT)
