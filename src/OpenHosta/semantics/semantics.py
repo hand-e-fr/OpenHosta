@@ -2,7 +2,7 @@ from typing import Type, ClassVar, Any
 
 from ..guarded.constants import Tolerance
 from ..guarded.primitives import GuardedPrimitive
-from ..guarded.scalars import GuardedUtf8, GuardedInt, GuardedFloat, GuardedBool
+from ..guarded.subclassablescalars import GuardedUtf8, GuardedInt, GuardedFloat, GuardedBool
 
 def _create_semantic_attribute(
     description: str, 
