@@ -142,7 +142,13 @@ class GuardedPrimitive(ABC):
             )
 
         # 3. Création de l'instance native (int, str, list...)
-        instance = super().__new__(cls, result.python_value)
+        # Note: Pour les types mutables (list, dict, set), super().__new__(cls) 
+        # retourne une instance vide. On la remplira dans __init__.
+        try:
+            instance = super().__new__(cls, result.python_value)
+        except TypeError:
+            # Certains types ne prennent pas d'arguments dans __new__
+            instance = super().__new__(cls)
 
         # 4. Injection des Métadonnées
         instance._input = value
@@ -151,6 +157,34 @@ class GuardedPrimitive(ABC):
         instance._python_value = result.python_value
         
         return instance
+
+    def __init__(self, value: Any, tolerance: Tolerance = None):
+        """
+        L'initialiseur est appelé après __new__.
+        Pour les types mutables (list, dict, set), on doit s'assurer que
+        l'instance est peuplée avec la valeur CONVERTIE, pas l'entrée originale.
+        """
+        # Si c'est un type mutable, on le vide et on le remplit avec la valeur convertie
+        # Cela évite que list.__init__ soit appelé avec 'value' original
+        python_value = getattr(self, "_python_value", None)
+        
+        if isinstance(self, list):
+            if list(self) != python_value:
+                self.clear()
+                if python_value is not None:
+                    self.extend(python_value)
+        elif isinstance(self, dict):
+            if dict(self) != python_value:
+                self.clear()
+                if python_value is not None:
+                    self.update(python_value)
+        elif isinstance(self, set):
+            if set(self) != python_value:
+                self.clear()
+                if python_value is not None:
+                    self.update(python_value)
+        # Pour les types immuables (int, str...), __init__ ne fait rien car
+        # la valeur a déjà été fixée dans __new__.
 
     @property
     def uncertainty(self) -> UncertaintyLevel:

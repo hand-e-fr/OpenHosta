@@ -174,3 +174,140 @@ class TestTypeResolverEdgeCases:
         resolved = TypeResolver.resolve(List[List[int]])
         # Should handle nested types
         assert "GuardedList" in str(resolved) or resolved == GuardedList
+
+
+class TestTypeResolverLiteralAndCustomTypes:
+    """Test Literal and custom GuardedPrimitive types."""
+    
+    def test_resolve_literal(self):
+        """Test resolving Literal type."""
+        from typing import Literal
+        
+        resolved = TypeResolver.resolve(Literal["a", "b", "c"])
+        # Should now return a GuardedLiteral (dynamic class)
+        assert "Literal" in str(resolved) or resolved.__name__.startswith("Literal")
+    
+    def test_resolve_literal_int(self):
+        """Test resolving Literal with integers."""
+        from typing import Literal
+        
+        resolved = TypeResolver.resolve(Literal[1, 2, 3])
+        # Should return a GuardedLiteral based on GuardedInt
+        assert "Literal" in str(resolved) or resolved.__name__.startswith("Literal")
+    
+    def test_resolve_custom_guarded_type(self):
+        """Test resolving custom GuardedPrimitive subclass."""
+        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from src.OpenHosta.guarded.constants import Tolerance
+        from typing import Tuple, Optional, Any
+        import re
+        
+        # Create a custom type similar to CorporateEmail
+        class CorporateEmail(GuardedUtf8):
+            """Email d'entreprise."""
+            
+            @classmethod
+            def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+                if not isinstance(value, str):
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
+                
+                if re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", value):
+                    return UncertaintyLevel(Tolerance.STRICT), value, None
+                
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
+        
+        # Test that custom type resolves to itself
+        resolved = TypeResolver.resolve(CorporateEmail)
+        assert resolved == CorporateEmail
+    
+    def test_resolve_dict_with_custom_type(self):
+        """Test resolving Dict[str, CustomGuardedType]."""
+        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from src.OpenHosta.guarded.constants import Tolerance
+        from typing import Tuple, Optional, Any
+        import re
+        
+        # Create a custom type
+        class CorporateEmail(GuardedUtf8):
+            """Email d'entreprise."""
+            
+            @classmethod
+            def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+                if not isinstance(value, str):
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
+                
+                if re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", value):
+                    return UncertaintyLevel(Tolerance.STRICT), value, None
+                
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
+        
+        # Test Dict[str, CorporateEmail]
+        resolved = TypeResolver.resolve(Dict[str, CorporateEmail])
+        
+        # Should return GuardedDict parameterized with GuardedUtf8 and CorporateEmail
+        assert "GuardedDict" in str(resolved) or resolved == GuardedDict
+        
+        # Test that we can actually use it
+        guarded_dict_type = resolved
+        # This should work if the resolver properly handles custom types
+        assert guarded_dict_type is not None
+    
+    def test_resolve_list_with_custom_type(self):
+        """Test resolving List[CustomGuardedType]."""
+        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from src.OpenHosta.guarded.constants import Tolerance
+        from typing import Tuple, Optional, Any
+        import re
+        
+        # Create a custom type
+        class CorporateEmail(GuardedUtf8):
+            """Email d'entreprise."""
+            
+            @classmethod
+            def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+                if not isinstance(value, str):
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
+                
+                if re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", value):
+                    return UncertaintyLevel(Tolerance.STRICT), value, None
+                
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
+        
+        # Test List[CorporateEmail]
+        resolved = TypeResolver.resolve(List[CorporateEmail])
+        
+        # Should return GuardedList parameterized with CorporateEmail
+        assert "GuardedList" in str(resolved) or resolved == GuardedList
+    
+    def test_type_returned_data_with_custom_type(self):
+        """Test type_returned_data with custom GuardedPrimitive."""
+        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from src.OpenHosta.guarded.constants import Tolerance
+        from typing import Tuple, Optional, Any
+        import re
+        
+        # Create a custom type
+        class CorporateEmail(GuardedUtf8):
+            """Email d'entreprise."""
+            
+            @classmethod
+            def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+                if not isinstance(value, str):
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
+                
+                if re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", value):
+                    return UncertaintyLevel(Tolerance.STRICT), value, None
+                
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
+        
+        # Test conversion
+        result = type_returned_data("marie.dupont@mycorp.com", CorporateEmail)
+        
+        # Should be a CorporateEmail instance
+        assert isinstance(result, CorporateEmail)
+        assert str(result) == "marie.dupont@mycorp.com"
+        assert result.uncertainty == Tolerance.STRICT
