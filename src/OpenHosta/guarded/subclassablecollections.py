@@ -183,59 +183,128 @@ class GuardedTuple(GuardedPrimitive, tuple):
         except (TypeError, ValueError) as e:
             return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
-def guarded_dataclass(cls):
+def guarded_dataclass(cls=None, **dataclass_kwargs):
     """
-    Decorator qui transforme une dataclass en GuardedDataclass.
+    Decorator qui transforme une classe en GuardedDataclass.
     
-    Usage:
-        from dataclasses import dataclass
+    Applique automatiquement @dataclass si la classe n'est pas déjà une dataclass.
+    
+    Usage simple (recommandé) :
         from OpenHosta.guarded import guarded_dataclass
         
         @guarded_dataclass
-        @dataclass
         class Person:
             name: str
             age: int
         
         p = Person({"name": "Alice", "age": "25"})  # ✅ Accepte dict
         p = Person(name="Bob", age=30)              # ✅ Accepte kwargs
+    
+    Usage avec options dataclass :
+        @guarded_dataclass(frozen=True, order=True)
+        class Point:
+            x: int
+            y: int
+    
+    Usage avec @dataclass explicite (legacy) :
+        from dataclasses import dataclass
+        
+        @guarded_dataclass
+        @dataclass
+        class Person:
+            name: str
+            age: int
     """
-    from dataclasses import fields, is_dataclass
+    from dataclasses import dataclass, fields, is_dataclass
     
-    if not is_dataclass(cls):
-        raise TypeError(f"{cls.__name__} must be a dataclass")
-    
-    class GuardedDataclassWrapper(GuardedPrimitive, cls):
-        _type_en = f"an instance of {cls.__name__} dataclass"
-        _type_py = cls
-        _type_json = {"type": "object"}
+    def decorator(cls):
+        # Si ce n'est pas déjà une dataclass, on l'applique
+        if not is_dataclass(cls):
+            cls = dataclass(cls, **dataclass_kwargs)
         
-        @classmethod
-        def _parse_native(cls_inner, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-            if isinstance(value, cls):
-                return UncertaintyLevel(Tolerance.STRICT), value, None
-            return UncertaintyLevel(Tolerance.ANYTHING), value, None
+        # Sauvegarder le __init__ original de la dataclass
+        original_init = cls.__init__
         
-        @classmethod
-        def _parse_heuristic(cls_inner, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-            # Accepter un dict
-            if isinstance(value, dict):
-                try:
-                    # Créer l'instance avec les champs du dict
+        class GuardedDataclassWrapper(cls):
+            """Wrapper qui ajoute les capacités Guarded à une dataclass."""
+            
+            _type_en = f"an instance of {cls.__name__} dataclass"
+            _type_py = cls
+            _type_json = {"type": "object"}
+            _tolerance = Tolerance.TYPE_COMPLIANT
+            
+            def __init__(self, *args, **kwargs):
+                """
+                Gère deux modes d'instanciation :
+                1. Mode dict : GuardedDataclass({"field": value})
+                2. Mode kwargs : GuardedDataclass(field=value)
+                """
+                # Mode dict : un seul argument qui est un dict
+                if len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], dict):
+                    data = args[0]
+                    # Extraire et convertir les champs du dict
                     field_values = {}
                     for field in fields(cls):
-                        if field.name in value:
-                            field_values[field.name] = value[field.name]
+                        if field.name in data:
+                            value = data[field.name]
+                            # Essayer de convertir la valeur au bon type
+                            if field.type and value is not None:
+                                try:
+                                    # Import local pour éviter cycle
+                                    from .resolver import TypeResolver
+                                    guarded_type = TypeResolver.resolve(field.type)
+                                    # Si c'est un type Guarded, l'utiliser pour convertir
+                                    if hasattr(guarded_type, '__new__'):
+                                        value = guarded_type(value)
+                                except Exception as e:
+                                    # Log l'erreur mais continuer
+                                    import warnings
+                                    warnings.warn(f"Failed to convert {field.name}={value!r} to {field.type}: {e}")
+                            field_values[field.name] = value
                     
-                    instance = cls(**field_values)
-                    return UncertaintyLevel(Tolerance.FLEXIBLE), instance, None
-                except Exception as e:
-                    return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+                    # Appeler le __init__ parent avec les kwargs
+                    super(GuardedDataclassWrapper, self).__init__(**field_values)
+                    
+                    # Ajouter les métadonnées Guarded
+                    self._uncertainty = UncertaintyLevel(Tolerance.FLEXIBLE)
+                    self._abstraction_level = 'heuristic'
+                    self._input = data
+                else:
+                    # Mode normal : kwargs ou args positionnels
+                    super(GuardedDataclassWrapper, self).__init__(*args, **kwargs)
+                    
+                    # Ajouter les métadonnées Guarded
+                    self._uncertainty = UncertaintyLevel(Tolerance.STRICT)
+                    self._abstraction_level = 'native'
+                    self._input = (args, kwargs)
             
-            return UncertaintyLevel(Tolerance.ANYTHING), value, None
+            @property
+            def uncertainty(self):
+                """Niveau d'incertitude de la conversion."""
+                return getattr(self, '_uncertainty', UncertaintyLevel(Tolerance.STRICT))
+            
+            @property
+            def abstraction_level(self):
+                """Niveau d'abstraction utilisé pour la conversion."""
+                return getattr(self, '_abstraction_level', 'native')
+            
+            def unwrap(self):
+                """Retourne l'instance elle-même (déjà un objet natif)."""
+                return self
+        
+        GuardedDataclassWrapper.__name__ = cls.__name__
+        GuardedDataclassWrapper.__module__ = cls.__module__
+        GuardedDataclassWrapper.__qualname__ = cls.__qualname__
+        GuardedDataclassWrapper.__doc__ = cls.__doc__
+        
+        return GuardedDataclassWrapper
     
-    GuardedDataclassWrapper.__name__ = cls.__name__
-    GuardedDataclassWrapper.__module__ = cls.__module__
-    GuardedDataclassWrapper.__qualname__ = cls.__qualname__
-    
-    return GuardedDataclassWrapper
+    # Support pour @guarded_dataclass et @guarded_dataclass()
+    if cls is None:
+        # Appelé avec arguments : @guarded_dataclass(frozen=True)
+        return decorator
+    else:
+        # Appelé sans arguments : @guarded_dataclass
+        return decorator(cls)
+
+
