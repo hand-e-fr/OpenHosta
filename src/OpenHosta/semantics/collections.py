@@ -3,7 +3,7 @@ import json
 from typing import Any, Tuple, Type, Dict, List, Union, Optional
 
 from ..guarded.primitives import GuardedPrimitive
-from ..guarded.scalars import GuardedUtf8 # Type par défaut
+from ..guarded.subclassablescalars import GuardedUtf8 # Type par défaut
 
 # ==============================================================================
 # 1. SEMANTIC LIST (La Liste Intelligente)
