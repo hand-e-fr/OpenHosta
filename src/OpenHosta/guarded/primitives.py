@@ -1,4 +1,68 @@
-# src/OpenHosta/semantics/primitives.py
+# src/OpenHosta/guarded/primitives.py
+"""
+Module core du système de types Guarded.
+
+Le système Guarded implémente un pipeline de validation à plusieurs niveaux
+qui transforme des entrées arbitraires en types Python natifs avec métadonnées
+de confiance et de traçabilité.
+
+Pipeline de validation (du plus rapide au plus lent) :
+1. **Native**    : Vérification de type direct (isinstance)
+                   Coût: O(1), Uncertainty: 0.0 (STRICT)
+                   
+2. **Heuristic** : Nettoyage déterministe (regex, strip, cast)
+                   Coût: O(n), Uncertainty: 0.05-0.15
+                   
+3. **Semantic**  : Conversion via LLM (non implémenté)
+                   Coût: ~1s, Uncertainty: 0.15-0.30
+                   
+4. **Knowledge** : Consultation de base de connaissances
+                   Coût: Variable, Uncertainty: 0.30+
+
+Architecture :
+    GuardedPrimitive (ABC)
+    ├── Héritage Direct (types subclassables)
+    │   ├── GuardedInt(int)
+    │   ├── GuardedUtf8(str)
+    │   ├── GuardedFloat(float)
+    │   ├── GuardedList(list)
+    │   ├── GuardedDict(dict)
+    │   └── ...
+    │
+    └── ProxyWrapper (types non-subclassables)
+        ├── GuardedBool
+        ├── GuardedNone
+        ├── GuardedRange
+        └── GuardedEnum
+
+Exemple d'utilisation :
+    >>> from OpenHosta.guarded import GuardedInt
+    >>> age = GuardedInt("42 ans")  # Heuristic cleaning
+    >>> age
+    42
+    >>> age.uncertainty
+    0.15
+    >>> age.abstraction_level
+    'heuristic'
+    >>> age + 10
+    52
+
+Création de types personnalisés :
+    >>> class CorporateEmail(GuardedUtf8):
+    ...     _type_en = "a corporate email address"
+    ...     _tolerance = Tolerance.PRECISE
+    ...     
+    ...     @classmethod
+    ...     def _parse_heuristic(cls, value):
+    ...         value = str(value).strip().lower()
+    ...         if '@company.com' not in value:
+    ...             return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid domain"
+    ...         return UncertaintyLevel(Tolerance.PRECISE), value, None
+    
+    >>> email = CorporateEmail("John.Doe@COMPANY.COM")
+    >>> email
+    'john.doe@company.com'
+"""
 
 from abc import ABC
 from typing import Any, Tuple, ClassVar, Dict, Optional
@@ -45,12 +109,8 @@ class GuardedPrimitive(ABC):
     _type_en: ClassVar[str] = NotImplemented
     _type_py: ClassVar[type] = NotImplemented
     _type_json: ClassVar[Dict[str, Any]] = NotImplemented
-    _type_knowledge: ClassVar[str] = NotImplemented
+    _type_knowledge: ClassVar[Dict | Any] = NotImplemented
     _tolerance: ClassVar[Tolerance] = Tolerance.TYPE_COMPLIANT
-
-    _uncertainty: ClassVar[UncertaintyLevel] = NotImplemented
-    _input: ClassVar[Any] = NotImplemented
-    _abstraction_level = ClassVar[AbstractionLevel]
     
     def __new__(cls, value: Any, tolerance: Tolerance = None):
         """
@@ -120,7 +180,7 @@ class GuardedPrimitive(ABC):
         
         uncertainty, cleaned_native_val, message = cls._parse_native(value)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_native_val, uncertainty, 'native', value, cls._type_py, message, message)
+            return CastingResult(True, cleaned_native_val, uncertainty, 'native', value, cls._type_py, message)
 
         uncertainty, cleaned_heuristic_val, message = cls._parse_heuristic(cleaned_native_val)
         if uncertainty <= tolerance:
@@ -139,44 +199,44 @@ class GuardedPrimitive(ABC):
     # --- Hooks Abstraits (À implémenter par SemanticInt, SemanticUtf8...) ---
     
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
-        """Retourne (1.0, val) si value est DÉJÀ valide."""
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        """Retourne (uncertainty, value, error_message) si value est DÉJÀ valide."""
         if type(value) == cls._type_py:
-            return UncertaintyLevel(Tolerance.STRICT), value
+            return UncertaintyLevel(Tolerance.STRICT), value, None
         
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
     @classmethod
-    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Tentative de nettoyage déterministe (Regex, Strip...).
         
-        Retourne (uncertainty, cleaned_val) où uncertainty ∈ [0, 1]."""
+        Retourne (uncertainty, cleaned_val, error_message) où uncertainty ∈ [0, 1]."""
         
         value = str(value)
         
         try:
             value = cls._type_py(value)
-            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), value
-        except Exception:
+            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), value, None
+        except Exception as e:
             pass
         
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
         
     
     @classmethod
-    def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
+    def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """
         Tentative de nettoyage via LLM.
         """
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
         
     @classmethod
-    def _parse_knowledge(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
+    def _parse_knowledge(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """
-        Tentative de netoyage par une base de connaissance.
+        Tentative de nettoyage par une base de connaissance.
         """
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
 
     ### Pydantic V2 Integration ###
@@ -213,18 +273,43 @@ class GuardedPrimitive(ABC):
             return cls._type_json
         return handler(_core_schema)
 
-class SubclassableWithProxy:
+class ProxyWrapper:
     """
-    This is a proxy for types that cannot be subclassed directly in Python.
+    Wrapper pour types Python non-subclassables (bool, range, memoryview, NoneType).
+    
+    Ces types ne peuvent pas être hérités directement, donc on crée un proxy
+    qui stocke la valeur native dans `_python_value` et délègue les opérations.
+    
+    IMPORTANT: Les instances ne sont PAS des instances du type natif.
+    Utilisez .unwrap() pour récupérer la valeur native si nécessaire.
+    
+    Exemple:
+        b = GuardedBool("yes")
+        isinstance(b, bool)  # ❌ False
+        b.unwrap()           # ✅ True (vrai bool)
     """
     def __new__(cls, value):
         instance = super().__new__(cls)
         return instance
-         
+    
+    def unwrap(self):
+        """Retourne la valeur Python native."""
+        return getattr(self, "_python_value", None)
+    
+    # Délégation des opérations de comparaison
+    def __eq__(self, other):
+        if isinstance(other, ProxyWrapper):
+            return self._python_value == other._python_value
+        return self._python_value == other
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    def __hash__(self):
+        return hash(self._python_value)
+    
     def __repr__(self):
-        
-        string = "None"
-        if self._python_value is not None:
-            string = self._python_value.__repr__()
-            
-        return string
+        return repr(self._python_value) if self._python_value is not None else "None"
+    
+    def __str__(self):
+        return str(self._python_value) if self._python_value is not None else "None"
