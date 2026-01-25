@@ -71,8 +71,20 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Recherche case-insensitive par nom ou par valeur."""
-        # Recherche case-insensitive par nom
         if isinstance(value, str):
+            # Format "EnumName.MEMBER" ou ".MEMBER" (comme repr())
+            if '.' in value:
+                parts = value.split('.')
+                if len(parts) == 2:
+                    enum_name, member_name = parts
+                    # Accepter "EnumName.MEMBER" ou ".MEMBER"
+                    if enum_name == '' or enum_name == cls.__name__:
+                        # Recherche case-insensitive du membre
+                        for name in cls._members:
+                            if name.lower() == member_name.lower():
+                                return UncertaintyLevel(Tolerance.PRECISE), name, None
+            
+            # Recherche case-insensitive par nom simple
             for name in cls._members:
                 if name.lower() == value.lower():
                     return UncertaintyLevel(Tolerance.PRECISE), name, None

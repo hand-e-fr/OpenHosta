@@ -97,11 +97,65 @@ class TestGuardedDataclass:
         # assert d.value == 42
     
     def test_non_dataclass_error(self):
-        """Test that decorator requires dataclass."""
-        with pytest.raises(TypeError):
-            @guarded_dataclass
-            class NotADataclass:
-                pass
+        """Test that decorator applies dataclass automatically."""
+        # This should NOT raise an error anymore
+        @guarded_dataclass
+        class AutoDataclass:
+            name: str
+            value: int
+        
+        # Should work like a normal dataclass
+        obj = AutoDataclass(name="test", value=42)
+        assert obj.name == "test"
+        assert obj.value == 42
+    
+    def test_without_dataclass_decorator(self):
+        """Test that @guarded_dataclass works alone (recommended usage)."""
+        @guarded_dataclass
+        class Person:
+            name: str
+            age: int
+        
+        # Test kwargs creation
+        p1 = Person(name="Alice", age=30)
+        assert p1.name == "Alice"
+        assert p1.age == 30
+        
+        # Test dict creation with type conversion
+        p2 = Person({"name": "Bob", "age": "25"})
+        assert p2.name == "Bob"
+        assert p2.age == 25
+        assert isinstance(p2.age, int)  # Converted from string
+    
+    def test_without_dataclass_with_defaults(self):
+        """Test @guarded_dataclass alone with default values."""
+        @guarded_dataclass
+        class Config:
+            host: str = "localhost"
+            port: int = 8080
+        
+        c1 = Config()
+        assert c1.host == "localhost"
+        assert c1.port == 8080
+        
+        c2 = Config(host="example.com")
+        assert c2.host == "example.com"
+        assert c2.port == 8080
+    
+    def test_without_dataclass_with_options(self):
+        """Test @guarded_dataclass with dataclass options."""
+        @guarded_dataclass(frozen=True)
+        class Point:
+            x: int
+            y: int
+        
+        pt = Point(x=10, y=20)
+        assert pt.x == 10
+        assert pt.y == 20
+        
+        # Should be frozen
+        with pytest.raises(Exception):  # FrozenInstanceError
+            pt.x = 100
     
     def test_nested_dataclass(self):
         """Test nested dataclasses."""
