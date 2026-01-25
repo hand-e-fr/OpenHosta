@@ -17,6 +17,10 @@
 | **GuardedList** | Native ([1, 2, 3]) | ✅ Pass |
 | **GuardedDict** | Native ({'a': 1}) | ✅ Pass |
 | **GuardedEnum** | Case-insensitive | ✅ Pass |
+| **GuardedLiteral** | Restricted set | ✅ Pass |
+| **GuardedUnion** | Multi-type | ✅ Pass |
+| **GuardedComplex** | String parsing | ✅ Pass |
+| **GuardedBytes** | String parsing | ✅ Pass |
 
 ### Sortie du Test
 
@@ -59,6 +63,13 @@ Testing GuardedEnum...
   Status('PENDING') = PENDING, name=PENDING, value=pending
 ✅ GuardedEnum works
 
+Testing Complex Types...
+  GuardedLiteral works
+  GuardedUnion works
+  GuardedComplex works
+  GuardedBytes works
+✅ Complex types work
+
 ==================================================
 🎉 ALL TESTS PASSED!
 ==================================================
@@ -98,10 +109,13 @@ tests/guarded/
 ├── test_collections.py (180 lignes)
 ├── test_enum.py (140 lignes)
 ├── test_dataclass.py (120 lignes)
-└── test_resolver.py (120 lignes)
+├── test_dataclass.py (120 lignes)
+├── test_resolver.py (120 lignes)
+├── test_typed_complex.py (118 lignes)
+└── test_callables.py (71 lignes)
 ```
 
-**Total** : ~860 lignes de tests
+**Total** : ~1050 lignes de tests
 
 **Pour exécuter** (nécessite pytest) :
 ```bash
@@ -134,9 +148,10 @@ Mais avant cela, ligne 47 tente de convertir avec `list(value)` qui convertit la
 
 **Statut** : Le module `guarded` est **fonctionnel** pour les cas d'usage de base :
 - ✅ Types scalaires (int, float, str)
-- ✅ Types proxy (bool, none)
+- ✅ Types proxy (bool, none, any, range, memoryview)
 - ✅ Collections natives (list, dict)
 - ✅ Enums personnalisés
+- ✅ Types composites (literal, union, complex, bytes)
 - ✅ Métadonnées (uncertainty, abstraction_level)
 - ✅ Intégration avec le pipeline (type_returned_data)
 
@@ -144,4 +159,4 @@ Mais avant cela, ligne 47 tente de convertir avec `list(value)` qui convertit la
 1. Corriger le bug de parsing CSV dans GuardedList
 2. Exécuter les tests pytest complets une fois pytest installé
 3. Ajouter tests d'intégration avec Pydantic
-4. Implémenter les types manquants (GuardedRange, GuardedMemoryView, GuardedCode complet)
+4. Implémenter le parsing semantic LLM complet
