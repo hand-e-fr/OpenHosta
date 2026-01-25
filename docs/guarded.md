@@ -147,6 +147,36 @@ GuardedUtf8(b"hello")    # Bytes UTF-8
 
 ---
 
+## III.b Types Scalaires Avancés
+
+### 3.4 GuardedComplex
+
+Nombre complexe avec parsing intelligent.
+
+```python
+from OpenHosta.guarded import GuardedComplex
+
+# Formats acceptés
+GuardedComplex(1+2j)         # Native complex
+GuardedComplex("1+2j")       # String standard
+GuardedComplex("1 + 2j")     # Avec espaces
+```
+
+### 3.5 GuardedBytes et GuardedByteArray
+
+Types binaires avec parsing flexible depuis strings.
+
+```python
+from OpenHosta.guarded import GuardedBytes
+
+# Formats acceptés
+GuardedBytes(b"hello")       # Native bytes
+GuardedBytes("hello")        # String (encodé en UTF-8)
+GuardedBytes([104, 101])     # Liste d'entiers
+```
+
+---
+
 ## IV. Types Proxy (Non-Subclassables)
 
 Certains types Python ne peuvent pas être subclassés (`bool`, `NoneType`, etc.). Pour ceux-ci, nous utilisons un **ProxyWrapper**.
@@ -192,7 +222,14 @@ n = GuardedNone("nothing") # Langage naturel
 n.unwrap()  # → None
 ```
 
-### 4.3 Comportement ProxyWrapper
+
+### 4.3 Autres Proxy (Any, Range, MemoryView)
+
+* **GuardedAny**: Accepte tout type, utile comme "pass-through" avec métadonnées.
+* **GuardedRange**: Proxy pour `range()`. Accepte `range(10)` ou string `"0:10"`.
+* **GuardedMemoryView**: Proxy pour `memoryview`.
+
+### 4.4 Comportement ProxyWrapper
 
 ⚠️ **Important** : Les types proxy ne sont PAS des instances du type natif.
 
@@ -252,6 +289,38 @@ d.get("c")  # None
 ### 5.3 GuardedSet et GuardedTuple
 
 Même logique que GuardedList avec leurs spécificités respectives.
+
+
+### 5.4 Types Composites Avancés
+
+#### GuardedLiteral
+
+Crée un type restreint à un ensemble de valeurs, similaire à `typing.Literal`.
+
+```python
+from OpenHosta.guarded import guarded_literal
+
+Color = guarded_literal("red", "green", "blue")
+
+c = Color("red")      # OK
+c = Color("RED")      # OK (heuristic: case-insensitive)
+c = Color("yellow")   # Erreur (hors des valeurs permises)
+```
+
+#### GuardedUnion
+
+Crée un type qui tente plusieurs conversions successives, similaire à `typing.Union`.
+
+```python
+from OpenHosta.guarded import sublassableunions import GuardedUnion, guarded_union
+from OpenHosta.guarded import GuardedInt, GuardedUtf8
+
+# Tente d'abord Int, sinon String
+IntOrStr = guarded_union(GuardedInt, GuardedUtf8)
+
+v1 = IntOrStr("42")      # → 42 (int)
+v2 = IntOrStr("hello")   # → "hello" (str)
+```
 
 ---
 

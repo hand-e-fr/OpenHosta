@@ -10,6 +10,8 @@ This directory contains comprehensive unit tests for the `guarded` module.
 - `test_enum.py` - Tests for GuardedEnum
 - `test_dataclass.py` - Tests for @guarded_dataclass decorator
 - `test_resolver.py` - Tests for TypeResolver and type_returned_data
+- `test_typed_complex.py` - Tests for complex types (Union, Literal, Complex, Bytes)
+- `test_callables.py` - Tests for GuardedCode and callables
 - `conftest.py` - Pytest configuration and fixtures
 
 ## Running Tests
