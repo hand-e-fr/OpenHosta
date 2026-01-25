@@ -2,12 +2,12 @@
 # TYPES QUI NE PEUVENT PAS ÊTRE SUBCLASSES EN PYTHON (bool, Range, etc.)
 # ==============================================================================
 
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 from types import NoneType
 
-from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, SubclassableWithProxy
+from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, ProxyWrapper
 
-class GuardedNone(GuardedPrimitive, SubclassableWithProxy):
+class GuardedNone(GuardedPrimitive, ProxyWrapper):
     _type_en = "none value"
     _type_py = NoneType
     _type_json = {"type": "null"}
@@ -17,14 +17,14 @@ class GuardedNone(GuardedPrimitive, SubclassableWithProxy):
     }
     
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if value is None:
-            return UncertaintyLevel(Tolerance.STRICT), None
+            return UncertaintyLevel(Tolerance.STRICT), None, None
 
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
         
     @classmethod
-    def _parse_heuristic(cls, value):
+    def _parse_heuristic(cls, value) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         value = str(value)
         
         value = value.strip(" \n\"\'")
@@ -33,27 +33,27 @@ class GuardedNone(GuardedPrimitive, SubclassableWithProxy):
         
         value = value.lower()
         if value == "none":
-            return UncertaintyLevel(Tolerance.FLEXIBLE), None
+            return UncertaintyLevel(Tolerance.FLEXIBLE), None, None
         
         if value in cls._type_knowledge["PROG"]:
-            return UncertaintyLevel(Tolerance.CREATIVE), None
+            return UncertaintyLevel(Tolerance.CREATIVE), None, None
         
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
     @classmethod
-    def _parse_semantic(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
 
         if value is None:
-            return UncertaintyLevel(Tolerance.STRICT), None
+            return UncertaintyLevel(Tolerance.STRICT), None, None
             
         value = str(value).strip().lower()
         if value in cls._type_knowledge["NATURAL"]:
-            return UncertaintyLevel(Tolerance.CREATIVE), None
+            return UncertaintyLevel(Tolerance.CREATIVE), None, None
                 
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
 
-class GuardedAny(GuardedPrimitive, SubclassableWithProxy):
+class GuardedAny(GuardedPrimitive, ProxyWrapper):
     """
     Do not check the type of the value as it can be anything.
     """
@@ -63,10 +63,10 @@ class GuardedAny(GuardedPrimitive, SubclassableWithProxy):
     _tolerance = Tolerance.TYPE_COMPLIANT
     
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[float, Any]:
-        return UncertaintyLevel(Tolerance.STRICT), value
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        return UncertaintyLevel(Tolerance.STRICT), value, None
 
-class GuardedBool(GuardedPrimitive, SubclassableWithProxy):
+class GuardedBool(GuardedPrimitive, ProxyWrapper):
 
     _type_en = "a boolean value (true or false)"
     _type_py = bool
@@ -87,26 +87,26 @@ class GuardedBool(GuardedPrimitive, SubclassableWithProxy):
     def _parse_native(cls, value: Any) -> Tuple[float, Any]:
         if isinstance(value, bool):
             # En interne on stocke 1 ou 0
-            return UncertaintyLevel(Tolerance.STRICT), value
+            return UncertaintyLevel(Tolerance.STRICT), value, None
 
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
     @classmethod
-    def _parse_heuristic(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
 
         if isinstance(value, (int, float, bool)):
-            return UncertaintyLevel(Tolerance.STRICT), bool(value)
+            return UncertaintyLevel(Tolerance.STRICT), bool(value), None
             
         if isinstance(value, str):
             v = value.strip().lower()
             if v in cls._type_knowledge[True]:
-                return UncertaintyLevel(Tolerance.STRICT), True
+                return UncertaintyLevel(Tolerance.STRICT), True, None
             if v in  cls._type_knowledge[False]:
-                return UncertaintyLevel(Tolerance.STRICT), False
+                return UncertaintyLevel(Tolerance.STRICT), False, None
                 
-        return UncertaintyLevel(0.5), False
+        return UncertaintyLevel(0.5), False, None
         
-class GuardedMemoryView(GuardedPrimitive, SubclassableWithProxy):
+class GuardedMemoryView(GuardedPrimitive, ProxyWrapper):
     """
     Vue mémoire.
     Nécessite un objet bytes ou bytearray sous-jacent.
@@ -121,7 +121,7 @@ class GuardedMemoryView(GuardedPrimitive, SubclassableWithProxy):
     pass
 
 
-class GuardedRange(GuardedPrimitive, SubclassableWithProxy): 
+class GuardedRange(GuardedPrimitive, ProxyWrapper): 
     # Attention: range n'est pas subclassable facilement comme int ou str.
     # On hérite de GuardedPrimitive mais on ne peut pas hériter de 'range'.
     # On va simuler le comportement ou retourner un objet range natif via __new__.

@@ -1,7 +1,7 @@
 # src/OpenHosta/semantics/scalars.py
 import re
 
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance
 
@@ -22,7 +22,7 @@ class GuardedInt(GuardedPrimitive, int):
 
     # --- 2. VALIDATION NATIVE ---
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         # Cas : Déjà un int (mais pas un bool, car True est un int en Python)
         if isinstance(value, int) and not isinstance(value, bool):
             return UncertaintyLevel(Tolerance.STRICT), value, None
@@ -39,8 +39,8 @@ class GuardedInt(GuardedPrimitive, int):
 
     # --- 3. NETTOYAGE HEURISTIQUE ---
     @classmethod
-    def _parse_heuristic(cls, value: Any) -> Tuple[float, Any]:
-        value = str(str)
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        value = str(value)
             
         # Nettoyage : espaces, et devises courantes
         value = value.strip().replace(" ", "")
@@ -68,7 +68,7 @@ class GuardedFloat(GuardedPrimitive, float):
     _type_json = {"type": "number"}
 
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if isinstance(value, float):
             return UncertaintyLevel(Tolerance.STRICT), float(value), None
         if isinstance(value, int) and not isinstance(value, bool):
@@ -85,7 +85,7 @@ class GuardedFloat(GuardedPrimitive, float):
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
     @classmethod
-    def _parse_heuristic(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         value = str(value)
             
         value = value.strip().replace(" ", "")
@@ -98,8 +98,8 @@ class GuardedFloat(GuardedPrimitive, float):
         
         try:
             return UncertaintyLevel(Tolerance.FLEXIBLE), float(value), None
-        except ValueError:
-            return UncertaintyLevel(Tolerance.ANYTHING), value, f"{e}"
+        except ValueError as e:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
     
 class GuardedUtf8(GuardedPrimitive, str):
@@ -113,7 +113,7 @@ class GuardedUtf8(GuardedPrimitive, str):
     _type_json = {"type": "string"}
 
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
 
         if isinstance(value, str):
             return UncertaintyLevel(Tolerance.STRICT), value, None
@@ -121,7 +121,7 @@ class GuardedUtf8(GuardedPrimitive, str):
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
     @classmethod
-    def _parse_heuristic(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
 
         if isinstance(value, bytes):
             try:

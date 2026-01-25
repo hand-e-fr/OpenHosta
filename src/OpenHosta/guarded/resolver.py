@@ -1,11 +1,11 @@
-"""
+r"""
 | **Catégorie**     | **Style Ancien (Toujours valide)** | **Style Moderne (3.9+)**               | **Module requis**        |
 |-------------------|------------------------------------|----------------------------------------|--------------------------|
 | **Collections**   | `typing.List[int]`                | `list[int]`                            | Aucun (natif)            |
 | **Dictionnaires** | `typing.Dict[str, int]`           | `dict[str, int]`                       | Aucun (natif)            |
 | **Valeurs fixes** | `typing.Literal[1, 2]`            | **(Pas d'équivalent)**                 | `typing`                 |
-| **Optionnel**     | `typing.Optional[int]`            | `int \| None` (Python 3.10+)           | Aucun                    |
-| **Union**         | `typing.Union[int, str]`          | `int \| str` (Python 3.10+)            | Aucun                    |
+| **Optionnel**     | `typing.Optional[int]`            | `int | None` (Python 3.10+)           | Aucun                    |
+| **Union**         | `typing.Union[int, str]`          | `int | str` (Python 3.10+)            | Aucun                    |
 | **Callables**     | `typing.Callable`                 | `collections.abc.Callable`             | `collections.abc`        |
 """
 
@@ -39,6 +39,44 @@ try:
 except ImportError:
     class BaseModel: pass
     HAS_PYDANTIC = False
+
+
+def type_returned_data(response: Any, expected_type: Type) -> Any:
+    """
+    Convertit une réponse (généralement une string) vers le type attendu.
+    
+    Cette fonction est utilisée par le pipeline pour typer les données retournées
+    par le LLM selon le type annoté de la fonction.
+    
+    Args:
+        response: La réponse brute (généralement une string)
+        expected_type: Le type Python attendu
+    
+    Returns:
+        La valeur convertie au bon type
+    
+    Raises:
+        ValueError: Si la conversion échoue
+    """
+    # Si pas de type spécifié, retourner tel quel
+    if expected_type is None:
+        return response
+    
+    # Résoudre le type en GuardedType
+    guarded_type = TypeResolver.resolve(expected_type)
+    
+    # Utiliser le constructeur Guarded pour convertir
+    try:
+        return guarded_type(response)
+    except Exception as e:
+        # Fallback: essayer de convertir directement
+        if isinstance(expected_type, type):
+            try:
+                return expected_type(response)
+            except:
+                pass
+        raise ValueError(f"Cannot convert '{response}' to type {expected_type}: {e}")
+
 
 class TypeResolver:
     """
@@ -96,7 +134,9 @@ class TypeResolver:
 
         # 3. Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
-            return guarded_enum(annotation)
+            # TODO: Implémenter guarded_enum factory
+            # Pour l'instant, on retourne GuardedUtf8
+            return GuardedUtf8
 
         # # 4. Pydantic Models & Dataclasses (On les convertit en GuardedModel à la volée)
         # if (isinstance(annotation, type) and 
@@ -128,14 +168,9 @@ class TypeResolver:
 
             # Tuple -> GuardedTuple
             if origin in (tuple, typing.Tuple):
-                if not args:
-                    return GuardedTuple[GuardedAny]
-                # Tuple[int, ...] (Variable)
-                if len(args) == 2 and args[1] is Ellipsis:
-                    return guarded_tuple([cls.resolve(args[0])], variable_length=True)
-                # Tuple[int, str] (Fixe)
-                else:
-                    return guarded_tuple([cls.resolve(arg) for arg in args], variable_length=False)
+                # Pour l'instant, on retourne GuardedTuple simple
+                # TODO: Support des tuples typés (Tuple[int, str])
+                return GuardedTuple
 
             # Dict, Mapping -> GuardedDict
             if origin in (dict, Dict, typing.Mapping, typing.MutableMapping):
@@ -145,7 +180,9 @@ class TypeResolver:
 
             # Literal -> GuardedLiteral
             if origin is typing.Literal:
-                return guarded_literal(args)
+                # TODO: Implémenter guarded_literal
+                # Pour l'instant, on retourne GuardedUtf8
+                return GuardedUtf8
 
             # Union / Optional
             if origin is Union:

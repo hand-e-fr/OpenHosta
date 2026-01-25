@@ -4,9 +4,9 @@ import inspect
 from typing import Any, Tuple, Callable
 
 # Assurez-vous d'avoir importé GuardedPrimitive
-from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, SubclassableWithProxy
+from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, ProxyWrapper
 
-class GuardedCode(GuardedPrimitive, SubclassableWithProxy):
+class GuardedCode(GuardedPrimitive, ProxyWrapper):
     # TODO: implement using scalars.py as example
     _type_en = "a valid python function definition (starting with 'def')"
     _type_py = Callable
