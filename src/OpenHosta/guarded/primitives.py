@@ -1,8 +1,7 @@
 # src/OpenHosta/semantics/primitives.py
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, Tuple, ClassVar, Dict, Optional
-import math
 
 # Imports internes (Moteur & Incertitude)
 from .constants import Tolerance
@@ -119,21 +118,21 @@ class GuardedPrimitive(ABC):
             
         # At each layer we have a chance to reduce uncertainty
         
-        uncertainty, cleaned_native_val = cls._parse_native(value)
+        uncertainty, cleaned_native_val, message = cls._parse_native(value)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_native_val, uncertainty, 'native', value, cls._type_py)
+            return CastingResult(True, cleaned_native_val, uncertainty, 'native', value, cls._type_py, message, message)
 
-        uncertainty, cleaned_heuristic_val = cls._parse_heuristic(cleaned_native_val)
+        uncertainty, cleaned_heuristic_val, message = cls._parse_heuristic(cleaned_native_val)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_heuristic_val, uncertainty, 'heuristic', value, cls._type_py)
+            return CastingResult(True, cleaned_heuristic_val, uncertainty, 'heuristic', value, cls._type_py, message)
 
-        uncertainty, cleaned_semantic_value = cls._parse_semantic(cleaned_heuristic_val)
+        uncertainty, cleaned_semantic_value, message = cls._parse_semantic(cleaned_heuristic_val)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_semantic_value, uncertainty, 'semantic', value, cls._type_py)
+            return CastingResult(True, cleaned_semantic_value, uncertainty, 'semantic', value, cls._type_py, message)
 
-        uncertainty, cleaned_knowledge_value = cls._parse_knowledge(cleaned_semantic_value)
+        uncertainty, cleaned_knowledge_value, message = cls._parse_knowledge(cleaned_semantic_value)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_knowledge_value, uncertainty, 'knowledge', value, cls._type_py)
+            return CastingResult(True, cleaned_knowledge_value, uncertainty, 'knowledge', value, cls._type_py, message)
 
         return CastingResult(False, None, Tolerance.ANYTHING, 'failed', value, cls._type_py)
     
@@ -213,3 +212,19 @@ class GuardedPrimitive(ABC):
         if cls._type_json is not NotImplemented:
             return cls._type_json
         return handler(_core_schema)
+
+class SubclassableWithProxy:
+    """
+    This is a proxy for types that cannot be subclassed directly in Python.
+    """
+    def __new__(cls, value):
+        instance = super().__new__(cls)
+        return instance
+         
+    def __repr__(self):
+        
+        string = "None"
+        if self._python_value is not None:
+            string = self._python_value.__repr__()
+            
+        return string

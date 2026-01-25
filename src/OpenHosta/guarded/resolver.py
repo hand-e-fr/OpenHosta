@@ -1,23 +1,36 @@
+"""
+| **Catégorie**     | **Style Ancien (Toujours valide)** | **Style Moderne (3.9+)**               | **Module requis**        |
+|-------------------|------------------------------------|----------------------------------------|--------------------------|
+| **Collections**   | `typing.List[int]`                | `list[int]`                            | Aucun (natif)            |
+| **Dictionnaires** | `typing.Dict[str, int]`           | `dict[str, int]`                       | Aucun (natif)            |
+| **Valeurs fixes** | `typing.Literal[1, 2]`            | **(Pas d'équivalent)**                 | `typing`                 |
+| **Optionnel**     | `typing.Optional[int]`            | `int \| None` (Python 3.10+)           | Aucun                    |
+| **Union**         | `typing.Union[int, str]`          | `int \| str` (Python 3.10+)            | Aucun                    |
+| **Callables**     | `typing.Callable`                 | `collections.abc.Callable`             | `collections.abc`        |
+"""
+
 import types
 import typing
 
 from enum import Enum
-from typing import Any, Type, List, Dict, Union, Callable, get_origin, get_args
+from typing import Any, Type, List, Dict, Tuple, Set, Union, Callable, Literal, get_origin, get_args
 from dataclasses import is_dataclass
 
 # Imports des primitives OpenHosta
 from .primitives import GuardedPrimitive
 
-from .scalars import (
-    GuardedInt, GuardedUtf8, GuardedBool, GuardedFloat,
-    GuardedComplex, GuardedBytes, GuardedByteArray, 
-    GuardedMemoryView, GuardedRange,    
-    create_semantic_enum
+from .subclassablescalars import (
+    GuardedInt, GuardedUtf8, GuardedFloat,
+    GuardedComplex, GuardedBytes, GuardedByteArray
 )
 
-from .collections import GuardedDict, GuardedSet, GuardedList, GuardedTuple
+from .subclassablewithproxy import (
+    GuardedAny, GuardedBool, GuardedNone, GuardedMemoryView, GuardedRange
+)
 
-from .code import GuardedCode
+from .subclassablecollections import GuardedDict, GuardedSet, GuardedList, GuardedTuple, guarded_dataclass
+
+from .subclassablecallables import GuardedCode
 
 # Note: GuardedModel is imported locally in resolve() to avoid circular import
 try:
@@ -42,8 +55,11 @@ class TypeResolver:
         float: GuardedFloat,
         complex: GuardedComplex,
         tuple: GuardedTuple,
+        Tuple: GuardedTuple,
         list: GuardedList,
+        List: GuardedList,
         set: GuardedSet,
+        Set: GuardedSet,
         frozenset: GuardedSet, # On mappe frozenset sur GuardedSet pour l'extraction
         dict: GuardedDict,
         bytes: GuardedBytes,
@@ -52,7 +68,9 @@ class TypeResolver:
         range: GuardedRange,
         Callable: GuardedCode,
         typing.Callable: GuardedCode,
-        types.FunctionType: GuardedCode,        
+        types.FunctionType: GuardedCode,
+        types.MethodType: GuardedCode,
+        types.NoneType: GuardedNone,        
     }
 
     @classmethod
@@ -78,7 +96,7 @@ class TypeResolver:
 
         # 3. Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
-            return create_semantic_enum(annotation)
+            return guarded_enum(annotation)
 
         # # 4. Pydantic Models & Dataclasses (On les convertit en GuardedModel à la volée)
         # if (isinstance(annotation, type) and 
@@ -114,10 +132,10 @@ class TypeResolver:
                     return GuardedTuple[GuardedAny]
                 # Tuple[int, ...] (Variable)
                 if len(args) == 2 and args[1] is Ellipsis:
-                    return create_semantic_tuple([cls.resolve(args[0])], variable_length=True)
+                    return guarded_tuple([cls.resolve(args[0])], variable_length=True)
                 # Tuple[int, str] (Fixe)
                 else:
-                    return create_semantic_tuple([cls.resolve(arg) for arg in args], variable_length=False)
+                    return guarded_tuple([cls.resolve(arg) for arg in args], variable_length=False)
 
             # Dict, Mapping -> GuardedDict
             if origin in (dict, Dict, typing.Mapping, typing.MutableMapping):
@@ -127,7 +145,7 @@ class TypeResolver:
 
             # Literal -> GuardedLiteral
             if origin is typing.Literal:
-                return create_semantic_literal(args)
+                return guarded_literal(args)
 
             # Union / Optional
             if origin is Union:
@@ -146,18 +164,3 @@ class TypeResolver:
         # 6. Fallback
         return GuardedUtf8
     
-    
-    
-def type_returned_data(untyped_response: str, expected_type: type) -> Any:
-    """
-    Convert the untyped response to the expected type.
-    """
-    
-    semantic_type = TypeResolver.resolve(expected_type)
-    convertion_report = semantic_type.attempt(untyped_response)
-    return convertion_report.python_value
-    
-def describe_type_as_python(arg_type):
-
-    semantic_type = TypeResolver.resolve(arg_type)
-    return semantic_type._type_py
