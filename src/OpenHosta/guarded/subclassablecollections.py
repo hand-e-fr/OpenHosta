@@ -9,43 +9,69 @@ class GuardedList(GuardedPrimitive, list):
     _type_en = "a list of items"
     _type_py = list
     _type_json = {"type": "array"}
+    _item_type = None
+
+    def __class_getitem__(cls, item):
+        class ParameterizedGuardedList(cls):
+            _item_type = item
+            _type_en = f"a list of {item._type_en if hasattr(item, '_type_en') else str(item)}"
+        return ParameterizedGuardedList
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if isinstance(value, list):
+            if cls._item_type:
+                try:
+                    # Convert items if needed
+                    converted = [cls._item_type(item) for item in value]
+                    # If conversion happened (or types were checked), we return them
+                    return UncertaintyLevel(Tolerance.STRICT), converted, None
+                except Exception as e:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
             return UncertaintyLevel(Tolerance.STRICT), value, None
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        items = None
         # Accepter les tuples, sets, et autres itérables
         if isinstance(value, (tuple, set, frozenset)):
-            return UncertaintyLevel(Tolerance.PRECISE), list(value), None
+            items = list(value)
         
         # Accepter les strings représentant des listes
-        if isinstance(value, str):
-            value = value.strip()
+        elif isinstance(value, str):
+            value_s = value.strip()
             
             # Format "[1, 2, 3]"
-            if value.startswith('[') and value.endswith(']'):
+            if value_s.startswith('[') and value_s.endswith(']'):
                 try:
                     import ast
-                    parsed = ast.literal_eval(value)
+                    parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, list):
-                        return UncertaintyLevel(Tolerance.FLEXIBLE), parsed, None
+                        items = parsed
                 except (ValueError, SyntaxError) as e:
                     pass
             
             # Format "1,2,3" (CSV)
-            if ',' in value:
-                items = [item.strip() for item in value.split(',')]
-                return UncertaintyLevel(Tolerance.FLEXIBLE), items, None
+            if items is None and ',' in value_s:
+                items = [item.strip() for item in value_s.split(',')]
         
         # Tenter de convertir en liste
-        try:
-            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), list(value), None
-        except (TypeError, ValueError) as e:
-            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+        if items is None:
+            try:
+                items = list(value)
+            except (TypeError, ValueError):
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to list"
+
+        # Content validation
+        if cls._item_type:
+            try:
+                converted = [cls._item_type(item) for item in items]
+                return UncertaintyLevel(Tolerance.PRECISE), converted, None
+            except Exception as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
+        
+        return UncertaintyLevel(Tolerance.PRECISE), items, None
 
 class GuardedSet(GuardedPrimitive, set):
     """
@@ -55,43 +81,67 @@ class GuardedSet(GuardedPrimitive, set):
     _type_en = "a set of unique items"
     _type_py = set
     _type_json = {"type": "array", "uniqueItems": True}
+    _item_type = None
+
+    def __class_getitem__(cls, item):
+        class ParameterizedGuardedSet(cls):
+            _item_type = item
+            _type_en = f"a set of {item._type_en if hasattr(item, '_type_en') else str(item)}"
+        return ParameterizedGuardedSet
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if isinstance(value, (set, frozenset)):
+            if cls._item_type:
+                try:
+                    converted = {cls._item_type(item) for item in value}
+                    return UncertaintyLevel(Tolerance.STRICT), converted, None
+                except Exception as e:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
             return UncertaintyLevel(Tolerance.STRICT), set(value), None
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        items = None
         # Accepter les listes et tuples
         if isinstance(value, (list, tuple)):
-            return UncertaintyLevel(Tolerance.PRECISE), set(value), None
+            items = set(value)
         
         # Accepter les strings représentant des sets
-        if isinstance(value, str):
-            value = value.strip()
+        elif isinstance(value, str):
+            value_s = value.strip()
             
             # Format "{1, 2, 3}"
-            if value.startswith('{') and value.endswith('}'):
+            if value_s.startswith('{') and value_s.endswith('}'):
                 try:
                     import ast
-                    parsed = ast.literal_eval(value)
-                    if isinstance(parsed, set):
-                        return UncertaintyLevel(Tolerance.FLEXIBLE), parsed, None
+                    parsed = ast.literal_eval(value_s)
+                    if isinstance(parsed, (set, list, tuple)):
+                        items = set(parsed)
                 except (ValueError, SyntaxError):
                     pass
             
             # Format "1,2,3" (CSV)
-            if ',' in value:
-                items = {item.strip() for item in value.split(',')}
-                return UncertaintyLevel(Tolerance.FLEXIBLE), items, None
+            if items is None and ',' in value_s:
+                items = {item.strip() for item in value_s.split(',')}
         
         # Tenter de convertir en set
-        try:
-            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), set(value), None
-        except (TypeError, ValueError) as e:
-            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+        if items is None:
+            try:
+                items = set(value)
+            except (TypeError, ValueError):
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to set"
+
+        # Content validation
+        if cls._item_type:
+            try:
+                converted = {cls._item_type(item) for item in items}
+                return UncertaintyLevel(Tolerance.PRECISE), converted, None
+            except Exception as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
+        
+        return UncertaintyLevel(Tolerance.PRECISE), items, None
 
 class GuardedDict(GuardedPrimitive, dict):
     """
@@ -101,41 +151,78 @@ class GuardedDict(GuardedPrimitive, dict):
     _type_en = "a dictionary mapping keys to values"
     _type_py = dict
     _type_json = {"type": "object"}
+    _key_type = None
+    _value_type = None
+
+    def __class_getitem__(cls, item):
+        if not isinstance(item, tuple) or len(item) != 2:
+            return cls
+        class ParameterizedGuardedDict(cls):
+            _key_type = item[0]
+            _value_type = item[1]
+            _type_en = f"a dictionary mapping {item[0]._type_en if hasattr(item[0], '_type_en') else str(item[0])} to {item[1]._type_en if hasattr(item[1], '_type_en') else str(item[1])}"
+        return ParameterizedGuardedDict
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if isinstance(value, dict):
+            if cls._key_type or cls._value_type:
+                try:
+                    converted = {}
+                    for k, v in value.items():
+                        new_k = cls._key_type(k) if cls._key_type else k
+                        new_v = cls._value_type(v) if cls._value_type else v
+                        converted[new_k] = new_v
+                    return UncertaintyLevel(Tolerance.STRICT), converted, None
+                except Exception as e:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
             return UncertaintyLevel(Tolerance.STRICT), value, None
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        items = None
         # Accepter les strings représentant des dicts
         if isinstance(value, str):
-            value = value.strip()
+            value_s = value.strip()
             
             # Format JSON
-            if value.startswith('{') and value.endswith('}'):
+            if value_s.startswith('{') and value_s.endswith('}'):
                 try:
                     import json
-                    parsed = json.loads(value)
+                    parsed = json.loads(value_s)
                     if isinstance(parsed, dict):
-                        return UncertaintyLevel(Tolerance.FLEXIBLE), parsed, None
+                        items = parsed
                 except (json.JSONDecodeError, ValueError):
                     # Essayer avec ast.literal_eval
                     try:
                         import ast
-                        parsed = ast.literal_eval(value)
+                        parsed = ast.literal_eval(value_s)
                         if isinstance(parsed, dict):
-                            return UncertaintyLevel(Tolerance.FLEXIBLE), parsed, None
+                            items = parsed
                     except (ValueError, SyntaxError):
                         pass
         
         # Tenter de convertir en dict
-        try:
-            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), dict(value), None
-        except (TypeError, ValueError) as e:
-            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+        if items is None:
+            try:
+                items = dict(value)
+            except (TypeError, ValueError):
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to dict"
+
+        # Content validation
+        if cls._key_type or cls._value_type:
+            try:
+                converted = {}
+                for k, v in items.items():
+                    new_k = cls._key_type(k) if cls._key_type else k
+                    new_v = cls._value_type(v) if cls._value_type else v
+                    converted[new_k] = new_v
+                return UncertaintyLevel(Tolerance.PRECISE), converted, None
+            except Exception as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
+        
+        return UncertaintyLevel(Tolerance.PRECISE), items, None
 
 class GuardedTuple(GuardedPrimitive, tuple):
     """
@@ -145,43 +232,79 @@ class GuardedTuple(GuardedPrimitive, tuple):
     _type_en = "a tuple of items"
     _type_py = tuple
     _type_json = {"type": "array"}
+    _item_types = None # None or tuple of types
+
+    def __class_getitem__(cls, items):
+        if not isinstance(items, tuple):
+            items = (items,)
+        
+        class ParameterizedGuardedTuple(cls):
+            _item_types = items
+            _type_en = f"a tuple of ({', '.join(t._type_en if hasattr(t, '_type_en') else str(t) for t in items)})"
+        return ParameterizedGuardedTuple
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if isinstance(value, tuple):
+            if cls._item_types:
+                # Variable length if ... (not supported yet) or fixed length
+                if len(value) != len(cls._item_types):
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(value)}"
+                try:
+                    converted = tuple(cls._item_types[i](value[i]) for i in range(len(value)))
+                    return UncertaintyLevel(Tolerance.STRICT), converted, None
+                except Exception as e:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
             return UncertaintyLevel(Tolerance.STRICT), value, None
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        items = None
         # Accepter les listes et sets
         if isinstance(value, (list, set, frozenset)):
-            return UncertaintyLevel(Tolerance.PRECISE), tuple(value), None
+            items = tuple(value)
         
         # Accepter les strings représentant des tuples
-        if isinstance(value, str):
-            value = value.strip()
+        elif isinstance(value, str):
+            value_s = value.strip()
             
             # Format "(1, 2, 3)"
-            if value.startswith('(') and value.endswith(')'):
+            if value_s.startswith('(') and value_s.endswith(')'):
                 try:
                     import ast
-                    parsed = ast.literal_eval(value)
+                    parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, tuple):
-                        return UncertaintyLevel(Tolerance.FLEXIBLE), parsed, None
+                        items = parsed
                 except (ValueError, SyntaxError):
                     pass
             
             # Format "1,2,3" (CSV)
-            if ',' in value:
-                items = tuple(item.strip() for item in value.split(','))
-                return UncertaintyLevel(Tolerance.FLEXIBLE), items, None
+            if items is None and ',' in value_s:
+                items = tuple(item.strip() for item in value_s.split(','))
         
-        # Tenter de convertir en tuple
-        try:
-            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), tuple(value), None
-        except (TypeError, ValueError) as e:
-            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+        if items is None:
+            try:
+                items = tuple(value)
+            except (TypeError, ValueError):
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to tuple"
+
+        # Content validation
+        if cls._item_types:
+             # Fixed length
+            if len(items) != len(cls._item_types):
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(items)}"
+            try:
+                converted = tuple(cls._item_types[i](items[i]) for i in range(len(items)))
+                return UncertaintyLevel(Tolerance.PRECISE), converted, None
+            except Exception as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
+        
+        return UncertaintyLevel(Tolerance.PRECISE), items, None
+
+def guarded_tuple(*item_types):
+    """Factory for parameterized tuples."""
+    return GuardedTuple[item_types]
 
 def guarded_dataclass(cls=None, **dataclass_kwargs):
     """

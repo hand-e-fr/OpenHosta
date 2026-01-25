@@ -6,6 +6,7 @@ from .subclassablescalars import GuardedInt, GuardedFloat, GuardedUtf8, GuardedC
 from .subclassablewithproxy import GuardedBool, GuardedNone, GuardedAny, GuardedMemoryView, GuardedRange
 from .subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple, guarded_dataclass
 from .subclassableclasses import GuardedEnum
+from .subclassableliterals import GuardedLiteral, guarded_literal
 from .resolver import TypeResolver, type_returned_data
 
 __all__ = [
@@ -40,7 +41,9 @@ __all__ = [
     
     # Classes
     'GuardedEnum',
+    'GuardedLiteral',
     'guarded_dataclass',
+    'guarded_literal',
     
     # Resolver
     'TypeResolver',

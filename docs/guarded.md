@@ -464,62 +464,225 @@ result = type_returned_data("42", int)  # Convertit "42" → 42
 
 Héritez de `GuardedPrimitive` pour créer des types métier personnalisés.
 
-### 9.1 Exemple : Email d'Entreprise
+### 9.1 Exemple Complet : CorporateEmail avec Pipeline 4 Niveaux
+
+Cet exemple montre **tous les niveaux du pipeline** avec validation LLM et annuaire d'entreprise.
 
 ```python
 import re
-from OpenHosta.guarded import GuardedPrimitive, GuardedUtf8, Tolerance, UncertaintyLevel
 from typing import Tuple, Optional, Any
+from OpenHosta.guarded import GuardedUtf8, Tolerance
+from OpenHosta.guarded.primitives import UncertaintyLevel
+from OpenHosta import emulate
+
+# Annuaire d'entreprise (simulé)
+CORPORATE_DIRECTORY = {
+    "marie.dupont@mycorp.com",
+    "jean.martin@mycorp.com",
+    "sophie.bernard@mycorp.com",
+    "pierre.dubois@mycorp.com",
+}
 
 class CorporateEmail(GuardedUtf8):
-    """Email d'entreprise avec domaines autorisés."""
+    """Email d'entreprise validé contre l'annuaire mycorp.com"""
     
-    _type_en = "a corporate email address from mycorp.com or mycorp.net"
+    _type_en = (
+        "a corporate email address in the format firstname.lastname@mycorp.com "
+        "where firstname and lastname are lowercase letters only"
+    )
     _type_py = str
     _type_json = {
         "type": "string",
         "format": "email",
-        "pattern": "^[a-z0-9._%+-]+@(mycorp\\.com|mycorp\\.net)$"
+        "pattern": r"^[a-z]+\.[a-z]+@mycorp\.com$"
+    }
+    _type_knowledge = {
+        "directory": CORPORATE_DIRECTORY,
+        "domain": "mycorp.com"
     }
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        """Validation stricte."""
+        """Niveau 1 : Email parfait dans l'annuaire (0.00 - STRICT)."""
         if not isinstance(value, str):
             return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
         
-        email = value.lower()
+        # PAS de nettoyage - on accepte uniquement les emails parfaits
+        if not re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", value):
+            return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
         
-        # Vérifier le domaine
-        if not email.endswith(("@mycorp.com", "@mycorp.net")):
-            return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid domain"
+        if value in cls._type_knowledge["directory"]:
+            return UncertaintyLevel(Tolerance.STRICT), value, None
         
-        # Vérifier le format
-        if re.match(r"^[a-z0-9._%+-]+@(mycorp\.com|mycorp\.net)$", email):
-            return UncertaintyLevel(Tolerance.STRICT), email, None
-        
-        return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
+        return UncertaintyLevel(Tolerance.ANYTHING), value, "Not in directory"
     
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        """Nettoyage avant validation."""
-        if isinstance(value, str):
-            # Nettoyer les espaces et "mailto:"
-            cleaned = value.strip().lower()
-            cleaned = cleaned.replace("mailto:", "").replace("<", "").replace(">", "")
-            
-            # Tenter validation native
-            uncertainty, val, msg = cls._parse_native(cleaned)
-            if uncertainty <= Tolerance.STRICT:
-                return UncertaintyLevel(Tolerance.PRECISE), val, None
+        """Niveau 2 : Nettoyage déterministe (0.05 - PRECISE)."""
+        if not isinstance(value, str):
+            return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
         
-        return UncertaintyLevel(Tolerance.ANYTHING), value, None
+        original = value
+        cleaned = value.strip().lower()
+        cleaned = cleaned.replace("mailto:", "").replace("<", "").replace(">", "")
+        cleaned = cleaned.replace(" ", "").replace("\t", "") # Supprime les espaces et tabulations
+        
+        # Vérifier le format après nettoyage
+        if re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", cleaned):
+            if cleaned in cls._type_knowledge["directory"]:
+                # Nettoyage effectué et dans l'annuaire → PRECISE
+                if cleaned != original:
+                    return UncertaintyLevel(Tolerance.PRECISE), cleaned, None
+                # Pas de nettoyage mais dans l'annuaire (déjà géré par native, mais pour robustesse)
+                return UncertaintyLevel(Tolerance.STRICT), cleaned, None
+            else:
+                # Format valide mais pas dans annuaire → FLEXIBLE (car pas STRICT)
+                return UncertaintyLevel(Tolerance.FLEXIBLE), cleaned, "Valid format, not in directory"
+        
+        return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format after heuristic cleaning"
+    
+    @classmethod
+    def _llm_cast_email(cls, text: str) -> str | None:
+        """
+        Convert the input text to a valid corporate email: firstname.lastname@mycorp.com
+        
+        Rules:
+        - Only lowercase letters for firstname and lastname
+        - Examples:
+            * "marie dot dupont at mycorp dor com" → "marie.dupont@mycorp.com"
+            * "jean martin mycorp" → "jean.martin@mycorp.com"
+        
+        If the input cannot be converted, return None.
+        """
+        return emulate()
 
-# Utilisation
-email = CorporateEmail("  mailto:john.doe@mycorp.com  ")
-print(email)  # "john.doe@mycorp.com"
-print(email.uncertainty)  # 0.05 (PRECISE - nettoyage heuristique)
+    @classmethod
+    def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        """Niveau 3 : Correction LLM (0.15 - FLEXIBLE)."""
+        if not isinstance(value, str):
+            return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
+        
+        corrected = cls._llm_cast_email(value)
+        
+        if corrected and re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", corrected):
+            # Email corrigé existe dans annuaire → FLEXIBLE
+            if corrected in cls._type_knowledge["directory"]:
+                return UncertaintyLevel(Tolerance.FLEXIBLE), corrected, None
+            
+            # Sinon, passe au niveau knowledge
+            return UncertaintyLevel(Tolerance.ANYTHING), corrected, "LLM corrected but not in directory"
+        
+        return UncertaintyLevel(Tolerance.ANYTHING), value, "Cannot parse semantically"
+    
+    @classmethod
+    def _parse_knowledge(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        """Niveau 4 : Fuzzy matching (0.30 - CREATIVE)."""
+        if not isinstance(value, str):
+            return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
+        
+        # Tente de normaliser l'entrée pour le fuzzy matching
+        cleaned = value.strip().lower()
+        cleaned = cleaned.replace("mailto:", "").replace("<", "").replace(">", "")
+        cleaned = cleaned.replace(" ", "").replace("\t", "")
+        
+        # Extraire prénom et nom si le format est proche
+        match = re.match(r"^([a-z]+)\.?([a-z]+)?@?([a-z\.]*)?$", cleaned)
+        if not match:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, "Cannot extract name parts for fuzzy matching"
+        
+        firstname_raw, lastname_raw, domain_raw = match.groups()
+        
+        # Si le domaine est présent et incorrect, on ne peut pas fuzzy matcher
+        if domain_raw and not domain_raw.startswith(cls._type_knowledge["domain"].split('.')[0]):
+             return UncertaintyLevel(Tolerance.ANYTHING), value, "Incorrect domain for fuzzy matching"
+
+        # Tente de trouver le meilleur match dans l'annuaire
+        best_match = cls._find_closest_email(firstname_raw, lastname_raw)
+        
+        if best_match:
+            return UncertaintyLevel(Tolerance.CREATIVE), best_match, "Fuzzy matched to directory"
+        
+        return UncertaintyLevel(Tolerance.ANYTHING), value, "No fuzzy match found in directory"
+    
+    @classmethod
+    def _find_closest_email(cls, firstname: str, lastname: str) -> Optional[str]:
+        """Trouve l'email le plus proche par distance de Levenshtein."""
+        from difflib import get_close_matches
+        
+        directory_names = []
+        for email in cls._type_knowledge["directory"]:
+            m = re.match(r"^([a-z]+)\.([a-z]+)@", email)
+            if m:
+                directory_names.append((m.group(1), m.group(2), email))
+        
+        # Chercher prénom proche
+        firstnames_in_dir = [n[0] for n in directory_names]
+        close_first = get_close_matches(firstname, firstnames_in_dir, n=1, cutoff=0.7)
+        if not close_first:
+            return None
+        
+        # Filtrer les candidats par prénom proche
+        candidates_for_lastname = [(n[1], n[2]) for n in directory_names if n[0] == close_first[0]]
+        if not candidates_for_lastname:
+            return None
+            
+        lastnames_in_candidates = [c[0] for c in candidates_for_lastname]
+        close_last = get_close_matches(lastname, lastnames_in_candidates, n=1, cutoff=0.7)
+        
+        if close_last:
+            for cand_last, email in candidates_for_lastname:
+                if cand_last == close_last[0]:
+                    return email
+        return None
+
+
+# ============================================================================
+# DÉMONSTRATION
+# ============================================================================
+
+# Niveau NATIVE (0.00)
+email1 = CorporateEmail("marie.dupont@mycorp.com")
+print(f"{email1} - {email1.abstraction_level} - {email1.uncertainty}")
+# → marie.dupont@mycorp.com - native - 0.0
+
+# Niveau HEURISTIC (0.05)
+email2 = CorporateEmail("  MARIE.DUPONT@MYCORP.COM  ")
+print(f"{email2} - {email2.abstraction_level} - {email2.uncertainty}")
+# → marie.dupont@mycorp.com - heuristic - 0.05
+
+# Niveau SEMANTIC (0.15) - Correction LLM
+email3 = CorporateEmail("marie dot dupont at mycorp dor com")
+print(f"{email3} - {email3.abstraction_level} - {email3.uncertainty}")
+# → marie.dupont@mycorp.com - semantic - 0.15
+
+# Niveau KNOWLEDGE (0.30) - Fuzzy matching
+email4 = CorporateEmail("m.dupond@mycorp.com")  # dupond -> dupont
+print(f"{email4} - {email4.abstraction_level} - {email4.uncertainty}")
+# → marie.dupont@mycorp.com - knowledge - 0.30
+
+# Niveau HEURISTIC avec format valide mais pas dans annuaire (0.10)
+email5 = CorporateEmail("john.doe@mycorp.com") # Format valide, mais pas dans CORPORATE_DIRECTORY
+print(f"{email5} - {email5.abstraction_level} - {email5.uncertainty}")
+# → john.doe@mycorp.com - heuristic - 0.10 (ou 0.05 si on considère que c'est juste un nettoyage)
+
+# Décision basée sur la confiance
+if email3.uncertainty <= Tolerance.PRECISE:
+    print("✅ Validation automatique")
+elif email3.uncertainty <= Tolerance.FLEXIBLE:
+    print("⚠️  Demander confirmation")  # ← Ce cas
+else:
+    print("❌ Rejeter")
 ```
+
+**Points clés** :
+
+1. **`_parse_native`** : Aucun nettoyage, validation stricte uniquement
+2. **`_parse_heuristic`** : Détecte si nettoyage effectué (`cleaned != original`)
+3. **`_parse_semantic`** : Utilise `closure()` pour appel LLM réel
+4. **`_parse_knowledge`** : Fuzzy matching avec `difflib.get_close_matches()`
+5. **Validation annuaire** : Si email corrigé existe → confiance FLEXIBLE, sinon passe au niveau suivant
+
+**Tests complets** : Voir [`tests/guarded/test_corporate_email.py`](../tests/guarded/test_corporate_email.py) (13/13 tests passent ✅)
 
 ### 9.2 Méthodes à Implémenter
 

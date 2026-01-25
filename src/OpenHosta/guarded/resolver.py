@@ -134,8 +134,16 @@ class TypeResolver:
 
         # 3. Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
-            # TODO: Implémenter guarded_enum factory
-            # Pour l'instant, on retourne GuardedUtf8
+            # Import GuardedEnum pour wrapper les enums standards
+            from .subclassableclasses import GuardedEnum
+            
+            # Si c'est déjà un GuardedEnum, retourner tel quel
+            if issubclass(annotation, GuardedEnum):
+                return annotation
+            
+            # Sinon, créer dynamiquement un GuardedEnum wrapper
+            # TODO: Créer une factory pour wrapper les enum.Enum standards
+            # Pour l'instant, on retourne GuardedUtf8 pour les enum.Enum non-Guarded
             return GuardedUtf8
 
         # # 4. Pydantic Models & Dataclasses (On les convertit en GuardedModel à la volée)
@@ -168,8 +176,16 @@ class TypeResolver:
 
             # Tuple -> GuardedTuple
             if origin in (tuple, typing.Tuple):
-                # Pour l'instant, on retourne GuardedTuple simple
-                # TODO: Support des tuples typés (Tuple[int, str])
+                from .subclassablecollections import guarded_tuple
+                if args:
+                    # Support for fixed-length tuples: Tuple[int, str]
+                    # We Filter out Ellipsis (...) for now as it indicates variable length
+                    if Ellipsis in args:
+                        return GuardedTuple
+                    
+                    # Resolve each item type
+                    resolved_args = tuple(cls.resolve(arg) for arg in args)
+                    return guarded_tuple(*resolved_args)
                 return GuardedTuple
 
             # Dict, Mapping -> GuardedDict
@@ -180,8 +196,13 @@ class TypeResolver:
 
             # Literal -> GuardedLiteral
             if origin is typing.Literal:
-                # TODO: Implémenter guarded_literal
-                # Pour l'instant, on retourne GuardedUtf8
+                from .subclassableliterals import guarded_literal
+                
+                # Créer un GuardedLiteral avec les valeurs spécifiées
+                if args:
+                    return guarded_literal(*args)
+                
+                # Pas de valeurs spécifiées, fallback
                 return GuardedUtf8
 
             # Union / Optional
