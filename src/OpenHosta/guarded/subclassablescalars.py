@@ -137,38 +137,69 @@ class GuardedUtf8(GuardedPrimitive, str):
 # ==============================================================================
 
 class GuardedComplex(GuardedPrimitive, complex):
-    """
-    Nombre complexe.
-    Accepte : 1+2j, "1+2j", "(1+2j)".
-    """
-    _type_en = "a complex number (real + imaginary parts, e.g., 1+2j)"
-    _type_py = "complex"
-    _type_json = {"type": "string", "pattern": "^[\\d\\+\\-\\.j\\(\\)\\s]+$"}
+    """Nombre complexe sémantique."""
+    _type_en = "a complex number (e.g., 1+2j)"
+    _type_py = complex
+    _type_json = {"type": "string", "pattern": r"^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?([+-](\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?j)?$"}
 
-    # TODO: implement using scalars.py as example
-    pass
+    @classmethod
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, complex):
+            return UncertaintyLevel(Tolerance.STRICT), value, None
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
+    
+    @classmethod
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        try:
+            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), complex(value), None
+        except (ValueError, TypeError) as e:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
 
 class GuardedBytes(GuardedPrimitive, bytes):
-    """
-    Séquence d'octets immuable.
-    Accepte : b'hello', "b'hello'", ou une string brute (encodée en utf-8 par défaut).
-    """
+    """Séquence d'octets immuable sémantique."""
     _type_en = "a bytes object (e.g., b'data')"
-    _type_py = "bytes"
-    _type_json = {"type": "string"}
+    _type_py = bytes
+    _type_json = {"type": "string", "contentEncoding": "base64"}
 
-    # TODO: implement using scalars.py as example
-    pass
+    @classmethod
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, bytes):
+            return UncertaintyLevel(Tolerance.STRICT), value, None
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
+    
+    @classmethod
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, str):
+            # Attempt to encode string to bytes
+            try:
+                return UncertaintyLevel(Tolerance.PRECISE), value.encode('utf-8'), None
+            except UnicodeEncodeError as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+        try:
+            # Attempt direct conversion (e.g., from bytearray, int iterable)
+            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), bytes(value), None
+        except (ValueError, TypeError) as e:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
 
 class GuardedByteArray(GuardedPrimitive, bytearray):
-    """
-    Séquence d'octets mutable.
-    """
-    _type_en = "a mutable bytearray"
-    _type_py = "bytearray"
-    _type_json = {"type": "string"}
+    """ByteArray sémantique."""
+    _type_en = "a mutable sequence of bytes"
+    _type_py = bytearray
+    _type_json = {"type": "string", "contentEncoding": "base64"}
 
-    # TODO: implement using scalars.py as example
-    pass
+    @classmethod
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, bytearray):
+            return UncertaintyLevel(Tolerance.STRICT), value, None
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
+    
+    @classmethod
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, str):
+            return UncertaintyLevel(Tolerance.PRECISE), bytearray(value, 'utf-8'), None
+        try:
+            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), bytearray(value), None
+        except (ValueError, TypeError) as e:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)

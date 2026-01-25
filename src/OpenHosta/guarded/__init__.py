@@ -7,6 +7,7 @@ from .subclassablewithproxy import GuardedBool, GuardedNone, GuardedAny, Guarded
 from .subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple, guarded_dataclass
 from .subclassableclasses import GuardedEnum
 from .subclassableliterals import GuardedLiteral, guarded_literal
+from .subclassableunions import GuardedUnion, guarded_union
 from .resolver import TypeResolver, type_returned_data
 
 __all__ = [
@@ -42,8 +43,10 @@ __all__ = [
     # Classes
     'GuardedEnum',
     'GuardedLiteral',
+    'GuardedUnion',
     'guarded_dataclass',
     'guarded_literal',
+    'guarded_union',
     
     # Resolver
     'TypeResolver',
