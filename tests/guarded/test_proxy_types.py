@@ -1,8 +1,8 @@
 """Tests for ProxyWrapper types (GuardedBool, GuardedNone, etc.)."""
 
 import pytest
-from src.OpenHosta.guarded.constants import Tolerance
-from src.OpenHosta.guarded.subclassablewithproxy import (
+from OpenHosta.guarded.constants import Tolerance
+from OpenHosta.guarded.subclassablewithproxy import (
     GuardedBool, GuardedNone, GuardedAny
 )
 

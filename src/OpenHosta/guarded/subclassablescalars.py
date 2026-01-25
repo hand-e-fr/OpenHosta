@@ -40,6 +40,8 @@ class GuardedInt(GuardedPrimitive, int):
     # --- 3. NETTOYAGE HEURISTIQUE ---
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, bool):
+            return UncertaintyLevel(Tolerance.FLEXIBLE), int(value), None
         value = str(value)
             
         # Nettoyage : espaces, et devises courantes

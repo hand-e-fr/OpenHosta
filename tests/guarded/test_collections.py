@@ -1,10 +1,11 @@
 """Tests for GuardedList, GuardedDict, GuardedSet, GuardedTuple."""
 
 import pytest
-from src.OpenHosta.guarded.constants import Tolerance
-from src.OpenHosta.guarded.subclassablecollections import (
+from OpenHosta.guarded.constants import Tolerance
+from OpenHosta.guarded.subclassablecollections import (
     GuardedList, GuardedDict, GuardedSet, GuardedTuple
 )
+from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8
 
 
 class TestGuardedList:
@@ -15,6 +16,7 @@ class TestGuardedList:
         lst = GuardedList([1, 2, 3])
         assert lst == [1, 2, 3]
         assert lst.uncertainty == Tolerance.STRICT
+        assert lst.abstraction_level == 'native'
     
     def test_from_tuple(self):
         """Test conversion from tuple."""
@@ -59,6 +61,13 @@ class TestGuardedList:
         assert lst == []
         assert len(lst) == 0
 
+    def test_parameterized_list_int(self):
+        """Test GuardedList[GuardedInt]."""
+        IntList = GuardedList[GuardedInt]
+        lst = IntList(["1", 2, "3 "])
+        assert lst == [1, 2, 3]
+        assert all(isinstance(x, int) for x in lst)
+
 
 class TestGuardedDict:
     """Tests for GuardedDict type."""
@@ -97,6 +106,13 @@ class TestGuardedDict:
         assert d == {}
         assert len(d) == 0
 
+    def test_parameterized_dict(self):
+        """Test GuardedDict[GuardedUtf8, GuardedInt]."""
+        IntDict = GuardedDict[GuardedUtf8, GuardedInt]
+        d = IntDict({"a": "1", "b": 2})
+        assert d == {"a": 1, "b": 2}
+        assert isinstance(d["a"], int)
+
 
 class TestGuardedSet:
     """Tests for GuardedSet type."""
@@ -122,6 +138,7 @@ class TestGuardedSet:
         """Test parsing from CSV string."""
         s = GuardedSet("1,2,3")
         assert len(s) == 3
+        assert s == {"1", "2", "3"}
     
     def test_set_operations(self):
         """Test that set operations work."""
@@ -166,6 +183,7 @@ class TestGuardedTuple:
         """Test parsing from CSV string."""
         t = GuardedTuple("1,2,3")
         assert len(t) == 3
+        assert t == ("1", "2", "3")
     
     def test_tuple_immutability(self):
         """Test that tuples are immutable."""
@@ -187,6 +205,13 @@ class TestGuardedTuple:
         t = GuardedTuple(())
         assert t == ()
         assert len(t) == 0
+
+    def test_parameterized_tuple(self):
+        """Test GuardedTuple[GuardedInt, GuardedUtf8]."""
+        IntStrTuple = GuardedTuple[GuardedInt, GuardedUtf8]
+        t = IntStrTuple(["1", "hello"])
+        assert t == (1, "hello")
+        assert isinstance(t[0], int)
 
 
 class TestCollectionMetadata:
@@ -222,12 +247,20 @@ class TestCollectionEdgeCases:
     
     def test_nested_structures(self):
         """Test nested collections."""
+        # Nested list
         lst = GuardedList([[1, 2], [3, 4]])
         assert lst == [[1, 2], [3, 4]]
         
+        # Nested dict
         d = GuardedDict({"nested": {"a": 1}})
         assert d == {"nested": {"a": 1}}
-    
+        
+        # Complex nested: List of Dicts
+        ComplexList = GuardedList[GuardedDict[GuardedUtf8, GuardedInt]]
+        clst = ComplexList([{"a": "1"}, {"b": 2}])
+        assert clst == [{"a": 1}, {"b": 2}]
+        assert isinstance(clst[0]["a"], int)
+
     def test_mixed_types(self):
         """Test collections with mixed types."""
         lst = GuardedList([1, "two", 3.0, None])

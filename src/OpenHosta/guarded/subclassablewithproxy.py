@@ -29,7 +29,7 @@ class GuardedNone(GuardedPrimitive, ProxyWrapper):
         
         value = value.strip(" \n\"\'")
         if value == 'None':
-            return UncertaintyLevel(Tolerance.PRECISE), None
+            return UncertaintyLevel(Tolerance.PRECISE), None, None
         
         value = value.lower()
         if value == "none":
@@ -84,7 +84,7 @@ class GuardedBool(GuardedPrimitive, ProxyWrapper):
             return False
     
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[float, Any]:
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if isinstance(value, bool):
             # En interne on stocke 1 ou 0
             return UncertaintyLevel(Tolerance.STRICT), value, None

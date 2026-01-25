@@ -1,7 +1,7 @@
 import ast
 import types
 import inspect
-from typing import Any, Tuple, Callable
+from typing import Any, Tuple, Callable, Optional
 
 # Assurez-vous d'avoir importé GuardedPrimitive
 from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, ProxyWrapper
@@ -14,21 +14,24 @@ class GuardedCode(GuardedPrimitive, ProxyWrapper):
     _type_knowledge = {"local_scope": {}}
 
     @classmethod
-    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         # Si c'est déjà une fonction ou une méthode, c'est valide.
         if isinstance(value, (types.FunctionType, types.MethodType)) or callable(value):
-            return UncertaintyLevel(Tolerance.STRICT), value
-        return UncertaintyLevel(Tolerance.ANYTHING), value
+            return UncertaintyLevel(Tolerance.STRICT), value, None
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
 
     @classmethod
-    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any]:
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
 
         # If it is not a string, how could we convert a python object that is not callable into a callable ? 
         if not isinstance(value, str):
-            return UncertaintyLevel(Tolerance.ANYTHING), value
+            return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
 
         # 1. Nettoyage du Markdown (```python ... ```)
         cleaned_code = value.strip()
+        if not cleaned_code:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, "Empty source code"
+
         if "```" in cleaned_code:
             lines = cleaned_code.splitlines()
             # On retire la première ligne si c'est ```python et la dernière si c'est ```
@@ -41,8 +44,8 @@ class GuardedCode(GuardedPrimitive, ProxyWrapper):
         # 2. Vérification Syntaxique (AST)
         try:
             ast.parse(cleaned_code)
-        except SyntaxError:
-            return UncertaintyLevel(Tolerance.ANYTHING), value
+        except SyntaxError as e:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Syntax error: {e}"
 
         # 3. Compilation et Extraction du pointeur
         # ATTENTION : exec() exécute du code arbitraire.
@@ -61,7 +64,7 @@ class GuardedCode(GuardedPrimitive, ProxyWrapper):
                     found_function = item
             
             if found_function:
-                return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), found_function
+                return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), found_function, None
             else:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, "No function found after eval"
 

@@ -76,18 +76,22 @@ def guarded_union(*guarded_types):
     Factory pour créer un type GuardedUnion.
     
     Args:
-        *guarded_types: Les types Guarded autorisés
+        *guarded_types: Les types (Standards ou Guarded) autorisés
         
     Returns:
         Une classe GuardedUnion configurée
     """
+    # Résoudre les types pour s'assurer qu'ils ont .attempt()
+    from .resolver import TypeResolver
+    resolved_types = tuple(TypeResolver.resolve(t) for t in guarded_types)
+    
     class DynamicUnion(GuardedUnion):
-        _types = guarded_types
-        _type_en = f"one of: {', '.join(t._type_en if hasattr(t, '_type_en') else str(t) for t in guarded_types)}"
+        _types = resolved_types
+        _type_en = f"one of: {', '.join(t._type_en if hasattr(t, '_type_en') else str(t) for t in resolved_types)}"
         _type_py = Any
         _type_json = {
-            "anyOf": [t._type_json if hasattr(t, '_type_json') else {"type": "string"} for t in guarded_types]
+            "anyOf": [t._type_json if hasattr(t, '_type_json') else {"type": "string"} for t in resolved_types]
         }
         
-    DynamicUnion.__name__ = f"Union[{', '.join(t.__name__ if hasattr(t, '__name__') else str(t) for t in guarded_types)}]"
+    DynamicUnion.__name__ = f"Union[{', '.join(t.__name__ if hasattr(t, '__name__') else str(t) for t in resolved_types)}]"
     return DynamicUnion

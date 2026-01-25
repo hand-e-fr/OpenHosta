@@ -347,3 +347,9 @@ class ProxyWrapper:
     
     def __str__(self):
         return str(self._python_value) if self._python_value is not None else "None"
+
+    def __call__(self, *args, **kwargs):
+        """Délègue l'appel à la valeur native si elle est callable."""
+        if callable(self._python_value):
+            return self._python_value(*args, **kwargs)
+        raise TypeError(f"'{type(self).__name__}' object is not callable")

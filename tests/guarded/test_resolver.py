@@ -1,11 +1,9 @@
-"""Tests for TypeResolver."""
-
 import pytest
 from typing import List, Dict, Set, Tuple, Optional, Union
-from src.OpenHosta.guarded.resolver import TypeResolver, type_returned_data
-from src.OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
-from src.OpenHosta.guarded.subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple
-from src.OpenHosta.guarded.subclassablewithproxy import GuardedBool, GuardedNone
+from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
+from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
+from OpenHosta.guarded.subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple
+from OpenHosta.guarded.subclassablewithproxy import GuardedBool, GuardedNone
 
 
 class TestTypeResolver:
@@ -44,14 +42,15 @@ class TestTypeResolver:
     def test_resolve_list_int(self):
         """Test resolving List[int]."""
         resolved = TypeResolver.resolve(List[int])
-        # Should return GuardedList parameterized with GuardedInt
-        # This is complex, might not work exactly as expected
-        assert resolved == GuardedList or "GuardedList" in str(resolved)
+        assert issubclass(resolved, GuardedList)
+        assert resolved._item_type == GuardedInt
     
     def test_resolve_dict_str_int(self):
         """Test resolving Dict[str, int]."""
         resolved = TypeResolver.resolve(Dict[str, int])
-        assert resolved == GuardedDict or "GuardedDict" in str(resolved)
+        assert issubclass(resolved, GuardedDict)
+        assert resolved._key_type == GuardedUtf8
+        assert resolved._value_type == GuardedInt
     
     def test_resolve_optional(self):
         """Test resolving Optional[int]."""
@@ -62,8 +61,8 @@ class TestTypeResolver:
     def test_resolve_union(self):
         """Test resolving Union types."""
         resolved = TypeResolver.resolve(Union[int, str])
-        # Should fallback to first type
-        assert resolved == GuardedInt
+        # Should fallback to first type for now, or use GuardedUnion if implemented
+        assert resolved == GuardedInt or "Union" in str(resolved)
     
     def test_resolve_guarded_type(self):
         """Test that GuardedType resolves to itself (idempotence)."""
@@ -84,6 +83,25 @@ class TestTypeResolver:
         resolved = TypeResolver.resolve(CustomClass)
         # Should fallback to GuardedUtf8
         assert resolved == GuardedUtf8
+
+
+class TestComplexityGenericResolution:
+    """Test resolution of complex nested generics."""
+
+    def test_resolve_list_dict(self):
+        """Test resolving List[Dict[str, int]]."""
+        resolved = TypeResolver.resolve(List[Dict[str, int]])
+        assert issubclass(resolved, GuardedList)
+        item_type = resolved._item_type
+        assert issubclass(item_type, GuardedDict)
+        assert item_type._key_type == GuardedUtf8
+        assert item_type._value_type == GuardedInt
+
+    def test_resolve_tuple_int_str(self):
+        """Test resolving Tuple[int, str]."""
+        resolved = TypeResolver.resolve(Tuple[int, str])
+        assert issubclass(resolved, GuardedTuple)
+        assert resolved._item_types == (GuardedInt, GuardedUtf8)
 
 
 class TestTypeReturnedData:
@@ -168,12 +186,6 @@ class TestTypeResolverEdgeCases:
         resolved = TypeResolver.resolve(frozenset)
         # Maps to GuardedSet
         assert resolved == GuardedSet
-    
-    def test_resolve_nested_generic(self):
-        """Test resolving nested generic types."""
-        resolved = TypeResolver.resolve(List[List[int]])
-        # Should handle nested types
-        assert "GuardedList" in str(resolved) or resolved == GuardedList
 
 
 class TestTypeResolverLiteralAndCustomTypes:
@@ -197,9 +209,9 @@ class TestTypeResolverLiteralAndCustomTypes:
     
     def test_resolve_custom_guarded_type(self):
         """Test resolving custom GuardedPrimitive subclass."""
-        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from src.OpenHosta.guarded.constants import Tolerance
+        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from OpenHosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         
@@ -223,9 +235,9 @@ class TestTypeResolverLiteralAndCustomTypes:
     
     def test_resolve_dict_with_custom_type(self):
         """Test resolving Dict[str, CustomGuardedType]."""
-        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from src.OpenHosta.guarded.constants import Tolerance
+        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from OpenHosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         
@@ -247,18 +259,15 @@ class TestTypeResolverLiteralAndCustomTypes:
         resolved = TypeResolver.resolve(Dict[str, CorporateEmail])
         
         # Should return GuardedDict parameterized with GuardedUtf8 and CorporateEmail
-        assert "GuardedDict" in str(resolved) or resolved == GuardedDict
-        
-        # Test that we can actually use it
-        guarded_dict_type = resolved
-        # This should work if the resolver properly handles custom types
-        assert guarded_dict_type is not None
+        assert issubclass(resolved, GuardedDict)
+        assert resolved._key_type == GuardedUtf8
+        assert resolved._value_type == CorporateEmail
     
     def test_resolve_list_with_custom_type(self):
         """Test resolving List[CustomGuardedType]."""
-        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from src.OpenHosta.guarded.constants import Tolerance
+        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from OpenHosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         
@@ -280,13 +289,14 @@ class TestTypeResolverLiteralAndCustomTypes:
         resolved = TypeResolver.resolve(List[CorporateEmail])
         
         # Should return GuardedList parameterized with CorporateEmail
-        assert "GuardedList" in str(resolved) or resolved == GuardedList
+        assert issubclass(resolved, GuardedList)
+        assert resolved._item_type == CorporateEmail
     
     def test_type_returned_data_with_custom_type(self):
         """Test type_returned_data with custom GuardedPrimitive."""
-        from src.OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from src.OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from src.OpenHosta.guarded.constants import Tolerance
+        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
+        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from OpenHosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         

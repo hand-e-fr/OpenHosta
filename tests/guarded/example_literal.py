@@ -7,9 +7,9 @@ mais avec le pipeline de validation guarded.
 """
 
 from typing import Literal
-from src.OpenHosta.guarded import guarded_literal
-from src.OpenHosta.guarded.resolver import TypeResolver
-from src.OpenHosta.guarded.constants import Tolerance
+from OpenHosta.guarded import guarded_literal
+from OpenHosta.guarded.resolver import TypeResolver
+from OpenHosta.guarded.constants import Tolerance
 
 
 # ==============================================================================
@@ -108,7 +108,7 @@ print("EXEMPLE 4 : Configuration d'environnement")
 print("=" * 70)
 
 from dataclasses import dataclass
-from src.OpenHosta.guarded import guarded_dataclass
+from OpenHosta.guarded import guarded_dataclass
 
 # Définir les types littéraux
 Environment = guarded_literal("development", "staging", "production")
@@ -163,7 +163,7 @@ print("=" * 70)
 print("EXEMPLE 5 : GuardedLiteral vs GuardedEnum")
 print("=" * 70)
 
-from src.OpenHosta.guarded import GuardedEnum
+from OpenHosta.guarded import GuardedEnum
 
 # GuardedEnum : Pour des valeurs avec nom et valeur
 class StatusEnum(GuardedEnum):

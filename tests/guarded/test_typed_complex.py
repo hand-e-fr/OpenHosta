@@ -1,12 +1,17 @@
+"""Tests for complex typed collections and unions."""
+
 import pytest
 from typing import List, Tuple, Dict, Union, Literal
-from src.OpenHosta.guarded.resolver import TypeResolver, type_returned_data
-from src.OpenHosta.guarded.subclassableliterals import GuardedLiteral, guarded_literal
-from src.OpenHosta.guarded.subclassableunions import GuardedUnion, guarded_union
-from src.OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
-from src.OpenHosta.guarded.constants import Tolerance
+from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
+from OpenHosta.guarded.subclassableliterals import GuardedLiteral, guarded_literal
+from OpenHosta.guarded.subclassableunions import GuardedUnion, guarded_union
+from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
+from OpenHosta.guarded.constants import Tolerance
+
 
 class TestGuardedLiteral:
+    """Tests for GuardedLiteral type."""
+    
     def test_literal_str_basic(self):
         Color = guarded_literal("red", "green", "blue")
         c = Color("red")
@@ -38,7 +43,10 @@ class TestGuardedLiteral:
         with pytest.raises(ValueError):
             Level(5)
 
+
 class TestTypedCollections:
+    """Tests for typed collections resolution and conversion."""
+    
     def test_list_int_conversion(self):
         res = type_returned_data(["1", "2", "3"], List[int])
         assert res == [1, 2, 3]
@@ -56,7 +64,10 @@ class TestTypedCollections:
         assert res == {"a": 1, "b": 2}
         assert isinstance(res["a"], int)
 
+
 class TestGuardedUnion:
+    """Tests for GuardedUnion type."""
+    
     def test_union_int_str(self):
         MyUnion = guarded_union(GuardedInt, GuardedUtf8)
         
@@ -72,22 +83,35 @@ class TestGuardedUnion:
 
     def test_union_precedence(self):
         # Even if both could match, preference to order or better confidence
-        # Here GuardedFloat matches 42 better than GuardedUtf8 (heuristic vs heuristic)
-        # But both are flexible.
         MyUnion = guarded_union(GuardedFloat, GuardedInt)
         u = MyUnion("42")
         # In our implementation, GuardedFloat comes first and succeeds
         assert isinstance(u, float)
 
+    def test_union_complex(self):
+        """Test union of complex types."""
+        MyUnion = guarded_union(List[int], Dict[str, int])
+        
+        u1 = MyUnion("[1, 2, 3]")
+        assert isinstance(u1, list)
+        assert u1 == [1, 2, 3]
+        
+        u2 = MyUnion('{"a": 1}')
+        assert isinstance(u2, dict)
+        assert u2 == {"a": 1}
+
+
 class TestNewScalars:
+    """Tests for newer scalar types."""
+    
     def test_complex(self):
-        from src.OpenHosta.guarded.subclassablescalars import GuardedComplex
+        from OpenHosta.guarded.subclassablescalars import GuardedComplex
         c = GuardedComplex("1+2j")
         assert c == complex(1, 2)
         assert c.uncertainty == Tolerance.TYPE_COMPLIANT
 
     def test_bytes(self):
-        from src.OpenHosta.guarded.subclassablescalars import GuardedBytes
+        from OpenHosta.guarded.subclassablescalars import GuardedBytes
         b = GuardedBytes("hello")
         assert b == b"hello"
         assert isinstance(b, bytes)
