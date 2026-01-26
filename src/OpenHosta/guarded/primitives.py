@@ -329,6 +329,10 @@ class ProxyWrapper:
     def unwrap(self):
         """Retourne la valeur Python native."""
         return getattr(self, "_python_value", None)
+
+    def __getattr__(self, name):
+        """Délègue l'accès aux attributs à la valeur native."""
+        return getattr(self._python_value, name)
     
     # Délégation des opérations de comparaison
     def __eq__(self, other):

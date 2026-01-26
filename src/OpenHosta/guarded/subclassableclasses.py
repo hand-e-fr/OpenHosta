@@ -72,33 +72,56 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Recherche case-insensitive par nom ou par valeur."""
         if isinstance(value, str):
-            # Format "EnumName.MEMBER" ou ".MEMBER" (comme repr())
-            if '.' in value:
-                parts = value.split('.')
-                if len(parts) == 2:
-                    enum_name, member_name = parts
-                    # Accepter "EnumName.MEMBER" ou ".MEMBER"
-                    if enum_name == '' or enum_name == cls.__name__:
-                        # Recherche case-insensitive du membre
-                        for name in cls._members:
-                            if name.lower() == member_name.lower():
-                                return UncertaintyLevel(Tolerance.PRECISE), name, None
+            cleaned_val = value.strip().strip('<>')
             
-            # Recherche case-insensitive par nom simple
+            # Format "EnumName.MEMBER" ou ".MEMBER" (comme repr())
+            member_candidate = cleaned_val
+            if '.' in cleaned_val:
+                parts = cleaned_val.split('.')
+                # On prend le dernier élément comme candidat de membre
+                member_candidate = parts[-1]
+            
+            # 1. Recherche exacte (case-insensitive) par nom
             for name in cls._members:
-                if name.lower() == value.lower():
+                if name.lower() == member_candidate.lower():
                     return UncertaintyLevel(Tolerance.PRECISE), name, None
+            
+            # 2. Recherche par suffixe (ex: PUSH matche GIT_PUSH)
+            # Utile car les LLM abrègent souvent les préfixes techniques
+            for name in cls._members:
+                if name.lower().endswith(member_candidate.lower()):
+                    return UncertaintyLevel(Tolerance.FLEXIBLE), name, None
+
+            # 3. Recherche case-insensitive par nom complet original (si pas de point)
+            if member_candidate == cleaned_val:
+                for name in cls._members:
+                    if name.lower() == cleaned_val.lower():
+                        return UncertaintyLevel(Tolerance.PRECISE), name, None
         
-        # Recherche par valeur
+        # 4. Recherche par valeur
         for name, member_value in cls._members.items():
-            if member_value == value:
+            if str(member_value).lower() == str(value).lower():
                 return UncertaintyLevel(Tolerance.PRECISE), name, None
         
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid enum value"
     
+    def __eq__(self, other):
+        """Compaire le membre par nom ou par valeur."""
+        if isinstance(other, ProxyWrapper):
+            return self._python_value == other._python_value
+        
+        if isinstance(other, Enum):
+            return self._python_value == other.name or self.value == other.value
+            
+        return self._python_value == other or self.value == other
+
     def __repr__(self):
-        """Représentation comme Enum.MEMBER."""
-        return f"{self.__class__.__name__}.{self._python_value}"
+        """Représentation compatible Enum: <ClassName.MEMBER: value>."""
+        # On essaie d'enlever le préfixe 'Guarded_' pour la lisibilité
+        display_name = self.__class__.__name__
+        if display_name.startswith('Guarded_'):
+            display_name = display_name[8:]
+        return f"<{display_name}.{self._python_value}: {self.value!r}>"
     
     @property
     def name(self):
@@ -109,3 +132,24 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     def value(self):
         """Valeur du membre (compatible avec enum.Enum)."""
         return self._members.get(self._python_value)
+
+def guarded_enum(enum_cls: Type[Enum]) -> Type[GuardedEnum]:
+    """
+    Factory pour transformer une Enum standard en GuardedEnum.
+    """
+    if issubclass(enum_cls, GuardedEnum):
+        return enum_cls
+    
+    # Créer les attributs pour la nouvelle classe
+    attrs = {}
+    for name, member in enum_cls.__members__.items():
+        attrs[name] = member.value
+        
+    # Créer dynamiquement la sous-classe avec les membres déjà présents
+    # pour que __init_subclass__ les capture.
+    new_name = f"Guarded_{enum_cls.__name__}"
+    WrappedEnum = type(new_name, (GuardedEnum,), attrs)
+    
+    WrappedEnum.__doc__ = enum_cls.__doc__
+    
+    return WrappedEnum
