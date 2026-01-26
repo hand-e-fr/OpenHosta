@@ -74,6 +74,10 @@ def guarded_literal(*values):
             # Pour les strings, essayer avec strip() et case-insensitive
             if isinstance(value, str) and all(isinstance(v, str) for v in cls._allowed_values):
                 cleaned = value.strip()
+                # Remove quotes if present
+                if (cleaned.startswith('"') and cleaned.endswith('"')) or \
+                   (cleaned.startswith("'") and cleaned.endswith("'")):
+                    cleaned = cleaned[1:-1]
                 
                 # Essai exact après nettoyage
                 if cleaned in cls._allowed_values:

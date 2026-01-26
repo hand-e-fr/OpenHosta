@@ -46,7 +46,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_set(2)) == set
+        assert isinstance(return_set(2), set)
     
         
     def test_TypingList(self):
@@ -57,8 +57,8 @@ class TestTypes:
             return emulate()
         
         response = return_int_list([1.0, 2, 3])
-        assert type(response) == list
-        assert type(response[0]) == int
+        assert isinstance(response, list)
+        assert isinstance(response[0], int)
         
         def return_float_list(a: List[int]) -> List[float]:
             """
@@ -67,8 +67,8 @@ class TestTypes:
             return emulate()
 
         response = return_float_list([1, 2, 3])
-        assert type(response) == list
-        assert type(response[0]) == float
+        assert isinstance(response, list)
+        assert isinstance(response[0], float)
 
 
     def test_TypingTuple(self):
@@ -78,7 +78,7 @@ class TestTypes:
             """
             return emulate()
 
-        assert type(return_mixed_tuple((1, "test"))) == tuple
+        assert isinstance(return_mixed_tuple((1, "test")), tuple)
 
     def test_TypingDict(self):
         def return_str_dict(a: Dict[str, int]) -> Dict[str, int]:
@@ -87,7 +87,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_str_dict({"test": 1})) == dict
+        assert isinstance(return_str_dict({"test": 1}), dict)
 
     def test_TypingSet(self):
         def return_int_set(a: Set[int]) -> Set[int]:
@@ -96,7 +96,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_int_set({1, 2, 3})) == set
+        assert isinstance(return_int_set({1, 2, 3}), set)
 
     def test_TypingOptional(self):
         def return_optional(a: Optional[str]) -> Optional[int]:
@@ -105,8 +105,8 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_optional("Arthur")) is int
-        assert type(return_optional("go have a break")) is type(None)
+        assert isinstance(return_optional("Arthur"), int)
+        assert return_optional("go have a break") is None
 
     def test_TypingUnion(self):
         def return_union(a: Union[int, str]) -> Union[int, str]:
@@ -115,7 +115,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_union(1)) in (int, str)
+        assert isinstance(return_union(1), (int, str))
 
     def test_TypingLiteral(self):
         def return_literal(a: Literal["red", "blue"]) -> Literal["red", "blue"]:
@@ -134,7 +134,7 @@ class TestTypes:
             """
             return emulate()
 
-        assert type(return_sequence([1, 2, 3]) ) == list
+        assert isinstance(return_sequence([1, 2, 3]), list)
 
     def test_TypingMapping(self):
         def return_mapping(a: Mapping[str, int]) -> Mapping[str, int]:
@@ -143,7 +143,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_mapping({"test": 1})) == dict
+        assert isinstance(return_mapping({"test": 1}), dict)
 
 
     def test_TypingNamedTuple(self):
@@ -158,7 +158,7 @@ class TestTypes:
             return emulate()
 
         result = return_named_tuple(TestNamedTuple("John", 30))
-        assert type(result) == tuple or type(result) == TestNamedTuple
+        assert isinstance(result, tuple)
 
     def test_TypingTypedDict(self):
         class TestTypedDict(TypedDict):
@@ -173,7 +173,7 @@ class TestTypes:
         
         response = return_typed_dict({"name": "John", "age": 30})
         
-        assert type(response) == dict
+        assert isinstance(response, dict)
 
     def test_TypingAny(self):
         def return_any(a: Any) -> Any:

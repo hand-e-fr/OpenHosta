@@ -384,6 +384,30 @@ def guarded_dataclass(cls=None, **dataclass_kwargs):
                     if isinstance(value, dict):
                          return CastingResult(True, value, Tolerance.FLEXIBLE, 'heuristic', value, cls, None)
                     
+                    # Si c'est une string qui ressemble à un appel constructeur: Person(...)
+                    if isinstance(value, str) and value.strip().startswith(cls.__name__ + "("):
+                        try:
+                            import ast
+                            tree = ast.parse(value.strip(), mode='eval')
+                            if isinstance(tree.body, ast.Call):
+                                args = []
+                                kwargs = {}
+                                for arg in tree.body.args:
+                                    args.append(ast.literal_eval(arg))
+                                for keyword in tree.body.keywords:
+                                    kwargs[keyword.arg] = ast.literal_eval(keyword.value)
+                                
+                                # Tenter d'instancier avec les args parsés
+                                try:
+                                    # On crée l'instance directement via le constructeur
+                                    instance = cls(*args, **kwargs)
+                                    return CastingResult(True, instance, Tolerance.PRECISE, 'heuristic', value, cls, None)
+                                except Exception as e:
+                                    # Si échec instanciation directe, essayer via dict mode si possible ou fail
+                                    pass
+                        except Exception:
+                            pass
+
                     # Sinon, on tente tel quel mais avec une incertitude élevée
                     return CastingResult(True, value, Tolerance.TYPE_COMPLIANT, 'heuristic', value, cls, None)
                 except Exception as e:
