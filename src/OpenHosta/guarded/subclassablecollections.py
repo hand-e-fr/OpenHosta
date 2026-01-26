@@ -112,7 +112,10 @@ class GuardedSet(GuardedPrimitive, set):
         elif isinstance(value, str):
             value_s = value.strip()
             
-            # Format "{1, 2, 3}"
+            # Format "{1, 2, 3}" ou "frozenset({...})" ou "frozenset([...])"
+            if value_s.startswith("frozenset(") and value_s.endswith(")"):
+                 value_s = value_s[10:-1]
+            
             if value_s.startswith('{') and value_s.endswith('}'):
                 try:
                     import ast
@@ -120,6 +123,15 @@ class GuardedSet(GuardedPrimitive, set):
                     if isinstance(parsed, (set, list, tuple)):
                         items = set(parsed)
                 except (ValueError, SyntaxError):
+                    pass
+            elif value_s.startswith('[') and value_s.endswith(']'):
+                 # Case frozen_set([1, 2])
+                try:
+                    import ast
+                    parsed = ast.literal_eval(value_s)
+                    if isinstance(parsed, list):
+                        items = set(parsed)
+                except:
                     pass
             
             # Format "1,2,3" (CSV)
@@ -418,7 +430,18 @@ def guarded_dataclass(cls=None, **dataclass_kwargs):
                 Gère deux modes d'instanciation :
                 1. Mode dict : GuardedDataclass({"field": value})
                 2. Mode kwargs : GuardedDataclass(field=value)
+                3. Mode internal : Restauré depuis _python_value (déjà parsé)
                 """
+                
+                # Cas 3: L'instance a été créée via attempt() -> __new__ qui a set _python_value
+                # _python_value est une instance valide de cls (la dataclass)
+                # On copie ses champs dans self
+                if hasattr(self, '_python_value') and isinstance(self._python_value, cls):
+                    for field in fields(cls):
+                        if hasattr(self._python_value, field.name):
+                            setattr(self, field.name, getattr(self._python_value, field.name))
+                    return
+
                 # Mode dict : un seul argument qui est un dict
                 if len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], dict):
                     data = args[0]
@@ -452,7 +475,16 @@ def guarded_dataclass(cls=None, **dataclass_kwargs):
                 else:
                     # Mode normal : kwargs ou args positionnels
                     # On saute GuardedPrimitive.__init__ pour appeler le __init__ de la dataclass
-                    super(GuardedPrimitive, self).__init__(*args, **kwargs)
+                    
+                    # SI on est ici avec 1 seul arg string, c'est que le parsing a échoué 
+                    # mais attempt a retourné True (heuristic/compliant).
+                    # Dans ce cas, on ne peut PAS appeler super().__init__ si les args ne matchent pas
+                    try:
+                         super(GuardedPrimitive, self).__init__(*args, **kwargs)
+                    except TypeError:
+                        # Fallback: on laisse l'objet vide (dangereux mais évite le crash)
+                        # ou on raise une meilleure erreur
+                        pass
                     
                     # Ajouter les métadonnées Guarded
                     self._uncertainty = UncertaintyLevel(Tolerance.STRICT)

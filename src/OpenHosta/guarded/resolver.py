@@ -115,7 +115,9 @@ class TypeResolver:
         typing.Callable: GuardedCode,
         types.FunctionType: GuardedCode,
         types.MethodType: GuardedCode,
-        types.NoneType: GuardedNone,        
+        types.NoneType: GuardedNone,
+        Any: GuardedAny,
+        typing.Any: GuardedAny,
     }
 
     @classmethod
@@ -138,20 +140,22 @@ class TypeResolver:
         # Ex: L'utilisateur passe directement GuardedInt ou CorporateEmail
         if isinstance(annotation, type) and issubclass(annotation, GuardedPrimitive):
             return annotation
+            
+        # 2.5 None literal (common alias for NoneType in annotations)
+        if annotation is None:
+            return GuardedNone
 
         # 3. Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
             # Import GuardedEnum pour wrapper les enums standards
-            from .subclassableclasses import GuardedEnum
+            from .subclassableclasses import GuardedEnum, guarded_enum
             
             # Si c'est déjà un GuardedEnum, retourner tel quel
             if issubclass(annotation, GuardedEnum):
                 return annotation
             
-            # Sinon, créer dynamiquement un GuardedEnum wrapper
-            # TODO: Créer une factory pour wrapper les enum.Enum standards
-            # Pour l'instant, on retourne GuardedUtf8 pour les enum.Enum non-Guarded
-            return GuardedUtf8
+            # Créer dynamiquement un GuardedEnum wrapper
+            return guarded_enum(annotation)
 
         # 4. TypedDict
         if is_typeddict(annotation):
@@ -216,7 +220,7 @@ class TypeResolver:
                 return GuardedUtf8
 
             # Union / Optional
-            if origin is Union or (hasattr(typing, '_UnionGenericAlias') and isinstance(annotation, typing._UnionGenericAlias)):
+            if origin is Union or (hasattr(typing, '_UnionGenericAlias') and isinstance(annotation, typing._UnionGenericAlias)) or (hasattr(types, "UnionType") and origin is types.UnionType):
                 # Support Union complexe (Union[int, str, None])
                 from .subclassableunions import guarded_union
                 

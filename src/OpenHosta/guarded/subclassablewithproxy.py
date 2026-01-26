@@ -64,6 +64,24 @@ class GuardedAny(GuardedPrimitive, ProxyWrapper):
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        # Basic heuristic inference for Any (smart Any)
+        if isinstance(value, str):
+            v_lower = value.strip().lower()
+            if v_lower == 'none':
+                return UncertaintyLevel(Tolerance.PRECISE), None, None
+            if v_lower == 'true':
+                return UncertaintyLevel(Tolerance.PRECISE), True, None
+            if v_lower == 'false':
+                return UncertaintyLevel(Tolerance.PRECISE), False, None
+            
+            # Try numbers
+            try:
+                if '.' in value:
+                     return UncertaintyLevel(Tolerance.PRECISE), float(value), None
+                return UncertaintyLevel(Tolerance.PRECISE), int(value), None
+            except:
+                pass
+
         return UncertaintyLevel(Tolerance.STRICT), value, None
 
 class GuardedBool(GuardedPrimitive, ProxyWrapper):
