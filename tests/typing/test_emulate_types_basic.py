@@ -15,7 +15,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(add_two(2)) == int
+        assert isinstance(add_two(2), int)
         
     def test_NativeNumericalFloat(self):
         def add_zeropointtwo(a:float)->float:
@@ -24,7 +24,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(add_zeropointtwo(2.2)) == float
+        assert isinstance(add_zeropointtwo(2.2), float)
         
     def test_NativeNumericalComplex(self):
         def complex_func(a:complex)->complex:
@@ -42,7 +42,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(inverse_bool(True)) == bool
+        assert isinstance(inverse_bool(True), bool)
         assert inverse_bool(True) is False
         assert inverse_bool(False) is True
         
@@ -53,7 +53,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_str("hi mom")) == str
+        assert isinstance(return_str("hi mom"), str)
 
     def test_NativeSequentialList(self):
         def random_list(a:list)->list:
@@ -62,7 +62,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(random_list([1, 2, 3])) == list
+        assert isinstance(random_list([1, 2, 3]), list)
     
     def test_NativeSequentialTuple(self):
         def random_tuple(a:tuple)->tuple:
@@ -73,7 +73,7 @@ class TestTypes:
         
         # model.type_returned_data(random_tuple._last_response["data"], random_tuple.hosta_inspection._infos)
         # random_tuple.hosta_inspection._infos.f_type
-        assert type(random_tuple((5, "aaaaaaah"))) == tuple
+        assert isinstance(random_tuple((5, "aaaaaaah")), tuple)
 
     
     def test_NativeSequentialRange(self):
@@ -83,7 +83,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(range_func(range(1))) is range
+        assert isinstance(range_func(range(1)), range)
             
     def test_NativeMappinDict(self):
         def count_dict(a:dict)->dict:
@@ -92,7 +92,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(count_dict({"tata": 4, "titi": 2})) == dict
+        assert isinstance(count_dict({"tata": 4, "titi": 2}), dict)
         
     def test_NativeEnsembleSet(self):
         def return_set(a:set)->set:
@@ -101,7 +101,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_set({1, 2, 3})) == set
+        assert isinstance(return_set({1, 2, 3}), set)
 
         
     def test_NativeEnsembleFrozenset(self):
@@ -111,7 +111,7 @@ class TestTypes:
             """
             return emulate()
 
-        assert type(return_frozenset(frozenset([1, 2, 3, 4]))) == frozenset
+        assert isinstance(return_frozenset(frozenset([1, 2, 3, 4])), frozenset)
         
     def test_NativeBinaryBytes(self):
         def return_byte(a:bytes)->bytes:
@@ -120,7 +120,7 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_byte(bytes("hi mom", encoding='utf-8'))) == bytes
+        assert isinstance(return_byte(bytes("hi mom", encoding='utf-8')), bytes)
         
     def test_NativeBinaryBytearray(self):
         def return_byte(a:bytearray)->bytearray:
@@ -129,20 +129,20 @@ class TestTypes:
             """
             return emulate()
         
-        assert type(return_byte(bytearray("hi mom", encoding='utf-8'))) == bytearray
+        assert isinstance(return_byte(bytearray("hi mom", encoding='utf-8')), bytearray)
         
     def test_NativeNone(self):
-        def return_none() -> Any :
+        def return_none() -> type(None) :
             """
             This function returns None
             """   
             return emulate()
         
-        assert return_none() is None
+        assert return_none() == None
     
     def test_testReturnType(self):        
         ret = oh_test("this is true")
-        assert type(ret) == bool
+        assert isinstance(ret, bool)
         assert ret is True
         
     

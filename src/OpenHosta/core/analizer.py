@@ -9,6 +9,9 @@ def describe_type_as_python(p_type) -> str:
     
     type_description = ""
     
+    if not hasattr(p_type, "__mro__"):
+        return ""
+
     prev_type = None
     for c in p_type.__mro__:
         if c.__name__ == "object":

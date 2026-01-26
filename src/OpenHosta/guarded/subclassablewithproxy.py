@@ -130,6 +130,24 @@ class GuardedRange(GuardedPrimitive, ProxyWrapper):
     _type_py = range
     _type_json = {"type": "string", "pattern": "^range\\(\\d+(, \\d+)*\\)$"}
 
-    # TODO: Implémenter les parseurs 
-    pass
+    @classmethod
+    def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, range):
+            return UncertaintyLevel(Tolerance.STRICT), value, None
+        return UncertaintyLevel(Tolerance.ANYTHING), value, None
+
+    @classmethod
+    def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
+        if isinstance(value, str):
+            value = value.strip()
+            # range(start, stop[, step])
+            if value.startswith("range(") and value.endswith(")"):
+                try:
+                    content = value[6:-1]
+                    parts = [int(x.strip()) for x in content.split(",") if x.strip()]
+                    return UncertaintyLevel(Tolerance.PRECISE), range(*parts), None
+                except Exception:
+                    pass
+        
+        return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid range format"
 

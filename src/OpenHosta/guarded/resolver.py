@@ -11,9 +11,16 @@ r"""
 
 import types
 import typing
+import collections.abc
 
 from enum import Enum
 from typing import Any, Type, List, Dict, Tuple, Set, Union, Callable, Literal, get_origin, get_args
+
+try:
+    from typing import is_typeddict
+except ImportError:
+    def is_typeddict(t): return False
+
 from dataclasses import is_dataclass
 
 # Imports des primitives OpenHosta
@@ -146,18 +153,21 @@ class TypeResolver:
             # Pour l'instant, on retourne GuardedUtf8 pour les enum.Enum non-Guarded
             return GuardedUtf8
 
-        # # 4. Pydantic Models & Dataclasses (On les convertit en GuardedModel à la volée)
-        # if (isinstance(annotation, type) and 
-        #    ((HAS_PYDANTIC and issubclass(annotation, BaseModel)) or is_dataclass(annotation))):
-        #     # Import local pour éviter le cycle avec models.py
-        #     from ..semantics.models import GuardedModel
-        #     # Création dynamique d'un GuardedModel qui hérite du modèle original
-        #     # Cela permet de préserver les validateurs Pydantic existants
-        #     class WrappedModel(GuardedModel, annotation):
-        #         pass
-        #     WrappedModel.__name__ = f"Guarded_{annotation.__name__}"
-        #     WrappedModel.__doc__ = annotation.__doc__
-        #     return WrappedModel
+        # 4. TypedDict
+        if is_typeddict(annotation):
+            # On retourne GuardedDict pour l'instant
+            # Idéalement on devrait valider que les clés correspondent
+            return GuardedDict
+
+        # 5. NamedTuple (subclass of tuple)
+        if isinstance(annotation, type) and issubclass(annotation, tuple) and annotation is not tuple:
+             return GuardedTuple
+
+        # 4. Pydantic Models & Dataclasses (On les convertit en GuardedModel à la volée)
+        if (isinstance(annotation, type) and 
+           ((HAS_PYDANTIC and issubclass(annotation, BaseModel)) or is_dataclass(annotation))):
+            from .subclassablecollections import guarded_dataclass
+            return guarded_dataclass(annotation)
 
         # 5. Types Génériques (Typing)
         origin = get_origin(annotation)
@@ -165,12 +175,12 @@ class TypeResolver:
 
         if origin is not None:
             # List, Iterable, Sequence -> GuardedList
-            if origin in (list, List, typing.Sequence, typing.Iterable):
+            if origin in (list, List, typing.Sequence, typing.Iterable, collections.abc.Sequence, collections.abc.Iterable):
                 inner = cls.resolve(args[0]) if args else GuardedUtf8
                 return GuardedList[inner]
 
             # Set, Frozenset -> GuardedSet
-            if origin in (set, frozenset, typing.Set, typing.AbstractSet):
+            if origin in (set, frozenset, typing.Set, typing.AbstractSet, collections.abc.Set):
                 inner = cls.resolve(args[0]) if args else GuardedUtf8
                 return GuardedSet[inner]
 
@@ -189,7 +199,7 @@ class TypeResolver:
                 return GuardedTuple
 
             # Dict, Mapping -> GuardedDict
-            if origin in (dict, Dict, typing.Mapping, typing.MutableMapping):
+            if origin in (dict, Dict, typing.Mapping, typing.MutableMapping, collections.abc.Mapping, collections.abc.MutableMapping):
                 k = cls.resolve(args[0]) if len(args) > 0 else GuardedUtf8
                 v = cls.resolve(args[1]) if len(args) > 1 else GuardedUtf8
                 return GuardedDict[k, v]
@@ -207,14 +217,18 @@ class TypeResolver:
 
             # Union / Optional
             if origin is Union or (hasattr(typing, '_UnionGenericAlias') and isinstance(annotation, typing._UnionGenericAlias)):
-                # On filtre NoneType
-                non_none = [a for a in args if a is not type(None)]
-                if len(non_none) == 1:
-                    return cls.resolve(non_none[0])
-                
-                # Support Union complexe (Union[int, str])
+                # Support Union complexe (Union[int, str, None])
                 from .subclassableunions import guarded_union
-                resolved_args = [cls.resolve(a) for a in non_none]
+                
+                # On ne filtre PAS NoneType, on le mappe vers GuardedNone
+                resolved_args = []
+                for a in args:
+                    if a is type(None):
+                        resolved_args.append(GuardedNone)
+                    else:
+                        resolved_args.append(cls.resolve(a))
+                
+                # Optimisation: Si Optional[T] (Union[T, None]), on utilise GuardedUnion
                 return guarded_union(*resolved_args)
 
             # Annotated (souvent utilisé avec Pydantic)
