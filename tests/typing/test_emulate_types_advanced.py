@@ -99,14 +99,27 @@ class TestTypes:
         assert isinstance(return_int_set({1, 2, 3}), set)
 
     def test_TypingOptional(self):
-        def return_optional(a: Optional[str]) -> Optional[int]:
+
+        def count_name_letters(text: Optional[str]) -> Optional[int]:
             """
-            This function returns the count of letters in a if a is a king name, otherwise return no value
+            This function returns the count of letters the firstname present in `text`.
+            If no firstname can be found, return None.
+
+            Args:
+                text(str): a string that may contain a firstname
+
+            Return:
+                (int) the count of letter is the firstname present in test 
             """
             return emulate()
         
-        assert isinstance(return_optional("Arthur"), int)
-        assert return_optional("go have a break") is None
+        val1 = count_name_letters("Arthur")
+        # val2 = count_name_letters("go have a break to John") # Good test for uncertainty
+        val3 = count_name_letters("this is not a firstname")
+
+        assert isinstance(val1, int), f"got {val1} but expected 6"
+        
+        assert val3 == None, f"Shoud be None got {val3}"
 
     def test_TypingUnion(self):
         def return_union(a: Union[int, str]) -> Union[int, str]:
