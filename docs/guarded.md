@@ -39,7 +39,7 @@ Chaque type Guarded utilise un pipeline en cascade pour convertir les entrées :
 ```
 Entrée → Native → Heuristic → Semantic → Knowledge → Sortie
          ↓        ↓           ↓          ↓
-         0.00     0.05-0.15   0.15-0.30  0.30+
+         0.00     0.0-0.15    0.0-0.30   0.0+
          (STRICT) (PRECISE)   (FLEXIBLE) (CREATIVE)
 ```
 
@@ -68,10 +68,10 @@ La tolérance définit jusqu'où le pipeline peut aller :
 from OpenHosta.guarded import GuardedInt, Tolerance
 
 # Tolérance stricte : seul le niveau Native est accepté
-strict_int = GuardedInt("42", tolerance=Tolerance.STRICT)
+strict_int = GuardedInt("42", tolerance_threshold=Tolerance.STRICT)
 
 # Tolérance flexible : Native + Heuristic acceptés
-flexible_int = GuardedInt("1,000", tolerance=Tolerance.FLEXIBLE)
+flexible_int = GuardedInt("1,000", tolerance_threshold=Tolerance.FLEXIBLE)
 
 # Tolérance par défaut : TYPE_COMPLIANT (accepte tout)
 default_int = GuardedInt("1,000")  # Fonctionne
@@ -833,7 +833,7 @@ user = User(name="Alice", age="25")  # age converti automatiquement
 
 2. **Spécifier la tolérance pour les cas critiques**
    ```python
-   password = GuardedUtf8(input, tolerance=Tolerance.STRICT)
+   password = GuardedUtf8(input, tolerance_threshold=Tolerance.STRICT)
    ```
 
 3. **Vérifier l'uncertainty pour les décisions importantes**

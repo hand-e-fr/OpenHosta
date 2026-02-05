@@ -66,15 +66,82 @@ Un `SemanticSet` regroupe les éléments par "clusters" de sens. Il est idéal p
 ```python
 from OpenHosta.semantics import SemanticSet
 
+
 # Créer un ensemble de tâches ménagères
-tasks = SemanticSet()
+
+# Annotation optionnelle pour la clarté
+SemanticSet[SemanticAxis("Type de Tâche")]
+
+## Ordre 1
+tasks = SemanticSet(axis="Taches Ménagères", tolerance=0.15)
 tasks.add("Laver le sol")
 tasks.add("Passer la serpillière")  # Détecté comme doublon sémantique
 tasks.add("Faire la vaisselle")     # Nouveau cluster
 
+## Ordre 2
+tasks = SemanticSet(axis="Taches Ménagères", tolerance=0.15)
+tasks.add("Passer la serpillière")  # Détecté comme doublon sémantique
+tasks.add("Faire la vaisselle")     # Nouveau cluster
+tasks.add("Laver le sol")
+
+
+tasks = SemanticSet(axis="Tache par type d'outils", tolerance=0.15)
+tasks.add("Laver le sol")
+tasks.add("Passer la serpillière")  # Détécté comme différent (outil différent)
+
+# Indépendant de l'ordre d'ajout
 print(tasks)
 # Output probable : {"Nettoyage des sols", "Vaisselle"} (Labels synthétisés)
+
+# utilisation qwen embedding
+CapitalesEurope = SemanticSet(axis="Villes Touristiques Européennes", tolerance=0.15)
+CapitalesEurope.add("Paris")
+CapitalesEurope.add("Lyon")   # dist cosin 0.017 avec Paris
+CapitalesEurope.add("Londres")
+CapitalesEurope.add("Berlin")
+
+CapitalesEurope.add("Annecy")  # Pas une capitale touristique => raise ValueError
+
+print(CapitalesEurope)
+# Output probable : {"Capitale de la France", "Capitale du Royaume-Uni", "Capitale de l'Allemagne"}
+
+def MyBigFrenchCity(GuardedUtf8):
+    _type_fr = """"Villes Françaises de plus de 1M d'habitants"""
+    _tolerance=0.15
+    
+    def _parse_semantics(self, value):
+        """Valide que la ville est une grande ville française."""
+        return value
+
+    def _parse_knowledge(self, value):
+        """Compare la ville à une liste de grandes villes françaises."""
+        if value not in ["Paris", "Lyon", "Marseille"]:
+            raise ValueError(f"{value} n'est pas une grande ville française.")
+        
+        return value
+ 
+MyBigFrenchCity("Paris")  # OK
+MyBigFrenchCity("Lyon")   # OK
+MyBigFrenchCity("Annecy") # ValueError : Pas une grande ville française
+
+FenchCitySetType = SemanticSet[MyBigFrenchCity]
+
+mes_villes_visites:FenchCitySetType  = FenchCitySetType()
+mes_villes_visites:SemanticSet[MyBigFrenchCity]  = SemanticSet[MyBigFrenchCity]()
+
+ma_class:MaClass = MaClass()
+
+ma_list:list = ["Paris", "Lyon", "Annecy"]
+
+VillesFrancaises:
+VillesFrancaises.add("Paris")
+VillesFrancaises.add("Lyon")  # dist cosin 0.017 avec Paris
+VillesFrancaises.add("Annecy")  # dist cosin 0.012 avec Paris
+
+print(VillesFrancaises)
+# Output probable : {"Capitale de la France", "Ville de province"}
 ```
+
 
 ### 3.3 Configuration
 
