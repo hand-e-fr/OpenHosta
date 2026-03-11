@@ -27,12 +27,12 @@ def get_most_appropriate_type(request:str) -> ArgType:
 
 def guess_type(inspection: Inspection) -> object:
     try:
-        detected_type = get_most_appropriate_type(inspection.analyse["doc"])
+        detected_type = get_most_appropriate_type(inspection.analyse.doc)
         return eval(detected_type.value, {"Any": Any})
     except Exception as e:
         print( 
             (f"Type detection failed for '" +
-            inspection.analyse['doc'] +
+            inspection.analyse.doc +
             f"':\n{detected_type}\n{e}.\n" +
             "Default to return type 'Any'."
             )
@@ -59,12 +59,12 @@ def closure_async(
             
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
-            inspection.analyse["type"] = force_return_type
+            inspection.analyse.type = force_return_type
     
-        return_type = inspection.analyse["type"]
+        return_type = inspection.analyse.type
         if return_type in [None, Any]:
             return_type = guess_type(inspection)
-            inspection.analyse["type"] = return_type
+            inspection.analyse.type = return_type
             
         inspection.force_llm_args |= _force_llm_args
         
@@ -104,12 +104,12 @@ def closure(
             
         # Use return_type if provided, else try to guess it
         if force_return_type is not None:
-            inspection.analyse["type"] = force_return_type
+            inspection.analyse.type = force_return_type
     
-        return_type = inspection.analyse["type"]
+        return_type = inspection.analyse.type
         if return_type in [None, Any]:
             return_type = guess_type(inspection)
-            inspection.analyse["type"] = return_type
+            inspection.analyse.type = return_type
         
         # Convert the inspection to a prompt
         messages = pipeline.push(inspection)
@@ -130,9 +130,11 @@ def closure(
 
 def update_inspection(inspection:Inspection, query_string, *args, **kwargs):
     
-    inspection.analyse["doc"] = query_string
-    inspection.analyse["name"] = "lambda_function"
-    inspection.analyse["args"]  = [{"name": f"arg_{i}", "type": type(arg), "value": arg} for i, arg in enumerate(args)]
-    inspection.analyse["args"] += [{"name": name,       "type": type(arg), "value": arg} for name, arg in kwargs.items()]
+    from ..core.analizer import AnalyzedArgument
+    
+    inspection.analyse.doc = query_string
+    inspection.analyse.name = "lambda_function"
+    inspection.analyse.args  = [AnalyzedArgument(name=f"arg_{i}", type=type(arg), value=arg) for i, arg in enumerate(args)]
+    inspection.analyse.args += [AnalyzedArgument(name=name,       type=type(arg), value=arg) for name, arg in kwargs.items()]
 
     return inspection

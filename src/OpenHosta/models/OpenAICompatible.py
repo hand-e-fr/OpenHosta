@@ -90,8 +90,7 @@ class OpenAICompatibleModel(Model):
             route = "/v1"
         else:
             route = ""
-
-        if "openai.azure.com" in hostname:
+        if hostname and "openai.azure.com" in hostname:
             fix_azure_route = False
             if route == "":
                 fix_azure_route = True
@@ -103,8 +102,8 @@ class OpenAICompatibleModel(Model):
             if fix_azure_route:
                 print(f"[OpenHosta] Fixing Azure route to: {schema}{hostname}{route}{route_extention}{query}")
        
-        self.base_url = schema+hostname
-        self.chat_completion_url = route + route_extention + query
+        self.base_url = f"{schema}{hostname}"
+        self.chat_completion_url = f"{route}{route_extention}{query}"
         
         self.embedding_url = embedding_url if not self.base_url.endswith(embedding_url) else ""
         self.embedding_model_name = embedding_model_name or "text-embedding-3-small"

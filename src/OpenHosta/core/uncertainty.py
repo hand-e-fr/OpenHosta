@@ -190,7 +190,7 @@ def get_enum_logprobes(*, function_pointer=None, inspection:Inspection=None) -> 
         raise ValueError("Either function_pointer or inspection must be provided")
     
     response_dict = inspection.logs["llm_api_response"]
-    return_type = inspection.analyse["type"]
+    return_type = inspection.analyse.type
 
     assert issubclass(return_type, Enum), f"Return type is not an Enum. Type: {return_type} is not allowed when checking uncertainty."
 

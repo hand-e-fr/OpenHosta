@@ -187,7 +187,7 @@ def get_hosta_inspection(frame=None, function_pointer=None):
     else:
         if frame is None:
             # We do not have argument types from the call (most likely a closure)
-            inspection.analyse["args"] = [] 
+            inspection.analyse.args = []
         else:
             analyse = hosta_analyze_update(frame, inspection.analyse)
             inspection.analyse = analyse
