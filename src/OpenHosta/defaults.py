@@ -117,8 +117,8 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         _defaut_model.api_key = os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
         _defaut_model.model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4.1")
         _defaut_model.chat_completion_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_COMPLETION_URL", "/chat/completions")
-        _defaut_model.embedding_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_URL", "/embedding")
-        _defaut_model.embedding_model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_MODEL_NAME", "gpt-4.1")
+        _defaut_model.embedding_url = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_URL", "/embeddings")
+        _defaut_model.embedding_model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_MODEL_NAME", "text-embedding-3-small")
         _defaut_model.embedding_similarity_min = os.getenv("OPENHOSTA_DEFAULT_MODEL_EMBEDDING_SIMILARITY_MIN", 0.30)
 
         _defaut_model.set_api_url(

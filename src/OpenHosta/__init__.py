@@ -15,7 +15,7 @@ from .exec.ask import ask, ask_async
 from .exec.emulate import emulate, emulate_async
 from .exec.emulate_iterator import emulate_iterator
 from .exec.closure import closure, closure_async
-from .semantics.operators import test, test_async
+from .semantics import SemanticSet, SemanticDict
 
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
@@ -33,8 +33,8 @@ all = (
     "emulate_iterator", 
     "closure",
     "closure_async",
-    "test",
-    "test_async",
+    "SemanticSet",
+    "SemanticDict",
     "config",
     "reload_dotenv",
     "Model",

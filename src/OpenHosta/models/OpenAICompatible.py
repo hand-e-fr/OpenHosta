@@ -104,6 +104,9 @@ class OpenAICompatibleModel(Model):
         self.base_url = f"{schema}{hostname}"
         self.chat_completion_url = f"{route}{route_extention}{query}"
         
+        # Prepend route prefix (e.g. /v1) to embedding_url, same as chat_completion_url
+        if route and not embedding_url.startswith(route):
+            embedding_url = route + embedding_url
         self.embedding_url = embedding_url if not self.base_url.endswith(embedding_url) else ""
         self.embedding_model_name = embedding_model_name or "text-embedding-3-small"
         self.embedding_similarity_min = embedding_similarity_min        
