@@ -185,9 +185,10 @@ def iterate_answers(
     ):
     def decorator(inner_func_pointer):
         def _iterator(*args, **kwargs):
+            from ..core.analizer import AnalyzedArgument
             inspection = get_hosta_inspection(function_pointer=inner_func_pointer)
-            inspection.analyse["args"]  = [{"name": f"arg_{i}", "type": type(arg), "value": arg} for i, arg in enumerate(args)]
-            inspection.analyse["args"] += [{"name": name,       "type": type(arg), "value": arg} for name, arg in kwargs.items()]
+            inspection.analyse.args  = [AnalyzedArgument(name=f"arg_{i}", type=type(arg), value=arg) for i, arg in enumerate(args)]
+            inspection.analyse.args += [AnalyzedArgument(name=name,       type=type(arg), value=arg) for name, arg in kwargs.items()]
             # TODO: call the iteration loop
             return None
         return _iterator

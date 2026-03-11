@@ -111,6 +111,8 @@ EMULATE_META_PROMPT=MetaPrompt(
 
     Here's the function definition:
 
+    {{ python_type_definition_dict }}
+    
     ```python
     {{ function_return_as_python_type }}
     

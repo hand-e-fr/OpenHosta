@@ -103,17 +103,17 @@ class OneTurnConversationPipeline(Pipeline):
     def push_detect_missing_types(self, inspection:Inspection):
         """Python Level"""
         #TODO: improve type guessing and merge with closure type guessing
-        if "type" not in inspection.analyse or inspection.analyse["type"] is None:
-            Warning(f"No return type found for function "+inspection.analyse["name"]+"}. Assuming str.")
+        if inspection.analyse.type is None:
+            Warning(f"No return type found for function {inspection.analyse.name}. Assuming str.")
             return_type = str
         else:
-            return_type = inspection.analyse["type"]
+            return_type = inspection.analyse.type
         
         # Check each argument type
-        for arg in inspection.analyse["args"]:
-            if "type" not in arg or arg["type"] is None:
-                Warning(f"No type found for argument "+arg["name"]+". Assuming str.")
-                arg["type"] = str    
+        for arg in inspection.analyse.args:
+            if arg.type is None:
+                Warning(f"No type found for argument {arg.name}. Assuming str.")
+                arg.type = str    
                 
         return inspection
 
@@ -161,18 +161,18 @@ class OneTurnConversationPipeline(Pipeline):
             size_limit = float(self.image_size_limit)
 
             image_list = []
-            for arg in inspection.analyse["args"]:
-                is_pil_img = isinstance(arg["value"], PIL.Image.Image)
+            for arg in inspection.analyse.args:
+                is_pil_img = isinstance(arg.value, PIL.Image.Image)
 
                 if is_pil_img:
-                    img:PIL.Image.Image = arg["value"]
+                    img:PIL.Image.Image = arg.value
                     max_size = max(img.width, img.height)
                     ratio = min(1, size_limit/max_size)
                     if ratio == 1:
                         image_resized = img
                     else:
                         image_resized = img.resize([int(img.width*ratio),int(img.height*ratio)])
-                        arg["value"] = image_resized
+                        arg.value = image_resized
                     buffered= io.BytesIO()
                     image_resized.save(buffered, img_format)
                     img_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
@@ -225,7 +225,7 @@ class OneTurnConversationPipeline(Pipeline):
         function_pointer = inspection.function_pointer
         result = inspection.logs["response_data"]
         
-        if isinstance(analyse["type"], type) and issubclass(analyse["type"], Enum):
+        if isinstance(analyse.type, type) and issubclass(analyse.type, Enum):
 
             logprobes = get_enum_logprobes(function_pointer=function_pointer)
             inspection.logs["enum_logprobes"] = logprobes
@@ -265,8 +265,8 @@ class OneTurnConversationPipeline(Pipeline):
  
             v.cumulated_uncertainty += uncertainty
             v.trace.append( {
-                "function_name":inspection.analyse["name"],
-                "function_args":inspection.analyse["args"],
+                "function_name":inspection.analyse.name,
+                "function_args":inspection.analyse.args,
                 "function_return":result,
                 "function_uncertainty": uncertainty} )
             
@@ -317,7 +317,7 @@ class OneTurnConversationPipeline(Pipeline):
 
     def pull_type_data_section(self, inspection:Inspection, response:Any) -> Any:
         """Python Level"""
-        l_ret_data = type_returned_data(response, inspection.analyse["type"])
+        l_ret_data = type_returned_data(response, inspection.analyse.type)
         inspection.logs["response_data"] = l_ret_data
 
         return l_ret_data
