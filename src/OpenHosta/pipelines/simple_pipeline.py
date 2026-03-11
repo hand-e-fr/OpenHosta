@@ -95,7 +95,7 @@ class OneTurnConversationPipeline(Pipeline):
 
         super().__init__()
         
-        self.image_size_limit = 1600  # pixels
+        self.image_size_limit = 1920  # pixels
 
         self.model_list:List[Model] = model_list
         
@@ -366,7 +366,7 @@ class OneTurnConversationPipeline(Pipeline):
 
     def pull_type_data_section(self, inspection:Inspection, response:Any) -> Any:
         """Python Level"""
-        l_ret_data = type_returned_data(response, inspection.analyse.type)
+        l_ret_data = type_returned_data(response, inspection.analyse.type)._input
         inspection.logs["response_data"] = l_ret_data
 
         return l_ret_data
