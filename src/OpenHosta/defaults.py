@@ -21,8 +21,24 @@ class Config:
             base_url="https://api.openai.com/v1"
         )
         
+        # Load other models from .models.yaml if it exists
+        models = [self._DefaultModel]
+        models_yaml = os.path.join(os.getcwd(), ".models.yaml")
+        if os.path.exists(models_yaml):
+            try:
+                from .utils.capability_tester import CapabilityTester
+                loaded_models = CapabilityTester.load_from_yaml(models_yaml)
+                if loaded_models:
+                    # Add loaded models to the list, but avoid duplicating DefaultModel if it's there
+                    for m in loaded_models:
+                        if not any(dm.model_name == m.model_name and dm.__class__ == m.__class__ for dm in models):
+                            models.append(m)
+            except Exception as e:
+                # We don't want to crash defaults if yaml is broken
+                sys.stderr.write(f"[OpenHosta/CONFIG_WARNING] Could not load .models.yaml: {e}\n")
+
         self._DefaultPipeline = OneTurnConversationPipeline(
-            model_list=[self._DefaultModel]
+            model_list=models
         )
         
     # Add getter and setter for DefaultModel and DefaultPipeline

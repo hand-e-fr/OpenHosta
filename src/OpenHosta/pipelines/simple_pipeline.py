@@ -1,7 +1,7 @@
 import contextvars
 from enum import Enum
 
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Set
 
 from abc import ABC, abstractmethod
 
@@ -118,12 +118,52 @@ class OneTurnConversationPipeline(Pipeline):
         return inspection
 
 
-    def push_choose_model(self, inspection:Inspection):
-        """OpenHosta Level"""
+    def _detect_required_capabilities(self, inspection: Inspection) -> Set[ModelCapabilities]:
+        required = {ModelCapabilities.TEXT2TEXT}
         
-        # For now, we just take the first model
+        # Detect Image Input
+        has_images = False
+        try:
+            import PIL.Image
+            for arg in inspection.analyse.args:
+                if isinstance(arg.value, PIL.Image.Image):
+                    has_images = True
+                    break
+        except ImportError:
+            pass
+        
+        if has_images:
+            required.add(ModelCapabilities.IMAGE2TEXT)
+            
+        # Detect JSON Output
+        if inspection.force_llm_args.get("force_json_output"):
+            required.add(ModelCapabilities.JSON_OUTPUT)
+            
+        # Detect Logprobs
+        if inspection.force_llm_args.get("logprobs"):
+            required.add(ModelCapabilities.LOGPROBS)
+            
+        # Thinking
+        if inspection.force_llm_args.get("reasoning_effort") or inspection.force_llm_args.get("thinking"):
+             required.add(ModelCapabilities.THINK)
+
+        return required
+
+    def push_choose_model(self, inspection:Inspection):
+        """OpenHosta Level: Dynamic Routing based on capabilities"""
+        
+        required = self._detect_required_capabilities(inspection)
+        
+        # Search for a model that satisfies all requirements
+        for model in self.model_list:
+            if required.issubset(model.capabilities):
+                inspection.model = model
+                return model
+        
+        # Fallback to first model with a warning if none fit exactly
         chosen_model = self.model_list[0]
         inspection.model = chosen_model
+        print(f"[Warning] No model found with all required capabilities: {required}. Falling back to {chosen_model.__class__.__name__}")
         
         return chosen_model
 

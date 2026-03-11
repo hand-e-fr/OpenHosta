@@ -26,6 +26,7 @@ def get_most_appropriate_type(request:str) -> ArgType:
     return emulate()
 
 def guess_type(inspection: Inspection) -> object:
+    detected_type = None
     try:
         detected_type = get_most_appropriate_type(inspection.analyse.doc)
         return eval(detected_type.value, {"Any": Any})
@@ -36,7 +37,7 @@ def guess_type(inspection: Inspection) -> object:
             f"':\n{detected_type}\n{e}.\n" +
             "Default to return type 'Any'."
             )
-              )
+        )
         return Any
 
 def closure_async(

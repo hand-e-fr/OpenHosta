@@ -65,28 +65,59 @@ def _extract_enums_from_guarded(guarded_type, seen_enums=None) -> str:
 
 def describe_type_as_python(p_type) -> str:
     """
-    Returns the English description of the type using Guarded TypeResolver.
+    Returns a Pythonic description of the type.
     """
     if p_type is None or p_type is inspect._empty:
         return ""
     
     try:
         guarded_type = TypeResolver.resolve(p_type)
-        desc = ""
+        
+        # Determine the name to show
+        name = nice_type_name(p_type)
+        
+        # Determine base type
+        base_name = ""
+        if hasattr(guarded_type, "_type_py") and guarded_type._type_py is not NotImplemented:
+            base_name = nice_type_name(guarded_type._type_py)
+        
+        # English description as a comment
+        doc = ""
         if hasattr(guarded_type, "_type_en") and guarded_type._type_en:
-            desc = guarded_type._type_en
+            doc = guarded_type._type_en
             
+        python_def = ""
+        
+        # Check if it's a generic or unusual type that shouldn't use 'class' reconstruction
+        is_generic = hasattr(p_type, "__origin__") or is_typing_type(p_type)
+        
+        if is_generic:
+             python_def = f"# {doc}\n{name}"
+        elif name != base_name and base_name:
+             # Try to get original source if possible
+             try:
+                 # Check if p_type is a class and not an internal OpenHosta one
+                 if inspect.isclass(p_type) and not p_type.__module__.startswith("OpenHosta."):
+                     source = inspect.getsource(p_type).strip()
+                     python_def = f"# {doc}\n{source}"
+                 else:
+                     python_def = f"# {doc}\nclass {name}({base_name}):\n    ..."
+             except:
+                 python_def = f"# {doc}\nclass {name}({base_name}):\n    ..."
+        else:
+             # Simple type or base type
+             python_def = f"# {doc}\n{name}"
+             
         enum_details = _extract_enums_from_guarded(guarded_type)
         if enum_details:
-            desc += "\n" + enum_details.strip()
+            python_def += "\n# " + enum_details.strip().replace("\n", "\n# ")
             
-        if desc:
-            return desc
+        return python_def
     except Exception as e:
         # Fallback if resolution fails
         pass
     
-    return str(p_type)
+    return f"# {str(p_type)}\n{nice_type_name(p_type)}"
 
                 
 
@@ -98,9 +129,39 @@ def nice_type_name(p_type) -> str:
     """
     Get a nice name for the type to insert in function description for LLM.
     """
-    if is_typing_type(p_type):
+    if p_type is None or p_type is inspect._empty:
+        return "Any"
+
+    # Handle Python 3.12 TypeAliasType
+    if hasattr(p_type, "__name__") and type(p_type).__name__ == "TypeAliasType":
+         return p_type.__name__
+
+    # Handle Guarded Types
+    # Check if it's a class before issubclass
+    if isinstance(p_type, type):
+        from ..guarded.primitives import GuardedPrimitive
+        if issubclass(p_type, GuardedPrimitive):
+            # If it's a parameterized guarded type, show it generic-like
+            if hasattr(p_type, "_item_type") and p_type._item_type:
+                return f"{p_type.__name__}[{nice_type_name(p_type._item_type)}]"
+            if hasattr(p_type, "_item_types") and p_type._item_types:
+                 return f"{p_type.__name__}[{', '.join(nice_type_name(t) for t in p_type._item_types)}]"
+            if hasattr(p_type, "_key_type") and p_type._key_type and hasattr(p_type, "_value_type") and p_type._value_type:
+                 return f"{p_type.__name__}[{nice_type_name(p_type._key_type)}, {nice_type_name(p_type._value_type)}]"
+            
+            # Remove "Guarded_" prefix if present for cleaner look in prompts if it's not a custom name
+            name = p_type.__name__
+            if name.startswith("Guarded_") and len(name) > 8:
+                return name[8:]
+            return name
+
+    # Handle typing types and GenericAlias (tuple[int, ...], List[str], etc.)
+    if is_typing_type(p_type) or hasattr(p_type, "__origin__"):
         t=repr(p_type)
+        # Clean up common prefixes
         t=t.replace("typing.", "")
+        t=t.replace("collections.abc.", "")
+        t=t.replace("builtins.", "")
         return t
     
     if hasattr(p_type, "__name__"):

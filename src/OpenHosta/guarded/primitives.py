@@ -357,3 +357,15 @@ class ProxyWrapper:
         if callable(self._python_value):
             return self._python_value(*args, **kwargs)
         raise TypeError(f"'{type(self).__name__}' object is not callable")
+
+    def __len__(self):
+        return len(self._python_value)
+
+    def __iter__(self):
+        return iter(self._python_value)
+
+    def __contains__(self, item):
+        return item in self._python_value
+
+    def __getitem__(self, key):
+        return self._python_value[key]

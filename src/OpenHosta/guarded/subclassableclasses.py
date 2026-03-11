@@ -72,7 +72,7 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Recherche case-insensitive par nom ou par valeur."""
         if isinstance(value, str):
-            cleaned_val = value.strip().strip('<>')
+            cleaned_val = value.strip().strip('<>').strip("'").strip('"')
             
             # Format "EnumName.MEMBER" ou ".MEMBER" (comme repr())
             member_candidate = cleaned_val
@@ -103,6 +103,20 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             if str(member_value).lower() == str(value).lower():
                 return UncertaintyLevel(Tolerance.PRECISE), name, None
         
+        # 5. Fallback for models returning JSON (as dict or string)
+        if isinstance(value, str) and value.strip().startswith("{") and value.strip().endswith("}"):
+            try:
+                import json
+                parsed = json.loads(value)
+                return cls._parse_heuristic(parsed)
+            except:
+                pass
+
+        if isinstance(value, dict) and len(value) == 1:
+            dict_val = list(value.values())[0]
+            # Recursive call with the dict value
+            return cls._parse_heuristic(dict_val)
+
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid enum value"
     
     def __eq__(self, other):
