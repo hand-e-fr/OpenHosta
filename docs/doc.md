@@ -796,6 +796,76 @@ print(capitalize("hello world!"))
 # Hello world!
 ```
 
+## Advanced Configuration (v3.0+)
+
+### Model Agnosticism (Azure OpenAI & vLLM)
+
+OpenHosta natively supports standard OpenAI endpoints, which makes it compatible with both **Azure OpenAI** and local inference engines like **vLLM** without needing to create a custom class.
+
+**Azure OpenAI Example:**
+```python
+from OpenHosta import OpenAICompatibleModel, config
+
+azure_model = OpenAICompatibleModel(
+    model_name="<votre-deploiement-name>", 
+    base_url="https://<votre-ressource>.openai.azure.com/openai/deployments/<votre-deploiement-name>",
+    api_key="<votre-azure-api-key>",
+    additionnal_headers={"api-key": "<votre-azure-api-key>"}  # Azure utilise "api-key" au lieu de "Authorization: Bearer"
+)
+azure_model.chat_completion_url = "/chat/completions?api-version=2024-02-15-preview"
+
+config.DefaultModel = azure_model
+```
+
+**vLLM Example (Local GPU cluster):**
+```python
+from OpenHosta import OpenAICompatibleModel, config
+
+vllm_model = OpenAICompatibleModel(
+    model_name="meta-llama/Meta-Llama-3-8B-Instruct", 
+    base_url="http://localhost:8000/v1",
+    api_key="EMPTY"  # vLLM doesn't usually require an API key
+)
+config.DefaultModel = vllm_model
+```
+
+### Observability & Audit Mode
+
+To understand the exact interactions taking place under the hood, OpenHosta v3.0 introduces an `AUDIT_MODE`.
+You can enable it either via the environment variable `OPENHOSTA_AUDIT_MODE=True` or explicitly in the code:
+
+```python
+from OpenHosta import config
+config.AUDIT_MODE = True
+```
+When enabled, the console will explicitly output structured payload logs prefix `[OPENHOSTA_AUDIT]` showing execution time, success/retry events, and errors.
+
+### Robustness & Retry Policies
+
+When you request complex data structures via `emulate` and Pydantic validation is involved, the LLM might occasionally fail to respond in the correct syntax.
+OpenHosta includes an automatic validation retry loop. You can configure the number of retry attempts using `OPENHOSTA_MAX_RETRIES` in your `.env` (default is 3).
+
+```env
+OPENHOSTA_MAX_RETRIES=5
+```
+
+### Cost Tracking
+
+To associate cost with a specific feature execution, OpenHosta introduces a Context Manager that isolated the token usage emitted via `emulate()`.
+
+```python
+from OpenHosta import emulate, track_costs
+
+def summarize(text: str) -> str:
+    """Summarize the given text in three bullet points."""
+    return emulate()
+
+with track_costs() as tracker:
+    result = summarize("Some very long text...")
+    
+print(result)
+print(f"Total tokens consumed for this feature: {tracker.total_tokens}")
+```
 **Another example to work with Ollama:**
 
 ```python

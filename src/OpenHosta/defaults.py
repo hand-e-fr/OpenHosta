@@ -21,6 +21,9 @@ class Config:
             base_url="https://api.openai.com/v1"
         )
         
+        self.MAX_RETRIES = 3
+        self.AUDIT_MODE = False
+        
         # Load other models from .models.yaml if it exists
         models = [self._DefaultModel]
         models_yaml = os.path.join(os.getcwd(), ".models.yaml")
@@ -103,6 +106,8 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
             OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS=2048                    # Optional
             OPENHOSTA_DEFAULT_MODEL_RATE_LIMIT_WAIT_TIME=60            # Optional. Set to 0 to prevent retry. Unit is seconds.
             OPENHOSTA_DEFAULT_MODEL_SEED=42                            # Optional. If set with a local LLM your application will be deterministic.
+            OPENHOSTA_MAX_RETRIES=3                                    # Optional. Maximum number of parsing retry attempts.
+            OPENHOSTA_AUDIT_MODE=False                                 # Optional. Set to True to enable verbose audit logging.
             ------------------
             """))        
         return False
@@ -131,6 +136,9 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         MAX_TOKENS =        os.getenv("OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS", None)
         SEED =              os.getenv("OPENHOSTA_DEFAULT_MODEL_SEED", None)
         
+        config.MAX_RETRIES = int(os.getenv("OPENHOSTA_MAX_RETRIES", 3))
+        config.AUDIT_MODE = str(os.getenv("OPENHOSTA_AUDIT_MODE", "False")).lower() in ("true", "1", "t", "yes")
+
         if TEMPERATURE is not None:
             _defaut_model.api_parameters |= {"temperature": float(TEMPERATURE)}
         if TOP_P is not None:

@@ -12,6 +12,8 @@ from ..core.base_model import Model, ModelCapabilities
 from ..core.inspection import Inspection
 from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_PROMPT
 from ..core.uncertainty import get_certainty, get_enum_logprobes, normalized_probs, ReproducibleSettings, reproducible_settings_ctxvar
+from ..core.cost_tracker import get_current_cost_tracker
+from ..core.audit import trigger_audit_event
 
 from ..guarded.resolver import type_returned_data
 
@@ -46,6 +48,13 @@ class Pipeline(ABC):
 
         Returns:
             The model response converted into the expected python object.
+        """
+        pass
+
+    @abstractmethod
+    def execute(self, inspection: Inspection, force_llm_args: dict) -> Any:
+        """
+        Execute the full pipeline flow: push -> api_call -> pull, with retries.
         """
         pass
     
@@ -407,11 +416,129 @@ class OneTurnConversationPipeline(Pipeline):
         inspection.logs["clean_answer"] = ""
         inspection.logs["llm_api_response"] = response_dict
         
+        # Cost Tracking
+        usage = response_dict.get("usage")
+        if usage:
+            tracker = get_current_cost_tracker()
+            if tracker:
+                tracker.add_usage(usage)
+        
+        # Process Response
         raw_response    = self.pull_extract_messages(inspection, response_dict)
         response_string = self.pull_extract_data_section(inspection, raw_response)
         response_data   = self.pull_type_data_section(inspection, response_string)
         inspection      = self.pull_check_uncertainty(inspection)
         
         return response_data
+
+    def execute(self, inspection: Inspection, force_llm_args: dict, is_async: bool = False) -> Any:
+        import asyncio
+        import time
+        from pydantic import ValidationError
+        from ..defaults import config
+
+        max_retries = config.MAX_RETRIES
+        last_exception = None
+        
+        for attempt in range(max_retries):
+            start_time = time.time()
+            try:
+                # 1. Push
+                messages = self.push(inspection)
+                
+                # 2. Call LLM
+                llm_args = inspection.force_llm_args | force_llm_args
+                if is_async:
+                    # In python 3.8+ asyncio.get_event_loop() is discouraged outside main thread, but run_until_complete is not used here, we assume it's awaited in emulate_async
+                    # But wait, execute cannot be async if it has the same signature. 
+                    # We will handle async separately in execute_async
+                    raise NotImplementedError("Use execute_async for asynchronous execution.")
+                else:
+                    response_dict = inspection.model.api_call(messages, llm_args)
+
+                # 3. Pull
+                response_data = self.pull(inspection, response_dict)
+                
+                duration = time.time() - start_time
+                trigger_audit_event("emulate_success", {
+                    "function": inspection.analyse.name,
+                    "attempt": attempt + 1,
+                    "duration": duration,
+                    "model": inspection.model.model_name
+                })
+                
+                return response_data
+                
+            except (ValueError, TypeError, ValidationError, UncertaintyError) as e:
+                duration = time.time() - start_time
+                last_exception = e
+                
+                trigger_audit_event("emulate_retry", {
+                    "function": inspection.analyse.name,
+                    "attempt": attempt + 1,
+                    "error": str(e),
+                    "duration": duration
+                })
+                
+                # Optionally, if we wanted to feedback the error to the LLM, we could add a user message here.
+                # For now, simply retrying allows the model's stochastic nature to generate a new answer.
+                continue
+                
+        trigger_audit_event("emulate_failure", {
+            "function": inspection.analyse.name,
+            "error": str(last_exception),
+            "attempts": max_retries
+        })
+        raise last_exception
+
+    async def execute_async(self, inspection: Inspection, force_llm_args: dict) -> Any:
+        import time
+        from pydantic import ValidationError
+        from ..defaults import config
+
+        max_retries = config.MAX_RETRIES
+        last_exception = None
+        
+        for attempt in range(max_retries):
+            start_time = time.time()
+            try:
+                # 1. Push
+                messages = self.push(inspection)
+                
+                # 2. Call LLM
+                llm_args = inspection.force_llm_args | force_llm_args
+                response_dict = await inspection.model.api_call_async(messages, llm_args)
+
+                # 3. Pull
+                response_data = self.pull(inspection, response_dict)
+                
+                duration = time.time() - start_time
+                trigger_audit_event("emulate_async_success", {
+                    "function": inspection.analyse.name,
+                    "attempt": attempt + 1,
+                    "duration": duration,
+                    "model": inspection.model.model_name
+                })
+                
+                return response_data
+                
+            except (ValueError, TypeError, ValidationError, UncertaintyError) as e:
+                duration = time.time() - start_time
+                last_exception = e
+                
+                trigger_audit_event("emulate_async_retry", {
+                    "function": inspection.analyse.name,
+                    "attempt": attempt + 1,
+                    "error": str(e),
+                    "duration": duration
+                })
+                continue
+                
+        trigger_audit_event("emulate_async_failure", {
+            "function": inspection.analyse.name,
+            "error": str(last_exception),
+            "attempts": max_retries
+        })
+        raise last_exception
     
 

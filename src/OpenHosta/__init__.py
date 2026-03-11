@@ -8,6 +8,8 @@ from .core.logger import print_last_probability_distribution, print_last_uncerta
 from .core.meta_prompt import MetaPrompt
 from .core.uncertainty import safe
 from .core.errors import UncertaintyError
+from .core.cost_tracker import track_costs
+from .core.audit import register_audit_callback, unregister_audit_callback
 
 from .exec.ask import ask, ask_async
 from .exec.emulate import emulate, emulate_async
@@ -48,4 +50,7 @@ all = (
     "OneTurnConversationPipeline",
     "safe",
     "UncertaintyError",
+    "track_costs",
+    "register_audit_callback",
+    "unregister_audit_callback",
 )
