@@ -12,17 +12,19 @@
 
 def example():
     
-    from OpenHosta.semantics import SemanticSet, SemanticDict, SemanticType
+    from OpenHosta.guarded import GuardedUtf8
+    from OpenHosta.semantics import SemanticSet, SemanticDict
     from OpenHosta import config
 
     from typing import Set
 
-    class Salutations(SemanticType):
+    class Salutations(GuardedUtf8):
         """Type sémantique pour les salutations.""" 
         uncertainty_threshold=0.99
-    
-    salutations:Set[SemanticType, str] = SemanticSet(type=Salutations, uncertainty_threshold=0.75)
+
+    salutations = SemanticSet(Salutations)
     salutations:SemanticSet[Salutations, str] = SemanticSet(type=Salutations, uncertainty_threshold=0.75)
+    salutations.add("Hello world")
     salutations += {"Hello world"}
     salutations += {"Hi there"}
     salutations += {"Hi ther"}
