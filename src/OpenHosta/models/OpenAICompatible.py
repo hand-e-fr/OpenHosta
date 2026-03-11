@@ -22,8 +22,8 @@ class OpenAICompatibleModel(Model):
             embedding_model_name: str = None,
             embedding_similarity_min: float = 0.30,  # Min similarity threshold for clustering
             api_key: str = None, 
-            timeout: int = 60,
-            retry_delay:int = None,            
+            timeout: int = 300,
+            retry_delay:int = 60,            
         ):     
         super().__init__(
             max_async_calls=max_async_calls,
@@ -80,16 +80,15 @@ class OpenAICompatibleModel(Model):
             parts = url.split("/")
             hostname = parts[0]
             route = "/"+"/".join(parts[1:])                
-        elif "127.0.0.1:11434" in url:
-            # Ollama detection
-            hostname = url
-            route = "/api/v1"
-        elif "127.0.0.1:8000" in url:
-            # Vllm detection
-            hostname = url
-            route = "/v1"
         else:
+            hostname = url
             route = ""
+        
+        # Ollama/Vllm/Localhost overrides
+        if hostname in ["127.0.0.1:11434", "localhost:11434"]:
+            if route == "": route = "/api" # Default Ollama API prefix if not provided
+        elif hostname in ["127.0.0.1:8000", "localhost:8000"]:
+            if route == "": route = "/v1"
         if hostname and "openai.azure.com" in hostname:
             fix_azure_route = False
             if route == "":
@@ -109,36 +108,36 @@ class OpenAICompatibleModel(Model):
         self.embedding_model_name = embedding_model_name or "text-embedding-3-small"
         self.embedding_similarity_min = embedding_similarity_min        
     
-    def api_call_without_retry(
-        self,
-        messages: List[Dict[str, str]],
-        llm_args:Dict = {}
-    ) -> Dict:
-
-        if "force_json_output" in llm_args and ModelCapabilities.JSON_OUTPUT not in self.capabilities:
-            llm_args.pop("force_json_output")
-
+    def _get_api_key(self) -> str:
         api_key = self.api_key
         if api_key is None:
             api_key = os.environ.get("OPENAI_API_KEY")
+        return api_key
 
-        # Typical error from begginers
+    def _get_headers(self, api_key: str) -> Dict[str, str]:
+        headers = {
+            "Content-Type": "application/json"
+        }
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        for key, value in self.additionnal_headers.items():
+            headers[key] = value
+        return headers
+
+    def _generate_without_retry(self, messages: List[Dict[str, Any]], **kwargs) -> Dict:
+        llm_args = kwargs
+        if "force_json_output" in llm_args and ModelCapabilities.JSON_OUTPUT not in self.capabilities:
+            llm_args.pop("force_json_output")
+
+        api_key = self._get_api_key()
         if api_key is None and "api.openai.com/v1" in self.base_url:
-            raise ApiKeyError("[model.api_call_without_retry] Empty API key.")
-        
+            raise ApiKeyError("[OpenAICompatibleModel._generate_without_retry] Empty API key.")
+
         l_body = {
             "model": self.model_name,
             "messages": messages,
         }
-        headers = {
-            "Content-Type": "application/json"
-        }
-
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
-
-        for key, value in self.additionnal_headers.items():
-            headers[key] = value
+        headers = self._get_headers(api_key)
 
         all_api_parameters = self.api_parameters | llm_args
         for key, value in all_api_parameters.items():
@@ -148,72 +147,95 @@ class OpenAICompatibleModel(Model):
                 l_body[key] = value
         
         full_url = f"{self.base_url}{self.chat_completion_url}"
-
         response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
 
-        if "Retry-After" in response.headers:
-            self.set_next_rate_limit(
-                next_authorized_api_call_time=response.headers["Retry-After"])
-        elif 'x-ratelimit-reset-requests' in response.headers:
-            self.set_next_rate_limit(
-                next_authorized_api_call_time=response.headers['x-ratelimit-reset-requests'])
+        self._handle_rate_limit_headers(response)
             
         if response.status_code == 200:
-            pass
+            self._nb_requests += 1
+            return response.json()
         elif response.status_code == 429:
-            # print headers for debug
-            raise RateLimitError(f"[Model.api_call_without_retry] Rate limit exceeded (HTTP 429). {response.text}")
+            raise RateLimitError(f"[OpenAICompatibleModel._generate_without_retry] Rate limit exceeded. {response.text}")
         elif response.status_code == 401:
-            raise ApiKeyError(f"[Model.api_call_without_retry] Unauthorized (HTTP 401). Check your API key. {response.text}")
+            raise ApiKeyError(f"[OpenAICompatibleModel._generate_without_retry] Unauthorized. {response.text}")
         else:
-            raise RequestError(f"[Model.api_call_without_retry] Request failed with status code {response.status_code}:\nAPI URL: {full_url}\n{response.text}\n\n")
-            
-        self._nb_requests += 1
-        response_dict = response.json()
-    
-        return response_dict
+            raise RequestError(f"[OpenAICompatibleModel._generate_without_retry] Request failed ({response.status_code}):\n{response.text}")
+
+    def _image_without_retry(self, prompt: str, **kwargs) -> Dict:
+        api_key = self._get_api_key()
+        headers = self._get_headers(api_key)
+        
+        l_body = {
+            "model": self.model_name,
+            "prompt": prompt,
+            "n": 1,
+            "size": "1024x1024",
+            "response_format": "url"
+        }
+        l_body.update(self.api_parameters)
+        l_body.update(kwargs)
+        
+        full_url = f"{self.base_url}/images/generations"
+        response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
+        
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 429:
+            raise RateLimitError(f"[OpenAICompatibleModel._image_without_retry] Rate limit exceeded. {response.text}")
+        else:
+            raise RequestError(f"[OpenAICompatibleModel._image_without_retry] Request failed ({response.status_code}): {response.text}")
+
+    def _embed_without_retry(self, texts: List[str], **kwargs) -> List[List[float]]:
+        api_key = self._get_api_key()
+        headers = self._get_headers(api_key)
+        
+        body = {
+            "model": self.embedding_model_name,
+            "input": texts
+        }
+        body.update(kwargs)
+        
+        full_url = f"{self.base_url}{self.embedding_url}"
+        
+        try:
+            response = requests.post(full_url, headers=headers, json=body, timeout=self.timeout)
+            if response.status_code == 200:
+                response_dict = response.json()
+                embeddings = []
+                data = response_dict.get("data", [])
+                data_sorted = sorted(data, key=lambda x: x.get("index", 0))
+                for item in data_sorted:
+                    embeddings.append(item.get("embedding", []))
+                return embeddings
+            else:
+                raise RequestError(f"[OpenAICompatibleModel._embed_without_retry] Request failed ({response.status_code}): {response.text}")
+        except Exception as e:
+            if isinstance(e, RequestError): raise e
+            raise RequestError(f"[OpenAICompatibleModel._embed_without_retry] {str(e)}")
+
+    def _handle_rate_limit_headers(self, response):
+        if "Retry-After" in response.headers:
+            self.set_next_rate_limit(next_authorized_api_call_time=response.headers["Retry-After"])
+        elif 'x-ratelimit-reset-requests' in response.headers:
+            self.set_next_rate_limit(next_authorized_api_call_time=response.headers['x-ratelimit-reset-requests'])
     
     def models_on_same_api(self) -> List[str]:
-        """
-        List all models available on the same API.
-        
-        Returns:
-            List[str]: List of model names.
-        """
-
-        api_key = self.api_key
-        if api_key is None:
-            api_key = os.environ.get("OPENAI_API_KEY")
-
-        # Typical error from begginers
+        api_key = self._get_api_key()
         if api_key is None and "api.openai.com/v1" in self.base_url:
-            raise ApiKeyError("[model.models_on_same_api] Empty API key.")
+            raise ApiKeyError("[OpenAICompatibleModel.models_on_same_api] Empty API key.")
         
-        headers = {
-            "Content-Type": "application/json"
-        }
-
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
-
-        for key, value in self.additionnal_headers.items():
-            headers[key] = value
-        
+        headers = self._get_headers(api_key)
         full_url = f"{self.base_url}/models"
         
         response = requests.get(full_url, headers=headers, timeout=self.timeout)
-        
         if not response.ok:
-            raise RequestError(f"[Model.get_available_model_names] Request failed with status code {response.status_code}:\n{response.text}\n\n")
+            raise RequestError(f"[OpenAICompatibleModel.models_on_same_api] Request failed ({response.status_code}): {response.text}")
         
         model_list = []
         if "data" in response.json():
             for model in response.json()["data"]:
-                if model["object"] == "model":
+                if model.get("object") == "model":
                     model_list.append(model["id"])
-                else:
-                    print(f"Ignoring "+model["id"]+":", model)
-            
         return model_list
     
     def get_consumption(self, response_dict) -> dict:
@@ -288,55 +310,4 @@ class OpenAICompatibleModel(Model):
             print("\nLLM response:\n-----------------")
             print(inspection.logs["llm_api_response"]["choices"][0]["message"]["content"])
 
-    def embedding_api_call(self, texts: List[str]) -> List[List[float]]:
-        """
-        Call OpenAI-compatible embedding API.
-        
-        Args:
-            texts: List of strings to embed
-            
-        Returns:
-            List of embedding vectors (each a list of floats)
-        """
-        api_key = self.api_key
-        if api_key is None:
-            api_key = os.environ.get("OPENAI_API_KEY")
-        
-        # Build headers
-        headers = {
-            "Content-Type": "application/json"
-        }
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
-        
-        for key, value in self.additionnal_headers.items():
-            headers[key] = value
-        
-        # Build request body
-        body = {
-            "model": self.embedding_model_name,
-            "input": texts
-        }
-        
-        full_url = f"{self.base_url}{self.embedding_url}"
-        
-        try:
-            response = requests.post(full_url, headers=headers, json=body, timeout=self.timeout)
-            
-            if response.status_code == 200:
-                response_dict = response.json()
-                # Extract embeddings in order
-                embeddings = []
-                data = response_dict.get("data", [])
-                # Sort by index to ensure order matches input
-                data_sorted = sorted(data, key=lambda x: x.get("index", 0))
-                for item in data_sorted:
-                    embeddings.append(item.get("embedding", []))
-                return embeddings
-            else:
-                # API error - fall back to mock
-                return super().embedding_api_call(texts)
-                
-        except Exception:
-            # Network/timeout error - fall back to mock
-            return super().embedding_api_call(texts)
+    # --- Removed old embedding_api_call as it's now handled by base class aliasing to _embed_without_retry ---

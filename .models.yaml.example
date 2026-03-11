@@ -1,0 +1,27 @@
+# Example Model Configuration for OpenHosta Capability Tester
+# You can refer to environment variables using api_key_env
+
+models:
+  - id: local-ollama
+    class: OllamaModel
+    model_name: qwen3.5:9b
+    base_url: http://localhost:11434
+
+  - id: anthropic-claude
+    class: AnthropicModel
+    model_name: claude-3-5-sonnet-20240620
+    api_key_env: ANTHROPIC_API_KEY
+
+  - id: gemini-3
+    class: GeminiModel
+    model_name: gemini-3-pro-preview
+    api_key_env: GEMINI_API_KEY
+
+  - id: local-image-gen
+    class: CustomImageModel
+    base_url: http://192.168.1.188:8000/generate
+
+  - id: litellm-native
+    class: LiteLLMModel
+    model_name: gemini-3-pro-preview
+    # config_path: litellm_config.yaml # Optional: use for advanced routing

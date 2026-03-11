@@ -17,7 +17,21 @@ def ask(
 ) -> Any:
 
     if model is None:
-        model = config.DefaultModel
+        # Create a dummy inspection to detect required capabilities
+        from ..core.inspection import Inspection
+        from ..core.analizer import AnalyzedFunction
+        
+        # We simulate a function that takes the extra args to detect images
+        dummy_analyse = AnalyzedFunction(name="ask", args=[], type=str, doc=user_message)
+        # Add args for image detection
+        from ..core.analizer import AnalyzedArgument
+        for i, arg in enumerate(unnamed_other_args):
+            dummy_analyse.args.append(AnalyzedArgument(name=f"arg{i}", value=arg, type=None))
+        for key, arg in named_other_args.items():
+            dummy_analyse.args.append(AnalyzedArgument(name=key, value=arg, type=None))
+            
+        dummy_inspection = Inspection(None, dummy_analyse)
+        model = config.DefaultPipeline.push_choose_model(dummy_inspection)
 
     message = []
     if system is not None:
@@ -83,7 +97,19 @@ async def ask_async(
 ) -> Any:
 
     if model is None:
-        model = config.DefaultModel
+        # Create a dummy inspection to detect required capabilities
+        from ..core.inspection import Inspection
+        from ..core.analizer import AnalyzedFunction
+        from ..core.analizer import AnalyzedArgument
+        
+        dummy_analyse = AnalyzedFunction(name="ask", args=[], type=str, doc=user_message)
+        for i, arg in enumerate(unnamed_other_args):
+            dummy_analyse.args.append(AnalyzedArgument(name=f"arg{i}", value=arg, type=None))
+        for key, arg in named_other_args.items():
+            dummy_analyse.args.append(AnalyzedArgument(name=key, value=arg, type=None))
+            
+        dummy_inspection = Inspection(None, dummy_analyse)
+        model = config.DefaultPipeline.push_choose_model(dummy_inspection)
 
     message = []
     if system is not None:

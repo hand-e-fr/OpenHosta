@@ -27,7 +27,7 @@ class OllamaModel(OpenAICompatibleModel):
             embedding_model_name: str = None,
             embedding_similarity_min: float = 0.30,
             api_key: str = None, 
-            timeout: int = 60,
+            timeout: int = 120,
         ):     
         # We inherit from OpenAICompatibleModel but we will override the key methods
         super().__init__(
@@ -42,42 +42,45 @@ class OllamaModel(OpenAICompatibleModel):
             api_key=api_key,
             timeout=timeout
         )
-        self.embedding_model_name = embedding_model_name or model_name
-        self.generate_url = generate_url
-        self.embedding_url = embedding_url
 
-    def api_call(
+        self.base_url = base_url.rstrip("/")
+        self.generate_url = generate_url if generate_url.startswith("/") else "/" + generate_url
+        self.embedding_url = embedding_url if embedding_url.startswith("/") else "/" + embedding_url
+        self.embedding_model_name = embedding_model_name
+        self.embedding_similarity_min = embedding_similarity_min
+
+                
+
+    def _generate_without_retry(
         self,
-        messages: list[dict[str, Any]],
-        llm_args: dict = {}
+        messages: List[Dict[str, Any]],
+        **kwargs
     ) -> Dict:
         """
         Call Ollama's native /api/generate endpoint.
         """
+        llm_args = kwargs
         if "force_json_output" in llm_args and ModelCapabilities.JSON_OUTPUT not in self.capabilities:
             llm_args.pop("force_json_output")
 
         # Convert messages to ollama format (prompt + images)
-        # messages format is expected to be [{"role": "user", "content": [{"type": "text", "text": "..."}, {"type": "image_url", "image_url": {"url": "base64..."}}]}]
         prompts = []
         images = []
         
         for m in messages:
-            if m.get("role") == "user":
-                content = m.get("content", [])
-                if isinstance(content, str):
-                    prompts.append(content)
-                elif isinstance(content, list):
-                    for part in content:
-                        if part.get("type") == "text":
-                            prompts.append(part.get("text", ""))
-                        elif part.get("type") == "image_url":
-                            url = part.get("image_url", {}).get("url", "")
-                            if "base64," in url:
-                                images.append(url.split("base64,")[1])
-                            else:
-                                # Ollama expects raw base64 data
-                                images.append(url)
+            content = m.get("content", [])
+            if isinstance(content, str):
+                prompts.append(content)
+            elif isinstance(content, list):
+                for part in content:
+                    if part.get("type") == "text":
+                        prompts.append(part.get("text", ""))
+                    elif part.get("type") == "image_url":
+                        url = part.get("image_url", {}).get("url", "")
+                        if "base64," in url:
+                            images.append(url.split("base64,")[1])
+                        else:
+                            images.append(url)
 
         l_body = {
             "model": self.model_name,
@@ -86,15 +89,7 @@ class OllamaModel(OpenAICompatibleModel):
             "stream": False
         }
 
-        headers = {
-            "Content-Type": "application/json"
-        }
-
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-
-        for key, value in self.additionnal_headers.items():
-            headers[key] = value
+        headers = self._get_headers(self.api_key or "")
 
         all_api_parameters = self.api_parameters | llm_args
         for key, value in all_api_parameters.items():
@@ -104,25 +99,22 @@ class OllamaModel(OpenAICompatibleModel):
                 l_body[key] = value
         
         full_url = f"{self.base_url}{self.generate_url}"
-
         response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
 
         if response.status_code == 200:
             pass
         elif response.status_code == 429:
-            raise RateLimitError(f"[OllamaModel.api_call] Rate limit exceeded (HTTP 429). {response.text}")
+            raise RateLimitError(f"[OllamaModel._generate_without_retry] Rate limit exceeded (HTTP 429). {response.text}")
         elif response.status_code == 401:
-            raise ApiKeyError(f"[OllamaModel.api_call] Unauthorized (HTTP 401). Check your API key. {response.text}")
+            raise ApiKeyError(f"[OllamaModel._generate_without_retry] Unauthorized (HTTP 401). {response.text}")
         else:
-            raise RequestError(f"[OllamaModel.api_call] Request failed with status code {response.status_code}:\n{response.text}\n\n")
+            raise RequestError(f"[OllamaModel._generate_without_retry] Request failed ({response.status_code}):\n{response.text}")
             
         self._nb_requests += 1
 
-        # Ollama /api/generate returns a JSON or multiple JSONs if streaming (here stream=False)
         try:
             resp_json = response.json()
         except json.JSONDecodeError:
-            # Fallback for multi-line JSON if something went wrong despite stream=False
             response_list = []
             for line in response.content.decode("utf-8").split("\n"):
                 if line.strip():
@@ -130,10 +122,8 @@ class OllamaModel(OpenAICompatibleModel):
             resp_json = response_list[-1]
             resp_json["response"] = "".join([l.get("response", "") for l in response_list])
 
-        # Map Ollama response to internal format used by OpenHosta (OpenAI-like)
         response_content = resp_json.get("response", "")
         
-        # Internal format expected: {"choices": [{"message": {"content": "..."}}]}
         response_dict = {
             "choices": [
                 {
@@ -150,35 +140,31 @@ class OllamaModel(OpenAICompatibleModel):
         
         return response_dict
 
-    def embedding_api_call(self, texts: List[str]) -> List[List[float]]:
+    def _image_without_retry(self, prompt: str, **kwargs) -> Dict:
+        """Ollama does not natively support text-to-image generation yet."""
+        raise NotImplementedError("OllamaModel does not support image generation.")
+
+    def _embed_without_retry(self, texts: List[str], **kwargs) -> List[List[float]]:
         """
         Call Ollama's native /api/embed endpoint.
         """
-        headers = {
-            "Content-Type": "application/json"
-        }
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        
-        for key, value in self.additionnal_headers.items():
-            headers[key] = value
+        headers = self._get_headers(self.api_key or "")
             
         l_body = {
             "model": self.embedding_model_name or self.model_name,
             "input": texts
         }
+        l_body.update(kwargs)
         
         full_url = f"{self.base_url}{self.embedding_url}"
         
         try:
             response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
-            
             if response.status_code == 200:
                 resp_json = response.json()
-                # Ollama returns {"embeddings": [[...], [...]]}
                 return resp_json.get("embeddings", [])
             else:
-                # Log error and fallback
-                return super().embedding_api_call(texts)
-        except Exception:
-            return super().embedding_api_call(texts)
+                raise RequestError(f"[OllamaModel._embed_without_retry] Request failed ({response.status_code}): {response.text}")
+        except Exception as e:
+            if isinstance(e, RequestError): raise e
+            raise RequestError(f"[OllamaModel._embed_without_retry] {str(e)}")
