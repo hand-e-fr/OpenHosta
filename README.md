@@ -108,35 +108,53 @@ pip install "git+https://github.com/hand-e-fr/OpenHosta.git@unstable" # for the 
 
 **See the full [installation guide](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/installation.md)**
 
-## Example
+## Quick Start Examples
 
-You shall set your API credentials either via environment variables or directly in your code.
-For now we assume that you have an OpenAI API key and that you have set it in .env like this:
+Running OpenHosta is incredibly simple. You can execute models entirely **Locally** (for free and privately) or connect them to a **Remote API** (like OpenAI).
 
-```env
-# This is the content of your .env file to be placed in the root of your project
-OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"
-OPENHOSTA_DEFAULT_MODEL_API_KEY="put-your-api-key-here"
+### Option A: Local Execution (Ollama)
+Perfect when privacy is paramount. Ensure you have [Ollama installed](https://ollama.com/) and run `ollama run qwen3.5:4b` in your terminal. 
+
+```python
+from OpenHosta import emulate, OpenAICompatibleModel, config
+
+# 1. Point OpenHosta to your local Ollama instance
+local_model = OpenAICompatibleModel(
+    model_name="qwen3.5:4b", 
+    base_url="http://localhost:11434/v1", 
+    api_key="none" # Ollama does not require a key
+)
+config.DefaultModel = local_model
+
+# 2. Emulate your Python function
+def translate(text: str, language: str) -> str:
+    """Translates the text into the specified language."""
+    return emulate()
+
+print(translate("Hello World!", "French"))
+# 'Bonjour le monde !'
 ```
 
-You can also use a local model using ollama. See [documentation](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/installation.md#local-models).
+### Option B: Remote API (OpenAI)
+When you want the highest capability models with zero setup. Set your API credentials via `.env`:
+
+```env
+OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4o"
+OPENHOSTA_DEFAULT_MODEL_API_KEY="put-your-api-key-here"
+```
 
 ```python
 from OpenHosta import emulate
 
-def translate(text:str, language:str)->str:
-    """
-    This function translates the text in the “text” parameter into the language specified in the “language” parameter.
-    """
+def translate(text: str, language: str) -> str:
+    """Translates the text into the specified language."""
     return emulate()
 
-result = translate("Hello World!", "French")
-
-print(result)
-# Bonjour le monde !
+print(translate("Hello World!", "French"))
+# 'Bonjour le monde !'
 ```
 
-You check [OpenHosta's documentation](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/doc.md) for more detailled informations or exemple
+Curious? Read our comprehensive [Documentation Hub](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/doc.md) to discover Pydantic integrations, observability tracking, and advanced examples like [using glm-ocr locally](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/examples/ocr_local_ollama.md).
 
 ## Further information
 
