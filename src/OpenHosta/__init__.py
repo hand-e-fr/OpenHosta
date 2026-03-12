@@ -16,14 +16,15 @@ from .exec.emulate import emulate, emulate_async
 from .exec.emulate_iterator import emulate_iterator
 from .exec.closure import closure, closure_async
 from .semantics import SemanticSet, SemanticDict
+from .semantics.operators import test, test_async
 
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
-DefaultModel = defaults.config.DefaultModel
-DefaultPipeline = defaults.config.DefaultPipeline
+DefaultModel = config.DefaultModel
+DefaultPipeline = config.DefaultPipeline
 
 all = (
     "ask",
@@ -49,6 +50,8 @@ all = (
     "Pipeline",
     "OneTurnConversationPipeline",
     "safe",
+    "test",
+    "test_async",
     "UncertaintyError",
     "track_costs",
     "register_audit_callback",

@@ -366,7 +366,13 @@ class OneTurnConversationPipeline(Pipeline):
 
     def pull_type_data_section(self, inspection:Inspection, response:Any) -> Any:
         """Python Level"""
-        l_ret_data = type_returned_data(response, inspection.analyse.type)._input
+        l_ret_data = type_returned_data(response, inspection.analyse.type)
+        
+        # We unwrap to get the native type for backward compatibility with 
+        # tests that use type(res) is int (instead of isinstance)
+        if hasattr(l_ret_data, "unwrap"):
+             l_ret_data = l_ret_data.unwrap()
+             
         inspection.logs["response_data"] = l_ret_data
 
         return l_ret_data
