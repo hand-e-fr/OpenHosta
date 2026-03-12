@@ -37,6 +37,7 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     """
     
     _members: dict = {}  # Sera rempli par __init_subclass__
+    _orig_enum: Optional[Type[Enum]] = None
     
     def __init_subclass__(cls, **kwargs):
         """Appelé automatiquement quand on crée une sous-classe."""
@@ -55,6 +56,15 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             "type": "string",
             "enum": list(cls._members.keys())
         }
+        
+    def unwrap(self):
+        """Retourne le membre de l'enum natif s'il est disponible, sinon le nom."""
+        if self._orig_enum:
+            try:
+                return self._orig_enum[self._python_value]
+            except (KeyError, TypeError):
+                pass
+        return self._python_value
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
@@ -163,6 +173,7 @@ def guarded_enum(enum_cls: Type[Enum]) -> Type[GuardedEnum]:
     # pour que __init_subclass__ les capture.
     new_name = f"Guarded_{enum_cls.__name__}"
     WrappedEnum = type(new_name, (GuardedEnum,), attrs)
+    WrappedEnum._orig_enum = enum_cls
     
     WrappedEnum.__doc__ = enum_cls.__doc__
     

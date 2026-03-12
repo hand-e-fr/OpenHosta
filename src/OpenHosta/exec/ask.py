@@ -30,7 +30,7 @@ def ask(
         for key, arg in named_other_args.items():
             dummy_analyse.args.append(AnalyzedArgument(name=key, value=arg, type=None))
             
-        dummy_inspection = Inspection(None, dummy_analyse)
+        dummy_inspection = Inspection(None, None, dummy_analyse)
         model = config.DefaultPipeline.push_choose_model(dummy_inspection)
 
     message = []
@@ -108,7 +108,7 @@ async def ask_async(
         for key, arg in named_other_args.items():
             dummy_analyse.args.append(AnalyzedArgument(name=key, value=arg, type=None))
             
-        dummy_inspection = Inspection(None, dummy_analyse)
+        dummy_inspection = Inspection(None, None, dummy_analyse)
         model = config.DefaultPipeline.push_choose_model(dummy_inspection)
 
     message = []
