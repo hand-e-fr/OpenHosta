@@ -62,19 +62,24 @@ def generate_examples(
         """Filter out garbled outputs from logprob token concatenation."""
         if not text or len(text) > 100:
             return False
-        # Reject strings with uppercase letters mid-word (e.g. "MCheRequin", "OiseauxReptile")
-        # Count transitions: lowercase→uppercase without space separator
+        
+        # Reject strings with uppercase letters in middle of words
+        # (e.g. "MCheRequin", "DuckDDogDingo", "OiseauxReptile")
         mid_word_uppers = 0
         for i in range(1, len(text)):
-            if text[i].isupper() and text[i-1].isalpha() and text[i-1].islower():
-                # Allow normal CamelCase-like at word start (after space)
-                if i >= 2 and text[i-2] == ' ':
-                    continue
+            # If current char is uppercase and previous char is NOT a space
+            if text[i].isupper() and text[i-1] != ' ':
                 mid_word_uppers += 1
-        if mid_word_uppers > 1:
+        
+        if mid_word_uppers >= 1: # Be very strict: max 1 uppercase at start of first word
+            # Check if the only uppercase is at index 0
+            # Wait, if text is "Chat", text[0] is 'C'. Loop starts at i=1. No mid-word uppers.
+            # If text is "Le Chat", text[3] is 'C'. text[2] is ' '. No mid-word uppers.
+            # If text is "MCheRequin", text[1] is 'C'. text[0] is 'M' (not space) -> mid-word upper.
             return False
+            
         # Reject long strings without spaces (likely concatenated tokens)
-        if len(text) > 30 and ' ' not in text:
+        if len(text) > 25 and ' ' not in text:
             return False
         return True
 
@@ -144,8 +149,9 @@ class SemanticEngine:
                 dists = cosine_distances(cluster_embs, [self.centroids[cid]]).flatten()
                 self._max_cluster_radius = max(self._max_cluster_radius, dists.max())
 
-        # Marge de sécurité pour outlier detection
-        self._outlier_threshold = self._max_cluster_radius + self.tolerance
+        # Outlier threshold: we use the provided tolerance.
+        # If an item is further than 'tolerance' from any centroid, it's an outlier.
+        self._outlier_threshold = self.tolerance
 
     def predict(self, embedding: np.ndarray) -> int:
         """
@@ -175,7 +181,7 @@ class SemanticEngine:
                 f"The item does not belong to any known cluster."
             )
 
-        return self.cluster_ids[best_idx]
+        return int(self.cluster_ids[best_idx])
 
     def get_top_k_nearest_center(self, cluster_id: int, k: int = 10) -> List[str]:
         """
