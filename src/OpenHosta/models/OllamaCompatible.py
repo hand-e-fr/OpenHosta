@@ -128,7 +128,7 @@ class OllamaModel(OpenAICompatibleModel):
             "choices": [
                 {
                     "message": {"content": response_content},
-                    "logprobs": resp_json.get("logprobs", None)
+                    "logprobs": {"content": resp_json.get("logprobs", [])} if resp_json.get("logprobs") else None
                 }
             ],
             "usage": {
@@ -147,24 +147,34 @@ class OllamaModel(OpenAICompatibleModel):
     def _embed_without_retry(self, texts: List[str], **kwargs) -> List[List[float]]:
         """
         Call Ollama's native /api/embed endpoint.
+        NOTE: Sequential loop to avoid Ollama bug where batch inputs return identical vectors.
         """
         headers = self._get_headers(self.api_key or "")
-            
-        l_body = {
-            "model": self.embedding_model_name or self.model_name,
-            "input": texts
-        }
-        l_body.update(kwargs)
+        embeddings = []
         
         full_url = f"{self.base_url}{self.embedding_url}"
         
-        try:
-            response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
-            if response.status_code == 200:
-                resp_json = response.json()
-                return resp_json.get("embeddings", [])
-            else:
-                raise RequestError(f"[OllamaModel._embed_without_retry] Request failed ({response.status_code}): {response.text}")
-        except Exception as e:
-            if isinstance(e, RequestError): raise e
-            raise RequestError(f"[OllamaModel._embed_without_retry] {str(e)}")
+        for text in texts:
+            l_body = {
+                "model": self.embedding_model_name or self.model_name,
+                "input": text  # Single string
+            }
+            l_body.update(kwargs)
+            
+            try:
+                response = requests.post(full_url, headers=headers, json=l_body, timeout=self.timeout)
+                if response.status_code == 200:
+                    resp_json = response.json()
+                    # In Ollama native API, if input is string, embeddings is list of 1 list
+                    # or it might return "embedding": [...] directly?
+                    # Let's check the response format for single input.
+                    embs = resp_json.get("embeddings", [])
+                    if embs:
+                        embeddings.append(embs[0])
+                else:
+                    raise RequestError(f"[OllamaModel._embed_without_retry] Request failed ({response.status_code}): {response.text}")
+            except Exception as e:
+                if isinstance(e, RequestError): raise e
+                raise RequestError(f"[OllamaModel._embed_without_retry] {str(e)}")
+        
+        return embeddings
