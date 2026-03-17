@@ -11,6 +11,9 @@ class GuardedList(GuardedPrimitive, list):
     _type_json = {"type": "array"}
     _item_type = None
 
+
+
+
     def __class_getitem__(cls, item):
         class ParameterizedGuardedList(cls):
             _item_type = item
@@ -73,6 +76,10 @@ class GuardedList(GuardedPrimitive, list):
         
         return UncertaintyLevel(Tolerance.PRECISE), items, None
 
+    def unwrap(self):
+        """Retourne une liste native avec unwrapping récursif des éléments."""
+        return self._recursive_unwrap(list(self))
+
 class GuardedSet(GuardedPrimitive, set):
     """
     Ensemble sémantique.
@@ -82,6 +89,9 @@ class GuardedSet(GuardedPrimitive, set):
     _type_py = set
     _type_json = {"type": "array", "uniqueItems": True}
     _item_type = None
+
+
+
 
     def __class_getitem__(cls, item):
         class ParameterizedGuardedSet(cls):
@@ -155,6 +165,10 @@ class GuardedSet(GuardedPrimitive, set):
         
         return UncertaintyLevel(Tolerance.PRECISE), items, None
 
+    def unwrap(self):
+        """Retourne un set natif avec unwrapping récursif des éléments."""
+        return self._recursive_unwrap(set(self))
+
 class GuardedDict(GuardedPrimitive, dict):
     """
     Dictionnaire sémantique.
@@ -165,6 +179,9 @@ class GuardedDict(GuardedPrimitive, dict):
     _type_json = {"type": "object"}
     _key_type = None
     _value_type = None
+
+
+
 
     def __class_getitem__(cls, item):
         if not isinstance(item, tuple) or len(item) != 2:
@@ -236,7 +253,12 @@ class GuardedDict(GuardedPrimitive, dict):
         
         return UncertaintyLevel(Tolerance.PRECISE), items, None
 
+    def unwrap(self):
+        """Retourne un dict natif avec unwrapping récursif des clés et valeurs."""
+        return self._recursive_unwrap(dict(self))
+
 class GuardedTuple(GuardedPrimitive, tuple):
+
     """
     Tuple sémantique.
     Accepte : (1, 2, 3), "(1, 2, 3)", "1,2,3", ou toute itérable.
@@ -245,6 +267,9 @@ class GuardedTuple(GuardedPrimitive, tuple):
     _type_py = tuple
     _type_json = {"type": "array"}
     _item_types = None # None or tuple of types
+
+
+
 
     def __class_getitem__(cls, items):
         if not isinstance(items, tuple):
@@ -314,7 +339,12 @@ class GuardedTuple(GuardedPrimitive, tuple):
         
         return UncertaintyLevel(Tolerance.PRECISE), items, None
 
+    def unwrap(self):
+        """Retourne un tuple natif avec unwrapping récursif des éléments."""
+        return self._recursive_unwrap(tuple(self))
+
 def guarded_tuple(*item_types):
+
     """Factory for parameterized tuples."""
     return GuardedTuple[item_types]
 
@@ -502,8 +532,9 @@ def guarded_dataclass(cls=None, **dataclass_kwargs):
                 return getattr(self, '_abstraction_level', 'native')
             
             def unwrap(self):
-                """Retourne l'instance elle-même (déjà un objet natif)."""
-                return self
+                """Retourne les champs de la dataclass avec unwrapping récursif."""
+                return self._recursive_unwrap(self)
+
         
         GuardedDataclassWrapper.__name__ = cls.__name__
         GuardedDataclassWrapper.__module__ = cls.__module__
