@@ -66,6 +66,8 @@ Création de types personnalisés :
 
 from abc import ABC
 from typing import Any, Tuple, ClassVar, Dict, Optional
+from dataclasses import is_dataclass, fields
+
 
 # Imports internes (Moteur & Incertitude)
 from .constants import Tolerance
@@ -196,9 +198,44 @@ class GuardedPrimitive(ABC):
         """Niveau d'abstracton utilisé pour la conversion (native, heuristic, vectorial, llm)."""
         return getattr(self, '_abstraction_level', 'unknown')
 
+    @staticmethod
+    def _recursive_unwrap(value: Any) -> Any:
+        """Déballe récursivement les objets Guarded et les conteneurs natifs."""
+        if hasattr(value, "unwrap") and callable(value.unwrap):
+            unwrapped = value.unwrap()
+            if unwrapped is value:
+                if is_dataclass(value):
+                    return {
+                        field.name: GuardedPrimitive._recursive_unwrap(getattr(value, field.name))
+                        for field in fields(value)
+                    }
+                return value
+            return GuardedPrimitive._recursive_unwrap(unwrapped)
+
+        if is_dataclass(value):
+            return {
+                field.name: GuardedPrimitive._recursive_unwrap(getattr(value, field.name))
+                for field in fields(value)
+            }
+        if isinstance(value, dict):
+            return {
+                GuardedPrimitive._recursive_unwrap(k): GuardedPrimitive._recursive_unwrap(v)
+                for k, v in value.items()
+            }
+        if isinstance(value, list):
+            return [GuardedPrimitive._recursive_unwrap(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(GuardedPrimitive._recursive_unwrap(item) for item in value)
+        if isinstance(value, set):
+            return {GuardedPrimitive._recursive_unwrap(item) for item in value}
+        if isinstance(value, frozenset):
+            return frozenset(GuardedPrimitive._recursive_unwrap(item) for item in value)
+        return value
+
     def unwrap(self):
-        """Méthode utilitaire pour récupérer la valeur."""
-        return getattr(self, "_python_value", None)
+        """Méthode utilitaire pour récupérer la valeur native avec unwrapping récursif."""
+        return self._recursive_unwrap(getattr(self, "_python_value", None))
+
 
     @classmethod
     def attempt(cls, value: Any, tolerance: Tolerance = None) -> CastingResult:
@@ -327,8 +364,9 @@ class ProxyWrapper:
         return instance
     
     def unwrap(self):
-        """Retourne la valeur Python native."""
-        return getattr(self, "_python_value", None)
+        """Retourne la valeur Python native avec unwrapping récursif."""
+        return GuardedPrimitive._recursive_unwrap(getattr(self, "_python_value", None))
+
 
     def __getattr__(self, name):
         """Délègue l'accès aux attributs à la valeur native."""
