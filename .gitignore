@@ -26,3 +26,4 @@ tests/functionnalTests/.env
 capabilities.yaml
 final_capabilities.yaml
 **/.scannerwork
+logs/
