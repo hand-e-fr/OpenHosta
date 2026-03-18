@@ -977,9 +977,9 @@ user = User(name="Alice", age="25")  # age converti automatiquement
 2. **Forcer la tolérance via `attempt()` pour les cas critiques**
    ```python
    result = GuardedUtf8.attempt(input, tolerance=Tolerance.STRICT)
-   if not result.is_success:
+   if not result.success:
        raise ValueError(result.error_message)
-   password = result.python_value
+   password = result.data
    ```
 
 3. **Vérifier l'uncertainty pour les décisions importantes**

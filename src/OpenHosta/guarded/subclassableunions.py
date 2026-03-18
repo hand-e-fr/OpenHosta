@@ -30,7 +30,7 @@ class GuardedUnion(GuardedPrimitive):
             # Tenter la conversion avec ce type
             result = guarded_type.attempt(value, tolerance=tolerance)
             
-            if result.is_success:
+            if result.success:
                 # Si on a un match parfait (STRICT), on s'arrête
                 if result.uncertainty <= Tolerance.STRICT:
                     # On attache le type gagnant au résultat pour que __new__ sache quoi instancier
@@ -56,7 +56,7 @@ class GuardedUnion(GuardedPrimitive):
         """
         result = cls.attempt(value, tolerance=tolerance)
         
-        if not result.is_success:
+        if not result.success:
             raise ValueError(
                 f"OpenHosta Casting Failed for Union type '{cls.__name__}'.\n"
                 f"Input: '{value}'\n"
