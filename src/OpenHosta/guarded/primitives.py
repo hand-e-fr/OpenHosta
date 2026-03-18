@@ -65,21 +65,27 @@ Création de types personnalisés :
 """
 
 from abc import ABC, ABCMeta
-from typing import Any, Tuple, ClassVar, Dict, Optional
-from dataclasses import is_dataclass, fields
+from typing import Any, Tuple, ClassVar, Dict, Optional, Literal
+from dataclasses import dataclass, is_dataclass, fields
 
 
 # Imports internes (Moteur & Incertitude)
 from .constants import Tolerance, ToleranceLevel
 
-from dataclasses import dataclass
-from typing import Any, Optional, Literal, Type
 
 AbstractionLevel = Literal["native", "heuristic", "semantic", "knowledge", "failed"]
 UncertaintyLevel = float
 
+@dataclass(frozen=True)
+class GuardedCallInput:
+    """Conteneur pour transporter plusieurs arguments dans le pipeline Guarded."""
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+
+
 @dataclass
 class CastingResult:
+
     is_success: bool
     
     python_value: Any    # La valeur convertie (ex: 23) ou None
@@ -130,26 +136,34 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
     _type_knowledge: ClassVar[Dict | Any] = NotImplemented
     _tolerance: ClassVar[ToleranceLevel] = Tolerance.TYPE_COMPLIANT
     
-    def __new__(cls, value: Any, tolerance: ToleranceLevel|None = None):
+    def __new__(cls, *args: Any, **kwargs: Any):
         """
         Le constructeur 'Magique'. Il ne crée l'objet que si le analyseur sémantique réussit.
+
+        Si plusieurs arguments positionnels et/ou nommés sont fournis, ils sont
+        encapsulés dans un GuardedCallInput et transmis comme valeur unique au pipeline.
+        Le forçage de la tolérance se fait exclusivement via attempt() ou en
+        surchargeant l'attribut de classe _tolerance.
         """
-                
-        # 0. Use docsting as type definition in natural language (_type_en) if not defined 
+
+        # 0. Use docsting as type definition in natural language (_type_en) if not defined
         if cls._type_en == NotImplemented:
             cls._type_en = f"{cls.__doc__}"
-        
-        if tolerance is None:
-            tolerance = cls._tolerance
-            
+
         if cls._type_py is NotImplemented:
             for parent in cls.__mro__:
                 if parent in (int, float, str, bool, list, dict, set, tuple):
                     cls._type_py = parent
                     break
-            
+
+        if len(args) == 1 and not kwargs:
+            value = args[0]
+        else:
+            value = GuardedCallInput(args=args, kwargs=kwargs)
+
         # 1. Lancement du Pipeline (Template Method)
-        result = cls.attempt(value, tolerance=tolerance)
+        result = cls.attempt(value)
+
 
         # 2. Gestion de l'échec
         if not result.is_success:
@@ -176,7 +190,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         
         return instance
 
-    def __init__(self, value: Any, tolerance: ToleranceLevel|None = None):
+    def __init__(self, *args: Any, **kwargs: Any):
         """
         L'initialiseur est appelé après __new__.
         Pour les types mutables (list, dict, set), on doit s'assurer que

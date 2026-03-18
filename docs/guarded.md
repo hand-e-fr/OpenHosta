@@ -62,19 +62,34 @@ Entrée → Native → Heuristic → Semantic → Knowledge → Sortie
 
 ### 2.2 Tolérance et Contrôle
 
-La tolérance définit jusqu'où le pipeline peut aller :
+La tolérance définit jusqu'où le pipeline peut aller.
+
+Le constructeur utilise toujours la tolérance par défaut de la classe (`_tolerance`).
+
+Pour forcer une tolérance, utilisez `attempt()` :
 
 ```python
 from OpenHosta.guarded import GuardedInt, Tolerance
 
 # Tolérance stricte : seul le niveau Native est accepté
-strict_int = GuardedInt("42", tolerance_threshold=Tolerance.STRICT)
+strict_result = GuardedInt.attempt("42", tolerance=Tolerance.STRICT)
 
 # Tolérance flexible : Native + Heuristic acceptés
-flexible_int = GuardedInt("1,000", tolerance_threshold=Tolerance.FLEXIBLE)
+flexible_result = GuardedInt.attempt("1,000", tolerance=Tolerance.FLEXIBLE)
 
-# Tolérance par défaut : TYPE_COMPLIANT (accepte tout)
-default_int = GuardedInt("1,000")  # Fonctionne
+# Tolérance par défaut : _tolerance de la classe
+value = GuardedInt("1,000")
+```
+
+Pour changer durablement la tolérance, créez une sous-classe :
+
+```python
+from OpenHosta.guarded import GuardedInt, Tolerance
+
+class StrictGuardedInt(GuardedInt):
+    _tolerance = Tolerance.STRICT
+
+value = StrictGuardedInt(42)
 ```
 
 | Niveau | Constante | Valeur | Niveaux Acceptés |
@@ -84,9 +99,46 @@ default_int = GuardedInt("1,000")  # Fonctionne
 | **Flexible** | `Tolerance.FLEXIBLE` | 0.15 | Native + Heuristic |
 | **Type Compliant** | `Tolerance.TYPE_COMPLIANT` | 0.999 | Tous (défaut) |
 
+### 2.3 Constructeurs multi-paramètres
+
+Les classes enfants de `GuardedPrimitive` peuvent maintenant accepter plusieurs
+arguments positionnels et nommés.
+
+- Si le constructeur reçoit **un seul argument positionnel** et **aucun kwarg**,
+  le pipeline reçoit directement cette valeur.
+- Sinon, les entrées sont encapsulées dans un objet `GuardedCallInput(args, kwargs)`
+  puis transmises comme **valeur unique** au pipeline.
+
+Cela permet à une sous-classe d'implémenter sa propre logique dans `_parse_native()`,
+`_parse_heuristic()`, etc., tout en conservant l'architecture actuelle centrée sur
+une seule entrée `value`.
+
+```python
+from OpenHosta.guarded.primitives import GuardedPrimitive, GuardedCallInput
+from OpenHosta.guarded import Tolerance
+
+class FullName(GuardedPrimitive, str):
+    _type_en = "a full name"
+    _type_py = str
+    _tolerance = Tolerance.TYPE_COMPLIANT
+
+    @classmethod
+    def _parse_heuristic(cls, value):
+        if isinstance(value, GuardedCallInput):
+            first = value.kwargs.get("first") or value.args[0]
+            last = value.kwargs.get("last") or value.args[1]
+            return Tolerance.PRECISE, f"{first.strip()} {last.strip()}", None
+        return super()._parse_heuristic(value)
+
+name = FullName("Ada", "Lovelace")
+name2 = FullName(first="Ada", last="Lovelace")
+```
+
+
 ---
 
 ## III. Types Scalaires
+
 
 ### 3.1 GuardedInt
 
@@ -391,15 +443,46 @@ class Person:
 # Création standard avec kwargs
 p1 = Person(name="Alice", age=30)
 
+# Création standard avec args positionnels
+p1b = Person("Alice", 30)
+
 # Création depuis dict avec conversion automatique
 p2 = Person({"name": "Bob", "age": "25"})  # age converti de str → int
+
 
 # Les champs sont validés et convertis
 assert p2.age == 25
 assert isinstance(p2.age, int)  # Converti automatiquement
 ```
 
-### 7.2 Avec Options Dataclass
+### 7.2 Args et kwargs dans les dataclasses guardées
+
+Les classes décorées avec `@guarded_dataclass` supportent maintenant :
+
+- les **kwargs** classiques
+- les **args positionnels**
+- les entrées sous forme de **dict**
+- les représentations texte de type constructeur ou dictionnaire
+
+```python
+from OpenHosta.guarded import guarded_dataclass
+
+@guarded_dataclass
+class Point:
+    x: int
+    y: int
+
+p1 = Point(10, 20)
+p2 = Point(x=10, y=20)
+p3 = Point({"x": "10", "y": "20"})
+p4 = Point("Point(x=10, y=20)")
+```
+
+En interne, si plusieurs arguments sont fournis au constructeur, ils sont encapsulés
+sous forme de `GuardedCallInput(args, kwargs)` puis parsés par le pipeline.
+
+### 7.3 Avec Options Dataclass
+
 
 Vous pouvez passer des options directement à `@guarded_dataclass` :
 
@@ -413,7 +496,8 @@ pt = Point(x=10, y=20)
 # pt.x = 100  # ❌ Erreur : frozen=True
 ```
 
-### 7.3 Avec Valeurs Par Défaut
+### 7.4 Avec Valeurs Par Défaut
+
 
 ```python
 @guarded_dataclass
@@ -435,7 +519,8 @@ c3 = Config({"host": "api.example.com", "port": "3000"})
 assert c3.port == 3000  # Converti de "3000" (str) → 3000 (int)
 ```
 
-### 7.4 Conversion Automatique des Types
+### 7.5 Conversion Automatique des Types
+
 
 Le décorateur utilise `TypeResolver` pour convertir automatiquement les valeurs :
 
@@ -460,7 +545,8 @@ assert user.active == True
 assert isinstance(user.tags, list)
 ```
 
-### 7.5 Métadonnées Guarded
+### 7.6 Métadonnées Guarded
+
 
 Comme tous les types Guarded, les dataclasses conservent des métadonnées :
 
@@ -483,7 +569,8 @@ print(p2.uncertainty)       # 0.0 (STRICT - valeurs natives)
 print(p2.abstraction_level) # 'native'
 ```
 
-### 7.6 Usage Legacy (Avec @dataclass Explicite)
+### 7.7 Usage Legacy (Avec @dataclass Explicite)
+
 
 Si vous avez déjà `@dataclass`, `@guarded_dataclass` le détecte et ne le réapplique pas :
 
@@ -831,9 +918,12 @@ user = User(name="Alice", age="25")  # age converti automatiquement
    age = GuardedInt(user_input)  # Tolérant
    ```
 
-2. **Spécifier la tolérance pour les cas critiques**
+2. **Forcer la tolérance via `attempt()` pour les cas critiques**
    ```python
-   password = GuardedUtf8(input, tolerance_threshold=Tolerance.STRICT)
+   result = GuardedUtf8.attempt(input, tolerance=Tolerance.STRICT)
+   if not result.is_success:
+       raise ValueError(result.error_message)
+   password = result.python_value
    ```
 
 3. **Vérifier l'uncertainty pour les décisions importantes**
