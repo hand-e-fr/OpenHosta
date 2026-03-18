@@ -108,14 +108,14 @@ def test_long_tuple_attempt_method():
     
     # Test the attempt method
     result = MyType.attempt(llm_output)
-    assert result.is_success is True
-    assert result.python_value is not None
+    assert result.success is True
+    assert result.data is not None
     
     # Verify the result data
-    assert isinstance(result.python_value, tuple)
-    assert len(result.python_value) == 2
-    assert "Évaluer les dimensions" in result.python_value[0]
-    assert "Calendrier d'implémentation" in result.python_value[1]
+    assert isinstance(result.data, tuple)
+    assert len(result.data) == 2
+    assert "Évaluer les dimensions" in result.data[0]
+    assert "Calendrier d'implémentation" in result.data[1]
 
 
 def test_long_tuple_edge_cases():
@@ -126,7 +126,7 @@ def test_long_tuple_edge_cases():
     # Test with empty strings
     empty_tuple = ("", "")
     result_empty = MyType.attempt(empty_tuple)
-    assert result_empty.is_success is True
+    assert result_empty.success is True
     
     # Test with very long strings
     very_long_first = "A " * 1000 + "steps for irrigation system."
@@ -134,9 +134,9 @@ def test_long_tuple_edge_cases():
     long_tuple = (very_long_first, very_long_second)
     
     result_long = MyType.attempt(long_tuple)
-    assert result_long.is_success is True
-    assert len(result_long.python_value[0]) == len(very_long_first)
-    assert len(result_long.python_value[1]) == len(very_long_second)
+    assert result_long.success is True
+    assert len(result_long.data[0]) == len(very_long_first)
+    assert len(result_long.data[1]) == len(very_long_second)
     
     # Test with invalid types
     invalid_tuple = (123, 456)  # integers instead of strings
