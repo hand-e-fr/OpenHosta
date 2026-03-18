@@ -1,5 +1,6 @@
 from typing import Any, Tuple, Optional, cast
-from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, ProxyWrapper, CastingResult
+from .primitives import GuardedPrimitive, GuardedCallInput, UncertaintyLevel, Tolerance, ProxyWrapper, CastingResult
+
 
 class GuardedList(GuardedPrimitive, list):
     """
@@ -372,7 +373,9 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
             name: str
             age: int
     """
-    from dataclasses import dataclass, is_dataclass
+    from dataclasses import dataclass, is_dataclass, fields
+    from .resolver import TypeResolver
+
     
     def decorator(cls_to_guard):
         # Si ce n'est pas déjà une dataclass, on l'applique
@@ -382,7 +385,11 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
         else:
             original_type = None
 
-        class GuardedDataclassWrapper(GuardedPrimitive, cls_to_guard):
+        field_definitions = fields(cls_to_guard)
+
+        class GuardedDataclassWrapper(GuardedPrimitive, ProxyWrapper):
+
+
             """Wrapper qui ajoute les capacités Guarded à une dataclass."""
             
             _type_en = f"an instance of {cls_to_guard.__name__} dataclass"
@@ -392,28 +399,103 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
             _tolerance = Tolerance.TYPE_COMPLIANT
 
             @classmethod
+            def _coerce_dataclass_inputs(cls, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
+                field_names = [field.name for field in field_definitions]
+                merged_kwargs = dict(kwargs)
+
+                if len(args) > len(field_names):
+                    raise TypeError(f"Too many positional arguments for {cls_to_guard.__name__}")
+
+                for field_name, arg_value in zip(field_names, args):
+                    if field_name in merged_kwargs:
+                        raise TypeError(f"Multiple values for field '{field_name}'")
+                    merged_kwargs[field_name] = arg_value
+
+                converted_kwargs = {}
+                for field in field_definitions:
+                    if field.name not in merged_kwargs:
+                        continue
+                    raw_value = merged_kwargs[field.name]
+                    guarded_type = TypeResolver.resolve(field.type)
+
+                    if isinstance(raw_value, guarded_type):
+                        converted_value = raw_value
+                    else:
+                        attempt_result = guarded_type.attempt(raw_value)
+                        if not attempt_result.is_success:
+                            raise ValueError(attempt_result.error_message)
+
+                        if getattr(guarded_type, "_types", None) is not None:
+                            winning_type = attempt_result.python_type
+                            converted_value = winning_type(raw_value) if winning_type is not None else attempt_result.python_value
+                        elif hasattr(guarded_type, "__dataclass_fields__"):
+                            converted_value = guarded_type(raw_value)
+                        else:
+                            converted_value = attempt_result.python_value
+
+
+
+                    converted_kwargs[field.name] = converted_value
+
+                return cls_to_guard(**converted_kwargs)
+
+
+
+            @classmethod
             def _parse_native(cls, value: Any):
 
+
                 # Tenter d'instancier
-                if isinstance(value, cls) or isinstance(value, cls_to_guard):
+                if isinstance(value, cls):
+                    return UncertaintyLevel(Tolerance.STRICT), value._python_value, None
+
+                if isinstance(value, cls_to_guard):
                     return UncertaintyLevel(Tolerance.STRICT), value, None
 
+
+                if isinstance(value, GuardedCallInput):
+                    try:
+                        native_instance = cls._coerce_dataclass_inputs(value.args, value.kwargs)
+                        return UncertaintyLevel(Tolerance.STRICT), native_instance, None
+                    except Exception as e:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+
+
+
                 if original_type is not None and isinstance(value, original_type):
-                    return UncertaintyLevel(Tolerance.STRICT), cls_to_guard(**value), None
+                    return UncertaintyLevel(Tolerance.STRICT), value, None
+
+
 
                 if isinstance(value, dict):
-                    return UncertaintyLevel(Tolerance.STRICT), cls_to_guard(**value), None
+                    try:
+                        instance = cls._coerce_dataclass_inputs((), value)
+                        return UncertaintyLevel(Tolerance.STRICT), instance, None
+                    except Exception as e:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+
                 
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Could not parse as {cls.__name__} dataclass: id of type {id(type(value))} with value {value}. id of cls {id(cls)}"
+
             
             @classmethod  
             def _parse_heuristic(cls, value: Any):
+
+                if isinstance(value, GuardedCallInput):
+                    try:
+                        native_instance = cls._coerce_dataclass_inputs(value.args, value.kwargs)
+                        return UncertaintyLevel(Tolerance.PRECISE), native_instance, None
+                    except Exception as e:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+
+
 
                 # We try to make it as a string if it's not already a string, to let the LLM try to parse it as a constructor call or dict
                 if not isinstance(value, str):
                     value = str(value)
                     # We remove comments
                     value = "\n".join([l for l in value.splitlines() if not l.strip().startswith("#")])
+
 
                 # Si c'est une string qui ressemble à un appel constructeur: Person(...)
                 if isinstance(value, str) and (
@@ -433,8 +515,9 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                         # Tenter d'instancier avec les args parsés
                         try:
                             # On crée l'instance directement via le constructeur
-                            instance = cls._type_py(*parsed_args, **parsed_kwargs)
+                            instance = cls._coerce_dataclass_inputs(tuple(parsed_args), parsed_kwargs)
                             return UncertaintyLevel(Tolerance.PRECISE), instance, None
+
                         except Exception as e:
                             # Si échec instanciation directe, essayer via dict mode si possible ou fail
                             return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
@@ -445,8 +528,9 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                             parsed_kwargs[ast.literal_eval(keyword)] = ast.literal_eval(value)
                         try:
                             # On crée l'instance directement via le constructeur
-                            instance = cls._type_py(**parsed_kwargs)
+                            instance = cls._coerce_dataclass_inputs((), parsed_kwargs)
                             return UncertaintyLevel(Tolerance.PRECISE), instance, None
+
                         except Exception as e:
                             # Si échec instanciation directe, essayer via dict mode si possible ou fail
                             return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
@@ -456,14 +540,36 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
 
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Could not parse as {cls.__name__} dataclass: id of type {id(type(value))} with value {value}. id of cls {id(cls)}"
 
-            def __getattr__(self, name):
-                return getattr(self._python_value, name)
-
+            
             def unwrap(self):
                 return self._recursive_unwrap(self._python_value)
 
-        # Copier les métadonnées de la classe d'origine pour une meilleure introspection et debug        
+            def __setattr__(self, name, value):
+                if name.startswith("_"):
+                    object.__setattr__(self, name, value)
+                    return
+
+                try:
+                    python_value = object.__getattribute__(self, "_python_value")
+                except AttributeError:
+                    object.__setattr__(self, name, value)
+                    return
+
+                if hasattr(type(python_value), "__dataclass_fields__") and name in python_value.__dataclass_fields__:
+                    setattr(python_value, name, value)
+                    return
+
+                object.__setattr__(self, name, value)
+
+
+
+
+                # Copier les métadonnées de la classe d'origine pour une meilleure introspection et debug        
+        GuardedDataclassWrapper.__dataclass_fields__ = getattr(cls_to_guard, "__dataclass_fields__", {})
+        GuardedDataclassWrapper.__dataclass_params__ = getattr(cls_to_guard, "__dataclass_params__", None)
+        GuardedDataclassWrapper.__match_args__ = getattr(cls_to_guard, "__match_args__", ())
         GuardedDataclassWrapper.__name__ = cls_to_guard.__name__
+
         GuardedDataclassWrapper.__module__ = cls_to_guard.__module__
         GuardedDataclassWrapper.__qualname__ = cls_to_guard.__qualname__
         GuardedDataclassWrapper.__doc__ = cls_to_guard.__doc__

@@ -3,8 +3,8 @@
 import pytest
 from dataclasses import dataclass
 from OpenHosta.guarded.constants import Tolerance
+from OpenHosta.guarded.primitives import CastingResult
 from OpenHosta.guarded.subclassablecollections import guarded_dataclass
-
 
 class TestGuardedDataclass:
     """Tests for @guarded_dataclass decorator."""
@@ -178,10 +178,112 @@ class TestGuardedDataclass:
         assert isinstance(p.address, Address)
 
 
+class TestGuardedDataclassParsing:
+    """Parsing and coercion tests inspired by manual datatypes experiments."""
+
+    def test_guarded_dataclass_from_existing_dataclass_type(self):
+        """Test guarded_dataclass(MyDataclass) usage."""
+        @dataclass
+        class Town:
+            country: str
+            long: float
+            lat: float
+
+        GuardedTown = guarded_dataclass(Town)
+        result = GuardedTown({"country": "fr", "long": 10, "lat": 20})
+
+        assert result.country == "fr"
+        assert result.long == 10
+        assert result.lat == 20
+
+    def test_guarded_dataclass_from_repr_string(self):
+        """Test parsing from constructor-like string representation."""
+        @guarded_dataclass
+        class Town:
+            country: str
+            long: float
+            lat: float
+
+        result = Town("Town(country='fr', long=10, lat=10)")
+
+        assert result.country == "fr"
+        assert result.long == 10
+        assert result.lat == 10
+
+    def test_guarded_dataclass_attempt_from_repr_string(self):
+        """Test attempt() from constructor-like string representation."""
+        @guarded_dataclass
+        class Town:
+            country: str
+            long: float
+            lat: float
+
+        result = Town.attempt("Town(country='fr', long=10, lat=10)")
+
+        assert isinstance(result, CastingResult)
+        assert result.is_success is True
+        assert result.python_value.country == "fr"
+        assert result.python_value.long == 10
+        assert result.python_value.lat == 10
+
+    def test_guarded_dataclass_attempt_from_dict_string(self):
+        """Test attempt() from dict-like string representation."""
+        @guarded_dataclass
+        class Town:
+            country: str
+            long: float
+            lat: float
+
+        result = Town.attempt("{'country':'fr', 'long':10, 'lat':10}")
+
+        assert isinstance(result, CastingResult)
+        assert result.is_success is True
+        assert result.python_value.country == "fr"
+        assert result.python_value.long == 10
+        assert result.python_value.lat == 10
+
+    def test_guarded_dataclass_from_existing_instance(self):
+        """Test coercion from an already-instantiated native dataclass."""
+        @dataclass
+        class Town:
+            country: str
+            long: float
+            lat: float
+
+        GuardedTown = guarded_dataclass(Town)
+        town = Town(country="fr", long=10, lat=10)
+
+        result = GuardedTown(town)
+
+        assert result.country == "fr"
+        assert result.long == 10
+        assert result.lat == 10
+
+    def test_guarded_dataclass_attempt_from_existing_instance(self):
+        """Test attempt() from an already-instantiated native dataclass."""
+        @dataclass
+        class Town:
+            country: str
+            long: float
+            lat: float
+
+        GuardedTown = guarded_dataclass(Town)
+        town = Town(country="fr", long=10, lat=10)
+
+        result = GuardedTown.attempt(town)
+
+        assert isinstance(result, CastingResult)
+        assert result.is_success is True
+        assert result.python_value.country == "fr"
+        assert result.python_value.long == 10
+        assert result.python_value.lat == 10
+
+
 class TestGuardedDataclassAdvanced:
     """Advanced tests for guarded_dataclass."""
     
     def test_dataclass_with_list(self):
+
         """Test dataclass with list field."""
         @guarded_dataclass
         @dataclass
