@@ -259,6 +259,33 @@ class TestGuardedDataclassParsing:
         assert result.long == 10
         assert result.lat == 10
 
+    def test_guarded_dataclass_unwrap_returns_native_dataclass(self):
+        """unwrap() should return a native dataclass instance, not a dict."""
+        @guarded_dataclass
+        class Address:
+            street: str
+            city: str
+
+        @guarded_dataclass
+        class Person:
+            name: str
+            address: Address
+
+        person = Person({
+            "name": "Alice",
+            "address": {"street": "Main St", "city": "Paris"}
+        })
+
+        unwrapped = person.unwrap()
+
+        assert hasattr(unwrapped, "__dataclass_fields__")
+        assert type(unwrapped).__name__ == "Person"
+        assert unwrapped.name == "Alice"
+        assert hasattr(unwrapped.address, "__dataclass_fields__")
+        assert type(unwrapped.address).__name__ == "Address"
+        assert unwrapped.address.city == "Paris"
+
+
     def test_guarded_dataclass_attempt_from_existing_instance(self):
         """Test attempt() from an already-instantiated native dataclass."""
         @dataclass
