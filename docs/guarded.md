@@ -6,6 +6,39 @@
 
 ## I. Introduction : Types Gardés (Guarded Types)
 
+### Ordre d'héritage multiple et MRO
+
+⚠️ **Règle importante** : lorsqu'un type Guarded utilise l'héritage multiple, `GuardedPrimitive` doit être placé **en premier** dans la liste des bases explicites.
+
+Cette règle est désormais **vérifiée à la définition de classe** : une sous-classe mal déclarée lève explicitement une `TypeError`.
+
+
+```python
+from OpenHosta.guarded.primitives import GuardedPrimitive, ProxyWrapper
+
+class MyGuardedProxy(GuardedPrimitive, ProxyWrapper):
+    ...
+```
+
+Et non :
+
+```python
+from OpenHosta.guarded.primitives import GuardedPrimitive, ProxyWrapper
+
+class BadProxyOrder(ProxyWrapper, GuardedPrimitive):
+    ...
+```
+
+Pourquoi :
+- `GuardedPrimitive.__new__()` pilote tout le pipeline de parsing (`attempt`, conversion, métadonnées)
+- les autres bases peuvent définir leur propre logique de construction ou interférer avec `super()`/le MRO
+- `ProxyWrapper` est un **mixin de délégation**, pas une base de construction
+- si l'ordre est inversé, le MRO peut court-circuiter le pipeline Guarded
+
+Cette règle s'applique à toutes les sous-classes en héritage multiple, notamment aux types proxy (`GuardedBool`, `GuardedNone`, `GuardedRange`, `GuardedEnum`, etc.).
+
+
+
 Les types Guarded sont des types Python enrichis qui :
 1. **Acceptent des entrées imparfaites** et les nettoient automatiquement
 2. **Conservent des métadonnées** sur la qualité de la conversion
@@ -211,7 +244,7 @@ from OpenHosta.guarded import GuardedComplex
 # Formats acceptés
 GuardedComplex(1+2j)         # Native complex
 GuardedComplex("1+2j")       # String standard
-GuardedComplex("1 + 2j")     # internes)
+GuardedComplex("1 + 2j")     # Avec espaces
 ```
 
 ### 3.5 GuardedBytes et GuardedByteArray
@@ -282,6 +315,13 @@ n.unwrap()  # → None
 * **GuardedMemoryView**: Proxy pour `memoryview`.
 
 ### 4.4 Comportement ProxyWrapper
+
+`ProxyWrapper` est désormais un **mixin** :
+- il délègue les opérations à `_python_value`
+- il fournit un `unwrap()` **récursif**
+- il ne doit pas implémenter la logique principale de construction
+- la construction doit être assurée par `GuardedPrimitive` via le MRO
+
 
 ⚠️ **Important** : Les types proxy ne sont PAS des instances du type natif.
 

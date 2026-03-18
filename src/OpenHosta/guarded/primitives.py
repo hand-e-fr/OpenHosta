@@ -121,6 +121,22 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
     3. LLM (Intelligent & Coûteux)
     4. Règles métier
     """
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        # Convention d'architecture OpenHosta:
+        # GuardedPrimitive doit apparaître en première base explicite dès qu'il est
+        # utilisé en héritage multiple. Cela garantit que son __new__ pilote bien
+        # la construction via le MRO.
+        direct_bases = getattr(cls, "__bases__", ())
+        if len(direct_bases) > 1 and direct_bases[0] is not GuardedPrimitive:
+            raise TypeError(
+                f"Class {cls.__name__} must declare GuardedPrimitive as first base "
+                f"to preserve Guarded MRO construction. Expected something like "
+                f"'(GuardedPrimitive, ...)', got {direct_bases}."
+            )
+
     # --- Interface Déclarative (À définir par les classes enfants) ---
     
     # 4 niveaux du plus générique au plus spécifique utilisables par les AbtractionLevels
@@ -244,22 +260,34 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
                 unwrapped = getattr(value, "_python_value", None)
                 if unwrapped is value:
                     if is_dataclass(value):
-                        return {
+                        dataclass_type = type(value)
+                        data = {
                             field.name: GuardedPrimitive._recursive_unwrap(
                                 getattr(value, field.name), seen
                             )
                             for field in fields(value)
                         }
+                        try:
+                            return dataclass_type(**data)
+                        except Exception:
+                            return data
                     return value
+
                 return GuardedPrimitive._recursive_unwrap(unwrapped, seen)
 
             if is_dataclass(value):
-                return {
+                dataclass_type = type(value)
+                data = {
                     field.name: GuardedPrimitive._recursive_unwrap(
                         getattr(value, field.name), seen
                     )
                     for field in fields(value)
                 }
+                try:
+                    return dataclass_type(**data)
+                except Exception:
+                    return data
+
             if isinstance(value, dict):
                 return {
                     GuardedPrimitive._recursive_unwrap(k, seen): GuardedPrimitive._recursive_unwrap(v, seen)
@@ -397,29 +425,25 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
 
 class ProxyWrapper:
     """
-    Wrapper pour types Python non-subclassables (bool, range, memoryview, NoneType).
+    Mixin pour types Python non-subclassables (bool, range, memoryview, NoneType).
     
-    Ces types ne peuvent pas être hérités directement, donc on crée un proxy
-    qui stocke la valeur native dans `_python_value` et délègue les opérations.
+    IMPORTANT:
+    - Cette classe ne doit pas piloter la construction des objets.
+    - `GuardedPrimitive` doit apparaître AVANT `ProxyWrapper` dans l'héritage
+      multiple afin que son `__new__` soit utilisé (MRO).
+    - `ProxyWrapper` fournit uniquement les comportements de délégation/proxy.
     
-    IMPORTANT: Les instances ne sont PAS des instances du type natif.
-    Utilisez .unwrap() pour récupérer la valeur native si nécessaire.
-    
-    Exemple:
-        b = GuardedBool("yes")
-        isinstance(b, bool)  # ❌ False
-        b.unwrap()           # ✅ True (vrai bool)
+    Exemple correct:
+        class GuardedBool(GuardedPrimitive, ProxyWrapper):
+            ...
     """
-    def __new__(cls, value):
-        instance = super().__new__(cls)
-        return instance
-    
+
     def unwrap(self):
         """Retourne la valeur Python native avec unwrapping récursif."""
         return GuardedPrimitive._recursive_unwrap(getattr(self, "_python_value", None))
 
-
     def __getattr__(self, name):
+
         """Délègue l'accès aux attributs à la valeur native."""
         return getattr(self._python_value, name)
     
