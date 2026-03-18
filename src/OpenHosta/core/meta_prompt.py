@@ -111,11 +111,13 @@ EMULATE_META_PROMPT=MetaPrompt(
 
     Here's the function definition:
 
-    ```python
-    {{ function_return_as_python_type }}
+    {{ python_type_definition_dict }}
     
+    ```python    
     def {{ function_name }}({{ function_args }}) -> {{ function_return_type_name }}:
-        \"\"\"{{ function_doc }}\"\"\"
+        \"\"\"
+        {{ function_doc | indent(4, true) }}
+        \"\"\"
         
         ...
         ...behavior to be simulated...

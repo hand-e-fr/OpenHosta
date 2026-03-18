@@ -94,3 +94,64 @@ if response.choices[0].logprobs:
             print(f"{'':<10} | {'ALT' if top_token_str!=chosen_token_str else 'CHOSEN':<10} | {repr(top_token_str):<15} | {top_id:<10} | {top.logprob:.4f}")
         
         print("-" * 65)
+        
+        
+        
+        
+
+
+from OpenHosta import emulate, safe, config
+from OpenHosta.models import ModelCapabilities
+
+config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
+
+from dataclasses import dataclass
+
+@dataclass
+class Country:
+    name: str
+
+def answer(question:str) -> Country:
+    """
+    Answer format:  Country(str)
+    """
+    return emulate()
+
+
+q = "What is the weather today ?"
+q = "Just say hello to Alice."
+
+q="Ou est la lune ?"
+
+qv=q
+q="Biggest wine producer ?"
+q="Provide a random answer"
+    
+for i in range(10):
+    qs = q.split()
+    
+    spaces = [" "]*len(qs)
+    # if i is odd double " " at position i in spaces
+    # else remove " " at position i in spaces
+    
+    if i < len(qs):
+        if i % 2 == 1:
+            spaces[i // 2] = "  "
+        else:
+            spaces[i // 2] = ""
+    else:
+        i = i - 10
+        if i % 2 == 1:
+            qs[i // 2] = ""
+        else:
+            qs[i // 2] = "<guess>"
+        
+    qv = "".join([qs[j] + spaces[j % 5] for j in range(len(qs))])    
+    # qv="The country of Emmanuel Smith"
+    #qv=None
+    #qv="Answer with Country(name='Madagascar')"
+    with safe(1) as session:
+        a = answer(qv)
+        branches = answer.hosta_inspection["logs"]["uncertainty_counters"]
+        print(f"Question: {qv} | Uncertainty: {session.cumulated_uncertainty}, {branches}", f"| Answer: {a}")
+                

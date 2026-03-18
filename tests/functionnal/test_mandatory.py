@@ -21,7 +21,11 @@ load_dotenv()
 # pytest OpenHosta/tests/functionnalTests/test_ask.py
 
 
-from OpenHosta.utils.import_handler import is_pydantic_available
+try:
+    import pydantic
+    is_pydantic_available = True
+except ImportError:
+    is_pydantic_available = False
 assert is_pydantic_available, "Pydantic shall be installed"
 
 import os
@@ -54,6 +58,14 @@ class User(BaseModel):
     age: int
 
 from OpenHosta import config, OpenAICompatibleModel, OneTurnConversationPipeline
+
+class TestModel:
+    
+    def test_ModelListingOnApi(self):
+        
+        models = config.DefaultModel.models_on_same_api()
+        
+        assert models and len(models) > 0, "No model found"
 
 class TestEmulate:
     

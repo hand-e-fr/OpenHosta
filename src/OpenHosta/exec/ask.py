@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..core.config import Model, config
+from ..defaults import Model, config
 
 from ..core.meta_prompt import MetaPrompt
     
@@ -16,7 +16,22 @@ def ask(
     **named_other_args,
 ) -> Any:
 
-    model = config.DefaultModel
+    if model is None:
+        # Create a dummy inspection to detect required capabilities
+        from ..core.inspection import Inspection
+        from ..core.analizer import AnalyzedFunction
+        
+        # We simulate a function that takes the extra args to detect images
+        dummy_analyse = AnalyzedFunction(name="ask", args=[], type=str, doc=user_message)
+        # Add args for image detection
+        from ..core.analizer import AnalyzedArgument
+        for i, arg in enumerate(unnamed_other_args):
+            dummy_analyse.args.append(AnalyzedArgument(name=f"arg{i}", value=arg, type=None))
+        for key, arg in named_other_args.items():
+            dummy_analyse.args.append(AnalyzedArgument(name=key, value=arg, type=None))
+            
+        dummy_inspection = Inspection(None, None, dummy_analyse)
+        model = config.DefaultPipeline.push_choose_model(dummy_inspection)
 
     message = []
     if system is not None:
@@ -63,7 +78,7 @@ def ask(
         llm_args=force_llm_args
     )
 
-    response = response_dict["choices"][0]["message"]["content"]
+    response = model.get_response_content(response_dict)
 
     # No type detection
     answer = response
@@ -81,7 +96,20 @@ async def ask_async(
     **named_other_args,
 ) -> Any:
 
-    model = config.DefaultModel
+    if model is None:
+        # Create a dummy inspection to detect required capabilities
+        from ..core.inspection import Inspection
+        from ..core.analizer import AnalyzedFunction
+        from ..core.analizer import AnalyzedArgument
+        
+        dummy_analyse = AnalyzedFunction(name="ask", args=[], type=str, doc=user_message)
+        for i, arg in enumerate(unnamed_other_args):
+            dummy_analyse.args.append(AnalyzedArgument(name=f"arg{i}", value=arg, type=None))
+        for key, arg in named_other_args.items():
+            dummy_analyse.args.append(AnalyzedArgument(name=key, value=arg, type=None))
+            
+        dummy_inspection = Inspection(None, None, dummy_analyse)
+        model = config.DefaultPipeline.push_choose_model(dummy_inspection)
 
     message = []
     if system is not None:
@@ -124,11 +152,12 @@ async def ask_async(
 
     force_llm_args["force_json_output"] = force_json_output
 
-    response_dict = await model.api_call_async(messages=message,
+    response_dict = await model.api_call_async(
+        messages=message,
         llm_args=force_llm_args
     )
 
-    response = response_dict["choices"][0]["message"]["content"]
+    response = model.get_response_content(response_dict)
     
     # No type detection
     answer = response

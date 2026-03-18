@@ -22,9 +22,6 @@ load_dotenv()
 # pytest OpenHosta/tests/functionnalTests/test_ask.py
 
 
-from OpenHosta.utils.import_handler import is_pydantic_available
-assert is_pydantic_available, "Pydantic shall be installed"
-
 #########################################################
 #
 # Test model configuration
