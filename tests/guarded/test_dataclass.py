@@ -221,10 +221,10 @@ class TestGuardedDataclassParsing:
         result = Town.attempt("Town(country='fr', long=10, lat=10)")
 
         assert isinstance(result, CastingResult)
-        assert result.is_success is True
-        assert result.python_value.country == "fr"
-        assert result.python_value.long == 10
-        assert result.python_value.lat == 10
+        assert result.success is True
+        assert result.data.country == "fr"
+        assert result.data.long == 10
+        assert result.data.lat == 10
 
     def test_guarded_dataclass_attempt_from_dict_string(self):
         """Test attempt() from dict-like string representation."""
@@ -237,10 +237,10 @@ class TestGuardedDataclassParsing:
         result = Town.attempt("{'country':'fr', 'long':10, 'lat':10}")
 
         assert isinstance(result, CastingResult)
-        assert result.is_success is True
-        assert result.python_value.country == "fr"
-        assert result.python_value.long == 10
-        assert result.python_value.lat == 10
+        assert result.success is True
+        assert result.data.country == "fr"
+        assert result.data.long == 10
+        assert result.data.lat == 10
 
     def test_guarded_dataclass_from_existing_instance(self):
         """Test coercion from an already-instantiated native dataclass."""
@@ -300,10 +300,10 @@ class TestGuardedDataclassParsing:
         result = GuardedTown.attempt(town)
 
         assert isinstance(result, CastingResult)
-        assert result.is_success is True
-        assert result.python_value.country == "fr"
-        assert result.python_value.long == 10
-        assert result.python_value.lat == 10
+        assert result.success is True
+        assert result.data.country == "fr"
+        assert result.data.long == 10
+        assert result.data.lat == 10
 
 
 class TestGuardedDataclassAdvanced:

@@ -319,18 +319,47 @@ class GuardedTuple(GuardedPrimitive, tuple):
             except (TypeError, ValueError):
                 return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to tuple"
 
+
         # Content validation
         if cls._item_types:
-             # Fixed length
-            if len(items) != len(cls._item_types):
-                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(items)}"
-            try:
-                converted = tuple(cls._item_types[i](items[i]) for i in range(len(items)))
-                return UncertaintyLevel(Tolerance.PRECISE), converted, None
-            except Exception as e:
-                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
+            return cls._content_validation(items, value)
         
         return UncertaintyLevel(Tolerance.PRECISE), items, None
+
+    @classmethod
+    def _content_validation(cls, items, value) -> Tuple[UncertaintyLevel, Any, str | None]:
+            # Fixed length
+        if len(items) != len(cls._item_types):
+            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(items)}"
+        try:
+            converted = tuple(cls._item_types[i](items[i]) for i in range(len(items)))
+            return UncertaintyLevel(Tolerance.PRECISE), converted, None
+        except Exception as e:
+            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
+        
+
+    @classmethod
+    def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, str | None]:
+        """
+        Try to fix content that makes string not parsable without changing the meaning
+        """
+        
+        if isinstance(value, str):
+            value_s = value.strip()
+            value_s = value.replace("\n","\\n")
+            # Error might me due to newlines in text content
+            try:
+                import ast
+                parsed = ast.literal_eval(value_s)
+                if isinstance(parsed, tuple):
+                    items = parsed
+            except (ValueError, SyntaxError):
+                pass
+
+            if cls._item_types:
+                return cls._content_validation(items, value)
+            
+        return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to tuple"
 
     def unwrap(self):
         """Retourne un tuple natif avec unwrapping récursif des éléments."""
@@ -422,16 +451,16 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                         converted_value = raw_value
                     else:
                         attempt_result = guarded_type.attempt(raw_value)
-                        if not attempt_result.is_success:
+                        if not attempt_result.success:
                             raise ValueError(attempt_result.error_message)
 
                         if getattr(guarded_type, "_types", None) is not None:
                             winning_type = attempt_result.python_type
-                            converted_value = winning_type(raw_value) if winning_type is not None else attempt_result.python_value
+                            converted_value = winning_type(raw_value) if winning_type is not None else attempt_result.data
                         elif hasattr(guarded_type, "__dataclass_fields__"):
                             converted_value = guarded_type(raw_value)
                         else:
-                            converted_value = attempt_result.python_value
+                            converted_value = attempt_result.data
 
 
 

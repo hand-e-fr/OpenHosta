@@ -93,12 +93,9 @@ jobs:
       - name: Install dependencies
         run: pip install .[tests]
 
-      - name: create .env file
-        run: |
-          echo "OPENHOSTA_DEFAULT_MODEL_API_KEY=${{ secrets.OPENHOSTA_DEFAULT_MODEL_API_KEY }}" >> .env
-
       - name: Run functionnal tests
         env:
+          OPENHOSTA_DEFAULT_MODEL_NAME: gpt-4.1
           OPENHOSTA_DEFAULT_MODEL_API_KEY: ${{ secrets.OPENHOSTA_DEFAULT_MODEL_API_KEY }}         
         run: python -m pytest tests/functionnal -v --cov=OpenHosta
 

@@ -86,9 +86,9 @@ class GuardedCallInput:
 @dataclass
 class CastingResult:
 
-    is_success: bool
+    success: bool
     
-    python_value: Any    # La valeur convertie (ex: 23) ou None
+    data: Any    # La valeur convertie (ex: 23) ou None
     uncertainty: float   # Score de 0.0 à 1.0
     abstraction: AbstractionLevel 
 
@@ -182,7 +182,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
 
 
         # 2. Gestion de l'échec
-        if not result.is_success:
+        if not result.success:
             raise ValueError(
                 f"OpenHosta Casting Failed for type '{cls.__name__}'.\n"
                 f"Input: '{value}'\n"
@@ -193,7 +193,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         # Note: Pour les types mutables (list, dict, set), super().__new__(cls) 
         # retourne une instance vide. On la remplira dans __init__.
         try:
-            instance = super().__new__(cls, result.python_value)
+            instance = super().__new__(cls, result.data)
         except TypeError:
             # Certains types ne prennent pas d'arguments dans __new__
             instance = super().__new__(cls)
@@ -202,7 +202,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         instance._input = value
         instance._uncertainty = result.uncertainty
         instance._abstraction_level = result.abstraction
-        instance._python_value = result.python_value
+        instance._python_value = result.data
         
         return instance
 
