@@ -15,7 +15,7 @@ from .exec.ask import ask, ask_async
 from .exec.emulate import emulate, emulate_async
 from .exec.emulate_iterator import emulate_iterator
 from .exec.closure import closure, closure_async
-from .semantics import SemanticSet, SemanticDict
+# from .semantics import SemanticSet, SemanticDict # Maybe in 5.0
 from .semantics.operators import test, test_async
 
 from .models import OpenAICompatibleModel as Model
