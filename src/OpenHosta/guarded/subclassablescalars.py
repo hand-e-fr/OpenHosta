@@ -118,7 +118,13 @@ class GuardedUtf8(GuardedPrimitive, str):
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
 
         if isinstance(value, str):
-            return UncertaintyLevel(Tolerance.STRICT), value, None
+            
+            if value.startswith("'") or value.startswith('"'):
+                # Remove quotes if they are present at the beginning and end of the string
+                # This is a common pattern in JSON and other format
+                return UncertaintyLevel(Tolerance.FLEXIBLE), value.strip("\"'"), None
+            else:
+                return UncertaintyLevel(Tolerance.STRICT), value, None
             
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     

@@ -255,7 +255,7 @@ class ReproducibleSettings:
         self.cumulated_uncertainty = 0.0
         self.seed = seed
         self.uuid = uuid.uuid4()
-        self.trace = []
+        self.trace:list[dict[str,str]] = []
         
     def __repr__(self):
         return f"""ReproducibleSettings(

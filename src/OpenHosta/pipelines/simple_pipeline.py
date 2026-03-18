@@ -473,7 +473,7 @@ class OneTurnConversationPipeline(Pipeline):
                 
                 return response_data
                 
-            except (ValueError, TypeError, ValidationError, UncertaintyError) as e:
+            except (ValueError, TypeError, UncertaintyError) as e:
                 duration = time.time() - start_time
                 last_exception = e
                 
