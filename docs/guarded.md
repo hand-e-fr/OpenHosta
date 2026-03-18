@@ -211,7 +211,7 @@ from OpenHosta.guarded import GuardedComplex
 # Formats acceptés
 GuardedComplex(1+2j)         # Native complex
 GuardedComplex("1+2j")       # String standard
-GuardedComplex("1 + 2j")     # Avec espaces
+GuardedComplex("1 + 2j")     # internes)
 ```
 
 ### 3.5 GuardedBytes et GuardedByteArray
@@ -368,7 +368,7 @@ c = Color("yellow")   # Erreur (hors des valeurs permises)
 Crée un type qui tente plusieurs conversions successives, similaire à `typing.Union`.
 
 ```python
-from OpenHosta.guarded.sublassableunions import GuardedUnion, guarded_union
+from OpenHosta.guarded import GuardedUnion, guarded_union
 from OpenHosta.guarded import GuardedInt, GuardedUtf8
 
 # Tente d'abord Int, sinon String
@@ -393,16 +393,16 @@ class Status(GuardedEnum):
     DONE = "done"
 
 # Parsing flexible
-s1 = Status("active")    # Par nom (minuscule)
+s1 = Status("active")    # Par valeur
 s2 = Status("ACTIVE")    # Par nom (majuscule)
 s3 = Status("pending")   # Par valeur
-s4 = Status("Status.ACTIVE")  # Format repr() (EnumName.MEMBER)
+s4 = Status("Status.ACTIVE")  # Format EnumName.MEMBER
 s5 = Status(".ACTIVE")        # Format court (.MEMBER)
 
 # API compatible enum.Enum
 s1.name   # "ACTIVE"
 s1.value  # "active"
-repr(s1)  # "Status.ACTIVE"
+repr(s1)  # "<Status.ACTIVE: 'active'>"
 
 # Comparaison
 s1 == s2  # True
@@ -414,10 +414,11 @@ s_copy = Status(repr(s))  # ✅ Fonctionne !
 ```
 
 **Formats acceptés** :
-- ✅ Par nom : `Status("ACTIVE")`, `Status("active")`
-- ✅ Par valeur : `Status("pending")`
-- ✅ Format repr() : `Status("Status.ACTIVE")`
+- ✅ Par nom : `Status("ACTIVE")`
+- ✅ Par valeur : `Status("active")`, `Status("pending")`
+- ✅ Format qualifié : `Status("Status.ACTIVE")`
 - ✅ Format court : `Status(".ACTIVE")`
+- ✅ Représentation complète : `Status("<Status.ACTIVE: 'active'>")`
 
 **Avantages** :
 - ✅ Parsing case-insensitive
