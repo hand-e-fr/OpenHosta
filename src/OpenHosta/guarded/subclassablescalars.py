@@ -153,6 +153,7 @@ class GuardedComplex(GuardedPrimitive, complex):
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         try:
+            value = str(value).replace(" ", "")
             return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), complex(value), None
         except (ValueError, TypeError) as e:
             return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
