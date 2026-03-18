@@ -438,9 +438,7 @@ class OneTurnConversationPipeline(Pipeline):
         return response_data
 
     def execute(self, inspection: Inspection, force_llm_args: dict, is_async: bool = False) -> Any:
-        import asyncio
         import time
-        from pydantic import ValidationError
         from ..defaults import config
 
         max_retries = config.MAX_RETRIES
@@ -499,7 +497,6 @@ class OneTurnConversationPipeline(Pipeline):
 
     async def execute_async(self, inspection: Inspection, force_llm_args: dict) -> Any:
         import time
-        from pydantic import ValidationError
         from ..defaults import config
 
         max_retries = config.MAX_RETRIES
@@ -528,7 +525,7 @@ class OneTurnConversationPipeline(Pipeline):
                 
                 return response_data
                 
-            except (ValueError, TypeError, ValidationError, UncertaintyError) as e:
+            except (ValueError, TypeError, UncertaintyError) as e:
                 duration = time.time() - start_time
                 last_exception = e
                 
