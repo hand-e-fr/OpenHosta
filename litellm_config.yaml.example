@@ -1,0 +1,21 @@
+model_list:
+  - model_name: qwen3.5:9b
+    litellm_params:
+      model: ollama/qwen3.5:9b
+      api_base: http://localhost:11434
+
+  - model_name: claude-3-5-sonnet
+    litellm_params:
+      model: anthropic/claude-3-5-sonnet-20240620
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+  - model_name: gemini-3-pro-preview
+    litellm_params:
+      model: gemini/gemini-3-pro-preview
+      api_key: "os.environ/GEMINI_API_KEY"
+
+  - model_name: custom-image
+    litellm_params:
+      model: openai/custom-image
+      api_base: http://192.168.1.188:8000/generate
+      custom_llm_provider: openai 

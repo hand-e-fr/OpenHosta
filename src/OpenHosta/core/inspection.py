@@ -2,11 +2,35 @@ import sys
 import inspect
 
 from types import FrameType, MethodType, FunctionType
+from typing import Callable, Dict, Any, cast, TYPE_CHECKING
 
-from ..core.errors import FrameError
+from .base_model import Model
+from .errors import FrameError
 from .analizer import hosta_analyze, hosta_analyze_update
 
-type Inspection = dict
+if TYPE_CHECKING:
+    from ..pipelines.simple_pipeline import Pipeline
+
+class Inspection:
+    def __init__(self,
+                 function_pointer: Callable,
+                 frame,
+                 analyse
+                 ):
+        self.other_inspection : Dict[str, Any] = {}
+        
+        self.function_pointer:HostaInjectedFunction = cast(HostaInjectedFunction, function_pointer)
+        self.frame =  frame
+        self.analyse =  analyse
+        self.logs:Dict =  {}
+        self.force_llm_args:Dict =  {}
+        self.counters:Dict =  {}
+        self.prompt_data:Dict = {}
+        self.pipeline:Pipeline|None =  None
+        self.model:Model|None = None
+        
+class HostaInjectedFunction(Callable):
+    hosta_inspection: Inspection
 
 def identify_function_of_frame(function_frame):
     """
@@ -116,32 +140,26 @@ def get_hosta_inspection(frame=None, function_pointer=None):
     else:
         function_pointer = function_pointer
     
-    inspection = getattr(function_pointer, "hosta_inspection", None)
+    inspection: Inspection|None = getattr(function_pointer, "hosta_inspection", None)
     
     if inspection == None:
         analyse = hosta_analyze(frame, function_pointer)
-        inspection = {
-            "function":function_pointer,
-            "frame": frame,
-            "analyse": analyse,
-            "logs": {},
-            "force_llm_args": {},
-            "counters": {},
-            "prompt_data":{},
-            "pipe": None
-        }
+        inspection = Inspection(
+            function_pointer=function_pointer,
+            frame=frame,
+            analyse=analyse)
         setattr(function_pointer, "hosta_inspection", inspection)
     else:
         if frame is None:
             # We do not have argument types from the call (most likely a closure)
-            inspection["analyse"]["args"] = [] 
+            inspection.analyse.args = []
         else:
-            analyse = hosta_analyze_update(frame, inspection)
-            inspection["analyse"] = analyse
-        inspection["frame"] = frame
+            analyse = hosta_analyze_update(frame, inspection.analyse)
+            inspection.analyse = analyse
+        inspection.frame = frame
 
     if hasattr(function_pointer, "force_llm_args"):
-        inspection["force_llm_args"] |= function_pointer.force_llm_args
+        inspection.force_llm_args |= function_pointer.force_llm_args
         
     return inspection
 
@@ -153,11 +171,11 @@ def get_last_frame(function_pointer):
     If the function was never called, return None.
     """
 
-    inspection = getattr(function_pointer, "hosta_inspection", None)
+    inspection:Inspection|None = getattr(function_pointer, "hosta_inspection", None)
 
     if inspection == None:
         frame = None
     else:
-        frame = inspection["frame"]
+        frame = inspection.frame
 
     return frame

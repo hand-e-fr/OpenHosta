@@ -25,13 +25,13 @@ def test_emulate_basic():
     """
     Test the emulate function with a simple prompt that asks for the capital of a country.
     """
-    def get_capital(country: str) -> str:
+    def get_capital_name(country: str) -> str:
         """
-        This function returns the capital of a given country.
+        This function returns the name of the capital of a given country.
         """
         return emulate()
     
-    response = get_capital("France")
+    response = get_capital_name("France")
     assert "Paris" in response, f"Expected 'Paris' in response, got: {response}"
 
 def test_emulate_math():
@@ -53,24 +53,24 @@ def test_emulate_math():
     response = get_math_result(2.5)
     assert 4.5 == response, f"Expected '4.5' in response, got: {response}"
 
-def test_emulate_basic():
+def test_emulate_basic_none():
     """
     Test the emulate function with a simple prompt that asks for the capital of a country.
     """
     
-    def get_capital(country: str) -> int:
+    def get_capital_name(country: str) -> int | None:
         """
-        This function returns the capital of a given country.
+        This function returns the capital name of a given country.
         """
         return emulate()
     
     try:
-        response = get_capital("France")
+        response = get_capital_name("France")
     except:
         # This does not work because the model returns "Paris" which is not an int
         response = None
     
-    assert response is None, f"Expected 'Paris' in response, got: {response}"
+    assert response == None, f"Expected None in response as name cannot be int, got: {response}"
 
 def test_emulate_routing():
     """
@@ -94,7 +94,7 @@ def test_emulate_routing():
     
     next_step = get_next_step("git commit -m 'Initial commit'")
 
-    assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+    assert next_step == NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
     
 def test_emulate_dataclass():
     """
@@ -187,7 +187,7 @@ def test_emulate_routing_async():
         return await get_next_step("git commit -m 'Initial commit'")
     next_step = run(app())
 
-    assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+    assert next_step == NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
     
 def test_emulate_dataclass_async():
     """
