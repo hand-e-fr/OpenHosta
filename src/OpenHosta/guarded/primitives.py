@@ -64,18 +64,18 @@ Création de types personnalisés :
     'john.doe@company.com'
 """
 
-from abc import ABC
+from abc import ABC, ABCMeta
 from typing import Any, Tuple, ClassVar, Dict, Optional
 from dataclasses import is_dataclass, fields
 
 
 # Imports internes (Moteur & Incertitude)
-from .constants import Tolerance
+from .constants import Tolerance, ToleranceLevel
 
 from dataclasses import dataclass
 from typing import Any, Optional, Literal, Type
 
-AbstractionLevel = Literal["native", "heuristic", "semantic", "knowledge"]
+AbstractionLevel = Literal["native", "heuristic", "semantic", "knowledge", "failed"]
 UncertaintyLevel = float
 
 @dataclass
@@ -91,7 +91,22 @@ class CastingResult:
 
     error_message: Optional[str] = None
     
-class GuardedPrimitive(ABC):
+
+class GuardedPrimitiveMeta(ABCMeta):
+    def __repr__(cls):
+        if cls._type_py_repr is not NotImplemented:
+            _type_py_repr = str(cls._type_py_repr)
+        else:
+            _type_py_repr = str(cls._type_py)
+
+        return (
+            f"# Description for guarded type '{cls.__name__}':\n"
+            f"# English Description: {cls._type_en}\n"
+            f"# Python Type:\n{_type_py_repr}\n"
+        )
+
+
+class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
     """
     Mixin abstrait qui implémente le pipeline de validation 'OpenHosta'.
     Il transforme une entrée arbitraire en type natif via :
@@ -109,12 +124,13 @@ class GuardedPrimitive(ABC):
     # - 4. Connaissances spécifiques (term métier dans une taxonomie ou un graph)
     
     _type_en: ClassVar[str] = NotImplemented
+    _type_py_repr: ClassVar[str] = NotImplemented
     _type_py: ClassVar[type] = NotImplemented
     _type_json: ClassVar[Dict[str, Any]] = NotImplemented
     _type_knowledge: ClassVar[Dict | Any] = NotImplemented
-    _tolerance: ClassVar[Tolerance] = Tolerance.TYPE_COMPLIANT
+    _tolerance: ClassVar[ToleranceLevel] = Tolerance.TYPE_COMPLIANT
     
-    def __new__(cls, value: Any, tolerance: Tolerance = None):
+    def __new__(cls, value: Any, tolerance: ToleranceLevel|None = None):
         """
         Le constructeur 'Magique'. Il ne crée l'objet que si le analyseur sémantique réussit.
         """
@@ -160,7 +176,7 @@ class GuardedPrimitive(ABC):
         
         return instance
 
-    def __init__(self, value: Any, tolerance: Tolerance = None):
+    def __init__(self, value: Any, tolerance: ToleranceLevel|None = None):
         """
         L'initialiseur est appelé après __new__.
         Pour les types mutables (list, dict, set), on doit s'assurer que
@@ -199,73 +215,94 @@ class GuardedPrimitive(ABC):
         return getattr(self, '_abstraction_level', 'unknown')
 
     @staticmethod
-    def _recursive_unwrap(value: Any) -> Any:
-        """Déballe récursivement les objets Guarded et les conteneurs natifs."""
-        if hasattr(value, "unwrap") and callable(value.unwrap):
-            unwrapped = value.unwrap()
-            if unwrapped is value:
-                if is_dataclass(value):
-                    return {
-                        field.name: GuardedPrimitive._recursive_unwrap(getattr(value, field.name))
-                        for field in fields(value)
-                    }
-                return value
-            return GuardedPrimitive._recursive_unwrap(unwrapped)
+    def _recursive_unwrap(value: Any, seen: set[int]|None = None) -> Any:
+        if seen is None:
+            seen = set()
+            
+        obj_id = id(value)
+        if obj_id in seen:
+            return value
 
-        if is_dataclass(value):
-            return {
-                field.name: GuardedPrimitive._recursive_unwrap(getattr(value, field.name))
-                for field in fields(value)
-            }
-        if isinstance(value, dict):
-            return {
-                GuardedPrimitive._recursive_unwrap(k): GuardedPrimitive._recursive_unwrap(v)
-                for k, v in value.items()
-            }
-        if isinstance(value, list):
-            return [GuardedPrimitive._recursive_unwrap(item) for item in value]
-        if isinstance(value, tuple):
-            return tuple(GuardedPrimitive._recursive_unwrap(item) for item in value)
-        if isinstance(value, set):
-            return {GuardedPrimitive._recursive_unwrap(item) for item in value}
-        if isinstance(value, frozenset):
-            return frozenset(GuardedPrimitive._recursive_unwrap(item) for item in value)
-        return value
+        seen.add(obj_id)
+        try:
+            if hasattr(value, "unwrap") and callable(value.unwrap) and isinstance(value, GuardedPrimitive):
+                
+                unwrapped = getattr(value, "_python_value", None)
+                if unwrapped is value:
+                    if is_dataclass(value):
+                        return {
+                            field.name: GuardedPrimitive._recursive_unwrap(
+                                getattr(value, field.name), seen
+                            )
+                            for field in fields(value)
+                        }
+                    return value
+                return GuardedPrimitive._recursive_unwrap(unwrapped, seen)
+
+            if is_dataclass(value):
+                return {
+                    field.name: GuardedPrimitive._recursive_unwrap(
+                        getattr(value, field.name), seen
+                    )
+                    for field in fields(value)
+                }
+            if isinstance(value, dict):
+                return {
+                    GuardedPrimitive._recursive_unwrap(k, seen): GuardedPrimitive._recursive_unwrap(v, seen)
+                    for k, v in value.items()
+                }
+            if isinstance(value, list):
+                return [GuardedPrimitive._recursive_unwrap(item, seen) for item in value]
+            if isinstance(value, tuple):
+                return tuple(GuardedPrimitive._recursive_unwrap(item, seen) for item in value)
+            if isinstance(value, set):
+                return {GuardedPrimitive._recursive_unwrap(item, seen) for item in value}
+            if isinstance(value, frozenset):
+                return frozenset(GuardedPrimitive._recursive_unwrap(item, seen) for item in value)
+            return value
+        finally:
+            seen.discard(obj_id)
+
 
     def unwrap(self):
         """Méthode utilitaire pour récupérer la valeur native avec unwrapping récursif."""
-        return self._recursive_unwrap(getattr(self, "_python_value", None))
+        return self._recursive_unwrap(self)
 
 
     @classmethod
-    def attempt(cls, value: Any, tolerance: Tolerance = None) -> CastingResult:
+    def attempt(cls, value: Any, tolerance: ToleranceLevel|None = None) -> CastingResult:
         """
         Le SQUELETTE de l'algorithme (Template Method).
         Orchestre les tentatives du moins coûteux au plus coûteux.
         """
-        
+
         if tolerance is None:
             tolerance = cls._tolerance
-            
+    
+        full_message = ""
         # At each layer we have a chance to reduce uncertainty
         
         uncertainty, cleaned_native_val, message = cls._parse_native(value)
         if uncertainty <= tolerance:
             return CastingResult(True, cleaned_native_val, uncertainty, 'native', value, cls._type_py, message)
+        full_message += f"Native parsing failed: {message}\n"
 
         uncertainty, cleaned_heuristic_val, message = cls._parse_heuristic(cleaned_native_val)
         if uncertainty <= tolerance:
             return CastingResult(True, cleaned_heuristic_val, uncertainty, 'heuristic', value, cls._type_py, message)
+        full_message += f"Heuristic parsing failed: {message}\n"
 
         uncertainty, cleaned_semantic_value, message = cls._parse_semantic(cleaned_heuristic_val)
         if uncertainty <= tolerance:
             return CastingResult(True, cleaned_semantic_value, uncertainty, 'semantic', value, cls._type_py, message)
-
+        full_message += f"Semantic parsing failed: {message}\n"
+        
         uncertainty, cleaned_knowledge_value, message = cls._parse_knowledge(cleaned_semantic_value)
         if uncertainty <= tolerance:
             return CastingResult(True, cleaned_knowledge_value, uncertainty, 'knowledge', value, cls._type_py, message)
+        full_message += f"Knowledge parsing failed: {message}\n"
 
-        return CastingResult(False, None, Tolerance.ANYTHING, 'failed', value, cls._type_py)
+        return CastingResult(False, None, Tolerance.ANYTHING, 'failed', value, cls._type_py, full_message)
     
     # --- Hooks Abstraits (À implémenter par SemanticInt, SemanticUtf8...) ---
     

@@ -22,12 +22,41 @@ load_dotenv()
 
 from dataclasses import dataclass
 from OpenHosta import emulate
+from OpenHosta.guarded import guarded_dataclass
 
 @dataclass
 class Town:
     country:str
     long:float
     lat:float
+
+t = Town(country='fr', long=10, lat=10)
+td = Town(country='fr', long=10, lat=10).__dict__
+
+GuardedTown = guarded_dataclass(Town)
+gt = GuardedTown(td)
+gt2 = GuardedTown("Town(country='fr', long=10, lat=10)")
+type(gt2)
+
+@guarded_dataclass
+class Town:
+    country:str
+    long:float
+    lat:float
+
+t = Town("Town(country='fr', long=10, lat=10)")
+type(t)
+print(t,t.country, type(t.country))
+
+from OpenHosta.guarded.primitives import GuardedPrimitive
+issubclass(Town, GuardedPrimitive)
+isinstance(t, Town)
+res = GuardedTown.attempt(gt)
+res = GuardedTown.attempt("Town(country='fr', long=10, lat=10)")
+res = GuardedTown.attempt("{'country':'fr', 'long':10, 'lat':10}")
+
+GuardedTown(t)
+GuardedTown.attempt(t)
 
 def find_town(town_name:str, zip:int=None, *, size:int, alt:str=0, population=None) -> Town :
     """
@@ -40,6 +69,9 @@ def find_town(town_name:str, zip:int=None, *, size:int, alt:str=0, population=No
 
 r=find_town(town_name="glasgow", size="1M", alt="very long alt name for unused idea of value")
 print(r)
+
+from OpenHosta import print_last_prompt
+print_last_prompt(find_town)
 
 @dataclass
 class Client:
