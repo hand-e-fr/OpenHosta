@@ -451,16 +451,16 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                         converted_value = raw_value
                     else:
                         attempt_result = guarded_type.attempt(raw_value)
-                        if not attempt_result.is_success:
+                        if not attempt_result.success:
                             raise ValueError(attempt_result.error_message)
 
                         if getattr(guarded_type, "_types", None) is not None:
                             winning_type = attempt_result.python_type
-                            converted_value = winning_type(raw_value) if winning_type is not None else attempt_result.python_value
+                            converted_value = winning_type(raw_value) if winning_type is not None else attempt_result.data
                         elif hasattr(guarded_type, "__dataclass_fields__"):
                             converted_value = guarded_type(raw_value)
                         else:
-                            converted_value = attempt_result.python_value
+                            converted_value = attempt_result.data
 
 
 
