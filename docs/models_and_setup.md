@@ -22,7 +22,10 @@ OpenHosta natively supports standard OpenAI endpoints for Azure and vLLM.
 
 **Azure:**
 ```python
+from OpenHosta import OpenAICompatibleModel
+
 azure_model = OpenAICompatibleModel(
+
     model_name="deployment-name", 
     base_url="https://RESOURCE.openai.azure.com/openai/deployments/deployment-name",
     api_key="azure-key",
@@ -32,7 +35,10 @@ azure_model = OpenAICompatibleModel(
 
 **vLLM:**
 ```python
+from OpenHosta import OpenAICompatibleModel
+
 vllm_model = OpenAICompatibleModel(
+
     model_name="meta-llama/Meta-Llama-3-8B-Instruct", 
     base_url="http://localhost:8000/v1",
     api_key="EMPTY"

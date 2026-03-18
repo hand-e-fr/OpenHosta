@@ -286,6 +286,8 @@ n.unwrap()  # → None
 ⚠️ **Important** : Les types proxy ne sont PAS des instances du type natif.
 
 ```python
+from OpenHosta.guarded import GuardedBool
+
 b = GuardedBool("yes")
 
 isinstance(b, bool)        # ❌ False (c'est un proxy)
@@ -356,6 +358,8 @@ Color = guarded_literal("red", "green", "blue")
 
 c = Color("red")      # OK
 c = Color("RED")      # OK (heuristic: case-insensitive)
+
+# doc-test: raises ValueError
 c = Color("yellow")   # Erreur (hors des valeurs permises)
 ```
 
@@ -364,7 +368,7 @@ c = Color("yellow")   # Erreur (hors des valeurs permises)
 Crée un type qui tente plusieurs conversions successives, similaire à `typing.Union`.
 
 ```python
-from OpenHosta.guarded import sublassableunions import GuardedUnion, guarded_union
+from OpenHosta.guarded.sublassableunions import GuardedUnion, guarded_union
 from OpenHosta.guarded import GuardedInt, GuardedUtf8
 
 # Tente d'abord Int, sinon String
@@ -487,6 +491,8 @@ sous forme de `GuardedCallInput(args, kwargs)` puis parsés par le pipeline.
 Vous pouvez passer des options directement à `@guarded_dataclass` :
 
 ```python
+from OpenHosta.guarded import guarded_dataclass
+
 @guarded_dataclass(frozen=True, order=True)
 class Point:
     x: int
@@ -500,6 +506,8 @@ pt = Point(x=10, y=20)
 
 
 ```python
+from OpenHosta.guarded import guarded_dataclass
+
 @guarded_dataclass
 class Config:
     host: str = "localhost"
@@ -525,6 +533,8 @@ assert c3.port == 3000  # Converti de "3000" (str) → 3000 (int)
 Le décorateur utilise `TypeResolver` pour convertir automatiquement les valeurs :
 
 ```python
+from OpenHosta.guarded import guarded_dataclass
+
 @guarded_dataclass
 class User:
     username: str
@@ -551,6 +561,8 @@ assert isinstance(user.tags, list)
 Comme tous les types Guarded, les dataclasses conservent des métadonnées :
 
 ```python
+from OpenHosta.guarded import guarded_dataclass
+
 @guarded_dataclass
 class Product:
     name: str
@@ -576,6 +588,7 @@ Si vous avez déjà `@dataclass`, `@guarded_dataclass` le détecte et ne le réa
 
 ```python
 from dataclasses import dataclass
+from OpenHosta.guarded import guarded_dataclass
 
 @guarded_dataclass
 @dataclass
@@ -868,6 +881,8 @@ Chaque instance Guarded conserve des métadonnées sur sa création.
 ### 10.1 Attributs Disponibles
 
 ```python
+from OpenHosta.guarded import GuardedInt
+
 age = GuardedInt("1,000")
 
 # Métadonnées
