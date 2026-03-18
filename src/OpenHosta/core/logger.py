@@ -1,11 +1,9 @@
 from typing import Callable, cast
-from .inspection import Inspection
+from .inspection import HostaInjectedFunction
 import platform
 
 IS_UNIX = platform.system() != "Windows"
 
-class HostaInjectedFunction(Callable):
-    hosta_inspection: Inspection
 
 def print_last_prompt(function_pointer:Callable):
     """
