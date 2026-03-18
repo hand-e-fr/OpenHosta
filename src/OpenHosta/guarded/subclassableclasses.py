@@ -147,7 +147,13 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             if ":" in cleaned_val:
                 cleaned_val = cleaned_val.split(":", 1)[0].strip()
 
-            cleaned_val = cleaned_val.strip("'").strip('"')
+            # Remove wrapping quotes, including doubled quotes like ''git push''
+            while len(cleaned_val) >= 2 and (
+                (cleaned_val.startswith("'") and cleaned_val.endswith("'"))
+                or (cleaned_val.startswith('"') and cleaned_val.endswith('"'))
+            ):
+                cleaned_val = cleaned_val[1:-1].strip()
+
             member_candidate = cleaned_val.split(".")[-1] if "." in cleaned_val else cleaned_val
 
             for name in cls._members:
@@ -159,8 +165,9 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
                     return UncertaintyLevel(Tolerance.FLEXIBLE), name, None
 
             for name, member_value in cls._members.items():
-                if str(member_value).lower() == value.strip().lower():
+                if str(member_value).strip().lower() == cleaned_val.lower():
                     return UncertaintyLevel(Tolerance.PRECISE), name, None
+
 
         if isinstance(value, str) and value.strip().startswith("{") and value.strip().endswith("}"):
             try:
