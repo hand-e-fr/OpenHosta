@@ -96,6 +96,8 @@ jobs:
       - name: create .env file
         run: |
           echo "OPENHOSTA_DEFAULT_MODEL_API_KEY=${{ secrets.OPENHOSTA_DEFAULT_MODEL_API_KEY }}" >> .env
+          echo 'OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"' >> .env
+          echo 'OPENHOSTA_DEFAULT_MODEL_BASE_URL="https://api.openai.com/v1"' >> .env
 
       - name: Run functionnal tests
         env:
