@@ -4,6 +4,7 @@ from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
 from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
 from OpenHosta.guarded.subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple
 from OpenHosta.guarded.subclassablewithproxy import GuardedBool, GuardedNone
+from OpenHosta.guarded.subclassableunions import GuardedUnion
 
 
 class TestTypeResolver:
@@ -56,7 +57,10 @@ class TestTypeResolver:
         """Test resolving Optional[int]."""
         resolved = TypeResolver.resolve(Optional[int])
         # Optional[int] is Union[int, None], should resolve to GuardedInt
-        assert resolved == GuardedInt
+        assert issubclass(resolved, GuardedUnion)
+        assert not isinstance(resolved("5"), GuardedUnion)
+        assert isinstance(resolved("5"), GuardedInt)
+        assert isinstance(resolved("5"), int)
     
     def test_resolve_union(self):
         """Test resolving Union types."""

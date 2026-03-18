@@ -39,6 +39,9 @@ class Model:
         self.preferred_image_format = "png"
         self.embedding_similarity_min = 0.30  # Default min similarity for clustering
         
+        self.model_name:str = "undefined"
+        self.base_url:str = "undefined"
+
         # Rate limiting
         self.retry_delay = retry_delay
         self.delay_next_api_call_until = 0
@@ -158,4 +161,9 @@ class Model:
     @abc.abstractmethod
     def get_response_content(self, response_dict: Dict) -> str:
         """Parse the response_dict and return the data section"""
+        pass
+
+    @abc.abstractmethod
+    def print_last_prompt(self, inspection):
+        """Print the last prompt sent to the LLM for debugging purposes."""
         pass

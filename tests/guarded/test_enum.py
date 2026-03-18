@@ -42,7 +42,7 @@ class TestGuardedEnum:
     def test_enum_repr(self):
         """Test string representation."""
         s = self.Status("active")
-        assert repr(s) == "Status.ACTIVE"
+        assert repr(s) == "<Status.ACTIVE: 'active'>"
     
     def test_enum_equality(self):
         """Test equality comparison."""

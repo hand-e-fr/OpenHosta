@@ -1,12 +1,17 @@
-from typing import Callable
+from typing import Callable, cast
+from .inspection import Inspection
 import platform
 
 IS_UNIX = platform.system() != "Windows"
+
+class HostaInjectedFunction(Callable):
+    hosta_inspection: Inspection
 
 def print_last_prompt(function_pointer:Callable):
     """
     Print the last prompt sent to the LLM when using function `function_pointer`.
     """
+    function_pointer = cast(HostaInjectedFunction, function_pointer)
     if hasattr(function_pointer, "hosta_inspection") and function_pointer.hosta_inspection.model is not None:
         
         print("Model\n-----------------\nname="+function_pointer.hosta_inspection.model.model_name+"\nbasse_url="+function_pointer.hosta_inspection.model.base_url+"\n")
@@ -24,15 +29,18 @@ def print_last_decoding(function_pointer:Callable):
     """
     Print the steps of the last decoding when using function `function_pointer`.
     """
-    if hasattr(function_pointer, "hosta_inspection") and 'model' in function_pointer.hosta_inspection:
-        function_pointer.hosta_inspection['pipeline'].print_last_decoding(function_pointer.hosta_inspection)
+    function_pointer = cast(HostaInjectedFunction, function_pointer)
+
+    if hasattr(function_pointer, "hosta_inspection") and function_pointer.hosta_inspection.model is not None:
+        function_pointer.hosta_inspection.pipeline.print_last_decoding(function_pointer.hosta_inspection)
     else:
         print("No prompt found for this function.")
 
-def print_last_probability_distribution(function_pointer):
+def print_last_probability_distribution(function_pointer:Callable):
     """
     Print the last probability distribution log when using function `function_pointer`.
     """
+    function_pointer = cast(HostaInjectedFunction, function_pointer)
     if hasattr(function_pointer, "hosta_inspection") and \
         "enum_normalized_probs" in function_pointer.hosta_inspection.logs:
         nomalized_probs = function_pointer.hosta_inspection.logs["enum_normalized_probs"]
@@ -40,10 +48,11 @@ def print_last_probability_distribution(function_pointer):
         for k,v in nomalized_probs.items():
             print(f"Value: {k:<10}, Probability: {v:.4f}")
 
-def print_last_uncertainty(function_pointer):
+def print_last_uncertainty(function_pointer:Callable):
     """
     Print the last uncertainty log when using function `function_pointer`.
         """
+    function_pointer = cast(HostaInjectedFunction, function_pointer)
     if hasattr(function_pointer, "hosta_inspection") and \
         "enum_normalized_probs" in function_pointer.hosta_inspection.logs:
         nomalized_probs = function_pointer.hosta_inspection.logs["enum_normalized_probs"]

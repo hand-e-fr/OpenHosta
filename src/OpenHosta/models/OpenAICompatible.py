@@ -241,12 +241,14 @@ class OpenAICompatibleModel(Model):
                     model_list.append(model["id"])
         return model_list
     
-    def get_consumption(self, response_dict) -> dict:
-        if "usage" in response_dict:
-            self._used_tokens += int(response_dict["usage"]["total_tokens"])
-
+    def get_consumption(self, response_dict) -> int:
+        return self._used_tokens
+    
     def get_response_content(self, response_dict: Dict) -> str:
         
+        if "usage" in response_dict and "total_tokens" in response_dict["usage"]:
+            self._used_tokens += int(response_dict["usage"]["total_tokens"])
+    
         assert "choices" in response_dict, f"[Model.get_response_content] Invalid response: {response_dict}"
         assert len(response_dict["choices"]) > 0, f"[Model.get_response_content] Invalid response: {response_dict}"
         assert "message" in response_dict["choices"][0], f"[Model.get_response_content] Invalid response: {response_dict}"
@@ -292,7 +294,7 @@ class OpenAICompatibleModel(Model):
         return rational, answer
         
 
-    def print_last_prompt(self, inspection:Inspection):
+    def print_last_prompt(self, inspection):
         """
         Print the last prompt sent to the LLM when using function `function_pointer`.
         """

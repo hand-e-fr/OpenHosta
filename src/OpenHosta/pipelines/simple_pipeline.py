@@ -172,7 +172,7 @@ class OneTurnConversationPipeline(Pipeline):
         # Fallback to first model with a warning if none fit exactly
         chosen_model = self.model_list[0]
         inspection.model = chosen_model
-        print(f"[Warning] No model found with all required capabilities: {required}. Falling back to {chosen_model.__class__.__name__}")
+        # print(f"[Warning] No model found with all required capabilities: {required}. Falling back to {chosen_model.__class__.__name__}")
         
         return chosen_model
 
