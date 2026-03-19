@@ -4,7 +4,6 @@ Documentation for version: **4.0** (Preparing)
 
 Welcome to the **OpenHosta** documentation hub. Here you'll find everything you need to leverage Large Language Models (LLMs) natively within your Python projects. OpenHosta transforms human language and semantic structures into pure, executable Python functions.
 
-> **What's New in V4?** Check out the [V4 Changelog](V4_CHANGELOG.md) to discover our brand-new Guarded Types, complete Ollama integration, and Generative Data Extraction Engines.
 
 ---
 
@@ -36,6 +35,7 @@ Take off your conceptual hat and observe OpenHosta in action through functional 
 - 📚 [**Text Classification:**](examples/text_classification.md) Sorting streams of text directly into rigidly typed `Enum` states.
 - 🗃️ [**Data Extraction:**](examples/data_extraction.md) Populating massive `Dataclasses` and `Pydantic` modules straight from unstructured text blobs.
 - 👁️ [**Local OCR with Ollama:**](examples/ocr_local_ollama.md) Passing images using `PIL.Image` directly into `emulate`, performing OCR securely and locally using `glm-ocr`.
+- ⚡ [**Parallel Processing:**](examples/parallel_processing.md) Running asynchronous workloads, parsing dataclasses like invoices, and batching prompts.
 
 ---
 

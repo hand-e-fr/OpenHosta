@@ -1,10 +1,7 @@
 import pytest
 from typing import Any
 
-from OpenHosta import emulate, ask, test as oh_test
-
-answer = ask("Just say: The API to the model works!")
-assert "The API to the model works!" in answer
+from OpenHosta import emulate, test as oh_test
 
 class TestTypes:
     
