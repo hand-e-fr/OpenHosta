@@ -45,8 +45,6 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     _type_json: dict = {"type": "string"}
     _tolerance = Tolerance.TYPE_COMPLIANT
 
-    
-
     def __init_subclass__(cls, **kwargs):
         """Appelé automatiquement quand on crée une sous-classe."""
         super().__init_subclass__(**kwargs)
