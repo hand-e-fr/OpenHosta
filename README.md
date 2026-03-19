@@ -1,7 +1,5 @@
 # OpenHosta 
 
-v3.0 - Integrates Inria Comments
-
 <br/>You can read the doc or directly have a look at [tests files](https://github.com/hand-e-fr/OpenHosta/tree/main/tests/) for multiples exemples.
 
 OpenHosta is a powerful Python extension designed to seamlessly integrate semantic capabilities seen in Large Language Models (LLMs) into tradictional development environments, enabling AI-powered function emulation that maintains native Python syntax and paradigms. Its strength lies in its simplicity and flexibility, allowing developers to easily create AI-enhanced applications while maintaining clean, Pythonic code structure.
@@ -65,12 +63,26 @@ result
 # <DocumentType.OLD_BOOK: 'old_book'>
 ```
 
+For workloads requiring high concurrency (such as web servers or batch processing), you can use `emulate_async` to perform non-blocking LLM calls:
+
+```python
+import asyncio
+from OpenHosta import emulate_async
+
+async def translate_batch(texts: list[str], target_language: str) -> list[str]:
+    """Translates a list of texts into the specified language."""
+    # Process multiple LLM calls in parallel!
+    return await emulate_async()
+```
+
 ## Table of Content
 
 - [OpenHosta](#openhosta)
   - [Table of Content](#table-of-content)
   - [How to install OpenHosta ?](#how-to-install-openhosta-)
-  - [Example](#example)
+  - [Quick Start Examples](#quick-start-examples)
+    - [Option A: Local Execution (Ollama)](#option-a-local-execution-ollama)
+    - [Option B: Remote API (OpenAI)](#option-b-remote-api-openai)
   - [Further information](#further-information)
     - [Contributing](#contributing)
     - [License](#license)
@@ -139,12 +151,14 @@ print(translate("Hello World!", "French"))
 When you want the highest capability models with zero setup. Set your API credentials via `.env`:
 
 ```env
-OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4o"
+OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"
 OPENHOSTA_DEFAULT_MODEL_API_KEY="put-your-api-key-here"
+# OPENHOSTA_DEFAULT_MODEL_BASE_URL="https://api.openai.com/v1"
 ```
 
 ```python
 from OpenHosta import emulate
+
 
 def translate(text: str, language: str) -> str:
     """Translates the text into the specified language."""
