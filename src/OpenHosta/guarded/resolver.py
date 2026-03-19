@@ -39,7 +39,6 @@ from .subclassablecollections import GuardedDict, GuardedSet, GuardedList, Guard
 
 from .subclassablecallables import GuardedCode
 
-# Note: GuardedModel is imported locally in resolve() to avoid circular import
 try:
     from pydantic import BaseModel
     HAS_PYDANTIC = True
@@ -167,13 +166,17 @@ class TypeResolver:
         if isinstance(annotation, type) and issubclass(annotation, tuple) and annotation is not tuple:
              return GuardedTuple
 
-        # 4. Pydantic Models & Dataclasses (On les convertit en GuardedModel à la volée)
-        if (isinstance(annotation, type) and 
-           ((HAS_PYDANTIC and issubclass(annotation, BaseModel)) or is_dataclass(annotation))):
+        # 4. Dataclasses (On les convertit en GuardedDataclassWrapper à la volée)
+        if (isinstance(annotation, type) and is_dataclass(annotation)):
             from .subclassablecollections import guarded_dataclass
             return guarded_dataclass(annotation)
 
-        # 5. Types Génériques (Typing)
+        # 5. Pydantic Models
+        if (isinstance(annotation, type) and HAS_PYDANTIC and issubclass(annotation, BaseModel) ):
+            from .subclassablepydantic import guarded_pydantic_model
+            return guarded_pydantic_model(annotation)
+
+        # 6. Types Génériques (Typing)
         origin = get_origin(annotation)
         args = get_args(annotation)
 
