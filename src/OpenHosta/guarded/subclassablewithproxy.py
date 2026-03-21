@@ -21,6 +21,10 @@ class GuardedNone(GuardedPrimitive, ProxyWrapper):
         if value is None:
             return UncertaintyLevel(Tolerance.STRICT), None, None
 
+        if value == 'None':
+            # For union type, we accept 'None' as a valid value
+            return UncertaintyLevel(Tolerance.STRICT), None, None
+
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
         
     @classmethod
@@ -29,7 +33,7 @@ class GuardedNone(GuardedPrimitive, ProxyWrapper):
         
         value = value.strip(" \n\"\'")
         if value == 'None':
-            return UncertaintyLevel(Tolerance.PRECISE), None, None
+            return UncertaintyLevel(Tolerance.FLEXIBLE), None, None
         
         value = value.lower()
         if value == "none":

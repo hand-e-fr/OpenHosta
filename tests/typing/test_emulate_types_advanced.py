@@ -50,53 +50,53 @@ class TestTypes:
     
         
     def test_TypingList(self):
-        def return_int_list(a: List[int]) -> List[int]:
+        def return_int_list(text: str) -> List[int]:
             """
-            This function returns a list of integers
+            Extract all integers present in the text and return them as a list.
             """
             return emulate()
         
-        response = return_int_list([1.0, 2, 3])
+        response = return_int_list("I have 1 apple, 2 bananas, and 3 oranges.")
         assert isinstance(response, list)
         assert isinstance(response[0], int)
         
-        def return_float_list(a: List[int]) -> List[float]:
+        def return_float_list(text: str) -> List[float]:
             """
-            This function returns a list of floats
+            Extract all float numbers present in the text and return them as a list.
             """
             return emulate()
 
-        response = return_float_list([1, 2, 3])
+        response = return_float_list("Temperatures are 1.5, 2.0, and 3.5 degrees.")
         assert isinstance(response, list)
         assert isinstance(response[0], float)
 
 
     def test_TypingTuple(self):
-        def return_mixed_tuple(a: Tuple[int, str]) -> Tuple[int, str]:
+        def return_mixed_tuple(text: str) -> Tuple[int, str]:
             """
-            This function returns a tuple with an integer and a string
+            Extract the age (int) and name (str) from the text.
             """
             return emulate()
 
-        assert isinstance(return_mixed_tuple((1, "test")), tuple)
+        assert isinstance(return_mixed_tuple("John is 30 years old."), tuple)
 
     def test_TypingDict(self):
-        def return_str_dict(a: Dict[str, int]) -> Dict[str, int]:
+        def return_str_dict(text: str) -> Dict[str, int]:
             """
-            This function returns a dictionary with string keys and integer values
+            Extract a mapping of fruit names to their quantities from the text.
             """
             return emulate()
         
-        assert isinstance(return_str_dict({"test": 1}), dict)
+        assert isinstance(return_str_dict("1 apple, 2 bananas, 3 oranges"), dict)
 
     def test_TypingSet(self):
-        def return_int_set(a: Set[int]) -> Set[int]:
+        def return_int_set(text: str) -> Set[int]:
             """
-            This function returns a set of integers
+            Extract unique numbers from the text.
             """
             return emulate()
         
-        assert isinstance(return_int_set({1, 2, 3}), set)
+        assert isinstance(return_int_set("Numbers are 1, 2, 2, 3."), set)
 
     def test_TypingOptional(self):
 
@@ -122,41 +122,42 @@ class TestTypes:
         assert val3 == None, f"Shoud be None got {val3}"
 
     def test_TypingUnion(self):
-        def return_union(a: Union[int, str]) -> Union[int, str]:
+        def return_union(text: str) -> Union[int, str]:
             """
-            This function returns either an integer or a string
+            Extract the shipment identifier from the text.
+            Return it as int if it is purely numeric, as str otherwise.
             """
             return emulate()
         
-        assert isinstance(return_union(1), (int, str))
+        assert isinstance(return_union("Shipment ID is 12345"), (int, str))
 
     def test_TypingLiteral(self):
-        def return_literal(a: Literal["red", "blue"]) -> Literal["red", "blue"]:
+        def return_literal(text: str) -> Literal["red", "blue"]:
             """
-            This function returns either 'red' or 'blue'
+            Classify the color mentioned in the text as either 'red' or 'blue'.
             """
             return emulate()
         
-        result = return_literal("red")
+        result = return_literal("The sky is blue today.")
         assert result in ("red", "blue")
 
     def test_TypingSequence(self):
-        def return_sequence(a: Sequence[int]) -> Sequence[int]:
+        def return_sequence(text: str) -> Sequence[int]:
             """
-            This function returns a sequence of integers
+            Extract a sequence of numbers from the text.
             """
             return emulate()
 
-        assert isinstance(return_sequence([1, 2, 3]), list)
+        assert isinstance(return_sequence("1, 2, 3"), list)
 
     def test_TypingMapping(self):
-        def return_mapping(a: Mapping[str, int]) -> Mapping[str, int]:
+        def return_mapping(text: str) -> Mapping[str, int]:
             """
-            This function returns a mapping of strings to integers
+            Extract a dictionary mapping names to ages.
             """
             return emulate()
         
-        assert isinstance(return_mapping({"test": 1}), dict)
+        assert isinstance(return_mapping("Alice is 25, Bob is 30"), dict)
 
 
     def test_TypingNamedTuple(self):
@@ -164,13 +165,13 @@ class TestTypes:
             name: str
             age: int
         
-        def return_named_tuple(a: TestNamedTuple) -> TestNamedTuple:
+        def return_named_tuple(text: str) -> TestNamedTuple:
             """
-            This function returns a named tuple
+            Extract the person's name and age from the text.
             """
             return emulate()
 
-        result = return_named_tuple(TestNamedTuple("John", 30))
+        result = return_named_tuple("John is 30 years old.")
         assert isinstance(result, tuple)
 
     def test_TypingTypedDict(self):
@@ -178,21 +179,48 @@ class TestTypes:
             name: str
             age: int
         
-        def return_typed_dict(a: TestTypedDict) -> TestTypedDict:
+        def return_typed_dict(text: str) -> TestTypedDict:
             """
-            This function returns a typed dict
+            Extract the person's name and age from the text into a typed dict.
             """
             return emulate()
         
-        response = return_typed_dict({"name": "John", "age": 30})
+        response = return_typed_dict("John is 30 years old.")
         
         assert isinstance(response, dict)
 
     def test_TypingAny(self):
-        def return_any(a: Any) -> Any:
+        def return_any(text: str) -> Any:
             """
-            This function returns any type
+            Extract whatever information is most relevant from the text.
             """
             return emulate()
         
-        assert return_any(1) is not None
+        assert return_any("This is a test 123") is not None
+        
+        
+
+    def test_type_alias(self):
+        UserType = list[dict[str, dict[str, str]]]
+        
+        def parse_container_manifest_user_type(text: str) -> UserType:
+            """
+            Extract a list of containers. Each container is a dictionary mapping the container ID
+            to another dictionary of SKU codes and their descriptions.
+            """
+            return emulate()
+        
+        
+        CONTAINER_MANIFEST_TEXT = (
+            "Shipment includes 2 containers. "
+            "Container CONT-100: SKU-A - 'Widgets', SKU-B - 'Gadgets'. "
+            "Container CONT-200: SKU-C - 'Gizmos'."
+        )
+        
+        result = parse_container_manifest_user_type(CONTAINER_MANIFEST_TEXT)
+
+        assert isinstance(result, list)
+        if len(result) > 0:
+            assert isinstance(result[0], dict)
+        
+        assert result == [{'CONT-100': {'SKU-A': 'Widgets', 'SKU-B': 'Gadgets'}}, {'CONT-200': {'SKU-C': 'Gizmos'}}]

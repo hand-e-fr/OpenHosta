@@ -115,7 +115,7 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
         _type_en = f"an instance of {model_cls.__name__} dataclass"
         _type_py = model_cls
         _type_py_repr = describe(model_cls)
-        _type_json = model_cls.schema()
+        _type_json = model_cls.model_json_schema()
         _tolerance = Tolerance.TYPE_COMPLIANT
         
         
@@ -127,7 +127,7 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
 
             # Si c'est une string qui ressemble à un appel constructeur: Person(...)
             if isinstance(value, str) and (
-                value.strip().startswith(cls.__name__ + "(") or
+                value.strip().startswith(model_cls.__name__ + "(") or
                 value.strip().startswith("{")
             ):
                 import ast
@@ -138,7 +138,13 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
                     for arg in tree.body.args:
                         parsed_args.append(ast.literal_eval(arg))
                     for keyword in tree.body.keywords:
-                        parsed_kwargs[keyword.arg] = ast.literal_eval(keyword.value)
+                        try:
+                            parsed_kwargs[keyword.arg] = ast.literal_eval(keyword.value)
+                        except:
+                            try:
+                                parsed_kwargs[keyword.arg] = ast.unparse(keyword.value)
+                            except:
+                                parsed_kwargs[keyword.arg] = None
                     
                     # Tenter d'instancier avec les args parsés
                     try:
