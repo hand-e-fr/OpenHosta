@@ -1,5 +1,6 @@
 
 import inspect
+import typing
 
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Union
@@ -149,6 +150,14 @@ def hosta_analyze_update(frame, analyse: AnalyzedFunction) -> AnalyzedFunction:
     )
 
 def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
+    try:
+        if frame is not None:
+            hints = typing.get_type_hints(function_pointer, globalns=frame.f_globals, localns=frame.f_locals)
+        else:
+            hints = typing.get_type_hints(function_pointer)
+    except Exception:
+        hints = {}
+
     sig = inspect.signature(function_pointer)
 
     result_args_value_table = []
@@ -158,18 +167,18 @@ def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
             result_args_value_table.append(AnalyzedArgument(
                 name=arg,
                 value=args_info.locals[arg],
-                type=sig.parameters[arg].annotation
+                type=hints.get(arg, sig.parameters[arg].annotation)
             ))
     else:
         for name, param in sig.parameters.items():
             result_args_value_table.append(AnalyzedArgument(
                 name=name,
                 value=inspect._empty,
-                type=param.annotation
+                type=hints.get(name, param.annotation)
             ))
     
     result_function_name = function_pointer.__name__
-    result_return_type = sig.return_annotation
+    result_return_type = hints.get('return', sig.return_annotation)
     result_docstring = function_pointer.__doc__
 
     return AnalyzedFunction(

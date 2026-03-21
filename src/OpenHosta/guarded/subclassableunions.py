@@ -68,7 +68,7 @@ class GuardedUnion(GuardedPrimitive):
         
         # Si le type gagnant est une GuardedPrimitive, on l'appelle
         # (il passera par son propre __new__ et fera son propre casting)
-        return winning_type(value, tolerance=tolerance)
+        return winning_type(value)
 
 
 def guarded_union(*guarded_types):
