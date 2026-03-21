@@ -423,19 +423,24 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
             
             _type_en = f"an instance of {cls_to_guard.__name__} dataclass"
             _type_py = cls_to_guard
-            _type_py_repr = cls_to_guard.__doc__
             _type_json = {"type": "object"}
             _tolerance = Tolerance.TYPE_COMPLIANT
 
             @classmethod
-            def _coerce_dataclass_inputs(cls, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
+            def _coerce_dataclass_inputs(cls, args_tuple, kwargs_dict):
+                # Convert args to kwargs based on class fields
+                from dataclasses import fields
+                field_definitions = fields(cls_to_guard)
+                
+                merged_kwargs = dict(kwargs_dict)
+                from typing import get_type_hints
+                hints = get_type_hints(cls_to_guard)
+                
                 field_names = [field.name for field in field_definitions]
-                merged_kwargs = dict(kwargs)
+                if len(args_tuple) > len(field_names):
+                        raise TypeError(f"Too many positional arguments for {cls_to_guard.__name__}")
 
-                if len(args) > len(field_names):
-                    raise TypeError(f"Too many positional arguments for {cls_to_guard.__name__}")
-
-                for field_name, arg_value in zip(field_names, args):
+                for field_name, arg_value in zip(field_names, args_tuple):
                     if field_name in merged_kwargs:
                         raise TypeError(f"Multiple values for field '{field_name}'")
                     merged_kwargs[field_name] = arg_value
@@ -445,7 +450,9 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                     if field.name not in merged_kwargs:
                         continue
                     raw_value = merged_kwargs[field.name]
-                    guarded_type = TypeResolver.resolve(field.type)
+                    # Always use hints[field.name] if available to avoid string annotations
+                    expected_field_type = hints[field.name] # Changed from hints.get(field.name, field.type)
+                    guarded_type = TypeResolver.resolve(expected_field_type)
 
                     if isinstance(raw_value, guarded_type):
                         converted_value = raw_value
@@ -526,9 +533,14 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                     value = "\n".join([l for l in value.splitlines() if not l.strip().startswith("#")])
 
 
+                # Obtenir le nom de la classe d'origine (sans le préfixe Guarded_)
+                original_name = cls._type_py.__name__ if hasattr(cls, '_type_py') else cls.__name__
+                if original_name.startswith("Guarded_") and len(original_name) > 8:
+                    original_name = original_name[8:]
+
                 # Si c'est une string qui ressemble à un appel constructeur: Person(...)
                 if isinstance(value, str) and (
-                    value.strip().startswith(cls.__name__ + "(") or
+                    value.strip().startswith(original_name + "(") or
                     value.strip().startswith("{")
                 ):
                     import ast
@@ -539,7 +551,13 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                         for arg in tree.body.args:
                             parsed_args.append(ast.literal_eval(arg))
                         for keyword in tree.body.keywords:
-                            parsed_kwargs[keyword.arg] = ast.literal_eval(keyword.value)
+                            try:
+                                parsed_kwargs[keyword.arg] = ast.literal_eval(keyword.value)
+                            except:
+                                try:
+                                    parsed_kwargs[keyword.arg] = ast.unparse(keyword.value)
+                                except:
+                                    parsed_kwargs[keyword.arg] = None
                         
                         # Tenter d'instancier avec les args parsés
                         try:
@@ -554,7 +572,20 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                         # Tenter d'instancier avec les args parsés
                         parsed_kwargs = {}
                         for keyword, value in zip(tree.body.keys, tree.body.values):
-                            parsed_kwargs[ast.literal_eval(keyword)] = ast.literal_eval(value)
+                            try:
+                                key_eval = ast.literal_eval(keyword)
+                            except:
+                                key_eval = ast.unparse(keyword)
+
+                            try:
+                                val_eval = ast.literal_eval(value)
+                            except:
+                                try:
+                                    val_eval = ast.unparse(value)
+                                except:
+                                    val_eval = None
+
+                            parsed_kwargs[key_eval] = val_eval
                         try:
                             # On crée l'instance directement via le constructeur
                             instance = cls._coerce_dataclass_inputs((), parsed_kwargs)
@@ -602,6 +633,29 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
         GuardedDataclassWrapper.__module__ = cls_to_guard.__module__
         GuardedDataclassWrapper.__qualname__ = cls_to_guard.__qualname__
         GuardedDataclassWrapper.__doc__ = cls_to_guard.__doc__
+        # Build Python Representation string to help LLM not hallucinate fields
+        fields_repr = []
+        try:
+            from typing import get_type_hints
+            hints = get_type_hints(cls_to_guard)
+        except Exception:
+            hints = {}
+
+        for field in field_definitions:
+            field_type = hints.get(field.name, field.type)
+            try:
+                guarded_field = TypeResolver.resolve(field_type)
+                type_str = getattr(guarded_field, "_type_py_repr", None)
+                if type_str is None or type_str is NotImplemented:
+                    type_str = getattr(guarded_field, "__name__", str(field_type))
+            except Exception:
+                type_str = str(field_type)
+            fields_repr.append(f"    {field.name}: {type_str}")
+
+        GuardedDataclassWrapper._type_py_repr = (
+            f"@dataclass\nclass {cls_to_guard.__name__}:\n" +
+            "\n".join(fields_repr)
+        )
         
         return GuardedDataclassWrapper
     
@@ -613,4 +667,138 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
         # Appelé sans arguments : @guarded_dataclass, ou aussi en ligne : GuardedType = guarded_dataclass(MyType)
         return decorator(first_arg)
 
+def guarded_typeddict(cls_to_guard):
+    """
+    Wrapper for typing.TypedDict.
+    Transforms a TypedDict into a GuardedPrimitive.
+    """
+    from .resolver import TypeResolver
 
+    class GuardedTypedDictWrapper(GuardedPrimitive, ProxyWrapper):
+        """Wrapper qui ajoute les capacités Guarded à un TypedDict."""
+        
+        _type_en = f"a dictionary matching {cls_to_guard.__name__} schema"
+        _type_py = dict
+        _type_json = {"type": "object"}
+        _tolerance = Tolerance.TYPE_COMPLIANT
+
+        @classmethod
+        def _coerce_dict(cls, value):
+            if not isinstance(value, dict):
+                raise ValueError(f"Expected dict, got {type(value)}")
+            
+            try:
+                from typing import get_type_hints
+                hints = get_type_hints(cls_to_guard)
+            except Exception:
+                hints = getattr(cls_to_guard, '__annotations__', {})
+
+            converted_dict = {}
+            for key, expected_type in hints.items():
+                if key in value:
+                    guarded_type = TypeResolver.resolve(expected_type)
+                    raw_val = value[key]
+                    if isinstance(raw_val, guarded_type):
+                        converted_dict[key] = raw_val
+                    else:
+                        attempt_result = guarded_type.attempt(raw_val)
+                        if not attempt_result.success:
+                            raise ValueError(f"Key '{key}' invalid: {attempt_result.error_message}")
+                        
+                        _types = getattr(guarded_type, "_types", None)
+                        if _types is not None:
+                            winning_type = attempt_result.python_type
+                            if winning_type is not None:
+                                converted_val = winning_type(raw_val)
+                            else:
+                                converted_val = attempt_result.data
+                        elif hasattr(guarded_type, "__dataclass_fields__"):
+                            converted_val = guarded_type(raw_val)
+                        else:
+                            converted_val = attempt_result.data
+                            
+                        converted_dict[key] = converted_val
+                else:
+                    required_keys = getattr(cls_to_guard, '__required_keys__', frozenset(hints.keys()))
+                    if key in required_keys:
+                        raise ValueError(f"Missing required key: '{key}'")
+
+            # Retain any extra keys that might be in the dictionary
+            for key, val in value.items():
+                if key not in converted_dict:
+                    converted_dict[key] = val
+                    
+            return converted_dict
+
+        @classmethod
+        def _parse_native(cls, value: Any):
+            if isinstance(value, dict):
+                try:
+                    converted = cls._coerce_dict(value)
+                    return UncertaintyLevel(Tolerance.STRICT), converted, None
+                except Exception as e:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Not a dict, got {type(value)}"
+
+        @classmethod
+        def _parse_heuristic(cls, value: Any):
+            import json
+            import ast
+            items = None
+            if isinstance(value, str):
+                value_s = value.strip()
+                if value_s.startswith('{') and value_s.endswith('}'):
+                    try:
+                        parsed = json.loads(value_s)
+                        if isinstance(parsed, dict):
+                            items = parsed
+                    except Exception:
+                        try:
+                            parsed = ast.literal_eval(value_s)
+                            if isinstance(parsed, dict):
+                                items = parsed
+                        except Exception:
+                            pass
+            if items is None:
+                try:
+                    items = dict(value)
+                except Exception:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to dict"
+            
+            try:
+                converted = cls._coerce_dict(items)
+                return UncertaintyLevel(Tolerance.PRECISE), converted, None
+            except Exception as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+                
+        def unwrap(self):
+            return self._recursive_unwrap(self._python_value)
+
+    GuardedTypedDictWrapper.__name__ = cls_to_guard.__name__
+    GuardedTypedDictWrapper.__module__ = getattr(cls_to_guard, '__module__', '')
+    GuardedTypedDictWrapper.__qualname__ = getattr(cls_to_guard, '__qualname__', '')
+    GuardedTypedDictWrapper.__doc__ = getattr(cls_to_guard, '__doc__', '')
+
+    fields_repr = []
+    try:
+        from typing import get_type_hints
+        hints = get_type_hints(cls_to_guard)
+    except Exception:
+        hints = getattr(cls_to_guard, '__annotations__', {})
+
+    for field_name, field_type in hints.items():
+        try:
+            guarded_field = TypeResolver.resolve(field_type)
+            type_str = getattr(guarded_field, "_type_py_repr", None)
+            if type_str is None or type_str is NotImplemented:
+                type_str = getattr(field_type, "__name__", str(field_type))
+        except Exception:
+            type_str = getattr(field_type, "__name__", str(field_type))
+        fields_repr.append(f"    {field_name}: {type_str}")
+
+    GuardedTypedDictWrapper._type_py_repr = (
+        f"class {cls_to_guard.__name__}(TypedDict):\n" +
+        "\n".join(fields_repr)
+    )
+
+    return GuardedTypedDictWrapper
