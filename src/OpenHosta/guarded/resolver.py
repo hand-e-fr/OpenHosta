@@ -35,7 +35,7 @@ from .subclassablewithproxy import (
     GuardedAny, GuardedBool, GuardedNone, GuardedMemoryView, GuardedRange
 )
 
-from .subclassablecollections import GuardedDict, GuardedSet, GuardedList, GuardedTuple, guarded_dataclass
+from .subclassablecollections import GuardedDict, GuardedSet, GuardedList, GuardedTuple, guarded_dataclass, guarded_typeddict
 
 from .subclassablecallables import GuardedCode
 
@@ -70,11 +70,14 @@ def type_returned_data(response: Any, expected_type: Type) -> Any:
     
     # Résoudre le type en GuardedType
     guarded_type = TypeResolver.resolve(expected_type)
-    
+    print(f"Expected type: {expected_type}, Guarded type: {guarded_type}, response: {response}")
+
     # Utiliser le constructeur Guarded pour convertir
     try:
-        return guarded_type(response)
+        res = guarded_type(response)
+        return res
     except Exception as e:
+        print(f"--- DEBUG EXCEPTION --- guarded_type {guarded_type} failed with {type(e).__name__}: {e}")
         # Fallback: essayer de convertir directement
         if isinstance(expected_type, type):
             try:
@@ -135,16 +138,16 @@ class TypeResolver:
         if annotation in cls._PRIMITIVE_MAP:
             return cls._PRIMITIVE_MAP[annotation]
 
-        # 1. Cas : C'est déjà une classe Guarded (ou une sous-classe)
+        # C'est déjà une classe Guarded (ou une sous-classe)
         # Ex: L'utilisateur passe directement GuardedInt ou CorporateEmail
         if isinstance(annotation, type) and issubclass(annotation, GuardedPrimitive):
             return annotation
             
-        # 2.5 None literal (common alias for NoneType in annotations)
+        # None literal (common alias for NoneType in annotations)
         if annotation is None:
             return GuardedNone
 
-        # 3. Enums Python
+        # Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
             # Import GuardedEnum pour wrapper les enums standards
             from .subclassableclasses import GuardedEnum, guarded_enum
@@ -156,27 +159,25 @@ class TypeResolver:
             # Créer dynamiquement un GuardedEnum wrapper
             return guarded_enum(annotation)
 
-        # 4. TypedDict
+        # TypedDict
         if is_typeddict(annotation):
-            # On retourne GuardedDict pour l'instant
-            # Idéalement on devrait valider que les clés correspondent
-            return GuardedDict
+            return guarded_typeddict(annotation)
 
-        # 5. NamedTuple (subclass of tuple)
+
         if isinstance(annotation, type) and issubclass(annotation, tuple) and annotation is not tuple:
              return GuardedTuple
 
-        # 4. Dataclasses (On les convertit en GuardedDataclassWrapper à la volée)
+        # Dataclasses (On les convertit en GuardedDataclassWrapper à la volée)
         if (isinstance(annotation, type) and is_dataclass(annotation)):
             from .subclassablecollections import guarded_dataclass
             return guarded_dataclass(annotation)
 
-        # 5. Pydantic Models
+        # Pydantic Models
         if (isinstance(annotation, type) and HAS_PYDANTIC and issubclass(annotation, BaseModel) ):
             from .subclassablepydantic import guarded_pydantic_model
             return guarded_pydantic_model(annotation)
 
-        # 6. Types Génériques (Typing)
+        # Types Génériques (Typing)
         origin = get_origin(annotation)
         args = get_args(annotation)
 
@@ -234,6 +235,9 @@ class TypeResolver:
                         resolved_args.append(GuardedNone)
                     else:
                         resolved_args.append(cls.resolve(a))
+                
+                # S'assurer que GuardedNone est testé en premier pour éviter que GuardedStr intercepte "None"
+                resolved_args.sort(key=lambda t: 0 if getattr(t, "__name__", "") == "GuardedNone" else 1)
                 
                 # Optimisation: Si Optional[T] (Union[T, None]), on utilise GuardedUnion
                 return guarded_union(*resolved_args)

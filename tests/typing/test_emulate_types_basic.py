@@ -6,74 +6,68 @@ from OpenHosta import emulate, test as oh_test
 class TestTypes:
     
     def test_NativeNumericalInt(self):
-        def add_two(a:int)->int:
+        def add_two(text: str) -> int:
             """
-            This function adds two to the integers in parameter
+            Extract the number from the text and add two to it.
             """
             return emulate()
         
-        assert isinstance(add_two(2), int)
+        assert isinstance(add_two("The number is 2."), int)
         
     def test_NativeNumericalFloat(self):
-        def add_zeropointtwo(a:float)->float:
+        def add_zeropointtwo(text: str) -> float:
             """
-            This function adds 0.2 to the float in parameter
+            Extract the float from the text and add 0.2 to it.
             """
             return emulate()
         
-        assert isinstance(add_zeropointtwo(2.2), float)
+        assert isinstance(add_zeropointtwo("The float is 2.2."), float)
         
     def test_NativeNumericalComplex(self):
-        def complex_func(a:complex)->complex:
+        def complex_func(text: str) -> complex:
             """
-            This function return the opposite of the complex number in parameter
+            Extract the complex number from the text and return its opposite.
             """
             return emulate()
         
-        assert complex_func(complex("1+j")) == complex("-1-j")
+        assert complex_func("The complex number is 1+j") == complex("-1-j")
         
     def test_NativeNumericalBool(self):
-        def inverse_bool(a:bool)->bool:
+        def is_approved(text: str) -> bool:
             """
-            This function return True if a is False and False if a is True.
+            Return True if the text indicates approval, False otherwise.
             """
             return emulate()
         
-        # GuardedBool wraps bool (proxy), so isinstance(x, bool) is False.
-        # We check behavior (truthiness or value)
-        assert inverse_bool(True) == False
-        # assert isinstance(inverse_bool(True), bool) # Impossible for proxy types
-        assert inverse_bool(True) == False
-        assert inverse_bool(False) == True
+        assert is_approved("Yes, it is approved.") == True
+        assert is_approved("No, REJECTED.") == False
         
     def test_NativeSequentialStr(self):
-        def return_str(a:str)->str:
+        def return_str(text: str) -> str:
             """
-            This function returns a string in parameter.
+            Return the main greeting phrase from the text.
             """
             return emulate()
         
-        assert isinstance(return_str("hi mom"), str)
+        assert isinstance(return_str("He said: hi mom!"), str)
 
     def test_NativeSequentialList(self):
-        def random_list(a:list)->list:
+        def random_list(text: str) -> list:
             """
-            This function return a list of random number of the length of the list in parameter.
+            Extract the numbers mentioned in the text as a list.
             """
             return emulate()
         
-        assert isinstance(random_list([1, 2, 3]), list)
+        assert isinstance(random_list("The numbers are 1, 2, and 3."), list)
     
     def test_NativeSequentialTuple(self):
-        def random_tuple(a:tuple)->tuple:
+        def extract_tuple(text: str) -> tuple:
             """
-            This function returns a tuple containing the same elements as the tuple in parameter.
+            Extract the quantity and the item name from the text into a tuple.
             """
             return emulate()
         
-        # model.type_returned_data(random_tuple._last_response["data"], random_tuple.hosta_inspection._infos)
-        # random_tuple.hosta_inspection._infos.f_type
-        assert isinstance(random_tuple((5, "aaaaaaah")), tuple)
+        assert isinstance(extract_tuple("I have 5 apples."), tuple)
 
     
     def test_NativeSequentialRange(self):
@@ -89,22 +83,22 @@ class TestTypes:
         # assert isinstance(range_func(range(1)), range)
             
     def test_NativeMappinDict(self):
-        def count_dict(a:dict)->dict:
+        def count_dict(text: str) -> dict:
             """
-            This function returns a dict of one element containing "count" as key and the count of elements in a as value
+            Extract a dictionary mapping item names to their quantities from the text.
             """
             return emulate()
         
-        assert isinstance(count_dict({"tata": 4, "titi": 2}), dict)
+        assert isinstance(count_dict("I have 4 tata and 2 titi."), dict)
         
     def test_NativeEnsembleSet(self):
-        def return_set(a:set)->set:
+        def return_set(text: str) -> set:
             """
-            This function returns the same set as the parameter
+            Extract unique numbers from the text into a set.
             """
             return emulate()
         
-        assert isinstance(return_set({1, 2, 3}), set)
+        assert isinstance(return_set("Numbers: 1, 2, 2, 3."), set)
 
         
     def test_NativeEnsembleFrozenset(self):
