@@ -358,11 +358,13 @@ class OneTurnConversationPipeline(Pipeline):
             chunk = response_lines[(section_pos[-2]+1):section_pos[-1]]
             # Remove chunk language and parameters
             response_string = "\n".join(chunk)
+            
+        response_string = response_string.strip("\"'")
 
         inspection.logs["clean_answer"] += response_string
         inspection.logs["response_string"] = response_string
 
-        return response_string.strip()
+        return response_string
 
     def pull_type_data_section(self, inspection:Inspection, response:Any) -> Any:
         """Python Level"""
