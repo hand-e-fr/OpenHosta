@@ -94,6 +94,9 @@ jobs:
         run: pip install .[tests]
       
       - name: Debug Environment
+        env:
+          OPENHOSTA_DEFAULT_MODEL_NAME: gpt-5.4
+          OPENHOSTA_DEFAULT_MODEL_API_KEY: ${{ secrets.OPENHOSTA_DEFAULT_MODEL_API_KEY }}         
         run: |
           echo "Le nom du modèle est : $OPENHOSTA_DEFAULT_MODEL_NAME"
           if [ -z "$OPENHOSTA_DEFAULT_MODEL_API_KEY" ]; then
