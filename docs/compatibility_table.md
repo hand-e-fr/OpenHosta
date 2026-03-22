@@ -10,4 +10,4 @@
 ### Résumé
 
 ✅ 5 / 6 versions testées avec succès.
-📅 Mis à jour le : mer. 18 mars 2026 15:57:56 CET
+📅 Mis à jour le : dim. 22 mars 2026 10:45:42 CET
