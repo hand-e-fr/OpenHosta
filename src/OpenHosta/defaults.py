@@ -85,6 +85,7 @@ def recursive_find_dotenv(path):
     return recursive_find_dotenv(parent)
         
 def reload_dotenv(override: bool = True, dotenv_path="./.env"):
+
     if _dotenv_availbale:
         dotenv_path = os.path.abspath(dotenv_path)
         dotenv_find_path = recursive_find_dotenv(os.path.dirname(dotenv_path))
@@ -114,12 +115,10 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
                 OPENHOSTA_AUDIT_MODE=False                                 # Optional. Set to True to enable verbose audit logging.
                 ------------------
                 """))        
-            return False
     
         if not load_dotenv(dotenv_path=dotenv_path, override=override):
             sys.stderr.write(f"[OpenHosta/CONFIG_ERROR] Failed to load .env file at {dotenv_path}.\n")
-            return False
-
+           
     _defaut_model:OpenAICompatibleModel = config.DefaultModel
     _defaut_model.api_key = os.getenv("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
     _defaut_model.model_name = os.getenv("OPENHOSTA_DEFAULT_MODEL_NAME", "gpt-4.1")

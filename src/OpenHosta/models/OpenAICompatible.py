@@ -111,9 +111,10 @@ class OpenAICompatibleModel(Model):
         self.embedding_similarity_min = embedding_similarity_min        
     
     def _get_api_key(self) -> str:
+        # If key has not been set at application time, read it for each call
         api_key = self.api_key
         if api_key is None:
-            api_key = os.environ.get("OPENAI_API_KEY")
+            api_key = os.environ.get("OPENHOSTA_DEFAULT_MODEL_API_KEY", None)
         return api_key
 
     def _get_headers(self, api_key: str) -> Dict[str, str]:
@@ -133,7 +134,9 @@ class OpenAICompatibleModel(Model):
 
         api_key = self._get_api_key()
         if api_key is None and "api.openai.com/v1" in self.base_url:
-            raise ApiKeyError("[OpenAICompatibleModel._generate_without_retry] Empty API key.")
+            api_key = os.environ.get("OPENAI_API_KEY", None)
+            if api_key is None:
+                raise ApiKeyError("[OpenAICompatibleModel._generate_without_retry] Empty API key.")
 
         l_body = {
             "model": self.model_name,
@@ -224,7 +227,9 @@ class OpenAICompatibleModel(Model):
     def models_on_same_api(self) -> List[str]:
         api_key = self._get_api_key()
         if api_key is None and "api.openai.com/v1" in self.base_url:
-            raise ApiKeyError("[OpenAICompatibleModel.models_on_same_api] Empty API key.")
+            api_key = os.environ.get("OPENAI_API_KEY", None)
+            if api_key is None:
+                raise ApiKeyError("[OpenAICompatibleModel.models_on_same_api] Empty API key.")
         
         headers = self._get_headers(api_key)
         full_url = f"{self.base_url}/models"
