@@ -1,19 +1,15 @@
-import os
 import time
-import pytest
-from dotenv import load_dotenv
 
-load_dotenv()
+# from OpenHosta.models import OllamaModel, OpenAICompatibleModel
+# from OpenHosta import config
+from OpenHosta import emulate
 
-from OpenHosta.models import OllamaModel, OpenAICompatibleModel
-from OpenHosta import emulate, config
+# config.DefaultModel = OpenAICompatibleModel(
+#     model_name="qwen3.5:9b", 
+#     base_url="http://192.168.1.188:11434/v1",
+#     api_parameters={})
 
-config.DefaultModel = OpenAICompatibleModel(
-    model_name="qwen3.5:9b", 
-    base_url="http://192.168.1.188:11434/v1",
-    api_parameters={})
-
-config.DefaultModel.api_call_without_retry([{"role": "user", "content": "Hello"}])
+# config.DefaultModel.api_call_without_retry([{"role": "user", "content": "Hello"}])
 
 
 type LETTER=str

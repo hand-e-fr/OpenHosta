@@ -4,24 +4,23 @@ from typing import Any, Dict, List, Set, Tuple
 import os
 import requests
 
-from ..core.inspection import Inspection
 from ..core.base_model import Model, ModelCapabilities
 from ..core.errors import ApiKeyError, RequestError, RateLimitError
 
 class OpenAICompatibleModel(Model):
 
     def __init__(self, 
-            model_name: str = None, 
-            max_async_calls = 7,
+            model_name: str|None = None, 
+            max_async_calls:int = 7,
             additionnal_headers: Dict[str, Any] = {},
             api_parameters:Dict[str, Any] = {},
             capabilities:Set[ModelCapabilities] = {ModelCapabilities.TEXT2TEXT},
             base_url: str = "https://api.openai.com/v1", 
             chat_completion_url: str = "/chat/completions",
             embedding_url: str = "/embeddings",
-            embedding_model_name: str = None,
+            embedding_model_name: str|None = None,
             embedding_similarity_min: float = 0.30,  # Min similarity threshold for clustering
-            api_key: str = None, 
+            api_key: str|None = None, 
             timeout: int = 300,
             retry_delay:int = 60,            
         ):     
