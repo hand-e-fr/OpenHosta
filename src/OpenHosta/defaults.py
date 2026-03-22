@@ -9,7 +9,7 @@ try:
 except Exception as e:
     sys.stderr.write("[OpenHosta/CONFIG_ERROR] python-dotenv is not installed. It is a good practice to install it and store your credentials in a .env file.\n")
     
-from .core.base_model import Model
+from .core.base_model import Model, ModelCapabilities
 from .pipelines import OneTurnConversationPipeline
 from .models import OpenAICompatibleModel
 
@@ -142,7 +142,8 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
     TOP_P =             os.getenv("OPENHOSTA_DEFAULT_MODEL_TOP_P", None)
     MAX_TOKENS =        os.getenv("OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS", None)
     SEED =              os.getenv("OPENHOSTA_DEFAULT_MODEL_SEED", None)
-    
+    LOGPROBS_SUPPORT =  str(os.getenv("OPENHOSTA_DEFAULT_MODEL_LOGPROBS_SUPPORT", "False")).lower() in ("true", "1", "t", "yes")
+
     config.MAX_RETRIES = int(os.getenv("OPENHOSTA_MAX_RETRIES", 3))
     config.AUDIT_MODE = str(os.getenv("OPENHOSTA_AUDIT_MODE", "False")).lower() in ("true", "1", "t", "yes")
 
@@ -154,6 +155,9 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         _defaut_model.api_parameters |= {"max_tokens": int(MAX_TOKENS)}
     if SEED is not None:
         _defaut_model.api_parameters |= {"seed": int(SEED)}
+        
+    if LOGPROBS_SUPPORT is True:
+        _defaut_model.capabilities |= { ModelCapabilities.LOGPROBS }
                 
     return True
 
