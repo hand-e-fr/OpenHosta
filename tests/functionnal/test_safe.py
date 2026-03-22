@@ -107,11 +107,12 @@ def test_nested_safe_emulate_success():
     
     def get_next_step(command: str) -> NextStep:
         """
-        This function returns the next step after a git command.
+        This function returns the most probable next step after a user runthis command.
         """
         return emulate()
 
-    next_step = None
+    next_step0 = None
+    next_step1 = None
     with safe(acceptable_cumulated_uncertainty=1e-5) as s1:
         with safe(acceptable_cumulated_uncertainty=1e-2) as s2:
             try:
@@ -119,11 +120,11 @@ def test_nested_safe_emulate_success():
                     "Inner safe context should have higher acceptable uncertainty than outer."
                     
                 for _ in range(3):
-                    next_step = get_next_step("git commit -m 'Initial commit'")
+                    next_step0 = get_next_step("git commit -m 'Initial commit'")
                     print(f"safe context 1 uuid: {s1.uuid} with: {s1.cumulated_uncertainty}/{s1.acceptable_cumulated_uncertainty}")
                     print(f"safe context 2 uuid: {s2.uuid} with: {s2.cumulated_uncertainty}/{s2.acceptable_cumulated_uncertainty}")
 
-                next_step = get_next_step("git is forbidden here")
+                next_step1 = get_next_step("git is forbidden here")
                             
             except UncertaintyError as e:
                 print(f"Caught expected UncertaintyError due to uncertainty:\n {e}")
@@ -132,7 +133,8 @@ def test_nested_safe_emulate_success():
                 print(f"Final safe context 1 uuid: {s1.uuid} with: {s1.cumulated_uncertainty}/{s1.acceptable_cumulated_uncertainty}")
                 print(f"Final safe context 2 uuid: {s2.uuid} with: {s2.cumulated_uncertainty}/{s2.acceptable_cumulated_uncertainty}")
 
-    assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+    assert next_step0 is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
+    assert next_step1 is NextStep.OTHER, f"Expected 'git push' in response, got: {next_step}"
 
     
     
@@ -266,9 +268,9 @@ def test_sage_closure_color_detector_pass():
     
     with safe(acceptable_cumulated_uncertainty=0.99) as s:
         color = closure("What is the color of this object ?", force_return_type=Color)
-        retcolor = color("moon")
+        retcolor = color("banana")
 
-    assert retcolor is Color.WHITE, f"Expected Color.WHITE for the moon, got: {retcolor}"
+    assert retcolor == Color.YELLOW, f"Expected Color.WHITE for the moon, got: {retcolor}"
     
     assert hasattr(color, "hosta_inspection"), "Function should have hosta_inspection attribute."       
 
@@ -361,7 +363,7 @@ def test_safe_workflow_organ_location():
         """
         Find the color of the organ in the given location description.
         """
-        with safe(acceptable_cumulated_uncertainty=0.1) as s:
+        with safe(acceptable_cumulated_uncertainty=0.05) as s:
             try:
                 if IsThisInThat(organ, "human body") is Bool.FALSE:
                     raise ValueError(f"{organ} is not in human body.")
@@ -397,7 +399,7 @@ def test_safe_workflow_organ_location():
 
     assert location == "head", f"Expected brain to be in head, got: {location}"
             
-    location = find_organ_location("blood")
+    location = find_organ_location("right and left hands")
         
     assert location is None, f"Expected None for blood location due to uncertainty error, got: {location}" 
 

@@ -106,9 +106,10 @@ jobs:
           fi
       - name: Run functionnal tests
         env:
-          OPENHOSTA_DEFAULT_MODEL_NAME: gpt-5.4
+          OPENHOSTA_DEFAULT_MODEL_NAME: gpt-4.1
+          OPENHOSTA_DEFAULT_MODEL_LOGPROBS_SUPPORT: True 
           OPENHOSTA_DEFAULT_MODEL_API_KEY: ${{ secrets.OPENHOSTA_DEFAULT_MODEL_API_KEY }}         
-        run: python -m pytest tests/functionnal -v --cov=OpenHosta
+        run: python -m pytest tests/functionnal -v
 
   notify:
     needs: [code-quality, static-analysis, functionnal-tests]
