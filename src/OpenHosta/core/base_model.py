@@ -66,7 +66,8 @@ class Model:
             print(f"Invalid next_authorized_api_call_time: {next_authorized_api_call_time}. Seto to 0")
             next_authorized_api_call_time = 0
             
-        print(f"Set some delay before new API call. Waiting for {next_authorized_api_call_time}")
+        if next_authorized_api_call_time > 1:
+            print(f"Set some delay before new API call. Waiting for {next_authorized_api_call_time}")
         self.delay_next_api_call_until = next_authorized_api_call_time + time.time()
     
     async def generate_async(

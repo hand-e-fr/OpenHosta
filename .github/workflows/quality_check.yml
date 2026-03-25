@@ -93,20 +93,16 @@ jobs:
       - name: Install dependencies
         run: pip install .[tests]
       
-      - name: Debug Environment
+      - name: Run functionnal tests
+        env:
+          OPENHOSTA_DEFAULT_MODEL_NAME: gpt-4.1
+          OPENHOSTA_DEFAULT_MODEL_LOGPROBS_SUPPORT: True 
+          OPENHOSTA_DEFAULT_MODEL_API_KEY: ${{ secrets.OPENHOSTA_DEFAULT_MODEL_API_KEY }}         
         run: |
           echo "Le nom du modèle est : $OPENHOSTA_DEFAULT_MODEL_NAME"
-          if [ -z "$OPENHOSTA_DEFAULT_MODEL_API_KEY" ]; then
-            echo "ERREUR : La clé API est vide !"
-          else
-            echo "La clé API est bien présente (valeur masquée)."
-          fi
-
-      # - name: Run functionnal tests
-      #   env:
-      #     OPENHOSTA_DEFAULT_MODEL_NAME: gpt-4.1
-      #     OPENHOSTA_DEFAULT_MODEL_API_KEY: ${{ secrets.OPENHOSTA_DEFAULT_MODEL_API_KEY }}         
-      #   run: python -m pytest tests/functionnal -v --cov=OpenHosta
+          echo "La clef est : $OPENHOSTA_DEFAULT_MODEL_API_KEY"
+          echo "OPENHOSTA_DEFAULT_MODEL_API_KEY=$OPENHOSTA_DEFAULT_MODEL_API_KEY OPENHOSTA_DEFAULT_MODEL_NAME=$OPENHOSTA_DEFAULT_MODEL_NAME python -m pytest tests/functionnal -v"
+          OPENHOSTA_DEFAULT_MODEL_API_KEY=$OPENHOSTA_DEFAULT_MODEL_API_KEY OPENHOSTA_DEFAULT_MODEL_NAME=$OPENHOSTA_DEFAULT_MODEL_NAME python -m pytest tests/functionnal -v
 
   notify:
     needs: [code-quality, static-analysis, functionnal-tests]

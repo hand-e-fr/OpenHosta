@@ -91,7 +91,7 @@ PYTEST="$VENV_DIR/bin/pytest"
 echo "📥 Installing project, pytest, pyyaml, pydantic..." | tee -a "$LOG"
 uv pip install -e . --python "$PYTHON" &>> "$LOG" \
     || { echo "❌ Failed to install project." | tee -a "$LOG"; exit 1; }
-uv pip install pytest pyyaml pydantic --python "$PYTHON" &>> "$LOG"
+uv pip install pytest==8.3.2 pyyaml pydantic pillow --python "$PYTHON" &>> "$LOG"
 
 echo "✅ Environment ready: $("$PYTHON" --version)" | tee -a "$LOG"
 

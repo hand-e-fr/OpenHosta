@@ -67,11 +67,14 @@ def override_default_pipeline(request: pytest.FixtureRequest):
     new_pipeline = OneTurnConversationPipeline(model_list=[model])
 
     # Swap in-place so all emulate() calls pick it up.
-    original_pipeline = defaults.config._DefaultPipeline
-    defaults.config._DefaultPipeline = new_pipeline
+    original_pipeline = defaults.config.DefaultPipeline
+    # original_model = defaults.Config.DefaultModel
+    defaults.config.DefaultPipeline = new_pipeline
+    # defaults.config.DefaultModel = model
 
     yield
 
     # Restore original pipeline after the session (good practice for re-use
     # in interactive / watch mode).
-    defaults.config._DefaultPipeline = original_pipeline
+    defaults.config.DefaultPipeline = original_pipeline
+    # defaults.config.DefaultModel = original_model

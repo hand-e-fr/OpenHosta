@@ -1,9 +1,5 @@
-import os
 import time
 import pytest
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # To run these tests you need to set .env variables to define an LLM provider
 # e.g. for OpenAI:
