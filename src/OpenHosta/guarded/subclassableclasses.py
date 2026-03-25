@@ -121,10 +121,10 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             return UncertaintyLevel(Tolerance.STRICT), value._python_value, None
 
         if isinstance(value, Enum) and value.name in cls._members:
-            return UncertaintyLevel(Tolerance.STRICT), value.name, None
+            return UncertaintyLevel(Tolerance.STRICT), value, None
 
         if isinstance(value, str) and value in cls._members:
-            return UncertaintyLevel(Tolerance.STRICT), value, None
+            return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum(value), None
 
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid enum value"
 
@@ -151,15 +151,11 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
 
             for name in cls._members:
                 if name.lower() == member_candidate.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), name, None
-
-            for name in cls._members:
-                if name.lower().endswith(member_candidate.lower()):
-                    return UncertaintyLevel(Tolerance.FLEXIBLE), name, None
+                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
             for name, member_value in cls._members.items():
                 if str(member_value).strip().lower() == cleaned_val.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), name, None
+                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
 
         if isinstance(value, str) and value.strip().startswith("{") and value.strip().endswith("}"):
