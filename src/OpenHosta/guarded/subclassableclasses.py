@@ -54,13 +54,8 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             if not name.startswith('_') and not callable(value):
                 cls._members[name] = value
 
-                member_lines = [f"- {name} = {value!r}" for name, value in cls._members.items()]
-        members_description = "\n".join(member_lines) if member_lines else "- <no members>"
-
-        cls._type_en = (
-            f"a value from {cls.__name__} enum with the following allowed members:\n"
-            f"{members_description}"
-        )
+        cls._type_en = f"a value from {cls.__name__} enum:\n\n" + cls._build_type_py_repr() + "\n"
+        
         cls._type_py = str
         cls._type_py_repr = cls._build_type_py_repr()
         cls._type_json = {
@@ -95,11 +90,11 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         for name, value in cls._members.items():
             value_type_description = cls._describe_value_type(value)
             member_lines.append(
-                f"{display_name}.{name} = {value!r}    # value_type: {value_type_description}"
+                f"    {display_name}.{name} = {value!r}    # value_type: {value_type_description}"
             )
 
         joined_members = "\n".join(member_lines) if member_lines else "<no members>"
-        return f"enum {display_name}:\n{joined_members}"
+        return f"class {display_name}(Enum):\n{joined_members}"
 
     @property
     def uncertainty(self) -> UncertaintyLevel:
@@ -126,10 +121,10 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             return UncertaintyLevel(Tolerance.STRICT), value._python_value, None
 
         if isinstance(value, Enum) and value.name in cls._members:
-            return UncertaintyLevel(Tolerance.STRICT), value.name, None
+            return UncertaintyLevel(Tolerance.STRICT), value, None
 
         if isinstance(value, str) and value in cls._members:
-            return UncertaintyLevel(Tolerance.STRICT), value, None
+            return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum(value), None
 
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid enum value"
 
@@ -156,15 +151,11 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
 
             for name in cls._members:
                 if name.lower() == member_candidate.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), name, None
-
-            for name in cls._members:
-                if name.lower().endswith(member_candidate.lower()):
-                    return UncertaintyLevel(Tolerance.FLEXIBLE), name, None
+                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
             for name, member_value in cls._members.items():
                 if str(member_value).strip().lower() == cleaned_val.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), name, None
+                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
 
         if isinstance(value, str) and value.strip().startswith("{") and value.strip().endswith("}"):

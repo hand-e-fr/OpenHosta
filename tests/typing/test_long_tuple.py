@@ -144,3 +144,32 @@ def test_long_tuple_edge_cases():
     # This should fail or be handled gracefully depending on TypeResolver implementation
     # We'll just check that it doesn't crash
     assert result_invalid is not None
+    
+    
+def test_enum_str_tuple():
+
+    
+    from enum import Enum
+    
+    class SelectedAction(Enum):
+        A = "a"
+        B = "b"
+        PAS_ASSEZ_INFORMATION = "pas_assez_information"
+    
+    from OpenHosta import emulate
+
+    def action_router(msg:str) -> tuple[SelectedAction, str]:
+        """
+        Select an action based on message msg.
+        
+        Returns:
+           - action: SelectedAction
+           - rational: str
+        """
+        return emulate()
+
+    action, rational = action_router('il faud dire A')
+
+    assert action == SelectedAction.A
+    assert type(rational) == str
+    assert len(rational) > 0
