@@ -47,7 +47,7 @@ except ImportError:
     HAS_PYDANTIC = False
 
 
-def type_returned_data(response: Any, expected_type: Type) -> Any:
+def type_returned_data(response: Any, expected_type: type|None) -> Any:
     """
     Convertit une réponse (généralement une string) vers le type attendu.
     
@@ -65,27 +65,19 @@ def type_returned_data(response: Any, expected_type: Type) -> Any:
         ValueError: Si la conversion échoue
     """
     # Si pas de type spécifié, retourner tel quel
-    if expected_type is None:
-        return response
+    if expected_type == None:
+        return None
     
     # Résoudre le type en GuardedType
     guarded_type = TypeResolver.resolve(expected_type)
-    print(f"Expected type: {expected_type}, Guarded type: {guarded_type}, response: {response}")
-
+    
     # Utiliser le constructeur Guarded pour convertir
-    try:
-        res = guarded_type(response)
-        return res
-    except Exception as e:
-        print(f"--- DEBUG EXCEPTION --- guarded_type {guarded_type} failed with {type(e).__name__}: {e}")
-        # Fallback: essayer de convertir directement
-        if isinstance(expected_type, type):
-            try:
-                return expected_type(response)
-            except:
-                pass
-        raise ValueError(f"Cannot convert '{response}' to type {expected_type}: {e}")
-
+    res = guarded_type.attempt(response)
+    if res.success:
+        return res.data
+    
+    raise ValueError(f"Failed to convert response to {expected_type}: {res.error_message}")
+    
 
 class TypeResolver:
     """
