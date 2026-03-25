@@ -107,8 +107,8 @@ class GuardedPrimitiveMeta(ABCMeta):
 
         return (
             f"# Description for guarded type '{cls.__name__}':\n"
+            f"# Python Type: {_type_py_repr}\n"
             f"# English Description: {cls._type_en}\n"
-            f"# Python Type:\n{_type_py_repr}\n"
         )
 
 

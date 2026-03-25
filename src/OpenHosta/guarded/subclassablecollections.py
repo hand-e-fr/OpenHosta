@@ -297,46 +297,83 @@ class GuardedTuple(GuardedPrimitive, tuple):
         
         # Accepter les strings représentant des tuples
         elif isinstance(value, str):
-            value_s = value.strip()
+            value_s = value.strip("\n \t")
             
             # Format "(1, 2, 3)"
             if value_s.startswith('(') and value_s.endswith(')'):
                 try:
                     import ast
+                    # Attempt to parse using ast.literal_eval for safe evaluation
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, tuple):
                         items = parsed
+                    else:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Not a tuple: {value}"
                 except (ValueError, SyntaxError):
-                    pass
-            
+                    # Handle cases like (<MyEnum.PAS_ASSEZ_INFORMATION: 'pas_assez_information'>, 're')
+                    # where ast.literal_eval fails due to non-literal expressions
+                    try:
+                        # Strip the outer parentheses and split manually by commas not inside nested structures
+                        inner = value_s[1:-1].strip()
+                        if not inner:
+                            items = []
+                        else:
+                            # Simple split with comma, careful about potential nesting
+                            # This is a less safe fallback, but necessary for non-literal enum representations
+                            parts = []
+                            depth = 0
+                            last_idx = 0
+                            for i, c in enumerate(inner):
+                                if c in '({[':
+                                    depth += 1
+                                elif c in ')}]':
+                                    depth -= 1
+                                elif c == ',' and depth == 0:
+                                    parts.append(inner[last_idx:i].strip())
+                                    last_idx = i + 1
+                            parts.append(inner[last_idx:].strip())
+
+                            # Attempt to evaluate each part individually, fallback to string if needed
+                            evaluated_parts = []
+                            for part in parts:
+                                try:
+                                    # First, try literal_eval for safety
+                                    evaluated = ast.literal_eval(part)
+                                except (ValueError, SyntaxError):
+                                    # If that fails, keep it as a string representation
+                                    # This preserves things like enum instances that can't be literal-evaluated
+                                    evaluated = part
+                                evaluated_parts.append(evaluated)
+
+                            items = evaluated_parts
+                    except Exception:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not parse string as tuple"
+                except (ValueError, SyntaxError) as e:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Could not parse tuple from string to {cls._type_py}:\n{e}\n{value}"
+                    
             # Format "1,2,3" (CSV)
             if items is None and ',' in value_s:
                 items = tuple(item.strip() for item in value_s.split(','))
-        
-        if items is None:
-            try:
+            if items is None:
                 items = tuple(value)
-            except (TypeError, ValueError):
-                return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to tuple"
-
 
         # Content validation
-        if cls._item_types:
-            return cls._content_validation(items, value)
+        return cls._content_validation(items, value)
         
-        return UncertaintyLevel(Tolerance.PRECISE), items, None
-
     @classmethod
     def _content_validation(cls, items, value) -> Tuple[UncertaintyLevel, Any, str | None]:
             # Fixed length
-        if len(items) != len(cls._item_types):
-            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(items)}"
-        try:
-            converted = tuple(cls._item_types[i](items[i]) for i in range(len(items)))
-            return UncertaintyLevel(Tolerance.PRECISE), converted, None
-        except Exception as e:
-            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
-        
+        if cls._item_types is not None:
+            if len(items) != len(cls._item_types):
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(items)}"
+            try:
+                converted = tuple(cls._item_types[i](items[i]) for i in range(len(items)))
+                return UncertaintyLevel(Tolerance.PRECISE), converted, None
+            except Exception as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
+        else:
+            # inner types for tuple is not defoned. accept anything
+            return UncertaintyLevel(Tolerance.PRECISE), items, None
 
     @classmethod
     def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, str | None]:
@@ -345,7 +382,7 @@ class GuardedTuple(GuardedPrimitive, tuple):
         """
         
         if isinstance(value, str):
-            value_s = value.strip()
+            value_s = value.strip("\n \t")
             value_s = value.replace("\n","\\n")
             # Error might me due to newlines in text content
             try:
@@ -353,12 +390,17 @@ class GuardedTuple(GuardedPrimitive, tuple):
                 parsed = ast.literal_eval(value_s)
                 if isinstance(parsed, tuple):
                     items = parsed
-            except (ValueError, SyntaxError):
-                pass
+                else:
+                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Not a tuple: {value}"
+            except (ValueError, SyntaxError) as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Could not parse tuple from string to {cls._type_py}:\n{e}\n{value}"
 
             if cls._item_types:
                 return cls._content_validation(items, value)
-            
+            else:
+                # Si aucun type d'élément n'est spécifié, on accepte le tuple tel quel
+                return UncertaintyLevel(Tolerance.STRICT), value, None
+                    
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not convert to tuple"
 
     def unwrap(self):
