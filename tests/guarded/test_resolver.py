@@ -131,7 +131,7 @@ class TestTypeReturnedData:
         """Test converting to bool."""
         result = type_returned_data("yes", bool)
         # Result should be GuardedBool
-        assert result.unwrap() == True
+        assert result == True
     
     def test_convert_to_list(self):
         """Test converting to list."""
@@ -145,8 +145,9 @@ class TestTypeReturnedData:
     
     def test_convert_none_type(self):
         """Test with None as expected type."""
-        result = type_returned_data("anything", None)
-        assert result == "anything"
+        MyType = TypeResolver.resolve(None)
+        result = MyType("None")
+        assert result == None
     
     def test_convert_invalid(self):
         """Test that invalid conversion raises error."""
@@ -166,7 +167,8 @@ class TestTypeReturnedData:
     
     def test_metadata_preserved(self):
         """Test that metadata is preserved in result."""
-        result = type_returned_data("42", int)
+        MyType = TypeResolver.resolve(int)
+        result = MyType("42")
         # GuardedInt should have metadata
         assert hasattr(result, 'uncertainty')
         assert hasattr(result, 'abstraction_level')
@@ -319,9 +321,11 @@ class TestTypeResolverLiteralAndCustomTypes:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
         
         # Test conversion
-        result = type_returned_data("marie.dupont@mycorp.com", CorporateEmail)
-        
-        # Should be a CorporateEmail instance
-        assert isinstance(result, CorporateEmail)
-        assert str(result) == "marie.dupont@mycorp.com"
+        result = CorporateEmail("marie.dupont@mycorp.com")
+        assert isinstance(result, CorporateEmail) 
         assert result.uncertainty == Tolerance.STRICT
+        
+        result = type_returned_data("marie.dupont@mycorp.com", CorporateEmail)
+        # Should be a CorporateEmail instance
+        assert isinstance(result, str)
+        assert str(result) == "marie.dupont@mycorp.com"

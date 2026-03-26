@@ -93,6 +93,7 @@ class CastingResult:
     abstraction: AbstractionLevel 
 
     original_input: Any
+    guarded_data: Any = None # Instance de GuardedPrimitive ou ProxyWrapper correspondent au type attendu
     python_type: Optional[type] = None
 
     error_message: Optional[str] = None
@@ -179,6 +180,10 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
 
         # 1. Lancement du Pipeline (Template Method)
         result = cls.attempt(value)
+
+        # Si l'appel vient de attempt() on peut déjà avoir l'instance prête
+        if result.success and isinstance(result.guarded_data, cls):
+            return result.guarded_data
 
 
         # 2. Gestion de l'échec
@@ -324,27 +329,64 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         full_message = ""
         # At each layer we have a chance to reduce uncertainty
         
+        def return_success(cleaned_val, uncertainty, level, message):
+            res = CastingResult(
+                success=True, 
+                data=cleaned_val, 
+                uncertainty=uncertainty, 
+                abstraction=level, 
+                original_input=value, 
+                python_type=cls._type_py, 
+                error_message=message
+            )
+            try:
+                # To avoid infinite recursion, we instantiate WITHOUT calling cls.__new__ again.
+                if issubclass(cls, ProxyWrapper):
+                    instance = object.__new__(cls)
+                else:
+                    base_type = cls._type_py if cls._type_py is not NotImplemented else object
+                    try:
+                        instance = base_type.__new__(cls, cleaned_val)
+                    except TypeError:
+                        instance = base_type.__new__(cls)
+
+                instance._input = value
+                instance._uncertainty = uncertainty
+                instance._abstraction_level = level
+                instance._python_value = cleaned_val
+                
+                if isinstance(instance, (list, set, dict)):
+                    instance.clear()
+                    if isinstance(instance, list): instance.extend(cleaned_val)
+                    elif isinstance(instance, set): instance.update(cleaned_val)
+                    elif isinstance(instance, dict): instance.update(cleaned_val)
+
+                res.guarded_data = instance
+            except Exception:
+                pass
+            return res
+
         uncertainty, cleaned_native_val, message = cls._parse_native(value)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_native_val, uncertainty, 'native', value, cls._type_py, message)
+            return return_success(cleaned_native_val, uncertainty, 'native', message)
         full_message += f"Native parsing failed: {message}\n"
 
         uncertainty, cleaned_heuristic_val, message = cls._parse_heuristic(cleaned_native_val)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_heuristic_val, uncertainty, 'heuristic', value, cls._type_py, message)
+            return return_success(cleaned_heuristic_val, uncertainty, 'heuristic', message)
         full_message += f"Heuristic parsing failed: {message}\n"
 
         uncertainty, cleaned_semantic_value, message = cls._parse_semantic(cleaned_heuristic_val)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_semantic_value, uncertainty, 'semantic', value, cls._type_py, message)
+            return return_success(cleaned_semantic_value, uncertainty, 'semantic', message)
         full_message += f"Semantic parsing failed: {message}\n"
         
         uncertainty, cleaned_knowledge_value, message = cls._parse_knowledge(cleaned_semantic_value)
         if uncertainty <= tolerance:
-            return CastingResult(True, cleaned_knowledge_value, uncertainty, 'knowledge', value, cls._type_py, message)
+            return return_success(cleaned_knowledge_value, uncertainty, 'knowledge', message)
         full_message += f"Knowledge parsing failed: {message}\n"
 
-        return CastingResult(False, None, Tolerance.ANYTHING, 'failed', value, cls._type_py, full_message)
+        return CastingResult(False, None, None, Tolerance.ANYTHING, 'failed', value, cls._type_py, full_message)
     
     # --- Hooks Abstraits (À implémenter par SemanticInt, SemanticUtf8...) ---
     

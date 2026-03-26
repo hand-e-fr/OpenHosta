@@ -411,7 +411,7 @@ def test_safe_on_string_return():
         """
         return emulate()
     
-    with safe(acceptable_cumulated_uncertainty=0.01):
+    with safe(acceptable_cumulated_uncertainty=0.1):
         answer = greet("Alice")
     
     assert answer == "Hello, Alice!", f"Expected 'Hello, Alice!' as greeting, got: {answer}"

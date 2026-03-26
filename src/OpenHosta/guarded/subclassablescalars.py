@@ -25,7 +25,7 @@ class GuardedInt(GuardedPrimitive, int):
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         # Cas : Déjà un int (mais pas un bool, car True est un int en Python)
         if isinstance(value, int) and not isinstance(value, bool):
-            return UncertaintyLevel(Tolerance.STRICT), value, None
+            return UncertaintyLevel(Tolerance.STRICT), int(value), None
             
         # Cas : String numérique propre "123"
         if isinstance(value, str) and value.isnumeric():
@@ -122,9 +122,9 @@ class GuardedUtf8(GuardedPrimitive, str):
             if value.startswith("'") or value.startswith('"'):
                 # Remove quotes if they are present at the beginning and end of the string
                 # This is a common pattern in JSON and other format
-                return UncertaintyLevel(Tolerance.FLEXIBLE), value.strip("\"'"), None
+                return UncertaintyLevel(Tolerance.FLEXIBLE), str(value.strip("\"'")), None
             else:
-                return UncertaintyLevel(Tolerance.STRICT), value, None
+                return UncertaintyLevel(Tolerance.STRICT), str(value), None
             
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     

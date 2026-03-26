@@ -138,4 +138,5 @@ class TestEmulateDataclasses:
         assert isinstance(result.country, str)
         assert isinstance(result.long, float)
         assert isinstance(result.lat, float)
-        assert result.zipcode is None or isinstance(result.zipcode, int)
+        if result.zipcode is not None:
+            assert isinstance(result.zipcode, int)
