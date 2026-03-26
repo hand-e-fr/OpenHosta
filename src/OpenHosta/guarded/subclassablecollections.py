@@ -292,7 +292,7 @@ class GuardedTuple(GuardedPrimitive, tuple):
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         items = None
         # Accepter les listes et sets
-        if isinstance(value, (list, set, frozenset)):
+        if isinstance(value, (list, set, frozenset, tuple)):
             items = tuple(value)
         
         # Accepter les strings représentant des tuples
@@ -322,15 +322,26 @@ class GuardedTuple(GuardedPrimitive, tuple):
                             # This is a less safe fallback, but necessary for non-literal enum representations
                             parts = []
                             depth = 0
+                            in_quote = False
+                            quote_char = None
                             last_idx = 0
                             for i, c in enumerate(inner):
-                                if c in '({[':
-                                    depth += 1
-                                elif c in ')}]':
-                                    depth -= 1
-                                elif c == ',' and depth == 0:
-                                    parts.append(inner[last_idx:i].strip())
-                                    last_idx = i + 1
+                                if c in '"\'' and (i == 0 or inner[i-1] != '\\'):
+                                    if not in_quote:
+                                        in_quote = True
+                                        quote_char = c
+                                    elif quote_char == c:
+                                        in_quote = False
+                                        quote_char = None
+                                
+                                if not in_quote:
+                                    if c in '({[':
+                                        depth += 1
+                                    elif c in ')}]':
+                                        depth -= 1
+                                    elif c == ',' and depth == 0:
+                                        parts.append(inner[last_idx:i].strip())
+                                        last_idx = i + 1
                             parts.append(inner[last_idx:].strip())
 
                             # Attempt to evaluate each part individually, fallback to string if needed
@@ -367,7 +378,16 @@ class GuardedTuple(GuardedPrimitive, tuple):
             if len(items) != len(cls._item_types):
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(items)}"
             try:
-                converted = tuple(cls._item_types[i](items[i]) for i in range(len(items)))
+                converted_items = []
+                for i in range(len(items)):
+                    item_type = cls._item_types[i]
+                    item_result = item_type.attempt(items[i])
+                    if item_result.success:
+                        converted_items.append(item_result.data)
+                    else:
+                        # fallback: try direct constructor
+                        converted_items.append(item_type(items[i]))
+                converted = tuple(converted_items)
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"

@@ -108,6 +108,8 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     def unwrap(self):
         """Retourne le membre de l'enum natif s'il est disponible, sinon la valeur native."""
         if self._orig_enum:
+            if isinstance(self._python_value, self._orig_enum):
+                return self._python_value
             try:
                 return self._orig_enum[self._python_value]
             except (KeyError, TypeError):
@@ -189,16 +191,20 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         display_name = self.__class__.__name__
         if display_name.startswith("Guarded_"):
             display_name = display_name[8:]
-        return f"<{display_name}.{self._python_value}: {self.value!r}>"
+        return f"<{display_name}.{self.name}: {self.value!r}>"
 
     @property
     def name(self):
         """Nom du membre (compatible avec enum.Enum)."""
+        if isinstance(self._python_value, Enum):
+            return self._python_value.name
         return self._python_value
 
     @property
     def value(self):
         """Valeur du membre (compatible avec enum.Enum)."""
+        if isinstance(self._python_value, Enum):
+            return self._python_value.value
         return self._members.get(self._python_value)
 
 

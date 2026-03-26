@@ -173,3 +173,33 @@ def test_enum_str_tuple():
     assert action == SelectedAction.A
     assert type(rational) == str
     assert len(rational) > 0
+
+
+    
+def test_enum_str_tuple_hard():
+
+    
+    from enum import Enum
+    
+    class SelectedAction(Enum):
+        A = "a"
+        B = "b"
+        PAS_ASSEZ_INFORMATION = "pas_assez_information"
+    
+    from OpenHosta import emulate
+
+    def action_router(msg:str) -> tuple[SelectedAction, str]:
+        """
+        Select an action based on message msg.
+        
+        Returns:
+           - action: SelectedAction
+           - rational: str
+        """
+        return emulate()
+
+    action, rational = action_router('il faud dire A et expliquer dans une longue phrase avec tout types de ponctuation et de caractères spécuaux pourquoi A est une lettre importante dans l\'histoire')
+
+    assert action == SelectedAction.A
+    assert type(rational) == str
+    assert len(rational) > 0    
