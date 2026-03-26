@@ -108,6 +108,8 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     def unwrap(self):
         """Retourne le membre de l'enum natif s'il est disponible, sinon la valeur native."""
         if self._orig_enum:
+            if isinstance(self._python_value, self._orig_enum):
+                return self._python_value
             try:
                 return self._orig_enum[self._python_value]
             except (KeyError, TypeError):
@@ -124,47 +126,43 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             return UncertaintyLevel(Tolerance.STRICT), value, None
 
         if isinstance(value, str) and value in cls._members:
-            return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum(value), None
+            try:
+                return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum[value], None
+            except KeyError:
+                return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum(cls._members[value]), None
 
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid enum value"
 
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Recherche case-insensitive par nom ou par valeur."""
-        if isinstance(value, str):
-            cleaned_val = value.strip()
 
-            if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
-                cleaned_val = cleaned_val[1:-1].strip()
+        value = str(value)
+        cleaned_val = value.strip()
 
-            if ":" in cleaned_val:
-                cleaned_val = cleaned_val.split(":", 1)[0].strip()
+        if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
+            cleaned_val = cleaned_val[1:-1].strip()
 
-            # Remove wrapping quotes, including doubled quotes like ''git push''
-            while len(cleaned_val) >= 2 and (
-                (cleaned_val.startswith("'") and cleaned_val.endswith("'"))
-                or (cleaned_val.startswith('"') and cleaned_val.endswith('"'))
-            ):
-                cleaned_val = cleaned_val[1:-1].strip()
+        if ":" in cleaned_val:
+            cleaned_val = cleaned_val.split(":", 1)[0].strip()
 
-            member_candidate = cleaned_val.split(".")[-1] if "." in cleaned_val else cleaned_val
+        # Remove wrapping quotes, including doubled quotes like ''git push''
+        while len(cleaned_val) >= 2 and (
+            (cleaned_val.startswith("'") and cleaned_val.endswith("'"))
+            or (cleaned_val.startswith('"') and cleaned_val.endswith('"'))
+        ):
+            cleaned_val = cleaned_val[1:-1].strip()
 
-            for name in cls._members:
-                if name.lower() == member_candidate.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
+        member_candidate = cleaned_val.split(".")[-1] if "." in cleaned_val else cleaned_val
 
-            for name, member_value in cls._members.items():
-                if str(member_value).strip().lower() == cleaned_val.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
+        for name in cls._members:
+            if name.lower() == member_candidate.lower():
+                return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
+        for name, member_value in cls._members.items():
+            if str(member_value).strip().lower() == cleaned_val.lower():
+                return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
-        if isinstance(value, str) and value.strip().startswith("{") and value.strip().endswith("}"):
-            try:
-                import json
-                parsed = json.loads(value)
-                return cls._parse_heuristic(parsed)
-            except Exception:
-                pass
 
         if isinstance(value, dict) and len(value) == 1:
             dict_val = list(value.values())[0]
@@ -189,16 +187,20 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         display_name = self.__class__.__name__
         if display_name.startswith("Guarded_"):
             display_name = display_name[8:]
-        return f"<{display_name}.{self._python_value}: {self.value!r}>"
+        return f"<{display_name}.{self.name}: {self.value!r}>"
 
     @property
     def name(self):
         """Nom du membre (compatible avec enum.Enum)."""
+        if isinstance(self._python_value, Enum):
+            return self._python_value.name
         return self._python_value
 
     @property
     def value(self):
         """Valeur du membre (compatible avec enum.Enum)."""
+        if isinstance(self._python_value, Enum):
+            return self._python_value.value
         return self._members.get(self._python_value)
 
 

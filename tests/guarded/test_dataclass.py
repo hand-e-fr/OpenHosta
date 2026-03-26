@@ -6,6 +6,16 @@ from OpenHosta.guarded.constants import Tolerance
 from OpenHosta.guarded.primitives import CastingResult
 from OpenHosta.guarded.subclassablecollections import guarded_dataclass
 
+@guarded_dataclass
+class Address:
+    street: str
+    city: str
+
+@guarded_dataclass
+class Person:
+    name: str
+    address: Address
+
 class TestGuardedDataclass:
     """Tests for @guarded_dataclass decorator."""
     
@@ -158,15 +168,6 @@ class TestGuardedDataclass:
     
     def test_nested_dataclass(self):
         """Test nested dataclasses."""
-        @guarded_dataclass
-        class Address:
-            street: str
-            city: str
-        
-        @guarded_dataclass
-        class Person:
-            name: str
-            address: Address
         
         # Test nested dict creation
         p = Person({
@@ -261,15 +262,6 @@ class TestGuardedDataclassParsing:
 
     def test_guarded_dataclass_unwrap_returns_native_dataclass(self):
         """unwrap() should return a native dataclass instance, not a dict."""
-        @guarded_dataclass
-        class Address:
-            street: str
-            city: str
-
-        @guarded_dataclass
-        class Person:
-            name: str
-            address: Address
 
         person = Person({
             "name": "Alice",

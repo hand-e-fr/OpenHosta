@@ -16,6 +16,7 @@ from ..core.cost_tracker import get_current_cost_tracker
 from ..core.audit import trigger_audit_event
 
 from ..guarded.resolver import type_returned_data
+from ..guarded.primitives import GuardedPrimitive
 
 MetaDialog = List[Tuple[str, MetaPrompt]]
 
@@ -370,10 +371,13 @@ class OneTurnConversationPipeline(Pipeline):
         """Python Level"""
         l_ret_data = type_returned_data(response, inspection.analyse.type)
         
-        # We unwrap to get the native type for backward compatibility with 
-        # tests that use type(res) is int (instead of isinstance)
+        # We unwrap to get the native type for backward compatibility 
+        # EXCEPT if the user explicitly requested a GuardedType via annotation
         if hasattr(l_ret_data, "unwrap"):
-             l_ret_data = l_ret_data.unwrap()
+             requested_type = inspection.analyse.type
+             is_guarded_type = isinstance(requested_type, type) and issubclass(requested_type, GuardedPrimitive)
+             if not is_guarded_type:
+                l_ret_data = l_ret_data.unwrap()
              
         inspection.logs["response_data"] = l_ret_data
 

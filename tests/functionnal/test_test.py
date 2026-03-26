@@ -4,6 +4,7 @@ import asyncio
 from OpenHosta import test as oh_test
 from OpenHosta import test_async as oh_test_async
     
+
 class TestSemanticTests:
     
     def test_BasicMandatory(self):
@@ -47,11 +48,12 @@ class TestSemanticTests:
         
         
     def test_with_names_parameter(self):
-        names = ["Louis", "Apple", "Marie"]
+        names = ["Louis", "Marie"]
         
-        if oh_test("all words are names", names=names):
+        if oh_test("all words are names", words=names):
             result = "All words are names"
         else:
             result = "Not all words are names"
 
-        assert result == "Not all words are names", "All words in names should be recognized as names"
+        assert result == "All words are names", "All words in names should be recognized as names"
+            

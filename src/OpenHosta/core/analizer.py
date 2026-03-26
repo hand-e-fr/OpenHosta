@@ -2,7 +2,7 @@
 import inspect
 import typing
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, is_dataclass
 from typing import Any, List, Optional, Union
 
 from ..core.base_model import ModelCapabilities
@@ -209,24 +209,57 @@ def encode_function_documentation(analyse: AnalyzedFunction):
             "function_doc"  : analyse.doc,
             }
 
-def encode_function_parameter_types(analyse: AnalyzedFunction):
+def _collect_types(p_type, type_list, seen_types=None):
+    if seen_types is None:
+        seen_types = set()
     
+    if p_type is None or p_type is inspect._empty or p_type in seen_types:
+        return
+    
+    seen_types.add(p_type)
+    
+    # 1. Résoudre le type s'il n'est pas déjà un GuardedType
+    try:
+        guarded_type = TypeResolver.resolve(p_type)
+    except:
+        return
+
+    # 2. Si c'est un type complexe, on l'ajoute à la liste de documentation
+    type_name = nice_type_name(p_type)
+    doc = describe_type_as_python(p_type)
+    if doc and (not doc.startswith("#") or "Description for guarded type" in doc):
+        type_list[type_name] = doc
+
+    # 3. Récursivité
+    # Generics
+    if hasattr(p_type, "__args__"):
+        for arg in p_type.__args__:
+            _collect_types(arg, type_list, seen_types)
+
+    # Champs de Dataclass ou Pydantic
+    if is_dataclass(p_type):
+        from dataclasses import fields
+        for field in fields(p_type):
+            _collect_types(field.type, type_list, seen_types)
+    elif hasattr(p_type, "model_fields"): # Pydantic v2
+        from typing import get_type_hints
+        hints = get_type_hints(p_type)
+        for field_name, field_info in p_type.model_fields.items():
+            _collect_types(hints.get(field_name, field_info.annotation), type_list, seen_types)
+
+def encode_function_parameter_types(analyse: AnalyzedFunction):
     
     # Types of the arguments when type definition is too long
     # to be included inline in the function call
     python_types_definition_list = {}    
-    
+    seen_types = set()
+
     for a in analyse.args:
-        arg_type = a.type
-        specifig_type_doc = describe_type_as_python(arg_type)
-        if specifig_type_doc:
-            python_types_definition_list[nice_type_name(arg_type)] = specifig_type_doc
+        _collect_types(a.type, python_types_definition_list, seen_types)
             
-    # Include the return type too, as it might contain Enums we need to document
+    # Include the return type too
     if analyse.type is not None and analyse.type is not inspect._empty:
-        specifig_type_doc = describe_type_as_python(analyse.type)
-        if specifig_type_doc:
-            python_types_definition_list["Return Type " + nice_type_name(analyse.type)] = specifig_type_doc
+        _collect_types(analyse.type, python_types_definition_list, seen_types)
                 
     return {
         "python_type_definition_dict":       "\n".join([f"```python\n# definition of type {k}:\n{v}\n```" for k,v in python_types_definition_list.items()])

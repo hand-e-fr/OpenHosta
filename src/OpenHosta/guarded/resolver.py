@@ -74,7 +74,8 @@ def type_returned_data(response: Any, expected_type: type|None) -> Any:
     # Utiliser le constructeur Guarded pour convertir
     res = guarded_type.attempt(response)
     if res.success:
-        return res.data
+        # Prefer guarded data if available, pull_type_data_section will unwrap if needed
+        return res.guarded_data if res.guarded_data is not None else res.data
     
     raise ValueError(f"Failed to convert response to {expected_type}: {res.error_message}")
     
