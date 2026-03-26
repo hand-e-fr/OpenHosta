@@ -119,60 +119,92 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
         _tolerance = Tolerance.TYPE_COMPLIANT
         
         
-        @classmethod  
+        @classmethod
         def _parse_heuristic(cls, value: Any):
+            from .resolver import TypeResolver
+            from typing import get_type_hints
 
-            # We try to make it as a string if it's not already a string, to let the LLM try to parse it as a constructor call or dict
-            value = str(value).strip("\"'").replace("\n", "")
-
-            # Si c'est une string qui ressemble à un appel constructeur: Person(...)
-            if isinstance(value, str) and (
-                value.strip().startswith(model_cls.__name__ + "(") or
-                value.strip().startswith("{")
-            ):
-                import ast
-                tree = ast.parse(value.strip(), mode='eval')
-                if isinstance(tree.body, ast.Call):
-                    parsed_args = []
-                    parsed_kwargs = {}
-                    for arg in tree.body.args:
-                        parsed_args.append(ast.literal_eval(arg))
-                    for keyword in tree.body.keywords:
-                        try:
-                            parsed_kwargs[keyword.arg] = ast.literal_eval(keyword.value)
-                        except:
+            # 1. Obtenir un dictionnaire de données
+            data_dict = None
+            if isinstance(value, dict):
+                data_dict = value
+            elif isinstance(value, str):
+                v_strip = value.strip().strip("\"'").replace("\n", "")
+                if v_strip.startswith(model_cls.__name__ + "(") or v_strip.startswith("{"):
+                    import ast
+                    try:
+                        tree = ast.parse(v_strip, mode='eval')
+                        if isinstance(tree.body, ast.Call):
+                            parsed_args = [ast.literal_eval(arg) for arg in tree.body.args]
+                            parsed_kwargs = {}
+                            for kw in tree.body.keywords:
+                                try: parsed_kwargs[kw.arg] = ast.literal_eval(kw.value)
+                                except: parsed_kwargs[kw.arg] = ast.unparse(kw.value)
+                            
+                            # Convert args to kwargs
+                            import inspect
+                            sig = inspect.signature(model_cls)
+                            bound = sig.bind(*parsed_args, **parsed_kwargs)
+                            bound.apply_defaults()
+                            data_dict = bound.arguments
+                        elif isinstance(tree.body, ast.Dict):
                             try:
-                                parsed_kwargs[keyword.arg] = ast.unparse(keyword.value)
+                                data_dict = ast.literal_eval(v_strip)
                             except:
-                                parsed_kwargs[keyword.arg] = None
+                                import json
+                                # Replace JSON literals with Python ones if needed (basic cases)
+                                json_v = v_strip.replace('true', 'True').replace('false', 'False').replace('null', 'None')
+                                try:
+                                    data_dict = ast.literal_eval(json_v)
+                                except:
+                                    # Try real JSON
+                                    try:
+                                        data_dict = json.loads(v_strip)
+                                    except:
+                                        data_dict = None
+                    except Exception as e:
+                        # Final attempt with JSON if AST failed
+                        import json
+                        try:
+                            data_dict = json.loads(v_strip)
+                        except:
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"AST and JSON parsing failed: {e}"
+
+            if data_dict is None:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "Value not recognized as dict or constructor call"
+
+            # 2. Résolution récursive des champs
+            try:
+                hints = get_type_hints(model_cls)
+                converted_kwargs = {}
+                
+                # On itère sur les champs du modèle (Pydantic v2)
+                for field_name, field_info in model_cls.model_fields.items():
+                    if field_name not in data_dict:
+                        continue
+                        
+                    raw_val = data_dict[field_name]
+                    expected_type = hints.get(field_name, field_info.annotation)
                     
-                    # Tenter d'instancier avec les args parsés
-                    try:
-                        # On crée l'instance directement via le constructeur
-                        instance = model_cls(*tuple(parsed_args), **parsed_kwargs)
-                        # On s'assure que 'data' est purement native pour respecter le contrat
-                        native_instance = cls._recursive_unwrap(instance)
-                        return UncertaintyLevel(Tolerance.PRECISE), native_instance, None
+                    if expected_type is None:
+                        converted_kwargs[field_name] = raw_val
+                        continue
 
-                    except Exception as e:
-                        # Si échec instanciation directe, essayer via dict mode si possible ou fail
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
-                elif isinstance(tree.body, ast.Dict):
-                    # Tenter d'instancier avec les args parsés
-                    try:
-                        # Utiliser literal_eval pour le dict si possible
-                        dict_val = ast.literal_eval(value.strip())
-                        instance = model_cls(**dict_val)
-                        native_instance = cls._recursive_unwrap(instance)
-                        return UncertaintyLevel(Tolerance.PRECISE), native_instance, None
+                    guarded_type = TypeResolver.resolve(expected_type)
+                    attempt_result = guarded_type.attempt(raw_val)
+                    if not attempt_result.success:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Field '{field_name}': {attempt_result.error_message}"
+                    
+                    # We MUST use the native data for Pydantic constructor to avoid validation errors
+                    converted_kwargs[field_name] = attempt_result.data
 
-                    except Exception as e:
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+                # 3. Instanciation du modèle et unwrap
+                instance = model_cls(**converted_kwargs)
+                native_instance = cls._recursive_unwrap(instance)
+                return UncertaintyLevel(Tolerance.PRECISE), native_instance, None
 
-                else:
-                    return UncertaintyLevel(Tolerance.ANYTHING), value, "String format not recognized as constructor call or dict"
-
-            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Could not parse as {cls.__name__} dataclass: id of type {id(type(value))} with value {value}. id of cls {id(cls)}"
+            except Exception as e:
+                return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
 
     _PYDANTIC_GUARDED_CACHE[model_cls] = GuardedPydanticModel
