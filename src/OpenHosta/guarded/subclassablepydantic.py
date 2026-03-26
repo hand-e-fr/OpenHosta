@@ -150,7 +150,9 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
                     try:
                         # On crée l'instance directement via le constructeur
                         instance = model_cls(*tuple(parsed_args), **parsed_kwargs)
-                        return UncertaintyLevel(Tolerance.PRECISE), instance, None
+                        # On s'assure que 'data' est purement native pour respecter le contrat
+                        native_instance = cls._recursive_unwrap(instance)
+                        return UncertaintyLevel(Tolerance.PRECISE), native_instance, None
 
                     except Exception as e:
                         # Si échec instanciation directe, essayer via dict mode si possible ou fail
@@ -158,11 +160,13 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
                 elif isinstance(tree.body, ast.Dict):
                     # Tenter d'instancier avec les args parsés
                     try:
-                        native_instance = model_cls(**GuardedDict(GuardedUtf8(value)))
+                        # Utiliser literal_eval pour le dict si possible
+                        dict_val = ast.literal_eval(value.strip())
+                        instance = model_cls(**dict_val)
+                        native_instance = cls._recursive_unwrap(instance)
                         return UncertaintyLevel(Tolerance.PRECISE), native_instance, None
 
                     except Exception as e:
-                        # Si échec instanciation directe, essayer via dict mode si possible ou fail
                         return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
                 else:
