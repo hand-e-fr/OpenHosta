@@ -131,6 +131,14 @@ CONTAINER_MANIFEST_TEXT = (
 
 UserType = list[dict[str, dict[str, str]]]
 
+class Item(BaseModel):
+    name: str
+    quantity: int
+
+class Order(BaseModel):
+    items: List[Item]
+    customer: str
+
 class TestCompatLogistics:
 
     def test_int(self):
@@ -258,6 +266,20 @@ class TestCompatLogistics:
         assert isinstance(result.origin, Address)
         assert isinstance(result.destination, Address)
         assert isinstance(result.weight_kg, float)
+
+    def test_pydantic_nested(self):
+        def parse_order(text: str) -> Order:
+            """Extract the order details including the list of items."""
+            return emulate()
+        
+        ORDER_TEXT = "Order for John Doe: 2x Widgets, 1x Gadget."
+        result = parse_order(ORDER_TEXT)
+        assert isinstance(result, Order)
+        assert isinstance(result.items, list)
+        assert len(result.items) == 2
+        assert isinstance(result.items[0], Item)
+        assert result.items[0].name == "Widgets"
+        assert result.items[1].name == "Gadget"
 
     def test_pydantic_flat(self):
         def parse_parcel_label(text: str) -> ParcelLabel:
