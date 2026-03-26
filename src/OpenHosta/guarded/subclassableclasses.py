@@ -126,47 +126,43 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             return UncertaintyLevel(Tolerance.STRICT), value, None
 
         if isinstance(value, str) and value in cls._members:
-            return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum(value), None
+            try:
+                return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum[value], None
+            except KeyError:
+                return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum(cls._members[value]), None
 
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid enum value"
 
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Recherche case-insensitive par nom ou par valeur."""
-        if isinstance(value, str):
-            cleaned_val = value.strip()
 
-            if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
-                cleaned_val = cleaned_val[1:-1].strip()
+        value = str(value)
+        cleaned_val = value.strip()
 
-            if ":" in cleaned_val:
-                cleaned_val = cleaned_val.split(":", 1)[0].strip()
+        if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
+            cleaned_val = cleaned_val[1:-1].strip()
 
-            # Remove wrapping quotes, including doubled quotes like ''git push''
-            while len(cleaned_val) >= 2 and (
-                (cleaned_val.startswith("'") and cleaned_val.endswith("'"))
-                or (cleaned_val.startswith('"') and cleaned_val.endswith('"'))
-            ):
-                cleaned_val = cleaned_val[1:-1].strip()
+        if ":" in cleaned_val:
+            cleaned_val = cleaned_val.split(":", 1)[0].strip()
 
-            member_candidate = cleaned_val.split(".")[-1] if "." in cleaned_val else cleaned_val
+        # Remove wrapping quotes, including doubled quotes like ''git push''
+        while len(cleaned_val) >= 2 and (
+            (cleaned_val.startswith("'") and cleaned_val.endswith("'"))
+            or (cleaned_val.startswith('"') and cleaned_val.endswith('"'))
+        ):
+            cleaned_val = cleaned_val[1:-1].strip()
 
-            for name in cls._members:
-                if name.lower() == member_candidate.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
+        member_candidate = cleaned_val.split(".")[-1] if "." in cleaned_val else cleaned_val
 
-            for name, member_value in cls._members.items():
-                if str(member_value).strip().lower() == cleaned_val.lower():
-                    return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
+        for name in cls._members:
+            if name.lower() == member_candidate.lower():
+                return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
+        for name, member_value in cls._members.items():
+            if str(member_value).strip().lower() == cleaned_val.lower():
+                return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
 
-        if isinstance(value, str) and value.strip().startswith("{") and value.strip().endswith("}"):
-            try:
-                import json
-                parsed = json.loads(value)
-                return cls._parse_heuristic(parsed)
-            except Exception:
-                pass
 
         if isinstance(value, dict) and len(value) == 1:
             dict_val = list(value.values())[0]

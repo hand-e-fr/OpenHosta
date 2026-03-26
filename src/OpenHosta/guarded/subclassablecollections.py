@@ -24,13 +24,20 @@ class GuardedList(GuardedPrimitive, list):
         if isinstance(value, list):
             if cls._item_type:
                 try:
-                    # Convert items if needed
-                    converted = [cls._item_type(item) for item in value]
-                    # If conversion happened (or types were checked), we return them
+                    converted = []
+                    for item in value:
+                        r = cls._item_type.attempt(item)
+                        # We MUST use r.data to get the native value. 
+                        # If attempt fails, it will raise eventually or we fallback to the raw item if we are tolerant.
+                        # But for STRICT native parsing, we expect success.
+                        if r.success:
+                            converted.append(r.data)
+                        else:
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {r.error_message}"
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
-            return UncertaintyLevel(Tolerance.STRICT), value, None
+            return UncertaintyLevel(Tolerance.STRICT), list(value), None
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
     @classmethod
@@ -68,7 +75,13 @@ class GuardedList(GuardedPrimitive, list):
         # Content validation
         if cls._item_type:
             try:
-                converted = [cls._item_type(item) for item in items]
+                converted = []
+                for item in items:
+                    r = cls._item_type.attempt(item)
+                    if r.success:
+                        converted.append(r.data)
+                    else:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item validation failed: {r.error_message}"
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -103,7 +116,13 @@ class GuardedSet(GuardedPrimitive, set):
         if isinstance(value, (set, frozenset)):
             if cls._item_type:
                 try:
-                    converted = {cls._item_type(item) for item in value}
+                    converted = set()
+                    for item in value:
+                        r = cls._item_type.attempt(item)
+                        if r.success:
+                            converted.add(r.data)
+                        else:
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {r.error_message}"
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -157,8 +176,14 @@ class GuardedSet(GuardedPrimitive, set):
         # Content validation
         if cls._item_type:
             try:
-                converted = {cls._item_type(item) for item in items}
-                return UncertaintyLevel(Tolerance.PRECISE), converted, None
+                converted_items = []
+                for item in items:
+                    res = cls._item_type.attempt(item)
+                    if res.success:
+                        converted_items.append(res.data)
+                    else:
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item validation failed: {res.error_message}"
+                return UncertaintyLevel(Tolerance.PRECISE), set(converted_items), None
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
         
@@ -195,13 +220,26 @@ class GuardedDict(GuardedPrimitive, dict):
                 try:
                     converted = {}
                     for k, v in value.items():
-                        new_k = cls._key_type(k) if cls._key_type else k
-                        new_v = cls._value_type(v) if cls._value_type else v
+                        if cls._key_type:
+                            rk = cls._key_type.attempt(k)
+                            if not rk.success:
+                                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Key conversion failed: {rk.error_message}"
+                            new_k = rk.data
+                        else:
+                            new_k = k
+                            
+                        if cls._value_type:
+                            rv = cls._value_type.attempt(v)
+                            if not rv.success:
+                                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value conversion failed: {rv.error_message}"
+                            new_v = rv.data
+                        else:
+                            new_v = v
                         converted[new_k] = new_v
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
-            return UncertaintyLevel(Tolerance.STRICT), value, None
+            return UncertaintyLevel(Tolerance.STRICT), dict(value), None
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
     @classmethod
@@ -240,8 +278,21 @@ class GuardedDict(GuardedPrimitive, dict):
             try:
                 converted = {}
                 for k, v in items.items():
-                    new_k = cls._key_type(k) if cls._key_type else k
-                    new_v = cls._value_type(v) if cls._value_type else v
+                    if cls._key_type:
+                        rk = cls._key_type.attempt(k)
+                        if not rk.success:
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Key validation failed: {rk.error_message}"
+                        new_k = rk.data
+                    else:
+                        new_k = k
+                        
+                    if cls._value_type:
+                        rv = cls._value_type.attempt(v)
+                        if not rv.success:
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value validation failed: {rv.error_message}"
+                        new_v = rv.data
+                    else:
+                        new_v = v
                     converted[new_k] = new_v
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
@@ -281,7 +332,14 @@ class GuardedTuple(GuardedPrimitive, tuple):
                 if len(value) != len(cls._item_types):
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Tuple length mismatch: expected {len(cls._item_types)}, got {len(value)}"
                 try:
-                    converted = tuple(cls._item_types[i](value[i]) for i in range(len(value)))
+                    converted_items = []
+                    for i in range(len(value)):
+                        res = cls._item_types[i].attempt(value[i])
+                        if res.success:
+                            converted_items.append(res.data)
+                        else:
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item {i} conversion failed: {res.error_message}"
+                    converted = tuple(converted_items)
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -385,8 +443,7 @@ class GuardedTuple(GuardedPrimitive, tuple):
                     if item_result.success:
                         converted_items.append(item_result.data)
                     else:
-                        # fallback: try direct constructor
-                        converted_items.append(item_type(items[i]))
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item {i} validation failed: {item_result.error_message}"
                 converted = tuple(converted_items)
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
