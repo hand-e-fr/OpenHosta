@@ -123,6 +123,46 @@ def test_emulate_dataclass():
     
     assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
         
+def test_emulate_callable_prototype():
+    """
+    Test the emulate function with a Callable return type with a specific prototype.
+    """
+    from typing import Callable
+    from enum import StrEnum
+    
+    class Weather(StrEnum):
+        SUNNY = "sunny"
+        RAINY = "rainy"
+        CLOUDY = "cloudy"
+
+    def get_weather_predictor() -> Callable[[float, float], Weather]:
+        """
+        Write a python function that predicts the weather based on temperature and humidity.
+        The function takes temperature (float) and humidity (float) as arguments and returns a Weather enum.
+        - If humidity > 80, it's rainy.
+        - If humidity < 50 and temperature > 20, it's sunny.
+        - Otherwise, it's cloudy.
+        """
+        return emulate()
+
+    try:
+        predictor = get_weather_predictor()
+    except Exception as e:
+        from OpenHosta import print_last_prompt
+        print("====== LLM PROMPT AND RESPONSE ======")
+        print_last_prompt(get_weather_predictor)
+        print("=====================================")
+        print(f"Exception during emulate: {e}")
+        # Pydantic and OpenHosta pipelines usually attach the inspection object to the returned/raised value or we can pass a custom pipeline to capture logs
+        raise e
+    
+    assert callable(predictor), f"Expected a callable, got: {type(predictor)}"
+    
+    # Test the generated function
+    assert predictor(25.0, 40.0) == Weather.SUNNY
+    assert predictor(15.0, 90.0) == Weather.RAINY
+    assert predictor(15.0, 60.0) == Weather.CLOUDY
+
 ## Exact same tests but with async version of ask
 from OpenHosta import emulate_async
 from asyncio import run
@@ -219,49 +259,84 @@ def test_emulate_dataclass_async():
     
     assert isinstance(person, Person), f"Expected 'Person' in response, got: {type(person)}"
     
+def test_emulate_callable_prototype_async():
+    """
+    Test the async emulate function with a Callable return type with a specific prototype.
+    """
+    from typing import Callable
+    from enum import StrEnum
     
-    def test_emulate_speed():
-        """
-        Test the emulate function with a very short prompt so that delay due to LLM is minimal.
-        """
-        EmptyPipeline = OneTurnConversationPipeline(model_list=[config.DefaultModel])
-        EmptyPipeline.emulate_meta_prompt.source = ""
-        EmptyPipeline.user_call_meta_prompt.source = "Just answer with 1"
-        
-        def answer_one()->int:
-            """
-            just write 1 in your answer
-            """
-            return emulate(pipeline=EmptyPipeline)
+    class Weather(StrEnum):
+        SUNNY = "sunny"
+        RAINY = "rainy"
+        CLOUDY = "cloudy"
 
-        t0 = time.time()
-        for i in range(10):
-            response = answer_one()
-        t1 = time.time()
-        
-        print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
-        
-        assert response == 1, f"Expected '1' in response, got: {response}"
-        assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
-        
-    def test_emulate_speed():
-        """
-        Test the emulate function with a very short prompt so that delay due to LLM is minimal.
-        """
-        
-        def answer_one()->int:
+    async def app():
+        async def get_weather_predictor() -> Callable[[float, float], Weather]:
             """
-            just write 1 in your answer
+            Write a python function that predicts the weather based on temperature and humidity.
+            The function takes temperature (float) and humidity (float) as arguments and returns a Weather enum.
+            - If humidity > 80, it's rainy.
+            - If humidity < 50 and temperature > 20, it's sunny.
+            - Otherwise, it's cloudy.
             """
-            return emulate()
+            return await emulate_async()
+        
+        return await get_weather_predictor()
+    
+    predictor = run(app())
+    
+    assert callable(predictor), f"Expected a callable, got: {type(predictor)}"
+    
+    # Test the generated function
+    assert predictor(25.0, 40.0) == Weather.SUNNY
+    assert predictor(15.0, 90.0) == Weather.RAINY
+    assert predictor(15.0, 60.0) == Weather.CLOUDY
+    
+def test_emulate_speed():
+    """
+    Test the emulate function with a very short prompt so that delay due to LLM is minimal.
+    """
+    EmptyPipeline = OneTurnConversationPipeline(model_list=[config.DefaultModel])
+    EmptyPipeline.emulate_meta_prompt.source = ""
+    EmptyPipeline.user_call_meta_prompt.source = "Just answer with 1"
+    
+    def answer_one()->int:
+        """
+        just write 1 in your answer
+        """
+        return emulate(pipeline=EmptyPipeline)
 
-        t0 = time.time()
-        for i in range(10):
-            response = answer_one()
-        t1 = time.time()
-        
-        print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
-        
-        assert response == 1, f"Expected '1' in response, got: {response}"
-        assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+    t0 = time.time()
+    for i in range(10):
+        response = answer_one()
+    t1 = time.time()
+    
+    print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
+    
+    assert response == 1, f"Expected '1' in response, got: {response}"
+    assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+    
+def test_emulate_speed_default():
+    """
+    Test the emulate function with a very short prompt so that delay due to LLM is minimal.
+    """
+    
+    def answer_one()->int:
+        """
+        just write 1 in your answer
+        """
+        return emulate()
+
+    _LIMIT_PER_CALL=1
+    _LOOP_SIZE=2
+    t0 = time.time()
+    for i in range(_LOOP_SIZE):
+        response = answer_one()
+    t1 = time.time()
+    
+    print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
+    
+    assert response == 1, f"Expected '1' in response, got: {response}"
+    assert (t1-t0) < _LOOP_SIZE * _LIMIT_PER_CALL, f"Expected less than {_LOOP_SIZE * _LIMIT_PER_CALL} seconds for {_LOOP_SIZE} calls, got: {t1-t0:.2f} seconds"
                 

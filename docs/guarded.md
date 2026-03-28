@@ -1048,7 +1048,7 @@ user = User(name="Alice", age="25")  # age converti automatiquement
 
 - `GuardedRange` (partiel)
 - `GuardedMemoryView` (partiel)
-- `GuardedCode` (partiel)
+- `GuardedCode` (Supported since v4.1, see [callables.md](callables.md))
 - Parsing semantic (LLM) non connecté
 
 ---
