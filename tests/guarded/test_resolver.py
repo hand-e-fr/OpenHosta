@@ -99,14 +99,93 @@ class TestTypeResolver:
         assert TypeResolver.resolve(TypingCallable[[int], str]) == GuardedCode
 
     def test_resolve_string_annotations(self):
-        """Test resolving stringified annotations."""
+        """Test resolving stringified annotations (safety net in resolver)."""
+        import warnings
         from OpenHosta.guarded.subclassablecallables import GuardedCode
         from OpenHosta.guarded.subclassablescalars import GuardedInt
         
-        assert TypeResolver.resolve("int") == GuardedInt
-        assert TypeResolver.resolve("Callable") == GuardedCode
-        assert TypeResolver.resolve("typing.Callable") == GuardedCode
-        assert TypeResolver.resolve("List[int]") == GuardedList
+        # These should still work but now emit a deprecation warning
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            assert TypeResolver.resolve("int") == GuardedInt
+            assert TypeResolver.resolve("Callable") == GuardedCode
+            assert TypeResolver.resolve("typing.Callable") == GuardedCode
+            assert TypeResolver.resolve("List[int]") == GuardedList
+    
+    def test_string_annotation_emits_warning(self):
+        """Test that string annotations trigger a deprecation warning."""
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            TypeResolver.resolve("int")
+            assert len(w) == 1
+            assert "gap in upstream type resolution" in str(w[0].message)
+
+
+class TestResolveAnnotationHelper:
+    """Tests for _resolve_annotation in analizer.py."""
+    
+    def test_resolve_non_string_passthrough(self):
+        """Non-string annotations pass through unchanged."""
+        from OpenHosta.core.analizer import _resolve_annotation
+        assert _resolve_annotation(int) is int
+        assert _resolve_annotation(None) is None
+    
+    def test_resolve_string_to_type(self):
+        """String annotations are resolved via eval in the correct namespace."""
+        from OpenHosta.core.analizer import _resolve_annotation
+        import typing
+        
+        ns = {"int": int, "str": str, "typing": typing, "Callable": typing.Callable}
+        assert _resolve_annotation("int", ns) is int
+        assert _resolve_annotation("str", ns) is str
+        assert _resolve_annotation("Callable", ns) is typing.Callable
+    
+    def test_resolve_unknown_string_falls_back_to_any(self):
+        """Unresolvable strings fall back to typing.Any with a warning."""
+        import typing
+        import warnings
+        from OpenHosta.core.analizer import _resolve_annotation
+        
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = _resolve_annotation("CompletelyFakeType", {})
+            assert result is typing.Any
+            assert len(w) == 1
+            assert "Could not resolve" in str(w[0].message)
+
+
+class TestHostaAnalyzeStringAnnotations:
+    """Test that hosta_analyze resolves stringified annotations."""
+    
+    def test_analyze_resolves_return_type(self):
+        """hosta_analyze should resolve string return annotations."""
+        from OpenHosta.core.analizer import hosta_analyze
+        import typing
+        
+        def my_func(x: int) -> str:
+            """doc"""
+            pass
+        
+        result = hosta_analyze(frame=None, function_pointer=my_func)
+        # With get_type_hints succeeding, types should be resolved
+        assert result.type is str
+        assert result.args[0].type is int
+    
+    def test_analyze_with_callable_annotation(self):
+        """hosta_analyze should handle Callable annotations."""
+        from OpenHosta.core.analizer import hosta_analyze
+        from typing import Callable
+        
+        def my_func(callback: Callable) -> int:
+            """doc"""
+            pass
+        
+        result = hosta_analyze(frame=None, function_pointer=my_func)
+        # get_type_hints should resolve Callable to typing.Callable
+        assert result.type is int
+        # The callback arg type should be Callable (not a string)
+        assert not isinstance(result.args[0].type, str)
 
 
 class TestComplexityGenericResolution:

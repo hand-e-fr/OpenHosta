@@ -8,9 +8,9 @@ from .primitives import GuardedPrimitive, UncertaintyLevel, Tolerance, ProxyWrap
 
 class GuardedCode(GuardedPrimitive, ProxyWrapper):
     # TODO: implement using scalars.py as example
-    _type_en = "a valid python function definition (starting with 'def')"
+    _type_en = "the complete Python source code of the function (starting with 'def'), NOT its string representation (like <function...>)"
     _type_py = Callable
-    _type_json = {"type": "string", "description": "Python source code of a function"}
+    _type_json = {"type": "string", "description": "Python source code of a function, do NOT output <function...> representations"}
     _type_knowledge = {"local_scope": {}}
 
     @classmethod
@@ -34,12 +34,19 @@ class GuardedCode(GuardedPrimitive, ProxyWrapper):
 
         if "```" in cleaned_code:
             lines = cleaned_code.splitlines()
-            # On retire la première ligne si c'est ```python et la dernière si c'est ```
-            if lines[0].strip().startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip().startswith("```"):
-                lines = lines[:-1]
-            cleaned_code = "\n".join(lines)
+            start_idx = -1
+            end_idx = -1
+            for i, line in enumerate(lines):
+                if line.strip().startswith("```"):
+                    if start_idx == -1:
+                        start_idx = i
+                    else:
+                        end_idx = i
+                        break
+            
+            if start_idx != -1 and end_idx != -1:
+                # We found a code block, extract it
+                cleaned_code = "\n".join(lines[start_idx + 1 : end_idx])
 
         # 2. Vérification Syntaxique (AST)
         try:
@@ -52,9 +59,10 @@ class GuardedCode(GuardedPrimitive, ProxyWrapper):
         # Dans un contexte LLM contrôlé, c'est ce qu'on veut, mais c'est un risque de sécurité.
         try:
             local_scope = cls._type_knowledge["local_scope"]
-            # On exécute le code dans un scope isolé
+            # On exécute le code dans le scope global pour que les annotations
+            # soient correctement résolues par Python lors de la définition.
             # TODO: better sandboxing
-            exec(cleaned_code, {}, local_scope)
+            exec(cleaned_code, local_scope)
             
             # On cherche l'objet fonction créé dans le scope
             # On prend le dernier objet callable défini (convention)
@@ -69,4 +77,34 @@ class GuardedCode(GuardedPrimitive, ProxyWrapper):
                 return UncertaintyLevel(Tolerance.ANYTHING), value, "No function found after eval"
 
         except Exception as e:
-            return UncertaintyLevel(Tolerance.ANYTHING), value, e
+            return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
+
+def guarded_callable(*args):
+    """
+    Creates a dynamic subclass of GuardedCode.
+    Injects the provided argument and return types into the `local_scope`
+    so that `exec()` can access them when executing the generated string.
+    """
+    class GuardedCallableWrapper(GuardedCode):
+        _type_knowledge = {"local_scope": {}}
+        
+    for arg in args:
+        if arg is None or arg is type(None):
+            continue
+            
+        # Get the underlying python type from the Guarded wrapper
+        native_type = arg
+        if hasattr(arg, "_orig_enum") and getattr(arg, "_orig_enum") is not None:
+            native_type = getattr(arg, "_orig_enum")
+        elif hasattr(arg, "_orig_dataclass") and getattr(arg, "_orig_dataclass") is not None:
+            native_type = getattr(arg, "_orig_dataclass")
+        elif hasattr(arg, "_orig_model") and getattr(arg, "_orig_model") is not None:
+            native_type = getattr(arg, "_orig_model")
+        elif hasattr(arg, "_type_py") and getattr(arg, "_type_py") is not None:
+            native_type = getattr(arg, "_type_py")
+            
+        if hasattr(native_type, "__name__"):
+            name = native_type.__name__
+            GuardedCallableWrapper._type_knowledge["local_scope"][name] = native_type
+            
+    return GuardedCallableWrapper
