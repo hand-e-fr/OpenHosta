@@ -84,9 +84,29 @@ class TestTypeResolver:
         class CustomClass:
             pass
         
-        resolved = TypeResolver.resolve(CustomClass)
-        # Should fallback to GuardedUtf8
-        assert resolved == GuardedUtf8
+        # Now raises TypeError instead of falling back to GuardedUtf8
+        with pytest.raises(TypeError):
+             TypeResolver.resolve(CustomClass)
+
+    def test_resolve_callable(self):
+        """Test resolving Callable types."""
+        from typing import Callable as TypingCallable
+        import collections.abc
+        from OpenHosta.guarded.subclassablecallables import GuardedCode
+        
+        assert TypeResolver.resolve(TypingCallable) == GuardedCode
+        assert TypeResolver.resolve(collections.abc.Callable) == GuardedCode
+        assert TypeResolver.resolve(TypingCallable[[int], str]) == GuardedCode
+
+    def test_resolve_string_annotations(self):
+        """Test resolving stringified annotations."""
+        from OpenHosta.guarded.subclassablecallables import GuardedCode
+        from OpenHosta.guarded.subclassablescalars import GuardedInt
+        
+        assert TypeResolver.resolve("int") == GuardedInt
+        assert TypeResolver.resolve("Callable") == GuardedCode
+        assert TypeResolver.resolve("typing.Callable") == GuardedCode
+        assert TypeResolver.resolve("List[int]") == GuardedList
 
 
 class TestComplexityGenericResolution:

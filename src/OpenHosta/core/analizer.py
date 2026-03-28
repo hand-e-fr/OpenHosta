@@ -155,7 +155,12 @@ def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
             hints = typing.get_type_hints(function_pointer, globalns=frame.f_globals, localns=frame.f_locals)
         else:
             hints = typing.get_type_hints(function_pointer)
-    except Exception:
+    except (NameError, AttributeError):
+        # Expected when annotations reference undefined names or missing imports
+        hints = {}
+    except Exception as e:
+        import warnings
+        warnings.warn(f"[OpenHosta] Unexpected error resolving type hints for {getattr(function_pointer, '__name__', '?')}: {e}")
         hints = {}
 
     sig = inspect.signature(function_pointer)
