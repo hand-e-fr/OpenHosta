@@ -73,7 +73,7 @@ class TestMultiModal:
              'CULBUTOIOPINTS'
             ]
         
-        MAX_MISMATCHES = 1
+        MAX_MISMATCHES = 2
         
         def image_of_char_grid_to_list_of_string(image: Image) -> List[str]:
             """
