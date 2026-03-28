@@ -205,8 +205,7 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
 
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
-
-
+    GuardedPydanticModel._native_class = model_cls
     _PYDANTIC_GUARDED_CACHE[model_cls] = GuardedPydanticModel
 
     return GuardedPydanticModel

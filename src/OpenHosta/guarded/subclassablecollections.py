@@ -715,6 +715,7 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
             "\n".join(fields_repr)
         )
         
+        GuardedDataclassWrapper._native_class = cls_to_guard
         _DATACLASS_GUARDED_CACHE[cls_to_guard] = GuardedDataclassWrapper
         return GuardedDataclassWrapper
     
@@ -852,4 +853,5 @@ def guarded_typeddict(cls_to_guard):
         "\n".join(fields_repr)
     )
 
+    GuardedTypedDictWrapper._native_class = cls_to_guard
     return GuardedTypedDictWrapper
