@@ -108,6 +108,7 @@ class TypeResolver:
         range: GuardedRange,
         Callable: GuardedCode,
         typing.Callable: GuardedCode,
+        collections.abc.Callable: GuardedCode, # Support modern style (3.9+)
         types.FunctionType: GuardedCode,
         types.MethodType: GuardedCode,
         types.NoneType: GuardedNone,
@@ -127,6 +128,29 @@ class TypeResolver:
         - GuardedInt -> GuardedInt (Idempotence)
         """
         
+        # 0. Cas : Stringified annotations (from __future__ import annotations)
+        if isinstance(annotation, str):
+            # Simple heuristic for common types when they appear as strings
+            str_map = {
+                "int": int, "str": str, "bool": bool, "float": float, "complex": complex,
+                "list": list, "List": List, "dict": dict, "Dict": Dict,
+                "set": set, "Set": Set, "tuple": tuple, "Tuple": Tuple,
+                "Callable": Callable, "Any": Any, "None": None, "NoneType": type(None),
+                "bytes": bytes, "bytearray": bytearray
+            }
+            if annotation in str_map:
+                annotation = str_map[annotation]
+            elif "[" in annotation:
+                # Handle subscripted types as strings: "List[int]", "Callable[...]"
+                base_type = annotation.split("[")[0].split(".")[-1]
+                if base_type in str_map:
+                    annotation = str_map[base_type]
+            elif "." in annotation:
+                # Handle qualified names: "typing.List", "collections.abc.Callable"
+                base_type = annotation.split(".")[-1]
+                if base_type in str_map:
+                    annotation = str_map[base_type]
+
         # 1. Cas : Types primitifs natifs (int, str, bool...)
         if annotation in cls._PRIMITIVE_MAP:
             return cls._PRIMITIVE_MAP[annotation]
@@ -175,6 +199,10 @@ class TypeResolver:
         args = get_args(annotation)
 
         if origin is not None:
+            # Callable origin check (handles subscripted Callable[[...], ...])
+            if origin in (Callable, typing.Callable, collections.abc.Callable):
+                return GuardedCode
+
             # List, Iterable, Sequence -> GuardedList
             if origin in (list, List, typing.Sequence, typing.Iterable, collections.abc.Sequence, collections.abc.Iterable):
                 inner = cls.resolve(args[0]) if args else GuardedUtf8
@@ -240,5 +268,6 @@ class TypeResolver:
                 return cls.resolve(args[0])
 
         # 6. Fallback
-        return GuardedUtf8
+        raise TypeError(f"Type {annotation} (origin: {origin}) is not supported by OpenHosta TypeResolver. "
+                        f"Consider using a supported primitive or wrapping your custom type.")
     
