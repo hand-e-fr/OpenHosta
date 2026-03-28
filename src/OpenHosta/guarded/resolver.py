@@ -128,8 +128,16 @@ class TypeResolver:
         - GuardedInt -> GuardedInt (Idempotence)
         """
         
-        # 0. Cas : Stringified annotations (from __future__ import annotations)
+        # 0. Safety net: Stringified annotations (from __future__ import annotations)
+        # NOTE: This should rarely trigger now that analizer.py resolves strings via _resolve_annotation.
+        # TODO(Phase 3): Remove this once all get_type_hints call sites are centralized.
         if isinstance(annotation, str):
+            import warnings
+            warnings.warn(
+                f"[OpenHosta] TypeResolver received a string annotation '{annotation}'. "
+                f"This indicates a gap in upstream type resolution.",
+                stacklevel=2
+            )
             # Simple heuristic for common types when they appear as strings
             str_map = {
                 "int": int, "str": str, "bool": bool, "float": float, "complex": complex,
@@ -201,7 +209,20 @@ class TypeResolver:
         if origin is not None:
             # Callable origin check (handles subscripted Callable[[...], ...])
             if origin in (Callable, typing.Callable, collections.abc.Callable):
-                return GuardedCode
+                from .subclassablecallables import guarded_callable, GuardedCode
+                if not args:
+                    return GuardedCode
+                    
+                resolved_args = []
+                for a in args:
+                    if isinstance(a, list) or isinstance(a, tuple):
+                        for sub_a in a:
+                            if sub_a is not Ellipsis:
+                                resolved_args.append(cls.resolve(sub_a))
+                    elif a is not Ellipsis:
+                        resolved_args.append(cls.resolve(a))
+                        
+                return guarded_callable(*resolved_args)
 
             # List, Iterable, Sequence -> GuardedList
             if origin in (list, List, typing.Sequence, typing.Iterable, collections.abc.Sequence, collections.abc.Iterable):
