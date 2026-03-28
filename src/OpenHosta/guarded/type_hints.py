@@ -68,3 +68,30 @@ def resolve_struct_hints(cls: Type, fallback_annotations: bool = True) -> Dict[s
             resolved[name] = annotation
     
     return resolved
+
+def extract_callable_args(annotation: Any) -> list:
+    """
+    Extracts the inner arguments from a typing.Callable annotation.
+    Abstracts away the differences between Python 3.8 and 3.9+ implementations
+    of Callable[[...], ...].
+    
+    Args:
+        annotation: A typing.Callable or collections.abc.Callable annotation
+        
+    Returns:
+        A flat list of argument types, typically with the return type at the end.
+    """
+    args = typing.get_args(annotation)
+    if not args:
+        return []
+        
+    extracted = []
+    for a in args:
+        if isinstance(a, list) or isinstance(a, tuple):
+            for sub_a in a:
+                if sub_a is not Ellipsis:
+                    extracted.append(sub_a)
+        elif a is not Ellipsis:
+            extracted.append(a)
+            
+    return extracted

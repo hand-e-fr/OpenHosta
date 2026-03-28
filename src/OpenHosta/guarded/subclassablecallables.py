@@ -92,16 +92,9 @@ def guarded_callable(*args):
         if arg is None or arg is type(None):
             continue
             
-        # Get the underlying python type from the Guarded wrapper
-        native_type = arg
-        if hasattr(arg, "_orig_enum") and getattr(arg, "_orig_enum") is not None:
-            native_type = getattr(arg, "_orig_enum")
-        elif hasattr(arg, "_orig_dataclass") and getattr(arg, "_orig_dataclass") is not None:
-            native_type = getattr(arg, "_orig_dataclass")
-        elif hasattr(arg, "_orig_model") and getattr(arg, "_orig_model") is not None:
-            native_type = getattr(arg, "_orig_model")
-        elif hasattr(arg, "_type_py") and getattr(arg, "_type_py") is not None:
-            native_type = getattr(arg, "_type_py")
+        # Extract the unified _native_class from the Guarded wrapper if available
+        # fallback to _type_py or the primitive itself.
+        native_type = getattr(arg, "_native_class", getattr(arg, "_type_py", arg))
             
         if hasattr(native_type, "__name__"):
             name = native_type.__name__

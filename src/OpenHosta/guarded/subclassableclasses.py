@@ -39,7 +39,7 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     """
 
     _members: dict = {}
-    _orig_enum: Optional[Type[Enum]] = None
+    _native_class: Optional[Type[Enum]] = None
     _type_en: str = "an enum value"
     _type_py: type = str
     _type_json: dict = {"type": "string"}
@@ -107,11 +107,11 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
 
     def unwrap(self):
         """Retourne le membre de l'enum natif s'il est disponible, sinon la valeur native."""
-        if self._orig_enum:
-            if isinstance(self._python_value, self._orig_enum):
+        if self._native_class:
+            if isinstance(self._python_value, self._native_class):
                 return self._python_value
             try:
-                return self._orig_enum[self._python_value]
+                return self._native_class[self._python_value]
             except (KeyError, TypeError):
                 pass
         return self.value
@@ -127,9 +127,9 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
 
         if isinstance(value, str) and value in cls._members:
             try:
-                return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum[value], None
+                return UncertaintyLevel(Tolerance.STRICT), cls._native_class[value], None
             except KeyError:
-                return UncertaintyLevel(Tolerance.STRICT), cls._orig_enum(cls._members[value]), None
+                return UncertaintyLevel(Tolerance.STRICT), cls._native_class(cls._members[value]), None
 
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid enum value"
 
@@ -157,11 +157,11 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
 
         for name in cls._members:
             if name.lower() == member_candidate.lower():
-                return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
+                return UncertaintyLevel(Tolerance.PRECISE), cls._native_class(cls._members[name]), None
 
         for name, member_value in cls._members.items():
             if str(member_value).strip().lower() == cleaned_val.lower():
-                return UncertaintyLevel(Tolerance.PRECISE), cls._orig_enum(cls._members[name]), None
+                return UncertaintyLevel(Tolerance.PRECISE), cls._native_class(cls._members[name]), None
 
 
         if isinstance(value, dict) and len(value) == 1:
@@ -217,7 +217,7 @@ def guarded_enum(enum_cls: Type[Enum]) -> Type[GuardedEnum]:
 
     new_name = f"Guarded_{enum_cls.__name__}"
     WrappedEnum = type(new_name, (GuardedEnum,), attrs)
-    WrappedEnum._orig_enum = enum_cls
+    WrappedEnum._native_class = enum_cls
     WrappedEnum.__doc__ = enum_cls.__doc__
 
     return WrappedEnum

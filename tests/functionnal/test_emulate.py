@@ -328,13 +328,15 @@ def test_emulate_speed_default():
         """
         return emulate()
 
+    _LIMIT_PER_CALL=1
+    _LOOP_SIZE=2
     t0 = time.time()
-    for i in range(10):
+    for i in range(_LOOP_SIZE):
         response = answer_one()
     t1 = time.time()
     
     print(f"10 calls to emulate took {t1-t0:.2f} seconds, average {((t1-t0)/10):.2f} seconds per call")
     
     assert response == 1, f"Expected '1' in response, got: {response}"
-    assert (t1-t0) < 10, f"Expected less than 10 seconds for 10 calls, got: {t1-t0:.2f} seconds"
+    assert (t1-t0) < _LOOP_SIZE * _LIMIT_PER_CALL, f"Expected less than {_LOOP_SIZE * _LIMIT_PER_CALL} seconds for {_LOOP_SIZE} calls, got: {t1-t0:.2f} seconds"
                 

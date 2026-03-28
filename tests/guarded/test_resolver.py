@@ -96,7 +96,7 @@ class TestTypeResolver:
         
         assert TypeResolver.resolve(TypingCallable) == GuardedCode
         assert TypeResolver.resolve(collections.abc.Callable) == GuardedCode
-        assert TypeResolver.resolve(TypingCallable[[int], str]) == GuardedCode
+        assert issubclass(TypeResolver.resolve(TypingCallable[[int], str]), GuardedCode)
 
     def test_resolve_string_annotations(self):
         """Test resolving stringified annotations (safety net in resolver)."""

@@ -281,9 +281,10 @@ def _collect_types(p_type, type_list, seen_types=None):
 
     # Champs de Dataclass ou Pydantic
     if is_dataclass(p_type):
+        hints = resolve_struct_hints(p_type)
         from dataclasses import fields
         for field in fields(p_type):
-            _collect_types(field.type, type_list, seen_types)
+            _collect_types(hints.get(field.name, field.type), type_list, seen_types)
     elif hasattr(p_type, "model_fields"): # Pydantic v2
         hints = resolve_struct_hints(p_type)
         for field_name, field_info in p_type.model_fields.items():

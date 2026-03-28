@@ -210,18 +210,13 @@ class TypeResolver:
             # Callable origin check (handles subscripted Callable[[...], ...])
             if origin in (Callable, typing.Callable, collections.abc.Callable):
                 from .subclassablecallables import guarded_callable, GuardedCode
-                if not args:
+                from .type_hints import extract_callable_args
+                
+                extracted_args = extract_callable_args(annotation)
+                if not extracted_args:
                     return GuardedCode
                     
-                resolved_args = []
-                for a in args:
-                    if isinstance(a, list) or isinstance(a, tuple):
-                        for sub_a in a:
-                            if sub_a is not Ellipsis:
-                                resolved_args.append(cls.resolve(sub_a))
-                    elif a is not Ellipsis:
-                        resolved_args.append(cls.resolve(a))
-                        
+                resolved_args = [cls.resolve(a) for a in extracted_args]
                 return guarded_callable(*resolved_args)
 
             # List, Iterable, Sequence -> GuardedList
