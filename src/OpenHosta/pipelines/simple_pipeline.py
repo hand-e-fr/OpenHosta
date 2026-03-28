@@ -112,17 +112,16 @@ class OneTurnConversationPipeline(Pipeline):
 
     def push_detect_missing_types(self, inspection:Inspection):
         """Python Level"""
+        import warnings
         #TODO: improve type guessing and merge with closure type guessing
         if inspection.analyse.type is None:
-            Warning(f"No return type found for function {inspection.analyse.name}. Assuming str.")
-            return_type = str
-        else:
-            return_type = inspection.analyse.type
+            warnings.warn(f"No return type found for function {inspection.analyse.name}. Assuming str.")
+            inspection.analyse.type = str
         
         # Check each argument type
         for arg in inspection.analyse.args:
             if arg.type is None:
-                Warning(f"No type found for argument {arg.name}. Assuming str.")
+                warnings.warn(f"No type found for argument {arg.name}. Assuming str.")
                 arg.type = str    
                 
         return inspection
