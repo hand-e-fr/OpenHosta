@@ -23,6 +23,8 @@ For those needing full control. Connect any endpoint (Ollama, vLLM, Azure OpenAI
 ### 4. [Types & Pydantic Validation](types_and_pydantic.md)
 Discover the power of generative extraction. OpenHosta intrinsically knows how to respond via standard Python Typing lists/dicts, Enums, and even complete `Pydantic V2` objects. Ensure validation and semantic safety dynamically.
 
+Starting from version **4.1**, you can even return executable logic using [**Generative Callables**](callables.md).
+
 ### 5. [Safe Context & Error Handling](safe_context_and_uncertainty.md)
 Building bullet-proof workflows around non-deterministic intelligence. Catch context uncertainties, handle safety loops, and understand `UncertaintyError`.
 

@@ -1,6 +1,6 @@
-from typing import Any, Tuple, Optional, cast
-from .primitives import GuardedPrimitive, GuardedCallInput, UncertaintyLevel, Tolerance, ProxyWrapper, CastingResult
-
+from typing import Any, Tuple, Optional
+from .primitives import GuardedPrimitive, GuardedCallInput, UncertaintyLevel, Tolerance, ProxyWrapper
+from .type_hints import resolve_struct_hints
 
 class GuardedList(GuardedPrimitive, list):
     """
@@ -529,8 +529,7 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
                 field_definitions = fields(cls_to_guard)
                 
                 merged_kwargs = dict(kwargs_dict)
-                from typing import get_type_hints
-                hints = get_type_hints(cls_to_guard)
+                hints = resolve_struct_hints(cls_to_guard)
                 
                 field_names = [field.name for field in field_definitions]
                 if len(args_tuple) > len(field_names):
@@ -698,11 +697,7 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
         GuardedDataclassWrapper.__doc__ = cls_to_guard.__doc__
         # Build Python Representation string to help LLM not hallucinate fields
         fields_repr = []
-        try:
-            from typing import get_type_hints
-            hints = get_type_hints(cls_to_guard)
-        except Exception:
-            hints = {}
+        hints = resolve_struct_hints(cls_to_guard)
 
         for field in field_definitions:
             field_type = hints.get(field.name, field.type)
@@ -720,6 +715,7 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
             "\n".join(fields_repr)
         )
         
+        GuardedDataclassWrapper._native_class = cls_to_guard
         _DATACLASS_GUARDED_CACHE[cls_to_guard] = GuardedDataclassWrapper
         return GuardedDataclassWrapper
     
@@ -751,11 +747,7 @@ def guarded_typeddict(cls_to_guard):
             if not isinstance(value, dict):
                 raise ValueError(f"Expected dict, got {type(value)}")
             
-            try:
-                from typing import get_type_hints
-                hints = get_type_hints(cls_to_guard)
-            except Exception:
-                hints = getattr(cls_to_guard, '__annotations__', {})
+            hints = resolve_struct_hints(cls_to_guard)
 
             converted_dict = {}
             for key, expected_type in hints.items():
@@ -844,11 +836,7 @@ def guarded_typeddict(cls_to_guard):
     GuardedTypedDictWrapper.__doc__ = getattr(cls_to_guard, '__doc__', '')
 
     fields_repr = []
-    try:
-        from typing import get_type_hints
-        hints = get_type_hints(cls_to_guard)
-    except Exception:
-        hints = getattr(cls_to_guard, '__annotations__', {})
+    hints = resolve_struct_hints(cls_to_guard)
 
     for field_name, field_type in hints.items():
         try:
@@ -865,4 +853,5 @@ def guarded_typeddict(cls_to_guard):
         "\n".join(fields_repr)
     )
 
+    GuardedTypedDictWrapper._native_class = cls_to_guard
     return GuardedTypedDictWrapper

@@ -3,7 +3,13 @@
 OpenHosta natively supports Python's typing modules and Pydantic V2 definitions out-of-the-box.
 
 ## Supported Types
-You can use standard Python types as the return type for an `emulate` function. Supported types include `List`, `Dict`, `Tuple`, `Set`, `FrozenSet`, `Deque`, `Iterable`, `Sequence`, `Mapping`, `Union`, `Optional`, and `Literal`, alongside built-in types such as `int`, `float`, `str`, `bool`.
+You can use standard Python types as the return type for an `emulate` function. Supported types include `List`, `Dict`, `Tuple`, `Set`, `FrozenSet`, `Deque`, `Iterable`, `Sequence`, `Mapping`, `Union`, `Optional`, and `Literal`.
+
+Supported built-in types include `int`, `float`, `str`, `bool`.
+
+Starting from **OpenHosta 4.1**, you can also return executable code using `Callable`.
+
+See [Generative Functions & Callable](callables.md) for more details.
 
 ```python
 from OpenHosta import emulate

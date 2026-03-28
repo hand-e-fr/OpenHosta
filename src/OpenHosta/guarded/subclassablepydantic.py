@@ -9,6 +9,8 @@ et en exposent le schéma de manière lisible dans les prompts.
 from typing import Type, Any, Dict, List, Optional
 from .primitives import GuardedPrimitive, ProxyWrapper, Tolerance, UncertaintyLevel
 from ..guarded import GuardedDict, GuardedUtf8
+from .resolver import TypeResolver
+from .type_hints import resolve_struct_hints
 
 try:
     from pydantic import BaseModel, Field
@@ -121,8 +123,6 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
         
         @classmethod
         def _parse_heuristic(cls, value: Any):
-            from .resolver import TypeResolver
-            from typing import get_type_hints
 
             # 1. Obtenir un dictionnaire de données
             data_dict = None
@@ -175,7 +175,7 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
 
             # 2. Résolution récursive des champs
             try:
-                hints = get_type_hints(model_cls)
+                hints = resolve_struct_hints(model_cls)
                 converted_kwargs = {}
                 
                 # On itère sur les champs du modèle (Pydantic v2)
@@ -205,8 +205,7 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
 
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
-
-
+    GuardedPydanticModel._native_class = model_cls
     _PYDANTIC_GUARDED_CACHE[model_cls] = GuardedPydanticModel
 
     return GuardedPydanticModel

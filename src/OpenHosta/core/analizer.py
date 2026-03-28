@@ -6,7 +6,9 @@ from dataclasses import dataclass, field, is_dataclass
 from typing import Any, List, Optional, Union
 
 from ..core.base_model import ModelCapabilities
+from ..guarded.primitives import GuardedPrimitive
 from ..guarded.resolver import TypeResolver
+from ..guarded.type_hints import resolve_struct_hints
 
 @dataclass
 class AnalyzedArgument:
@@ -101,7 +103,6 @@ def nice_type_name(p_type) -> str:
     # Handle Guarded Types
     # Check if it's a class before issubclass
     if isinstance(p_type, type):
-        from ..guarded.primitives import GuardedPrimitive
         if issubclass(p_type, GuardedPrimitive):
             # If it's a parameterized guarded type, show it generic-like
             if hasattr(p_type, "_item_type") and p_type._item_type:
@@ -149,36 +150,75 @@ def hosta_analyze_update(frame, analyse: AnalyzedFunction) -> AnalyzedFunction:
         doc=analyse.doc
     )
 
+def _resolve_annotation(annotation, globalns=None, localns=None):
+    """Resolve a potentially-stringified annotation to a real Python type.
+    
+    When `from __future__ import annotations` is used and `get_type_hints` fails,
+    annotations appear as raw strings. This helper tries to eval them in the
+    function's namespace to recover the real type.
+    
+    Returns the resolved type, or `typing.Any` if resolution fails.
+    """
+    if not isinstance(annotation, str):
+        return annotation
+    
+    import warnings
+    try:
+        resolved = eval(annotation, globalns or {}, localns or {})
+        return resolved
+    except Exception:
+        warnings.warn(f"[OpenHosta] Could not resolve stringified annotation '{annotation}'. Falling back to Any.")
+        return typing.Any
+
+
 def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
     try:
         if frame is not None:
             hints = typing.get_type_hints(function_pointer, globalns=frame.f_globals, localns=frame.f_locals)
         else:
             hints = typing.get_type_hints(function_pointer)
-    except Exception:
+    except (NameError, AttributeError):
+        # Expected when annotations reference undefined names or missing imports
+        hints = {}
+    except Exception as e:
+        import warnings
+        warnings.warn(f"[OpenHosta] Unexpected error resolving type hints for {getattr(function_pointer, '__name__', '?')}: {e}")
         hints = {}
 
     sig = inspect.signature(function_pointer)
+    
+    # Determine namespace for resolving stringified annotations
+    if frame is not None:
+        resolve_globalns = frame.f_globals
+        resolve_localns = frame.f_locals
+    else:
+        resolve_globalns = getattr(function_pointer, '__globals__', {})
+        resolve_localns = {}
 
     result_args_value_table = []
     if frame is not None:
         args_info = inspect.getargvalues(frame)
         for arg in args_info.args:
+            arg_type = hints.get(arg, sig.parameters[arg].annotation)
+            arg_type = _resolve_annotation(arg_type, resolve_globalns, resolve_localns)
             result_args_value_table.append(AnalyzedArgument(
                 name=arg,
                 value=args_info.locals[arg],
-                type=hints.get(arg, sig.parameters[arg].annotation)
+                type=arg_type
             ))
     else:
         for name, param in sig.parameters.items():
+            arg_type = hints.get(name, param.annotation)
+            arg_type = _resolve_annotation(arg_type, resolve_globalns, resolve_localns)
             result_args_value_table.append(AnalyzedArgument(
                 name=name,
                 value=inspect._empty,
-                type=hints.get(name, param.annotation)
+                type=arg_type
             ))
     
     result_function_name = function_pointer.__name__
     result_return_type = hints.get('return', sig.return_annotation)
+    result_return_type = _resolve_annotation(result_return_type, resolve_globalns, resolve_localns)
     result_docstring = function_pointer.__doc__
 
     return AnalyzedFunction(
@@ -233,17 +273,20 @@ def _collect_types(p_type, type_list, seen_types=None):
     # 3. Récursivité
     # Generics
     if hasattr(p_type, "__args__"):
-        for arg in p_type.__args__:
-            _collect_types(arg, type_list, seen_types)
+        # Skip Literal values — __args__ for Literal["a", "b"] contains values, not types
+        origin = getattr(p_type, "__origin__", None)
+        if origin is not typing.Literal:
+            for arg in p_type.__args__:
+                _collect_types(arg, type_list, seen_types)
 
     # Champs de Dataclass ou Pydantic
     if is_dataclass(p_type):
+        hints = resolve_struct_hints(p_type)
         from dataclasses import fields
         for field in fields(p_type):
-            _collect_types(field.type, type_list, seen_types)
+            _collect_types(hints.get(field.name, field.type), type_list, seen_types)
     elif hasattr(p_type, "model_fields"): # Pydantic v2
-        from typing import get_type_hints
-        hints = get_type_hints(p_type)
+        hints = resolve_struct_hints(p_type)
         for field_name, field_info in p_type.model_fields.items():
             _collect_types(hints.get(field_name, field_info.annotation), type_list, seen_types)
 
@@ -347,9 +390,30 @@ def encode_function_return_type(analyse: AnalyzedFunction):
             return_none_allowed = False
     else:
         return_none_allowed = False    
+        
+    return_type_name = nice_type_name(analyse.type)
+    
+    # If the LLM is expected to return code (GuardedCode/Callable),
+    # formatting the signature as `-> str` forces it to generate a string (markdown block)
+    # rather than mimicking a python `<function...>` pointer response.
+    import typing
+    import collections.abc
+    from ..guarded.primitives import GuardedPrimitive
+    
+    is_code = False
+    if analyse.type is typing.Callable or analyse.type is collections.abc.Callable:
+        is_code = True
+    elif getattr(analyse.type, "__origin__", None) in (typing.Callable, collections.abc.Callable):
+        is_code = True
+    elif isinstance(analyse.type, type) and issubclass(analyse.type, GuardedPrimitive) and analyse.type.__name__ == "GuardedCode":
+        is_code = True
+        
+    if is_code:
+        return_type_name = "str"
+
     return {
         "function_return_type": analyse.type,
-        "function_return_type_name": nice_type_name(analyse.type),
+        "function_return_type_name": return_type_name,
         "return_none_allowed": return_none_allowed,
     }
     
