@@ -1,6 +1,6 @@
 # OpenHosta Documentation Hub
 
-Documentation for version: **4.0** (Preparing)
+Documentation for version: **4.1**
 
 Welcome to the **OpenHosta** documentation hub. Here you'll find everything you need to leverage Large Language Models (LLMs) natively within your Python projects. OpenHosta transforms human language and semantic structures into pure, executable Python functions.
 
@@ -43,6 +43,6 @@ Take off your conceptual hat and observe OpenHosta in action through functional 
 
 ## Contribution & Legal
 
-If you like the project and are thinking of contributing, please refer to our [Contribution Guide](../CONTRIBUTING.md) and respect our [Code of Conduct](../CODE_OF_CONDUCT.md).
+If you like the project and are thinking of contributing, please refer to our [Contribution Guide](https://github.com/hand-e-fr/OpenHosta/blob/main/CONTRIBUTING.md) and respect our [Code of Conduct](https://github.com/hand-e-fr/OpenHosta/blob/main/CODE_OF_CONDUCT.md).
 
 *Deploying AI in production carries significant responsibilities. Refer to [Getting Started](getting_started.md) for legal framework (GDPR, IA Act) and prompt injection safety disclaimers.*

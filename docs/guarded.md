@@ -1,17 +1,16 @@
-# 📖 Documentation OpenHosta.guarded
+# 📖 OpenHosta.guarded Documentation
 
-**OpenHosta.guarded** est le module de validation et de conversion de types avec tolérance configurable. Il transforme des entrées arbitraires en types Python natifs avec métadonnées de confiance et de traçabilité.
+**OpenHosta.guarded** is the type validation and conversion module with configurable tolerance. It transforms arbitrary inputs into native Python types with confidence and traceability metadata.
 
 ---
 
-## I. Introduction : Types Gardés (Guarded Types)
+## I. Introduction: Guarded Types
 
-### Ordre d'héritage multiple et MRO
+### Multiple Inheritance Order and MRO
 
-⚠️ **Règle importante** : lorsqu'un type Guarded utilise l'héritage multiple, `GuardedPrimitive` doit être placé **en premier** dans la liste des bases explicites.
+⚠️ **Important rule**: When a Guarded type uses multiple inheritance, `GuardedPrimitive` must be placed **first** in the explicit base class list.
 
-Cette règle est désormais **vérifiée à la définition de classe** : une sous-classe mal déclarée lève explicitement une `TypeError`.
-
+This rule is now **checked at class definition time**: a poorly declared subclass explicitly raises a `TypeError`.
 
 ```python
 from OpenHosta.guarded.primitives import GuardedPrimitive, ProxyWrapper
@@ -20,7 +19,7 @@ class MyGuardedProxy(GuardedPrimitive, ProxyWrapper):
     ...
 ```
 
-Et non :
+And **not**:
 
 ```python
 from OpenHosta.guarded.primitives import GuardedPrimitive, ProxyWrapper
@@ -29,92 +28,91 @@ class BadProxyOrder(ProxyWrapper, GuardedPrimitive):
     ...
 ```
 
-Pourquoi :
-- `GuardedPrimitive.__new__()` pilote tout le pipeline de parsing (`attempt`, conversion, métadonnées)
-- les autres bases peuvent définir leur propre logique de construction ou interférer avec `super()`/le MRO
-- `ProxyWrapper` est un **mixin de délégation**, pas une base de construction
-- si l'ordre est inversé, le MRO peut court-circuiter le pipeline Guarded
+Why:
+- `GuardedPrimitive.__new__()` drives the entire parsing pipeline (`attempt`, conversion, metadata)
+- Other bases may define their own construction logic or interfere with `super()`/the MRO
+- `ProxyWrapper` is a **delegation mixin**, not a construction base
+- If the order is reversed, the MRO can short-circuit the Guarded pipeline
 
-Cette règle s'applique à toutes les sous-classes en héritage multiple, notamment aux types proxy (`GuardedBool`, `GuardedNone`, `GuardedRange`, `GuardedEnum`, etc.).
+This rule applies to all multiple-inheritance subclasses, notably proxy types (`GuardedBool`, `GuardedNone`, `GuardedRange`, `GuardedEnum`, etc.).
 
 
-
-Les types Guarded sont des types Python enrichis qui :
-1. **Acceptent des entrées imparfaites** et les nettoient automatiquement
-2. **Conservent des métadonnées** sur la qualité de la conversion
-3. **Se comportent comme des types natifs** pour une intégration transparente
+Guarded types are enriched Python types that:
+1. **Accept imperfect inputs** and clean them automatically
+2. **Retain metadata** about the conversion quality
+3. **Behave like native types** for seamless integration
 
 ```python
 from OpenHosta.guarded import GuardedInt
 
-# Accepte plusieurs formats
-age = GuardedInt("42")        # String numérique
-price = GuardedInt("1,000")   # Avec séparateur de milliers
-count = GuardedInt(42.0)      # Float rond
+# Accepts multiple formats
+age = GuardedInt("42")        # Numeric string
+price = GuardedInt("1,000")   # With thousands separator
+count = GuardedInt(42.0)      # Round float
 
-# Se comporte comme un int
+# Behaves like an int
 total = age + 10  # 52
 
-# Mais garde des métadonnées
-print(age.uncertainty)        # 0.0 (parfaitement certain)
+# But retains metadata
+print(age.uncertainty)        # 0.0 (perfectly certain)
 print(age.abstraction_level)  # 'native'
-print(price.uncertainty)      # 0.15 (parsing heuristique)
+print(price.uncertainty)      # 0.15 (heuristic parsing)
 ```
 
 ---
 
-## II. Architecture : Le Pipeline de Validation
+## II. Architecture: The Validation Pipeline
 
-Chaque type Guarded utilise un pipeline en cascade pour convertir les entrées :
+Each Guarded type uses a cascading pipeline to convert inputs:
 
-### 2.1 Les 4 Niveaux de Parsing
+### 2.1 The 4 Parsing Levels
 
 ```
-Entrée → Native → Heuristic → Semantic → Knowledge → Sortie
+Input → Native → Heuristic → Semantic → Knowledge → Output
          ↓        ↓           ↓          ↓
          0.00     0.0-0.15    0.0-0.30   0.0+
          (STRICT) (PRECISE)   (FLEXIBLE) (CREATIVE)
 ```
 
-1. **Native** (Coût: O(1), Uncertainty: 0.0)
-   - Vérification de type direct (`isinstance`)
-   - Si la valeur est déjà du bon type, validation immédiate
+1. **Native** (Cost: O(1), Uncertainty: 0.0)
+   - Direct type check (`isinstance`)
+   - If the value is already the correct type, immediate validation
 
-2. **Heuristic** (Coût: O(n), Uncertainty: 0.05-0.15)
-   - Nettoyage déterministe (regex, strip, cast)
-   - Suppression d'espaces, séparateurs, devises
-   - Conversion de formats standards
+2. **Heuristic** (Cost: O(n), Uncertainty: 0.05-0.15)
+   - Deterministic cleanup (regex, strip, cast)
+   - Removal of spaces, separators, currencies
+   - Standard format conversion
 
-3. **Semantic** (Coût: ~1s, Uncertainty: 0.15-0.30)
-   - Conversion via LLM (non implémenté actuellement)
-   - Compréhension du contexte et de l'intention
+3. **Semantic** (Cost: ~1s, Uncertainty: 0.15-0.30)
+   - LLM-based conversion (not currently implemented)
+   - Context and intent comprehension
 
-4. **Knowledge** (Coût: Variable, Uncertainty: 0.30+)
-   - Consultation de base de connaissances
-   - Mapping de synonymes et variantes
+4. **Knowledge** (Cost: Variable, Uncertainty: 0.30+)
+   - Knowledge base lookup
+   - Synonym and variant mapping
 
-### 2.2 Tolérance et Contrôle
+### 2.2 Tolerance and Control
 
-La tolérance définit jusqu'où le pipeline peut aller.
+Tolerance defines how far the pipeline can go.
 
-Le constructeur utilise toujours la tolérance par défaut de la classe (`_tolerance`).
+The constructor always uses the class default tolerance (`_tolerance`).
 
-Pour forcer une tolérance, utilisez `attempt()` :
+To force a tolerance, use `attempt()`:
 
 ```python
 from OpenHosta.guarded import GuardedInt, Tolerance
 
-# Tolérance stricte : seul le niveau Native est accepté
+# Strict tolerance: only the Native level is accepted
 strict_result = GuardedInt.attempt("42", tolerance=Tolerance.STRICT)
 
-# Tolérance flexible : Native + Heuristic acceptés
+# Flexible tolerance: Native + Heuristic accepted
 flexible_result = GuardedInt.attempt("1,000", tolerance=Tolerance.FLEXIBLE)
 
-# Tolérance par défaut : _tolerance de la classe
+# Default tolerance: class _tolerance
 value = GuardedInt("1,000")
 ```
 
-Pour changer durablement la tolérance, créez une sous-classe :
+To permanently change the tolerance, create a subclass:
 
 ```python
 from OpenHosta.guarded import GuardedInt, Tolerance
@@ -125,26 +123,21 @@ class StrictGuardedInt(GuardedInt):
 value = StrictGuardedInt(42)
 ```
 
-| Niveau | Constante | Valeur | Niveaux Acceptés |
-|--------|-----------|--------|------------------|
-| **Strict** | `Tolerance.STRICT` | 0.00 | Native uniquement |
-| **Précis** | `Tolerance.PRECISE` | 0.05 | Native |
+| Level | Constant | Value | Accepted Levels |
+|-------|----------|-------|-----------------|
+| **Strict** | `Tolerance.STRICT` | 0.00 | Native only |
+| **Precise** | `Tolerance.PRECISE` | 0.05 | Native |
 | **Flexible** | `Tolerance.FLEXIBLE` | 0.15 | Native + Heuristic |
-| **Type Compliant** | `Tolerance.TYPE_COMPLIANT` | 0.999 | Tous (défaut) |
+| **Type Compliant** | `Tolerance.TYPE_COMPLIANT` | 0.999 | All (default) |
 
-### 2.3 Constructeurs multi-paramètres
+### 2.3 Multi-parameter Constructors
 
-Les classes enfants de `GuardedPrimitive` peuvent maintenant accepter plusieurs
-arguments positionnels et nommés.
+Child classes of `GuardedPrimitive` can now accept multiple positional and keyword arguments.
 
-- Si le constructeur reçoit **un seul argument positionnel** et **aucun kwarg**,
-  le pipeline reçoit directement cette valeur.
-- Sinon, les entrées sont encapsulées dans un objet `GuardedCallInput(args, kwargs)`
-  puis transmises comme **valeur unique** au pipeline.
+- If the constructor receives **a single positional argument** and **no kwargs**, the pipeline receives that value directly.
+- Otherwise, the inputs are wrapped in a `GuardedCallInput(args, kwargs)` object and passed as a **single value** to the pipeline.
 
-Cela permet à une sous-classe d'implémenter sa propre logique dans `_parse_native()`,
-`_parse_heuristic()`, etc., tout en conservant l'architecture actuelle centrée sur
-une seule entrée `value`.
+This allows a subclass to implement its own logic in `_parse_native()`, `_parse_heuristic()`, etc., while preserving the current architecture centered on a single `value` input.
 
 ```python
 from OpenHosta.guarded.primitives import GuardedPrimitive, GuardedCallInput
@@ -167,177 +160,173 @@ name = FullName("Ada", "Lovelace")
 name2 = FullName(first="Ada", last="Lovelace")
 ```
 
-
 ---
 
-## III. Types Scalaires
-
+## III. Scalar Types
 
 ### 3.1 GuardedInt
 
-Entier avec parsing intelligent.
+Integer with smart parsing.
 
 ```python
 from OpenHosta.guarded import GuardedInt
 
-# Formats acceptés
+# Accepted formats
 GuardedInt(42)           # Native int
-GuardedInt("42")         # String numérique
-GuardedInt("1,000")      # Séparateur de milliers
-GuardedInt("1 000")      # Espaces
-GuardedInt("-42")        # Négatifs
-GuardedInt(42.0)         # Float rond
+GuardedInt("42")         # Numeric string
+GuardedInt("1,000")      # Thousands separator
+GuardedInt("1 000")      # Spaces
+GuardedInt("-42")        # Negatives
+GuardedInt(42.0)         # Round float
 ```
 
-**Parsing Heuristic** :
-- Suppression des espaces
-- Suppression des virgules (si pas de point décimal)
-- Validation regex : `-?\d+`
+**Heuristic Parsing**:
+- Space removal
+- Comma removal (if no decimal point)
+- Regex validation: `-?\d+`
 
 ### 3.2 GuardedFloat
 
-Nombre flottant avec parsing flexible.
+Floating-point number with flexible parsing.
 
 ```python
 from OpenHosta.guarded import GuardedFloat
 
-# Formats acceptés
+# Accepted formats
 GuardedFloat(3.14)       # Native float
 GuardedFloat("3.14")     # String
-GuardedFloat("3,14")     # Format européen
-GuardedFloat("1.000,5")  # Milliers + décimales
-GuardedFloat(42)         # Int vers float
+GuardedFloat("3,14")     # European format
+GuardedFloat("1.000,5")  # Thousands + decimals
+GuardedFloat(42)         # Int to float
 ```
 
-**Parsing Heuristic** :
-- Remplacement `,` → `.` pour format européen
-- Gestion des séparateurs de milliers multiples
-- Conversion automatique int → float
+**Heuristic Parsing**:
+- Replacement `,` → `.` for European format
+- Multiple thousands separator handling
+- Automatic int → float conversion
 
 ### 3.3 GuardedUtf8
 
-String avec gestion d'encodage.
+String with encoding handling.
 
 ```python
 from OpenHosta.guarded import GuardedUtf8
 
-# Formats acceptés
+# Accepted formats
 GuardedUtf8("hello")     # Native string
-GuardedUtf8(b"hello")    # Bytes UTF-8
+GuardedUtf8(b"hello")    # UTF-8 bytes
 ```
 
-**Parsing Heuristic** :
-- Décodage automatique bytes → string
-- Gestion des erreurs d'encodage
+**Heuristic Parsing**:
+- Automatic bytes → string decoding
+- Encoding error handling
 
 ---
 
-## III.b Types Scalaires Avancés
+## III.b Advanced Scalar Types
 
 ### 3.4 GuardedComplex
 
-Nombre complexe avec parsing intelligent.
+Complex number with smart parsing.
 
 ```python
 from OpenHosta.guarded import GuardedComplex
 
-# Formats acceptés
+# Accepted formats
 GuardedComplex(1+2j)         # Native complex
-GuardedComplex("1+2j")       # String standard
-GuardedComplex("1 + 2j")     # Avec espaces
+GuardedComplex("1+2j")       # Standard string
+GuardedComplex("1 + 2j")     # With spaces
 ```
 
-### 3.5 GuardedBytes et GuardedByteArray
+### 3.5 GuardedBytes and GuardedByteArray
 
-Types binaires avec parsing flexible depuis strings.
+Binary types with flexible parsing from strings.
 
 ```python
 from OpenHosta.guarded import GuardedBytes
 
-# Formats acceptés
+# Accepted formats
 GuardedBytes(b"hello")       # Native bytes
-GuardedBytes("hello")        # String (encodé en UTF-8)
-GuardedBytes([104, 101])     # Liste d'entiers
+GuardedBytes("hello")        # String (encoded as UTF-8)
+GuardedBytes([104, 101])     # List of integers
 ```
 
 ---
 
-## IV. Types Proxy (Non-Subclassables)
+## IV. Proxy Types (Non-Subclassable)
 
-Certains types Python ne peuvent pas être subclassés (`bool`, `NoneType`, etc.). Pour ceux-ci, nous utilisons un **ProxyWrapper**.
+Certain Python types cannot be subclassed (`bool`, `NoneType`, etc.). For these, we use a **ProxyWrapper**.
 
 ### 4.1 GuardedBool
 
-Boolean avec parsing de langage naturel.
+Boolean with natural language parsing.
 
 ```python
 from OpenHosta.guarded import GuardedBool
 
-# Formats acceptés
+# Accepted formats
 b = GuardedBool(True)    # Native bool
-b = GuardedBool("yes")   # Anglais
-b = GuardedBool("oui")   # Français
-b = GuardedBool("1")     # Numérique
+b = GuardedBool("yes")   # English
+b = GuardedBool("oui")   # French
+b = GuardedBool("1")     # Numeric
 
-# Récupération de la valeur native
-b.unwrap()  # → True (vrai bool Python)
+# Retrieve the native value
+b.unwrap()  # → True (real Python bool)
 
-# Comparaison
-if b:  # Fonctionne grâce à __bool__
-    print("Vrai")
+# Comparison
+if b:  # Works thanks to __bool__
+    print("True")
 ```
 
-**Base de connaissances** :
+**Knowledge base**:
 - True: `["yes", "y", "true", "1", "oui", "vrai", "ok"]`
 - False: `["no", "n", "false", "0", "non", "faux"]`
 
 ### 4.2 GuardedNone
 
-Type None avec parsing flexible.
+None type with flexible parsing.
 
 ```python
 from OpenHosta.guarded import GuardedNone
 
-# Formats acceptés
+# Accepted formats
 n = GuardedNone(None)      # Native None
 n = GuardedNone("None")    # String "None"
 n = GuardedNone("null")    # JSON null
-n = GuardedNone("nothing") # Langage naturel
+n = GuardedNone("nothing") # Natural language
 
 n.unwrap()  # → None
 ```
 
+### 4.3 Other Proxies (Any, Range, MemoryView)
 
-### 4.3 Autres Proxy (Any, Range, MemoryView)
+* **GuardedAny**: Accepts any type, useful as a "pass-through" with metadata.
+* **GuardedRange**: Proxy for `range()`. Accepts `range(10)` or string `"0:10"`.
+* **GuardedMemoryView**: Proxy for `memoryview`.
 
-* **GuardedAny**: Accepte tout type, utile comme "pass-through" avec métadonnées.
-* **GuardedRange**: Proxy pour `range()`. Accepte `range(10)` ou string `"0:10"`.
-* **GuardedMemoryView**: Proxy pour `memoryview`.
+### 4.4 ProxyWrapper Behavior
 
-### 4.4 Comportement ProxyWrapper
+`ProxyWrapper` is now a **mixin**:
+- It delegates operations to `_python_value`
+- It provides a **recursive** `unwrap()`
+- It must not implement the main construction logic
+- Construction must be handled by `GuardedPrimitive` via the MRO
 
-`ProxyWrapper` est désormais un **mixin** :
-- il délègue les opérations à `_python_value`
-- il fournit un `unwrap()` **récursif**
-- il ne doit pas implémenter la logique principale de construction
-- la construction doit être assurée par `GuardedPrimitive` via le MRO
-
-
-⚠️ **Important** : Les types proxy ne sont PAS des instances du type natif.
+⚠️ **Important**: Proxy types are NOT instances of the native type.
 
 ```python
 from OpenHosta.guarded import GuardedBool
 
 b = GuardedBool("yes")
 
-isinstance(b, bool)        # ❌ False (c'est un proxy)
+isinstance(b, bool)        # ❌ False (it's a proxy)
 isinstance(b.unwrap(), bool)  # ✅ True
 
-# Mais ils se comportent comme le type natif
-if b:  # ✅ Fonctionne
+# But they behave like the native type
+if b:  # ✅ Works
     pass
 
-b == True  # ✅ True (grâce à __eq__)
+b == True  # ✅ True (thanks to __eq__)
 ```
 
 ---
@@ -346,18 +335,18 @@ b == True  # ✅ True (grâce à __eq__)
 
 ### 5.1 GuardedList
 
-Liste avec parsing de strings.
+List with string parsing.
 
 ```python
 from OpenHosta.guarded import GuardedList
 
-# Formats acceptés
+# Accepted formats
 lst = GuardedList([1, 2, 3])      # Native list
 lst = GuardedList((1, 2, 3))      # Tuple → list
 lst = GuardedList({1, 2, 3})      # Set → list
 lst = GuardedList("[1, 2, 3]")    # JSON string
 
-# Opérations normales
+# Normal operations
 lst.append(4)
 lst[0]  # 1
 len(lst)  # 4
@@ -365,31 +354,30 @@ len(lst)  # 4
 
 ### 5.2 GuardedDict
 
-Dictionnaire avec parsing JSON.
+Dictionary with JSON parsing.
 
 ```python
 from OpenHosta.guarded import GuardedDict
 
-# Formats acceptés
+# Accepted formats
 d = GuardedDict({"a": 1})         # Native dict
 d = GuardedDict('{"a": 1}')       # JSON string
 d = GuardedDict("{'a': 1}")       # Python repr
 
-# Opérations normales
+# Normal operations
 d["b"] = 2
 d.get("c")  # None
 ```
 
-### 5.3 GuardedSet et GuardedTuple
+### 5.3 GuardedSet and GuardedTuple
 
-Même logique que GuardedList avec leurs spécificités respectives.
+Same logic as GuardedList with their respective specificities.
 
-
-### 5.4 Types Composites Avancés
+### 5.4 Advanced Composite Types
 
 #### GuardedLiteral
 
-Crée un type restreint à un ensemble de valeurs, similaire à `typing.Literal`.
+Creates a type restricted to a set of values, similar to `typing.Literal`.
 
 ```python
 from OpenHosta.guarded import guarded_literal
@@ -400,18 +388,18 @@ c = Color("red")      # OK
 c = Color("RED")      # OK (heuristic: case-insensitive)
 
 # doc-test: raises ValueError
-c = Color("yellow")   # Erreur (hors des valeurs permises)
+c = Color("yellow")   # Error (outside allowed values)
 ```
 
 #### GuardedUnion
 
-Crée un type qui tente plusieurs conversions successives, similaire à `typing.Union`.
+Creates a type that tries multiple successive conversions, similar to `typing.Union`.
 
 ```python
 from OpenHosta.guarded import GuardedUnion, guarded_union
 from OpenHosta.guarded import GuardedInt, GuardedUtf8
 
-# Tente d'abord Int, sinon String
+# Tries Int first, otherwise String
 IntOrStr = guarded_union(GuardedInt, GuardedUtf8)
 
 v1 = IntOrStr("42")      # → 42 (int)
@@ -420,9 +408,9 @@ v2 = IntOrStr("hello")   # → "hello" (str)
 
 ---
 
-## VI. GuardedEnum : Enums Validées
+## VI. GuardedEnum: Validated Enums
 
-Créez des enums avec parsing case-insensitive et par valeur.
+Create enums with case-insensitive and value-based parsing.
 
 ```python
 from OpenHosta.guarded import GuardedEnum
@@ -432,50 +420,50 @@ class Status(GuardedEnum):
     ACTIVE = "active"
     DONE = "done"
 
-# Parsing flexible
-s1 = Status("active")    # Par valeur
-s2 = Status("ACTIVE")    # Par nom (majuscule)
-s3 = Status("pending")   # Par valeur
-s4 = Status("Status.ACTIVE")  # Format EnumName.MEMBER
-s5 = Status(".ACTIVE")        # Format court (.MEMBER)
+# Flexible parsing
+s1 = Status("active")    # By value
+s2 = Status("ACTIVE")    # By name (uppercase)
+s3 = Status("pending")   # By value
+s4 = Status("Status.ACTIVE")  # EnumName.MEMBER format
+s5 = Status(".ACTIVE")        # Short format (.MEMBER)
 
-# API compatible enum.Enum
+# enum.Enum compatible API
 s1.name   # "ACTIVE"
 s1.value  # "active"
 repr(s1)  # "<Status.ACTIVE: 'active'>"
 
-# Comparaison
+# Comparison
 s1 == s2  # True
 s1 == "ACTIVE"  # True
 
-# Round-trip avec repr()
+# Round-trip with repr()
 s = Status("ACTIVE")
-s_copy = Status(repr(s))  # ✅ Fonctionne !
+s_copy = Status(repr(s))  # ✅ Works!
 ```
 
-**Formats acceptés** :
-- ✅ Par nom : `Status("ACTIVE")`
-- ✅ Par valeur : `Status("active")`, `Status("pending")`
-- ✅ Format qualifié : `Status("Status.ACTIVE")`
-- ✅ Format court : `Status(".ACTIVE")`
-- ✅ Représentation complète : `Status("<Status.ACTIVE: 'active'>")`
+**Accepted formats**:
+- ✅ By name: `Status("ACTIVE")`
+- ✅ By value: `Status("active")`, `Status("pending")`
+- ✅ Qualified format: `Status("Status.ACTIVE")`
+- ✅ Short format: `Status(".ACTIVE")`
+- ✅ Full representation: `Status("<Status.ACTIVE: 'active'>")`
 
-**Avantages** :
-- ✅ Parsing case-insensitive
-- ✅ Recherche par nom ou valeur
-- ✅ Compatible avec `repr()` pour sérialisation/désérialisation
-- ✅ API compatible avec `enum.Enum`
-- ✅ Métadonnées de confiance
+**Advantages**:
+- ✅ Case-insensitive parsing
+- ✅ Name or value lookup
+- ✅ Compatible with `repr()` for serialization/deserialization
+- ✅ `enum.Enum` compatible API
+- ✅ Confidence metadata
 
 ---
 
-## VII. Dataclasses Gardées
+## VII. Guarded Dataclasses
 
-Transformez vos classes en dataclasses validées avec un seul décorateur.
+Transform your classes into validated dataclasses with a single decorator.
 
-> **Note** : `@guarded_dataclass` applique automatiquement `@dataclass`, vous n'avez pas besoin des deux !
+> **Note**: `@guarded_dataclass` automatically applies `@dataclass`, you don't need both!
 
-### 7.1 Usage Simple (Recommandé)
+### 7.1 Simple Usage (Recommended)
 
 ```python
 from OpenHosta.guarded import guarded_dataclass
@@ -485,29 +473,28 @@ class Person:
     name: str
     age: int
 
-# Création standard avec kwargs
+# Standard creation with kwargs
 p1 = Person(name="Alice", age=30)
 
-# Création standard avec args positionnels
+# Standard creation with positional args
 p1b = Person("Alice", 30)
 
-# Création depuis dict avec conversion automatique
-p2 = Person({"name": "Bob", "age": "25"})  # age converti de str → int
+# Creation from dict with automatic conversion
+p2 = Person({"name": "Bob", "age": "25"})  # age converted from str → int
 
-
-# Les champs sont validés et convertis
+# Fields are validated and converted
 assert p2.age == 25
-assert isinstance(p2.age, int)  # Converti automatiquement
+assert isinstance(p2.age, int)  # Automatically converted
 ```
 
-### 7.2 Args et kwargs dans les dataclasses guardées
+### 7.2 Args and kwargs in Guarded Dataclasses
 
-Les classes décorées avec `@guarded_dataclass` supportent maintenant :
+Classes decorated with `@guarded_dataclass` now support:
 
-- les **kwargs** classiques
-- les **args positionnels**
-- les entrées sous forme de **dict**
-- les représentations texte de type constructeur ou dictionnaire
+- Classic **kwargs**
+- **Positional args**
+- Inputs as **dict**
+- Text representations in constructor or dictionary format
 
 ```python
 from OpenHosta.guarded import guarded_dataclass
@@ -523,13 +510,11 @@ p3 = Point({"x": "10", "y": "20"})
 p4 = Point("Point(x=10, y=20)")
 ```
 
-En interne, si plusieurs arguments sont fournis au constructeur, ils sont encapsulés
-sous forme de `GuardedCallInput(args, kwargs)` puis parsés par le pipeline.
+Internally, if multiple arguments are provided to the constructor, they are wrapped as `GuardedCallInput(args, kwargs)` then parsed by the pipeline.
 
-### 7.3 Avec Options Dataclass
+### 7.3 With Dataclass Options
 
-
-Vous pouvez passer des options directement à `@guarded_dataclass` :
+You can pass options directly to `@guarded_dataclass`:
 
 ```python
 from OpenHosta.guarded import guarded_dataclass
@@ -540,11 +525,10 @@ class Point:
     y: int
 
 pt = Point(x=10, y=20)
-# pt.x = 100  # ❌ Erreur : frozen=True
+# pt.x = 100  # ❌ Error: frozen=True
 ```
 
-### 7.4 Avec Valeurs Par Défaut
-
+### 7.4 With Default Values
 
 ```python
 from OpenHosta.guarded import guarded_dataclass
@@ -555,23 +539,22 @@ class Config:
     port: int = 8080
     debug: bool = False
 
-# Utiliser les défauts
+# Use defaults
 c1 = Config()
 assert c1.host == "localhost"
 
-# Override partiel
+# Partial override
 c2 = Config(host="example.com")
-assert c2.port == 8080  # Garde la valeur par défaut
+assert c2.port == 8080  # Keeps default value
 
-# Depuis dict
+# From dict
 c3 = Config({"host": "api.example.com", "port": "3000"})
-assert c3.port == 3000  # Converti de "3000" (str) → 3000 (int)
+assert c3.port == 3000  # Converted from "3000" (str) → 3000 (int)
 ```
 
-### 7.5 Conversion Automatique des Types
+### 7.5 Automatic Type Conversion
 
-
-Le décorateur utilise `TypeResolver` pour convertir automatiquement les valeurs :
+The decorator uses `TypeResolver` to automatically convert values:
 
 ```python
 from OpenHosta.guarded import guarded_dataclass
@@ -583,12 +566,12 @@ class User:
     active: bool
     tags: list
 
-# Toutes les conversions sont automatiques
+# All conversions are automatic
 user = User({
     "username": "alice",
     "age": "25",        # str → int
     "active": "yes",    # str → bool
-    "tags": "python,ai" # str → list (parsing CSV)
+    "tags": "python,ai" # str → list (CSV parsing)
 })
 
 assert user.age == 25
@@ -596,10 +579,9 @@ assert user.active == True
 assert isinstance(user.tags, list)
 ```
 
-### 7.6 Métadonnées Guarded
+### 7.6 Guarded Metadata
 
-
-Comme tous les types Guarded, les dataclasses conservent des métadonnées :
+Like all Guarded types, dataclasses retain metadata:
 
 ```python
 from OpenHosta.guarded import guarded_dataclass
@@ -609,23 +591,22 @@ class Product:
     name: str
     price: float
 
-# Création depuis dict
+# Creation from dict
 p = Product({"name": "Widget", "price": "9.99"})
 
-# Métadonnées disponibles
-print(p.uncertainty)        # 0.15 (FLEXIBLE - parsing heuristic)
+# Metadata available
+print(p.uncertainty)        # 0.15 (FLEXIBLE - heuristic parsing)
 print(p.abstraction_level)  # 'heuristic'
 
-# Création normale
+# Normal creation
 p2 = Product(name="Gadget", price=19.99)
-print(p2.uncertainty)       # 0.0 (STRICT - valeurs natives)
+print(p2.uncertainty)       # 0.0 (STRICT - native values)
 print(p2.abstraction_level) # 'native'
 ```
 
-### 7.7 Usage Legacy (Avec @dataclass Explicite)
+### 7.7 Legacy Usage (With Explicit @dataclass)
 
-
-Si vous avez déjà `@dataclass`, `@guarded_dataclass` le détecte et ne le réapplique pas :
+If you already have `@dataclass`, `@guarded_dataclass` detects it and won't reapply it:
 
 ```python
 from dataclasses import dataclass
@@ -637,46 +618,46 @@ class Person:
     name: str
     age: int
 
-# Fonctionne exactement pareil
+# Works exactly the same
 ```
 
-> **Recommandation** : Utilisez uniquement `@guarded_dataclass` pour un code plus propre.
+> **Recommendation**: Use only `@guarded_dataclass` for cleaner code.
 
 ---
 
-## VIII. TypeResolver : Résolution Automatique
+## VIII. TypeResolver: Automatic Resolution
 
-Le `TypeResolver` convertit les annotations Python en types Guarded.
+The `TypeResolver` converts Python annotations into Guarded types.
 
 ```python
 from typing import List, Dict, Optional
 from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
 
-# Résolution de types simples
+# Simple type resolution
 TypeResolver.resolve(int)    # → GuardedInt
 TypeResolver.resolve(str)    # → GuardedUtf8
 TypeResolver.resolve(bool)   # → GuardedBool
 
-# Résolution de types complexes
+# Complex type resolution
 TypeResolver.resolve(List[int])        # → GuardedList
 TypeResolver.resolve(Dict[str, int])   # → GuardedDict
 TypeResolver.resolve(Optional[int])    # → GuardedInt
 
-# Utilisation dans le pipeline
-result = type_returned_data("42", int)  # Convertit "42" → 42
+# Usage in the pipeline
+result = type_returned_data("42", int)  # Converts "42" → 42
 ```
 
-**Utilisé par** : Le pipeline OpenHosta pour typer automatiquement les réponses LLM.
+**Used by**: The OpenHosta pipeline to automatically type LLM responses.
 
 ---
 
-## IX. Créer Vos Propres Types
+## IX. Creating Your Own Types
 
-Héritez de `GuardedPrimitive` pour créer des types métier personnalisés.
+Inherit from `GuardedPrimitive` to create custom business types.
 
-### 9.1 Exemple Complet : CorporateEmail avec Pipeline 4 Niveaux
+### 9.1 Complete Example: CorporateEmail with 4-Level Pipeline
 
-Cet exemple montre **tous les niveaux du pipeline** avec validation LLM et annuaire d'entreprise.
+This example shows **all pipeline levels** with LLM validation and a corporate directory.
 
 ```python
 import re
@@ -685,7 +666,7 @@ from OpenHosta.guarded import GuardedUtf8, Tolerance
 from OpenHosta.guarded.primitives import UncertaintyLevel
 from OpenHosta import emulate
 
-# Annuaire d'entreprise (simulé)
+# Corporate directory (simulated)
 CORPORATE_DIRECTORY = {
     "marie.dupont@mycorp.com",
     "jean.martin@mycorp.com",
@@ -694,7 +675,7 @@ CORPORATE_DIRECTORY = {
 }
 
 class CorporateEmail(GuardedUtf8):
-    """Email d'entreprise validé contre l'annuaire mycorp.com"""
+    """Corporate email validated against the mycorp.com directory"""
     
     _type_en = (
         "a corporate email address in the format firstname.lastname@mycorp.com "
@@ -713,11 +694,11 @@ class CorporateEmail(GuardedUtf8):
     
     @classmethod
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        """Niveau 1 : Email parfait dans l'annuaire (0.00 - STRICT)."""
+        """Level 1: Perfect email in the directory (0.00 - STRICT)."""
         if not isinstance(value, str):
             return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
         
-        # PAS de nettoyage - on accepte uniquement les emails parfaits
+        # NO cleanup - only accept perfect emails
         if not re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", value):
             return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format"
         
@@ -728,25 +709,25 @@ class CorporateEmail(GuardedUtf8):
     
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        """Niveau 2 : Nettoyage déterministe (0.05 - PRECISE)."""
+        """Level 2: Deterministic cleanup (0.05 - PRECISE)."""
         if not isinstance(value, str):
             return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
         
         original = value
         cleaned = value.strip().lower()
         cleaned = cleaned.replace("mailto:", "").replace("<", "").replace(">", "")
-        cleaned = cleaned.replace(" ", "").replace("\t", "") # Supprime les espaces et tabulations
+        cleaned = cleaned.replace(" ", "").replace("\t", "")
         
-        # Vérifier le format après nettoyage
+        # Check format after cleanup
         if re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", cleaned):
             if cleaned in cls._type_knowledge["directory"]:
-                # Nettoyage effectué et dans l'annuaire → PRECISE
+                # Cleanup performed and in directory → PRECISE
                 if cleaned != original:
                     return UncertaintyLevel(Tolerance.PRECISE), cleaned, None
-                # Pas de nettoyage mais dans l'annuaire (déjà géré par native, mais pour robustesse)
+                # No cleanup but in directory (already handled by native, but for robustness)
                 return UncertaintyLevel(Tolerance.STRICT), cleaned, None
             else:
-                # Format valide mais pas dans annuaire → FLEXIBLE (car pas STRICT)
+                # Valid format but not in directory → FLEXIBLE
                 return UncertaintyLevel(Tolerance.FLEXIBLE), cleaned, "Valid format, not in directory"
         
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Invalid format after heuristic cleaning"
@@ -768,45 +749,45 @@ class CorporateEmail(GuardedUtf8):
 
     @classmethod
     def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        """Niveau 3 : Correction LLM (0.15 - FLEXIBLE)."""
+        """Level 3: LLM correction (0.15 - FLEXIBLE)."""
         if not isinstance(value, str):
             return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
         
         corrected = cls._llm_cast_email(value)
         
         if corrected and re.match(r"^[a-z]+\.[a-z]+@mycorp\.com$", corrected):
-            # Email corrigé existe dans annuaire → FLEXIBLE
+            # Corrected email exists in directory → FLEXIBLE
             if corrected in cls._type_knowledge["directory"]:
                 return UncertaintyLevel(Tolerance.FLEXIBLE), corrected, None
             
-            # Sinon, passe au niveau knowledge
+            # Otherwise, pass to knowledge level
             return UncertaintyLevel(Tolerance.ANYTHING), corrected, "LLM corrected but not in directory"
         
         return UncertaintyLevel(Tolerance.ANYTHING), value, "Cannot parse semantically"
     
     @classmethod
     def _parse_knowledge(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        """Niveau 4 : Fuzzy matching (0.30 - CREATIVE)."""
+        """Level 4: Fuzzy matching (0.30 - CREATIVE)."""
         if not isinstance(value, str):
             return UncertaintyLevel(Tolerance.ANYTHING), value, "Not a string"
         
-        # Tente de normaliser l'entrée pour le fuzzy matching
+        # Try to normalize the input for fuzzy matching
         cleaned = value.strip().lower()
         cleaned = cleaned.replace("mailto:", "").replace("<", "").replace(">", "")
         cleaned = cleaned.replace(" ", "").replace("\t", "")
         
-        # Extraire prénom et nom si le format est proche
+        # Extract first and last name if the format is close
         match = re.match(r"^([a-z]+)\.?([a-z]+)?@?([a-z\.]*)?$", cleaned)
         if not match:
             return UncertaintyLevel(Tolerance.ANYTHING), value, "Cannot extract name parts for fuzzy matching"
         
         firstname_raw, lastname_raw, domain_raw = match.groups()
         
-        # Si le domaine est présent et incorrect, on ne peut pas fuzzy matcher
+        # If the domain is present and incorrect, we can't fuzzy match
         if domain_raw and not domain_raw.startswith(cls._type_knowledge["domain"].split('.')[0]):
              return UncertaintyLevel(Tolerance.ANYTHING), value, "Incorrect domain for fuzzy matching"
 
-        # Tente de trouver le meilleur match dans l'annuaire
+        # Try to find the best match in the directory
         best_match = cls._find_closest_email(firstname_raw, lastname_raw)
         
         if best_match:
@@ -816,7 +797,7 @@ class CorporateEmail(GuardedUtf8):
     
     @classmethod
     def _find_closest_email(cls, firstname: str, lastname: str) -> Optional[str]:
-        """Trouve l'email le plus proche par distance de Levenshtein."""
+        """Find the closest email by Levenshtein distance."""
         from difflib import get_close_matches
         
         directory_names = []
@@ -825,13 +806,13 @@ class CorporateEmail(GuardedUtf8):
             if m:
                 directory_names.append((m.group(1), m.group(2), email))
         
-        # Chercher prénom proche
+        # Find close first names
         firstnames_in_dir = [n[0] for n in directory_names]
         close_first = get_close_matches(firstname, firstnames_in_dir, n=1, cutoff=0.7)
         if not close_first:
             return None
         
-        # Filtrer les candidats par prénom proche
+        # Filter candidates by close first name
         candidates_for_lastname = [(n[1], n[2]) for n in directory_names if n[0] == close_first[0]]
         if not candidates_for_lastname:
             return None
@@ -847,109 +828,109 @@ class CorporateEmail(GuardedUtf8):
 
 
 # ============================================================================
-# DÉMONSTRATION
+# DEMONSTRATION
 # ============================================================================
 
-# Niveau NATIVE (0.00)
+# NATIVE level (0.00)
 email1 = CorporateEmail("marie.dupont@mycorp.com")
 print(f"{email1} - {email1.abstraction_level} - {email1.uncertainty}")
 # → marie.dupont@mycorp.com - native - 0.0
 
-# Niveau HEURISTIC (0.05)
+# HEURISTIC level (0.05)
 email2 = CorporateEmail("  MARIE.DUPONT@MYCORP.COM  ")
 print(f"{email2} - {email2.abstraction_level} - {email2.uncertainty}")
 # → marie.dupont@mycorp.com - heuristic - 0.05
 
-# Niveau SEMANTIC (0.15) - Correction LLM
+# SEMANTIC level (0.15) - LLM Correction
 email3 = CorporateEmail("marie dot dupont at mycorp dor com")
 print(f"{email3} - {email3.abstraction_level} - {email3.uncertainty}")
 # → marie.dupont@mycorp.com - semantic - 0.15
 
-# Niveau KNOWLEDGE (0.30) - Fuzzy matching
+# KNOWLEDGE level (0.30) - Fuzzy matching
 email4 = CorporateEmail("m.dupond@mycorp.com")  # dupond -> dupont
 print(f"{email4} - {email4.abstraction_level} - {email4.uncertainty}")
 # → marie.dupont@mycorp.com - knowledge - 0.30
 
-# Niveau HEURISTIC avec format valide mais pas dans annuaire (0.10)
-email5 = CorporateEmail("john.doe@mycorp.com") # Format valide, mais pas dans CORPORATE_DIRECTORY
+# HEURISTIC with valid format but not in directory (0.10)
+email5 = CorporateEmail("john.doe@mycorp.com")  # Valid format, but not in CORPORATE_DIRECTORY
 print(f"{email5} - {email5.abstraction_level} - {email5.uncertainty}")
-# → john.doe@mycorp.com - heuristic - 0.10 (ou 0.05 si on considère que c'est juste un nettoyage)
+# → john.doe@mycorp.com - heuristic - 0.10
 
-# Décision basée sur la confiance
+# Confidence-based decision
 if email3.uncertainty <= Tolerance.PRECISE:
-    print("✅ Validation automatique")
+    print("✅ Automatic validation")
 elif email3.uncertainty <= Tolerance.FLEXIBLE:
-    print("⚠️  Demander confirmation")  # ← Ce cas
+    print("⚠️  Ask for confirmation")  # ← This case
 else:
-    print("❌ Rejeter")
+    print("❌ Reject")
 ```
 
-**Points clés** :
+**Key points**:
 
-1. **`_parse_native`** : Aucun nettoyage, validation stricte uniquement
-2. **`_parse_heuristic`** : Détecte si nettoyage effectué (`cleaned != original`)
-3. **`_parse_semantic`** : Utilise `closure()` pour appel LLM réel
-4. **`_parse_knowledge`** : Fuzzy matching avec `difflib.get_close_matches()`
-5. **Validation annuaire** : Si email corrigé existe → confiance FLEXIBLE, sinon passe au niveau suivant
+1. **`_parse_native`**: No cleanup, strict validation only
+2. **`_parse_heuristic`**: Detects if cleanup was performed (`cleaned != original`)
+3. **`_parse_semantic`**: Uses `closure()` for real LLM call
+4. **`_parse_knowledge`**: Fuzzy matching with `difflib.get_close_matches()`
+5. **Directory validation**: If corrected email exists → FLEXIBLE confidence, otherwise passes to next level
 
-**Tests complets** : Voir [`tests/guarded/test_corporate_email.py`](../tests/guarded/test_corporate_email.py) (13/13 tests passent ✅)
+**Complete tests**: See [`tests/guarded/test_corporate_email.py`](https://github.com/hand-e-fr/OpenHosta/blob/main/tests/guarded/test_corporate_email.py) (13/13 tests pass ✅)
 
-### 9.2 Méthodes à Implémenter
+### 9.2 Methods to Implement
 
-| Méthode | Obligatoire | Description |
-|---------|-------------|-------------|
-| `_parse_native` | ✅ Oui | Validation stricte du type |
-| `_parse_heuristic` | ⚠️ Recommandé | Nettoyage déterministe |
-| `_parse_semantic` | ❌ Non | Conversion via LLM |
-| `_parse_knowledge` | ❌ Non | Base de connaissances |
+| Method | Required | Description |
+|--------|----------|-------------|
+| `_parse_native` | ✅ Yes | Strict type validation |
+| `_parse_heuristic` | ⚠️ Recommended | Deterministic cleanup |
+| `_parse_semantic` | ❌ No | LLM-based conversion |
+| `_parse_knowledge` | ❌ No | Knowledge base |
 
-### 9.3 Attributs de Configuration
+### 9.3 Configuration Attributes
 
-| Attribut | Type | Description |
-|----------|------|-------------|
-| `_type_en` | `str` | Description en anglais pour le LLM |
-| `_type_py` | `type` | Type Python cible |
-| `_type_json` | `dict` | JSON Schema pour validation |
-| `_type_knowledge` | `dict\|Any` | Base de connaissances (optionnel) |
-| `_tolerance` | `Tolerance` | Tolérance par défaut |
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `_type_en` | `str` | English description for the LLM |
+| `_type_py` | `type` | Target Python type |
+| `_type_json` | `dict` | JSON Schema for validation |
+| `_type_knowledge` | `dict\|Any` | Knowledge base (optional) |
+| `_tolerance` | `Tolerance` | Default tolerance |
 
 ---
 
-## X. Métadonnées et Traçabilité
+## X. Metadata and Traceability
 
-Chaque instance Guarded conserve des métadonnées sur sa création.
+Each Guarded instance retains metadata about its creation.
 
-### 10.1 Attributs Disponibles
+### 10.1 Available Attributes
 
 ```python
 from OpenHosta.guarded import GuardedInt
 
 age = GuardedInt("1,000")
 
-# Métadonnées
-age.uncertainty         # 0.15 (niveau de confiance)
-age.abstraction_level   # 'heuristic' (méthode utilisée)
-age.unwrap()           # Valeur native (pour ProxyWrapper)
+# Metadata
+age.uncertainty         # 0.15 (confidence level)
+age.abstraction_level   # 'heuristic' (method used)
+age.unwrap()           # Native value (for ProxyWrapper)
 
-# Opérations normales
+# Normal operations
 age + 10   # 1010
 age > 500  # True
 ```
 
-### 10.2 Niveaux d'Abstraction
+### 10.2 Abstraction Levels
 
-| Niveau | Description | Uncertainty Typique |
-|--------|-------------|---------------------|
-| `native` | Valeur déjà du bon type | 0.0 |
-| `heuristic` | Nettoyage déterministe | 0.05-0.15 |
-| `semantic` | Conversion LLM | 0.15-0.30 |
-| `knowledge` | Base de connaissances | 0.30+ |
+| Level | Description | Typical Uncertainty |
+|-------|-------------|---------------------|
+| `native` | Value already the correct type | 0.0 |
+| `heuristic` | Deterministic cleanup | 0.05-0.15 |
+| `semantic` | LLM conversion | 0.15-0.30 |
+| `knowledge` | Knowledge base | 0.30+ |
 
 ---
 
-## XI. Intégration Pydantic
+## XI. Pydantic Integration
 
-Les types Guarded s'intègrent avec Pydantic V2.
+Guarded types integrate with Pydantic V2.
 
 ```python
 from pydantic import BaseModel
@@ -959,22 +940,22 @@ class User(BaseModel):
     name: GuardedUtf8
     age: GuardedInt
 
-# Pydantic + Guarded = Validation tolérante
-user = User(name="Alice", age="25")  # age converti automatiquement
+# Pydantic + Guarded = Tolerant validation
+user = User(name="Alice", age="25")  # age converted automatically
 ```
 
 ---
 
-## XII. Bonnes Pratiques
+## XII. Best Practices
 
-### ✅ À Faire
+### ✅ Do
 
-1. **Utiliser les types Guarded pour les entrées utilisateur**
+1. **Use Guarded types for user inputs**
    ```python
-   age = GuardedInt(user_input)  # Tolérant
+   age = GuardedInt(user_input)  # Tolerant
    ```
 
-2. **Forcer la tolérance via `attempt()` pour les cas critiques**
+2. **Force tolerance via `attempt()` for critical cases**
    ```python
    result = GuardedUtf8.attempt(input, tolerance=Tolerance.STRICT)
    if not result.success:
@@ -982,31 +963,31 @@ user = User(name="Alice", age="25")  # age converti automatiquement
    password = result.data
    ```
 
-3. **Vérifier l'uncertainty pour les décisions importantes**
+3. **Check uncertainty for important decisions**
    ```python
    amount = GuardedFloat(input)
    if amount.uncertainty > Tolerance.PRECISE:
        logger.warning(f"Uncertain amount: {amount}")
    ```
 
-### ❌ À Éviter
+### ❌ Don't
 
-1. **Ne pas utiliser comme clés de dict natif**
+1. **Don't use as native dict keys**
    ```python
-   # ❌ Erreur : ProxyWrapper types ne sont pas hashables
+   # ❌ Error: ProxyWrapper types are not hashable
    d = {GuardedBool("yes"): "value"}
    
-   # ✅ Utiliser GuardedDict ou unwrap()
+   # ✅ Use GuardedDict or unwrap()
    d = {GuardedBool("yes").unwrap(): "value"}
    ```
 
-2. **Ne pas ignorer les métadonnées**
+2. **Don't ignore metadata**
    ```python
-   # ❌ Ignorer l'uncertainty
+   # ❌ Ignoring uncertainty
    price = GuardedFloat(dirty_input)
    charge_customer(price)
    
-   # ✅ Vérifier la confiance
+   # ✅ Check confidence
    price = GuardedFloat(dirty_input)
    if price.uncertainty <= Tolerance.PRECISE:
        charge_customer(price)
@@ -1016,66 +997,66 @@ user = User(name="Alice", age="25")  # age converti automatiquement
 
 ---
 
-## XIII. Comparaison avec Pydantic
+## XIII. Comparison with Pydantic
 
 | Aspect | Pydantic | OpenHosta Guarded |
 |--------|----------|-------------------|
-| **Philosophie** | Validation stricte | Conversion tolérante |
-| **Entrée** | Données structurées | N'importe quoi |
-| **Échec** | Lève ValidationError | Tente de réparer |
-| **Performance** | ⚡ Très rapide | 🐢 Plus lent (si parsing) |
-| **Métadonnées** | Non | Oui (uncertainty, level) |
-| **Cas d'usage** | APIs, Config | Agents IA, Scraping |
+| **Philosophy** | Strict validation | Tolerant conversion |
+| **Input** | Structured data | Anything |
+| **Failure** | Raises ValidationError | Attempts to repair |
+| **Performance** | ⚡ Very fast | 🐢 Slower (if parsing) |
+| **Metadata** | No | Yes (uncertainty, level) |
+| **Use case** | APIs, Config | AI agents, Scraping |
 
-**Utilisez Pydantic** pour valider des APIs techniques.  
-**Utilisez Guarded** pour parser des entrées humaines ou LLM.
+**Use Pydantic** to validate technical APIs.  
+**Use Guarded** to parse human or LLM inputs.
 
 ---
 
-## XIV. Limitations Connues
+## XIV. Known Limitations
 
-### 14.1 Bugs Connus
+### 14.1 Known Bugs
 
-1. **GuardedList - Parsing CSV**
-   - `GuardedList("1,2,3")` convertit en liste de caractères
-   - **Workaround** : Utiliser format JSON `"[1,2,3]"`
+1. **GuardedList - CSV Parsing**
+   - `GuardedList("1,2,3")` converts to a character list
+   - **Workaround**: Use JSON format `"[1,2,3]"`
 
 2. **ProxyWrapper - isinstance()**
-   - `isinstance(GuardedBool("yes"), bool)` retourne `False`
-   - **Workaround** : Utiliser `.unwrap()` pour le type natif
+   - `isinstance(GuardedBool("yes"), bool)` returns `False`
+   - **Workaround**: Use `.unwrap()` for the native type
 
-### 14.2 Types Non Implémentés
+### 14.2 Unimplemented Types
 
-- `GuardedRange` (partiel)
-- `GuardedMemoryView` (partiel)
+- `GuardedRange` (partial)
+- `GuardedMemoryView` (partial)
 - `GuardedCode` (Supported since v4.1, see [callables.md](callables.md))
-- Parsing semantic (LLM) non connecté
+- Semantic parsing (LLM) not connected
 
 ---
 
-## XV. Exemples Complets
+## XV. Complete Examples
 
-### 15.1 Validation de Formulaire
+### 15.1 Form Validation
 
 ```python
 from OpenHosta.guarded import GuardedInt, GuardedUtf8, GuardedBool
 
-# Données sales d'un formulaire web
+# Dirty data from a web form
 form_data = {
     "name": "  Alice  ",
-    "age": "vingt-cinq",  # Nécessiterait LLM (non implémenté)
-    "age": "25 ans",      # Fonctionne avec heuristic
-    "newsletter": "oui"
+    "age": "twenty-five",  # Would require LLM (not implemented)
+    "age": "25 years",     # Works with heuristic
+    "newsletter": "yes"
 }
 
 name = GuardedUtf8(form_data["name"])      # "Alice"
 age = GuardedInt(form_data["age"])         # 25
 newsletter = GuardedBool(form_data["newsletter"])  # True
 
-print(f"{name}, {age} ans, newsletter: {newsletter.unwrap()}")
+print(f"{name}, {age} years old, newsletter: {newsletter.unwrap()}")
 ```
 
-### 15.2 Parsing de Configuration
+### 15.2 Configuration Parsing
 
 ```python
 from OpenHosta.guarded import GuardedInt, GuardedDict
@@ -1088,17 +1069,17 @@ port = GuardedInt(config["port"])  # 8080
 
 ---
 
-## XVI. Ressources
+## XVI. Resources
 
-- **Code source** : `src/OpenHosta/guarded/`
-- **Tests** : `tests/guarded/`
-- **Exemples** : `test_guarded_basic.py`
+- **Source code**: `src/OpenHosta/guarded/`
+- **Tests**: `tests/guarded/`
+- **Examples**: `test_guarded_basic.py`
 
-**Modules** :
-- `primitives.py` - Classe de base `GuardedPrimitive`
-- `constants.py` - Énumérations `Tolerance`
-- `subclassablescalars.py` - Types scalaires
-- `subclassablewithproxy.py` - Types proxy
-- `subclassablecollections.py` - Collections et dataclasses
+**Modules**:
+- `primitives.py` - Base class `GuardedPrimitive`
+- `constants.py` - `Tolerance` enumerations
+- `subclassablescalars.py` - Scalar types
+- `subclassablewithproxy.py` - Proxy types
+- `subclassablecollections.py` - Collections and dataclasses
 - `subclassableclasses.py` - GuardedEnum
-- `resolver.py` - Résolution de types
+- `resolver.py` - Type resolution

@@ -1,144 +1,85 @@
-# OpenHosta 
+<p align="center">
+  <img src="docs/logo.png" alt="OpenHosta Logo" width="180"/>
+</p>
 
-<br/>You can read the doc or directly have a look at [tests files](https://github.com/hand-e-fr/OpenHosta/tree/main/tests/) for multiples exemples.
+<h1 align="center">OpenHosta</h1>
 
-OpenHosta is a powerful Python extension designed to seamlessly integrate semantic capabilities seen in Large Language Models (LLMs) into tradictional development environments, enabling AI-powered function emulation that maintains native Python syntax and paradigms. Its strength lies in its simplicity and flexibility, allowing developers to easily create AI-enhanced applications while maintaining clean, Pythonic code structure.
+<p align="center">
+  <strong>The semantic layer for Python.</strong><br/>
+  <em>Write what you mean. Python does the rest.</em>
+</p>
 
-OpenHosta can run fully offline with a local model, or use a remote model via API key.
+<p align="center">
+  <a href="https://pypi.org/project/OpenHosta/"><img src="https://img.shields.io/pypi/v/OpenHosta?color=blue" alt="PyPI Version"/></a>
+  <a href="https://pypi.org/project/OpenHosta/"><img src="https://img.shields.io/pypi/pyversions/OpenHosta" alt="Python Versions"/></a>
+  <a href="https://github.com/hand-e-fr/OpenHosta/blob/main/LICENSE"><img src="https://img.shields.io/github/license/hand-e-fr/OpenHosta" alt="License"/></a>
+  <a href="https://github.com/hand-e-fr/OpenHosta/actions/workflows/quality_check.yml"><img src="https://github.com/hand-e-fr/OpenHosta/actions/workflows/quality_check.yml/badge.svg" alt="CI Status"/></a>
+</p>
 
-**- The future of development is human -**
+---
 
-For this project, we have adopted a [Code of Conduct](https://github.com/hand-e-fr/OpenHosta/blob/main/CODE_OF_CONDUCT.md) to ensure a respectful and inclusive environment for all contributors. Please take a moment to read it.
+OpenHosta integrates Large Language Models directly into Python as native functions. Define a function with type hints and a docstring — OpenHosta uses AI to implement it. No DSL, no wrappers, just Python.
 
-The simplest usage of OpenHosta is to allow semantic tests in your code, like this:
+```python
+from OpenHosta import emulate
+
+def translate(text: str, language: str) -> str:
+    """Translates the text into the specified language."""
+    return emulate()
+
+print(translate("Hello World!", "French"))
+# 'Bonjour le monde !'
+```
+
+OpenHosta also enables **semantic testing** — evaluate conditions that require cultural knowledge or fuzzy logic, something traditional `assert` statements can never do:
 
 ```python
 from OpenHosta import test
 
 sentence = "You are an nice person."
-# You shall try with this too:
-# sentence = "You are a stupid #@!!~uk."
 
 if test(f"this contains an insult: {sentence}"):
     print("The sentence is considered an insult.")
 else:
     print("The sentence is not considered an insult.")
-
 # The sentence is not considered an insult.
 ```
 
-But the most powerful feature of OpenHosta is the `emulate` function, which allows you to define a function with a docstring and let OpenHosta implement it for you using AI. The `emulate` function supports basic python types, dataclasses, pydantic, enums and Images. You can use all these types as input and output of the function (except for Images which can only be input).
+## Why OpenHosta?
 
-```python
-from OpenHosta import emulate
+- **Zero DSL** — Pure Python syntax. Your functions stay readable, testable, and IDE-friendly.
+- **Type-safe** — Guarded types validate LLM output against your annotations (`int`, `dict`, `Enum`, `Pydantic`, `Callable`…).
+- **Model-agnostic** — Works with OpenAI, Ollama, Azure, vLLM — any OpenAI-compatible endpoint.
+- **Runs offline** — Full local execution with [Ollama](https://ollama.com/). Your data stays private.
+- **Production-ready** — Uncertainty tracking, cost tracking, audit mode, and async support built-in.
 
-from enum import Enum
-class DocumentType(Enum):
-    OLD_BOOK = "old_book"
-    ARTICLE = "article"
-    REPORT = "report"
-    THESIS = "thesis"
-
-from PIL.Image import Image, open
-
-def classify_document(page:Image)->DocumentType:
-    """
-    This function classifies the document based on the content of the page givent in parameter.
-    
-    Arguments:
-    page: An image of the document page to classify.
-
-    Returns:
-    DocumentType: The type of the document
-    """
-    return emulate()
-
-import requests
-url=r"https://www.inria.fr/sites/default/files/2024-01/A_outil_innovant_caracte%CC%81riser_plantes_1827x1026_bonnier-2.png"
-img = open(requests.get(url, stream=True).raw)
-
-result = classify_document(img)
-
-result
-# <DocumentType.OLD_BOOK: 'old_book'>
-```
-
-For workloads requiring high concurrency (such as web servers or batch processing), you can use `emulate_async` to perform non-blocking LLM calls:
-
-```python
-import asyncio
-from OpenHosta import emulate_async
-
-async def translate_batch(texts: list[str], target_language: str) -> list[str]:
-    """Translates a list of texts into the specified language."""
-    # Process multiple LLM calls in parallel!
-    return await emulate_async()
-```
-
-## Table of Content
-
-- [OpenHosta](#openhosta)
-  - [Table of Content](#table-of-content)
-  - [How to install OpenHosta ?](#how-to-install-openhosta-)
-  - [Quick Start Examples](#quick-start-examples)
-    - [Option A: Local Execution (Ollama)](#option-a-local-execution-ollama)
-    - [Option B: Remote API (OpenAI)](#option-b-remote-api-openai)
-  - [Further information](#further-information)
-    - [Contributing](#contributing)
-    - [License](#license)
-    - [Authors \& Contact](#authors--contact)
-
----
-
-## How to install OpenHosta ?
-
-You can install OpenHosta either via pip or via GitHub.
-
-We encourage you to use a virtual environment. You can create one with:
-```sh
-python -m venv .venv
-source .venv/bin/activate # On Windows use `.venv\Scripts\activate`
-```
-
-Then you can install OpenHosta with one of the following commands:
+## Installation
 
 ```sh
 pip install OpenHosta
 ```
 
-or
+> We recommend using a virtual environment (`python -m venv .venv`).
+> See the full [installation guide](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/installation.md) for local model setup, optional dependencies, and troubleshooting.
 
-```sh
-pip install "git+https://github.com/hand-e-fr/OpenHosta.git"
-```
-
-or for a specific branch
-
-```sh
-pip install "git+https://github.com/hand-e-fr/OpenHosta.git@unstable" # for the latest unstable version
-```
-
-**See the full [installation guide](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/installation.md)**
-
-## Quick Start Examples
-
-Running OpenHosta is incredibly simple. You can execute models entirely **Locally** (for free and privately) or connect them to a **Remote API** (like OpenAI).
+## Quick Start
 
 ### Option A: Local Execution (Ollama)
-Perfect when privacy is paramount. Ensure you have [Ollama installed](https://ollama.com/) and run `ollama run qwen3.5:4b` in your terminal. 
+
+Ensure you have [Ollama installed](https://ollama.com/) and run `ollama run qwen3.5:4b` in your terminal.
 
 ```python
 from OpenHosta import emulate, OpenAICompatibleModel, config
 
 # 1. Point OpenHosta to your local Ollama instance
 local_model = OpenAICompatibleModel(
-    model_name="qwen3.5:4b", 
-    base_url="http://localhost:11434/v1", 
-    api_key="none" # Ollama does not require a key
+    model_name="qwen3.5:4b",
+    base_url="http://localhost:11434/v1",
+    api_key="none"  # Ollama does not require a key
 )
 config.DefaultModel = local_model
 
-# 2. Emulate your Python function
+# 2. Define and call your function
 def translate(text: str, language: str) -> str:
     """Translates the text into the specified language."""
     return emulate()
@@ -148,17 +89,16 @@ print(translate("Hello World!", "French"))
 ```
 
 ### Option B: Remote API (OpenAI)
-When you want the highest capability models with zero setup. Set your API credentials via `.env`:
+
+Create a `.env` file in your project directory:
 
 ```env
 OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"
-OPENHOSTA_DEFAULT_MODEL_API_KEY="put-your-api-key-here"
-# OPENHOSTA_DEFAULT_MODEL_BASE_URL="https://api.openai.com/v1"
+OPENHOSTA_DEFAULT_MODEL_API_KEY="your-api-key-here"
 ```
 
 ```python
 from OpenHosta import emulate
-
 
 def translate(text: str, language: str) -> str:
     """Translates the text into the specified language."""
@@ -168,40 +108,40 @@ print(translate("Hello World!", "French"))
 # 'Bonjour le monde !'
 ```
 
-Curious? Read our comprehensive [Documentation Hub](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/doc.md) to discover Pydantic integrations, observability tracking, and advanced examples like [using glm-ocr locally](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/examples/ocr_local_ollama.md).
+## What Can You Do?
 
-## Further information
+| Feature | Description |
+|---------|-------------|
+| [`emulate`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | AI-implemented functions from docstrings |
+| [`emulate_async`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Non-blocking async variant for concurrency |
+| [`emulate_iterator`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Streaming results via lazy generators |
+| [`closure`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Semantic lambda functions |
+| [`test`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Fuzzy logic / semantic boolean tests |
+| [Types & Pydantic](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/types_and_pydantic.md) | `int`, `dict`, `Enum`, `dataclass`, `Pydantic`, `Callable`… |
+| [Safe Context](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/safe_context_and_uncertainty.md) | Uncertainty tracking & error handling |
+| [Image input](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/examples/ocr_local_ollama.md) | Pass `PIL.Image` directly to functions |
 
-### Contributing
+📖 **[Full Documentation](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/doc.md)** · 📝 **[Changelog](https://github.com/hand-e-fr/OpenHosta/blob/main/CHANGELOG.md)** · 🧪 **[Examples](https://github.com/hand-e-fr/OpenHosta/tree/main/tests/)**
 
-We warmly welcome contributions from the community. Whether you are an experienced developer or a beginner, your contributions are welcome.
+## Contributing
 
-If you wish to contribute to this project, please refer to our [Contribution Guide](https://github.com/hand-e-fr/OpenHosta/blob/main/CONTRIBUTING.md) and our [Code of Conduct](https://github.com/hand-e-fr/OpenHosta/blob/main/CODE_OF_CONDUCT.md).
+We warmly welcome contributions! Please refer to our [Contribution Guide](https://github.com/hand-e-fr/OpenHosta/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/hand-e-fr/OpenHosta/blob/main/CODE_OF_CONDUCT.md).
 
-Browse the existing [issues](https://github.com/hand-e-fr/OpenHosta/issues) to see if someone is already working on what you have in mind or to find contribution ideas.
+Browse existing [issues](https://github.com/hand-e-fr/OpenHosta/issues) to find contribution ideas.
 
-### License
+## License
 
-This project is licensed under the MIT License. This means you are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software, subject to the following conditions:
+MIT License — see [LICENSE](https://github.com/hand-e-fr/OpenHosta/blob/main/LICENSE) for details.
 
-  - The text of the license below must be included in all copies or substantial portions of the software.
+## Authors
 
-See the [LICENSE](https://github.com/hand-e-fr/OpenHosta/blob/main/LICENSE) file for more details.
-
-### Authors & Contact
-
-For further questions or assistance, please refer to partner hand-e or contact us directly via github.
-
-**Authors**:
-   - Emmanuel Batt: Manager and Coordinator, Founder of Hand-e
-   - William Jolivet: DevOps, SysAdmin
-   - Léandre Ramos: IA developer
-   - Merlin Devillard: UX designer, Product Owner
+- **Emmanuel Batt** — Manager and Coordinator, Founder of Hand-e
+- **William Jolivet** — DevOps, SysAdmin
+- **Léandre Ramos** — AI Developer
+- **Merlin Devillard** — UX Designer, Product Owner
 
 GitHub: https://github.com/hand-e-fr/OpenHosta
 
 ---
 
-Thank you for your interest in our project and your potential contributions!
-
-**The OpenHosta Team**
+**The future of development is human.** — The OpenHosta Team
