@@ -1,6 +1,6 @@
 # OpenHosta Documentation
 
-**Version 4.1** · [GitHub](https://github.com/hand-e-fr/OpenHosta) · [PyPI](https://pypi.org/project/OpenHosta/)
+**Version 4.2** · [GitHub](https://github.com/hand-e-fr/OpenHosta) · [PyPI](https://pypi.org/project/OpenHosta/)
 
 Welcome to the **OpenHosta** documentation. OpenHosta is the semantic layer for Python — it transforms human language and type annotations into executable, type-safe Python functions powered by Large Language Models.
 
@@ -13,6 +13,9 @@ Set up your environment, configure a local or remote model, and run your first `
 
 ### ⚙️ [Core Functions](core_functions.md)
 Learn about `emulate`, `emulate_async`, `emulate_iterator`, `closure`, `ask`, and `test`.
+
+### 🔄 [Streaming & Iterators](streaming.md)
+Stream raw tokens with `ask_stream`, or yield structured Python objects one-by-one with `Iterator` return types and `emulate_iterator`.
 
 ### 🔧 [Models & Setup](models_and_setup.md)
 Connect any OpenAI-compatible endpoint (Ollama, vLLM, Azure OpenAI), customize prompts, enable audit mode, and track costs.
@@ -36,6 +39,7 @@ Deep dive into OpenHosta's type validation and conversion system with configurab
 | 🗃️ [Data Extraction](examples/data_extraction.md) | Populate `dataclass` / `Pydantic` from unstructured text |
 | 👁️ [Local OCR](examples/ocr_local_ollama.md) | Image processing with `PIL.Image` + Ollama |
 | ⚡ [Parallel Processing](examples/parallel_processing.md) | Async batch workloads with `emulate_async` |
+| 🔄 [Streaming & Iterators](streaming.md) | Stream tokens or yield typed objects with `Iterator` |
 
 ---
 
