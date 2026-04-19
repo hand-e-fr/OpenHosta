@@ -133,8 +133,8 @@ def test_nested_safe_emulate_success():
                 print(f"Final safe context 1 uuid: {s1.uuid} with: {s1.cumulated_uncertainty}/{s1.acceptable_cumulated_uncertainty}")
                 print(f"Final safe context 2 uuid: {s2.uuid} with: {s2.cumulated_uncertainty}/{s2.acceptable_cumulated_uncertainty}")
 
-    assert next_step0 is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
-    assert next_step1 is NextStep.OTHER, f"Expected 'git push' in response, got: {next_step}"
+    assert next_step0 is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step0}"
+    assert next_step1 is NextStep.OTHER, f"Expected 'other' in response, got: {next_step1}"
 
     
     

@@ -26,6 +26,24 @@ load_dotenv()
 from OpenHosta import ask
 ask("hello world!")
 
+
+from OpenHosta import ask_stream
+for line in ask_stream("raconte une histoire"):
+    print(line, end='')
+    
+from OpenHosta import emulate
+from typing import Iterator
+def answer_step_by_step(question:str) -> Iterator[str]:
+    """
+    Answer a question step by step, yielding each step as a string.
+    
+    Start with reformulation, then hypothesis, then calculation steps if needed, then conclusion. 
+    """
+    yield from emulate()
+    
+for step in answer_step_by_step("how to calculate the speed of a falling leave on earth"):
+    print(step)
+    
 from OpenHosta import closure, closure_async
 
 increment=closure("add one to this number")

@@ -35,7 +35,7 @@ def test_emulate_async_generator_basic():
             """
             Generate the 5 basic vowels (a, e, i, o, u) one by one.
             """
-            async for vowel in await emulate_async():
+            async for vowel in emulate_async():
                 yield vowel
                 
         results = []
