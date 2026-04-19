@@ -23,10 +23,12 @@ from .models import OpenAICompatibleModel
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
+from .utils.gather_data import gather_data, gather_data_async
+
 DefaultModel = config.DefaultModel
 DefaultPipeline = config.DefaultPipeline
 
-all = (
+__all__ = (
     "ask",
     "ask_async",
     "ask_stream",
@@ -36,6 +38,8 @@ all = (
     "emulate_iterator", 
     "closure",
     "closure_async",
+    "gather_data",
+    "gather_data_async",
     "SemanticSet",
     "SemanticDict",
     "config",
