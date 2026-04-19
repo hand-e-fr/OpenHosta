@@ -601,11 +601,17 @@ class OneTurnConversationPipeline(Pipeline):
 
     def execute_stream(self, inspection: Inspection, force_llm_args: dict, item_type):
         """Stream typed items from the LLM, one ```python block per item."""
+        inspection.logs["rational"] = ""
+        inspection.logs["answer"] = ""
+        inspection.logs["response_string"] = ""
+        inspection.logs["response_data"] = []
+
         messages = self.push_streaming(inspection, item_type)
         llm_args = inspection.force_llm_args | force_llm_args
 
         buffer = ""
         for chunk in inspection.model.generate_stream(messages, **llm_args):
+            inspection.logs["answer"] += chunk
             buffer += chunk
             # Extract as many complete blocks as possible from the buffer
             while True:
@@ -613,6 +619,7 @@ class OneTurnConversationPipeline(Pipeline):
                 if content is None:
                     break
                 buffer = remainder
+                inspection.logs["response_string"] += f"```python\n{content}\n```\n"
                 typed_item = self._pull_single_item(inspection, content, item_type)
                 if typed_item is not None:
                     yield typed_item
@@ -623,6 +630,7 @@ class OneTurnConversationPipeline(Pipeline):
             probe = buffer if buffer.rstrip().endswith("```") else buffer + "\n```"
             content, _ = self._extract_next_code_block(probe)
             if content is not None:
+                inspection.logs["response_string"] += f"```python\n{content}\n```\n"
                 typed_item = self._pull_single_item(inspection, content, item_type)
                 if typed_item is not None:
                     yield typed_item
@@ -630,17 +638,24 @@ class OneTurnConversationPipeline(Pipeline):
 
     async def execute_stream_async(self, inspection: Inspection, force_llm_args: dict, item_type):
         """Async version of _execute_stream."""
+        inspection.logs["rational"] = ""
+        inspection.logs["answer"] = ""
+        inspection.logs["response_string"] = ""
+        inspection.logs["response_data"] = []
+
         messages = self.push_streaming(inspection, item_type)
         llm_args = inspection.force_llm_args | force_llm_args
 
         buffer = ""
         async for chunk in inspection.model.generate_stream_async(messages, **llm_args):
+            inspection.logs["answer"] += chunk
             buffer += chunk
             while True:
                 content, remainder = self._extract_next_code_block(buffer)
                 if content is None:
                     break
                 buffer = remainder
+                inspection.logs["response_string"] += f"```python\n{content}\n```\n"
                 typed_item = self._pull_single_item(inspection, content, item_type)
                 if typed_item is not None:
                     yield typed_item
@@ -649,6 +664,7 @@ class OneTurnConversationPipeline(Pipeline):
             probe = buffer if buffer.rstrip().endswith("```") else buffer + "\n```"
             content, _ = self._extract_next_code_block(probe)
             if content is not None:
+                inspection.logs["response_string"] += f"```python\n{content}\n```\n"
                 typed_item = self._pull_single_item(inspection, content, item_type)
                 if typed_item is not None:
                     yield typed_item
@@ -663,10 +679,19 @@ class OneTurnConversationPipeline(Pipeline):
         """
         original_type = inspection.analyse.type
         inspection.analyse.type = item_type
+        
+        # Save the current list because pull_type_data_section will overwrite response_data
+        response_data_list = inspection.logs.get("response_data", [])
+        if not isinstance(response_data_list, list):
+             response_data_list = []
+
         try:
-            return self.pull_type_data_section(inspection, raw_str.strip())
+            item = self.pull_type_data_section(inspection, raw_str.strip())
+            response_data_list.append(item)
+            return item
         except (ValueError, TypeError, SyntaxError) as e:
             print(f"[execute_stream] Skipping unparseable item: {e!r} — raw: {raw_str!r}")
             return None
         finally:
             inspection.analyse.type = original_type
+            inspection.logs["response_data"] = response_data_list
