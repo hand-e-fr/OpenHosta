@@ -20,6 +20,7 @@ class ModelCapabilities(Enum):
     LOGPROBS = "LOGPROBS"        # API returns token probabilities
     THINK = "THINK"              # Model supports/emits reasoning tokens
     JSON_OUTPUT = "JSON_OUTPUT"  # API supports native JSON mode
+    STREAMING = "STREAMING"      # API supports token-by-token streaming
 
 class Model:
     def __init__(self,
@@ -82,6 +83,76 @@ class Model:
             lambda: self.generate(messages, **kwargs)
         )
 
+    def generate_stream(
+        self,
+        messages: List[Dict[str, Any]],
+        **kwargs
+    ):
+        """High-level token streaming with retry logic."""
+        return self._retry_wrapper_stream(self._generate_stream_without_retry, messages, **kwargs)
+
+    def _retry_wrapper_stream(self, func, *args, **kwargs):
+        """Internal helper for rate-limit retries for generators."""
+        import time
+        now = time.time()
+        time_to_wait = self.delay_next_api_call_until - now
+        if time_to_wait > 0:
+            time.sleep(time_to_wait)
+
+        gen = func(*args, **kwargs)
+        try:
+            first_item = next(gen)
+        except StopIteration:
+            return
+        except RateLimitError as e:
+            if self.retry_delay == 0:
+                raise e
+            
+            now = time.time()
+            time_to_wait = self.delay_next_api_call_until - now
+            if time_to_wait <= 0:
+                self.delay_next_api_call_until = now + self.retry_delay
+            
+            time_to_wait = self.delay_next_api_call_until - now
+            if time_to_wait > 0:
+                time.sleep(time_to_wait)
+                
+            yield from func(*args, **kwargs)
+            return
+
+        yield first_item
+        yield from gen
+
+
+    async def generate_stream_async(
+        self,
+        messages: List[Dict[str, Any]],
+        **kwargs
+    ):
+        """Async token streaming. Async-yields str delta chunks.
+
+        Default implementation wraps generate_stream() in a thread executor
+        so that synchronous streaming models get async support for free.
+        """
+        import asyncio as _asyncio
+        loop = _asyncio.get_running_loop()
+        queue: asyncio.Queue = _asyncio.Queue()
+        sentinel = object()
+
+        def _producer():
+            try:
+                for chunk in self.generate_stream(messages, **kwargs):
+                    loop.call_soon_threadsafe(queue.put_nowait, chunk)
+            finally:
+                loop.call_soon_threadsafe(queue.put_nowait, sentinel)
+
+        loop.run_in_executor(self.get_executor(), _producer)
+        while True:
+            item = await queue.get()
+            if item is sentinel:
+                break
+            yield item
+
     def generate(
         self,
         messages: List[Dict[str, Any]],
@@ -132,6 +203,12 @@ class Model:
     @abc.abstractmethod
     def _generate_without_retry(self, messages: List[Dict[str, Any]], **kwargs) -> Dict:
         pass
+
+    def _generate_stream_without_retry(self, messages: List[Dict[str, Any]], **kwargs):
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support streaming. "
+            "Add ModelCapabilities.STREAMING and implement _generate_stream_without_retry()."
+        )
 
     @abc.abstractmethod
     def _image_without_retry(self, prompt: str, **kwargs) -> Dict:
