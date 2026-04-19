@@ -14,7 +14,10 @@ class OpenAICompatibleModel(Model):
             max_async_calls:int = 7,
             additionnal_headers: Dict[str, Any] = {},
             api_parameters:Dict[str, Any] = {},
-            capabilities:Set[ModelCapabilities] = {ModelCapabilities.TEXT2TEXT},
+            capabilities:Set[ModelCapabilities] = {
+                ModelCapabilities.TEXT2TEXT,
+                ModelCapabilities.STREAMING,
+            },
             base_url: str = "https://api.openai.com/v1", 
             chat_completion_url: str = "/chat/completions",
             embedding_url: str = "/embeddings",
@@ -165,6 +168,79 @@ class OpenAICompatibleModel(Model):
             raise ApiKeyError(f"[OpenAICompatibleModel._generate_without_retry] Unauthorized. {response.text}")
         else:
             raise RequestError(f"[OpenAICompatibleModel._generate_without_retry] Request failed ({response.status_code}):\n{response.text}")
+
+    def _generate_stream_without_retry(self, messages: List[Dict[str, Any]], **kwargs):
+        """Yield raw text delta chunks from the OpenAI-compatible SSE stream.
+        
+        Sends stream=True to the API and parses Server-Sent Events line by line.
+        Each yielded value is a non-empty str delta (may be multi-token).
+        """
+        import json as _json
+
+        llm_args = dict(kwargs)
+        if "force_json_output" in llm_args and ModelCapabilities.JSON_OUTPUT not in self.capabilities:
+            llm_args.pop("force_json_output")
+
+        api_key = self._get_api_key()
+        if api_key is None and "api.openai.com/v1" in self.base_url:
+            api_key = os.environ.get("OPENAI_API_KEY", None)
+            if api_key is None:
+                raise ApiKeyError("[OpenAICompatibleModel._generate_stream_without_retry] Empty API key.")
+
+        l_body: dict = {
+            "model": self.model_name,
+            "messages": messages,
+            "stream": True,
+        }
+        headers = self._get_headers(api_key)
+
+        all_api_parameters = self.api_parameters | llm_args
+        for key, value in all_api_parameters.items():
+            if key == "force_json_output" and value:
+                l_body["response_format"] = {"type": "json_object"}
+            elif key == "stream":
+                pass  # already set
+            else:
+                l_body[key] = value
+
+        full_url = f"{self.base_url}{self.chat_completion_url}"
+
+        response = requests.post(
+            full_url, headers=headers, json=l_body,
+            timeout=self.timeout, stream=True
+        )
+        self._handle_rate_limit_headers(response)
+
+        if response.status_code == 429:
+            raise RateLimitError(f"[OpenAICompatibleModel._generate_stream_without_retry] Rate limit. {response.text}")
+        if response.status_code == 401:
+            raise ApiKeyError(f"[OpenAICompatibleModel._generate_stream_without_retry] Unauthorized. {response.text}")
+        if response.status_code != 200:
+            raise RequestError(f"[OpenAICompatibleModel._generate_stream_without_retry] Failed ({response.status_code}):\n{response.text}")
+
+        self._nb_requests += 1
+        for raw_line in response.iter_lines():
+            if not raw_line:
+                continue
+            # SSE lines look like: "data: {...}" or "data: [DONE]"
+            if isinstance(raw_line, bytes):
+                raw_line = raw_line.decode("utf-8")
+            if not raw_line.startswith("data:"):
+                continue
+            data_str = raw_line[len("data:"):].strip()
+            if data_str == "[DONE]":
+                break
+            try:
+                chunk = _json.loads(data_str)
+            except _json.JSONDecodeError:
+                continue
+            delta = (
+                chunk.get("choices", [{}])[0]
+                     .get("delta", {})
+                     .get("content") or ""
+            )
+            if delta:
+                yield delta
 
     def _image_without_retry(self, prompt: str, **kwargs) -> Dict:
         api_key = self._get_api_key()
