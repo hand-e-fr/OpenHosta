@@ -51,7 +51,7 @@ def emulate(
         return pipeline.execute(inspection, force_llm_args)
 
 
-async def emulate_async(
+def emulate_async(
         *,
         pipeline: Optional[OneTurnConversationPipeline] = config.DefaultPipeline,
         force_llm_args: Optional[dict] = {},
@@ -64,7 +64,9 @@ async def emulate_async(
     - ``async def f() -> T: return await emulate_async()``
       Asynchronous value — awaits the LLM response and returns the resolved value.
 
-    - ``async def f() -> AsyncIterator[T]: yield emulate_async()``
+    - ``async def f() -> AsyncIterator[T]:
+          async for x in emulate_async():
+              yield x``
       Async generator — streams items via the async LLM API.
 
     Args:
@@ -81,8 +83,8 @@ async def emulate_async(
     item_type = inspection.analyse.item_type
 
     if is_generator:
-        # Return an async generator; the caller does `async for x in await emulate_async(): yield x`
+        # Return an async generator object
         return pipeline.execute_stream_async(inspection, force_llm_args, item_type)
     else:
-        # Existing behaviour — async single value
-        return await pipeline.execute_async(inspection, force_llm_args)
+        # Return a coroutine object
+        return pipeline.execute_async(inspection, force_llm_args)

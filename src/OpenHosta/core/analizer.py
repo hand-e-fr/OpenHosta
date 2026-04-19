@@ -208,6 +208,26 @@ def _unwrap_iterator_type(annotation: Any) -> Any:
 
     return str
 
+def _is_iterator_type(annotation: Any) -> bool:
+    from typing import get_origin
+    import collections.abc
+    origin = get_origin(annotation)
+    _iter_origins = (
+        collections.abc.Iterator,
+        collections.abc.Iterable,
+        collections.abc.AsyncIterator,
+        collections.abc.AsyncIterable,
+        collections.abc.Generator,
+        collections.abc.AsyncGenerator,
+    )
+    if origin in _iter_origins:
+        return True
+
+    if hasattr(annotation, "__name__") and annotation.__name__ in ("Iterator", "Iterable", "AsyncIterator", "AsyncIterable", "Generator", "AsyncGenerator"):
+        return True
+
+    return False
+
 def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
     try:
         if frame is not None:
@@ -270,7 +290,12 @@ def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
     else:
         is_async = inspect.iscoroutinefunction(function_pointer)
         is_generator = inspect.isgeneratorfunction(function_pointer) or inspect.isasyncgenfunction(function_pointer)
-        
+
+    if not is_generator and _is_iterator_type(result_return_type):
+        # The user didn't use 'yield' but the return type is an iterator.
+        # We promote the function to a generator mode so emulate() returns a stream.
+        is_generator = True
+
     item_type = _unwrap_iterator_type(result_return_type) if is_generator else result_return_type
 
     return AnalyzedFunction(
