@@ -319,9 +319,9 @@ def test_safe_workflow_color_detector():
         """
         return emulate()
 
-    with safe(acceptable_cumulated_uncertainty=math.exp(-5)):
+    with safe(acceptable_cumulated_uncertainty=math.exp(-5)) as safe_context:
         ret =  IsThisInThat("the sun", "the sky on a clear day")    
-    
+
         assert ret is Bool.TRUE, f"Expected TRUE for sky in clear day, got: {ret}"
         
         ret = IsThisInThat("finger", "hand")
@@ -331,13 +331,14 @@ def test_safe_workflow_color_detector():
         assert ret is Bool.FALSE, f"Expected FALSE for hand in finger, got: {ret}"
 
         try:
-            ret = IsThisInThat("red ball", "my hand")
+            ret = IsThisInThat("train 42535", "Paris Train station")
         except UncertaintyError as e:
             print(f"Caught expected UncertaintyError due to uncertainty: {e}")
             ret = None
             
-        assert ret is None, f"Expected None for red ball in hand due to uncertainty error, got: {ret}"
+        assert ret is None, f"Expected None for train in station due to uncertainty error, got: {ret}"
     
+        print(safe_context)
     
 def test_safe_workflow_organ_location():
 
