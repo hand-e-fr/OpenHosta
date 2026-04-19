@@ -29,20 +29,29 @@ async def capitalize_cities(sentence: str) -> str:
 print(asyncio.run(capitalize_cities("je suis allé à paris")))
 ```
 
-## `emulate_iterator`
-Returns a lazily evaluated generator/iterator. It yields elements one-by-one directly from the underlying LLM streams, vastly reducing latency for list generations.
+## `emulate_variants`
+Explores the LLM's probability distribution to generate independent, alternative responses (variants) based on token logprobs. It is ideal for exploring uncertainty or generating diverse candidates from a single prompt.
 
-> Note: tested mainly with qwen3:8b-instruct served by ollama
+It automatically adapts to the return type annotation:
+- If `-> list[T]`: Returns a fully resolved list of variants.
+- If `-> Iterator[T]`: Returns a generator that yields variants as they are found.
 
 ```python
-from OpenHosta import emulate_iterator
+from typing import Iterator
+from OpenHosta import emulate_variants
 
-def generate_ideas(topic: str) -> list[str]:
-    """Yield multiple creative ideas based on the topic."""
-    return emulate_iterator()
+# Returns a list of variants once all are found
+def list_variants(topic: str) -> list[str]:
+    """Suggest three alternative creative names for a project."""
+    return emulate_variants(min_probability=1e-2)
 
-for idea in generate_ideas("Open Source Marketing"):
-    print(idea) # Starts printing before the entire list is fully generated
+# Yields variants one by one
+def stream_variants(topic: str) -> Iterator[str]:
+    """Yield multiple alternative titles based on the topic."""
+    yield from emulate_variants(min_probability=1e-2)
+
+for variant in stream_variants("Open Source Marketing"):
+    print(variant)
 ```
 
 ## `closure`

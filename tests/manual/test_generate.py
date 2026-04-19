@@ -10,7 +10,7 @@ load_dotenv()
 from OpenHosta import reload_dotenv
 reload_dotenv()
 
-from OpenHosta import emulate_iterator
+from OpenHosta import emulate_variants
 
 # Force logprobs capability for testing
 from OpenHosta import config
@@ -24,18 +24,19 @@ def test_generate_basic():
     """
     from OpenHosta import print_last_prompt
 
+    from typing import Iterator
     @dataclass
     class Country:
         name: str
 
-    def random_country_name() -> Country:
+    def random_country_name() -> Iterator[Country]:
         """
         This function returns the name of a country near France.
 
         Returns:
             dict: The name of a country {"name": str}
         """
-        return emulate_iterator()
+        return emulate_variants()
 
 
     for p in random_country_name():
@@ -44,23 +45,23 @@ def test_generate_basic():
     # print_last_prompt(random_country_name)
 
     # This returns 19 names with qwen3-vl:8b-instruc (ollama)
-    def random_country_name() -> Country:
+    def random_country_name() -> list[Country]:
         """
         This function returns the name of a country.
 
         Returns:
             dict: The name of a country {"name": str}
         """
-        return emulate_iterator(min_probability=1e-2, max_generation=100)
+        return emulate_variants(min_probability=1e-2, max_generation=100)
 
-    def country_that_share_border_with(country: str) -> Country:
+    def country_that_share_border_with(country: str) -> Iterator[Country]:
         """
         This function returns the name of a country that shares a border with the given country, chosen randomly.
         
         Args:
             dict: The name of a country {"name": str}
         """
-        return emulate_iterator(min_probability=1e-3)
+        return emulate_variants(min_probability=1e-3)
 
     all = set()
     for p in random_country_name():
@@ -73,18 +74,18 @@ def test_generate_basic():
     len([x for x in all if len(x.split()) < 3])
     print([x for x in all if len(x.split()) < 3])
 
-    def nicest_county_in_the_world() -> Country:
+    def nicest_county_in_the_world() -> list[Country]:
         """
         This function returns the name of the nicest country in the world.
         
         Args:
             dict: The name of a country {"name": str}
         """
-        return emulate_iterator(min_probability=1e-3)
+        return emulate_variants(min_probability=1e-3)
 
     list(nicest_county_in_the_world())
      
-    def letters_of_the_alphabet() -> str:
+    def letters_of_the_alphabet() -> Iterator[str]:
         """
         This function returns a random letter of the alphabet.
         It should return only one character.
@@ -92,12 +93,12 @@ def test_generate_basic():
         Returns:
             str: The letter.
         """
-        return emulate_iterator()
+        yield from emulate_variants()
 
     for c in letters_of_the_alphabet():
         print(c)
             
-    def get_city(country: str) -> str:
+    def get_city(country: str) -> list[str]:
         """
         This function returns a city of that is in the country.
         The city is chosen randomly.
@@ -105,13 +106,13 @@ def test_generate_basic():
         Args:
            country (str): The name of the country.
         """
-        return emulate_iterator()
+        return emulate_variants()
 
     for country in random_country_name():
         for city in get_city(country):
             print(f"{country:20s}: {city}")
 
-    def dis_bonjour_avec_fautes(phrase:str) -> str:
+    def dis_bonjour_avec_fautes(phrase:str) -> Iterator[str]:
         """
         Reformule la phrase avec les fautes d'orthograph les plus fréquentes.
         
@@ -121,7 +122,7 @@ def test_generate_basic():
         Return:
           la même phrase avec des fautes d'orthographes.
         """
-        return emulate_iterator(min_probability=0.01)
+        return emulate_variants(min_probability=0.01)
 
     for c in dis_bonjour_avec_fautes("les chats font pas des chiens"):
         print(c)
@@ -131,7 +132,7 @@ def test_generate_basic():
         link:str
         target:str    
 
-    def add_grah_link(source) -> KG_LINK:
+    def add_grah_link(source) -> Iterator[KG_LINK]:
         """
         Suggest linkes in a knowledge graph.
         
@@ -140,7 +141,7 @@ def test_generate_basic():
         Return:
             KG_LINK: The link between the source and the target.
         """
-        return emulate_iterator(min_probability=0.001)
+        return emulate_variants(min_probability=0.001)
     
     for link in add_grah_link("friction"):
         print(link)

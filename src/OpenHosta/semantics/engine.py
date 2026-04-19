@@ -2,7 +2,7 @@
 """
 Moteur de clustering sémantique.
 
-Génère un nuage d'exemples via emulate_iterator, les embeds, puis les cluster
+Génère un nuage d'exemples via emulate_variants, les embeds, puis les cluster
 avec DBSCAN. Les clusters sont fixes une fois créés.
 """
 
@@ -17,7 +17,7 @@ from sklearn.metrics.pairwise import cosine_distances
 from ..defaults import config
 from ..core.base_model import Model, ModelCapabilities
 from ..pipelines import OneTurnConversationPipeline
-from ..exec.emulate_iterator import emulate_iterator
+from ..exec.emulate_variants import emulate_variants
 
 
 def generate_examples(
@@ -28,7 +28,7 @@ def generate_examples(
 ) -> List[str]:
     """
     Génère des exemples diversifiés pour un axe sémantique donné
-    en utilisant emulate_iterator (logprob branching).
+    en utilisant emulate_variants (logprob branching).
     
     Args:
         axis: Description de l'axe sémantique (ex: "Tâches Ménagères")
@@ -44,7 +44,7 @@ def generate_examples(
 
     def _generate_example() -> str:
         """placeholder"""
-        return emulate_iterator(
+        return emulate_variants(
             pipeline=pipeline,
             max_generation=n,
             min_probability=min_probability

@@ -52,9 +52,9 @@ class SemanticDict:
             axis: Description de l'axe sémantique
             tolerance: Distance cosine max
             model: Modèle LLM (défaut: config.DefaultModel)
-            pipeline: Pipeline pour emulate_iterator
+            pipeline: Pipeline pour emulate_variants
             n_examples: Nombre d'exemples à générer
-            min_probability: Seuil de probabilité pour emulate_iterator
+            min_probability: Seuil de probabilité pour emulate_variants
         """
         self._key_set = SemanticSet(
             axis=axis,

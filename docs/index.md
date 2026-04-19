@@ -12,10 +12,10 @@ Welcome to the **OpenHosta** documentation. OpenHosta is the semantic layer for 
 Set up your environment, configure a local or remote model, and run your first `emulate()` call.
 
 ### ⚙️ [Core Functions](core_functions.md)
-Learn about `emulate`, `emulate_async`, `emulate_iterator`, `closure`, `ask`, and `test`.
+Learn about `emulate`, `emulate_async`, `emulate_variants`, `closure`, `ask`, and `test`.
 
 ### 🔄 [Streaming & Iterators](streaming.md)
-Stream raw tokens with `ask_stream`, or yield structured Python objects one-by-one with `Iterator` return types and `emulate_iterator`.
+Stream raw tokens with `ask_stream`, or yield structured Python objects one-by-one with `Iterator` return types and `emulate_variants`.
 
 ### 🔧 [Models & Setup](models_and_setup.md)
 Connect any OpenAI-compatible endpoint (Ollama, vLLM, Azure OpenAI), customize prompts, enable audit mode, and track costs.

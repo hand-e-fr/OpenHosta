@@ -3,7 +3,7 @@
 ## Contexte
 
 Les `SemanticSet` et `SemanticDict` actuels fonctionnent en **monde fermé** :
-- Les clusters sont pré-générés à l'init via `emulate_iterator`
+- Les clusters sont pré-générés à l'init via `emulate_variants`
 - Ils sont **fixes** : ajouter/supprimer un élément ne modifie jamais les clusters
 - Un élément hors du domaine pré-calculé → `ValueError` (outlier)
 

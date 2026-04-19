@@ -114,7 +114,7 @@ print(translate("Hello World!", "French"))
 |---------|-------------|
 | [`emulate`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | AI-implemented functions from docstrings |
 | [`emulate_async`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Non-blocking async variant for concurrency |
-| [`emulate_iterator`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Streaming results via lazy generators |
+| [`emulate_variants`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Streaming results via lazy generators |
 | [`closure`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Semantic lambda functions |
 | [`test`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Fuzzy logic / semantic boolean tests |
 | [Types & Pydantic](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/types_and_pydantic.md) | `int`, `dict`, `Enum`, `dataclass`, `Pydantic`, `Callable`… |

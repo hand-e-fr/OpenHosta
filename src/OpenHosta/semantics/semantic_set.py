@@ -2,7 +2,7 @@
 """
 SemanticSet — Ensemble à clustering sémantique pré-calculé.
 
-Les clusters sont générés à l'initialisation via emulate_iterator,
+Les clusters sont générés à l'initialisation via emulate_variants,
 puis fixés. Les éléments ajoutés sont assignés aux clusters existants.
 """
 
@@ -25,7 +25,7 @@ class SemanticSet:
     Ensemble sémantique avec clustering pré-calculé.
     
     À l'initialisation :
-    1. Génère un nuage d'exemples via emulate_iterator
+    1. Génère un nuage d'exemples via emulate_variants
     2. Embed les exemples
     3. Cluster via DBSCAN
     4. Labellise chaque cluster via le DefaultModel
@@ -58,7 +58,7 @@ class SemanticSet:
             model: Modèle pour embeddings et labelling (défaut: config.DefaultModel)
             pipeline: Pipeline pour la génération d'exemples (défaut: config.DefaultPipeline)
             n_examples: Nombre d'exemples à générer
-            min_probability: Seuil de probabilité pour emulate_iterator
+            min_probability: Seuil de probabilité pour emulate_variants
         """
         self._axis = axis
         self._tolerance = tolerance
