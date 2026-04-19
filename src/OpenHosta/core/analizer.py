@@ -342,7 +342,7 @@ def _collect_types(p_type, type_list, seen_types=None):
     try:
         guarded_type = TypeResolver.resolve(p_type)
     except:
-        return
+        pass
 
     # 2. Si c'est un type complexe, on l'ajoute à la liste de documentation
     type_name = nice_type_name(p_type)

@@ -46,3 +46,26 @@ def test_emulate_async_generator_basic():
     vowels = run(app())
     assert len(vowels) >= 3, "Expected at least 3 vowels generated"
     assert "a" in vowels, "Missing 'a'"
+
+def test_emulate_generator_dataclass():
+    from dataclasses import dataclass
+
+    @dataclass
+    class President:
+        name: str
+        start_date: str
+        end_date: str
+
+    def list_presidents() -> Iterator[President]:
+        """
+        List 2 presidents of France.
+        """
+        yield from emulate()
+
+    items = list(list_presidents())
+    assert len(items) >= 1
+    for item in items:
+        assert isinstance(item, President)
+        assert hasattr(item, "name")
+        assert hasattr(item, "start_date")
+        assert hasattr(item, "end_date")
