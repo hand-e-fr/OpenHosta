@@ -1,4 +1,4 @@
-__version__ = "4.1.0"
+__version__ = "4.2.0"
 
 from .defaults import config
 from .defaults import reload_dotenv
@@ -11,7 +11,7 @@ from .core.errors import UncertaintyError
 from .core.cost_tracker import track_costs
 from .core.audit import register_audit_callback, unregister_audit_callback
 
-from .exec.ask import ask, ask_async
+from .exec.ask import ask, ask_async, ask_stream, ask_stream_async
 from .exec.emulate import emulate, emulate_async
 from .exec.emulate_iterator import emulate_iterator
 from .exec.closure import closure, closure_async
@@ -29,6 +29,8 @@ DefaultPipeline = config.DefaultPipeline
 all = (
     "ask",
     "ask_async",
+    "ask_stream",
+    "ask_stream_async",
     "emulate",
     "emulate_async",
     "emulate_iterator", 

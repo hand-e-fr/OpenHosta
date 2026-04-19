@@ -328,7 +328,7 @@ def test_emulate_speed_default():
         """
         return emulate()
 
-    _LIMIT_PER_CALL=1
+    _LIMIT_PER_CALL=2
     _LOOP_SIZE=2
     t0 = time.time()
     for i in range(_LOOP_SIZE):

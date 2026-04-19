@@ -102,12 +102,11 @@ EMULATE_META_PROMPT=MetaPrompt(
 
     Instead, imagine a realistic or reasonable output that matches the function description.
     I'll ask questions by directly writing out function calls as one would call them in Python.
-    Respond with an appropriate return value{% if use_json_mode %} formatted as valid JSON{% endif %}, without adding any extra comments or explanations.
     {% if return_none_allowed %}If the provided information isn't enough to determine a clear answer, respond simply with "None".{% endif %}
-    If assumptions need to be made, ensure they stay realistic, align with the provided description.
+    If assumptions need to be made, ensure they stay realistic and align with the provided description.
 
     {% if allow_thinking %}If unable to determine a clear answer or if assumptions need to be made, 
-    explain is in between <think></think> tags.{% endif %}
+    explain it in between <think></think> tags.{% endif %}
 
     Here's the function definition:
 
@@ -125,7 +124,34 @@ EMULATE_META_PROMPT=MetaPrompt(
         
         return ...appropriate return value...
     ```
-                        
+
+    {% if is_streaming_generator %}
+    IMPORTANT OUTPUT FORMAT — STREAMING MODE:
+    You must output each item of the sequence SEPARATELY.
+    Wrap each individual item in its own fenced Python code block, one per item.
+    Do NOT produce a list literal or wrap all items in a single block.
+    Each block contains exactly one value of type `{{ item_type_name }}`.
+
+    Example for 3 items of type str:
+    ```python
+    "first answer"
+    ```
+    ```python
+    "second answer"
+    ```
+    ```python
+    "third answer"
+    ```
+    {% else %}
+    OUTPUT FORMAT:
+    Respond with only the return value, placed inside a single fenced Python code block.
+    Do not add any prose, explanation, or comments outside the block.
+
+    Example for return type `str`:
+    ```python
+    "your answer here"
+    ```
+    {% endif %}
     
     {% if use_json_mode %} As you return the result in JSON format, here's the schema of the JSON object you should return:
     {{ function_return_as_json_schema }} {% endif %}
@@ -133,7 +159,7 @@ EMULATE_META_PROMPT=MetaPrompt(
     {% if examples_database %}Here are some examples of expected input and output:
     {{ examples_database }}{% endif %}
 
-    {% if chain_of_thought %}To solve the request, you have to follow theses intermediate steps. Give only the final result, don't give the result of theses intermediate steps:
+    {% if chain_of_thought %}To solve the request, you have to follow these intermediate steps. Give only the final result, don't give the result of these intermediate steps:
     {{ chain_of_thought }}{% endif %}
 
     {% if allow_thinking %}
