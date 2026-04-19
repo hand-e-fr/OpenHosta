@@ -1,6 +1,6 @@
 # OpenHosta Documentation Hub
 
-Documentation for version: **4.1**
+Documentation for version: **4.2**
 
 Welcome to the **OpenHosta** documentation hub. Here you'll find everything you need to leverage Large Language Models (LLMs) natively within your Python projects. OpenHosta transforms human language and semantic structures into pure, executable Python functions.
 
