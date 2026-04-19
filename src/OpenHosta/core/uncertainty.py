@@ -15,24 +15,67 @@ reproducible_settings_ctxvar = contextvars.ContextVar(SAFE_CONTEXT_VAR_NAME, def
 
 def _trim_logp_list(logp_list):
     """
-    Remove special control tokens from a VLLM logprob list.
+    Remove special control tokens and code block markers from a logprob list.
     Returns the trimmed list.
     """
-    # Helper to find first occurrence index of a token, if present
-    def _first_index(token):
-        tokens = [t['token'] for t in logp_list]
-        return min((i for i, t in enumerate(tokens) if t == token), default=None)
+    # 1. Skip control tokens at the beginning
+    start_idx = 0
+    for i, t in enumerate(logp_list):
+        if t['token'] in ("<|message|>", " ", "\n"):
+            continue
+        start_idx = i
+        break
+    
+    logp_list = logp_list[start_idx:]
 
-    # Jump to the first token after <|message|>
-    if "<|message|>" in [t['token'] for t in logp_list]:
-        last_message_index = max(i for i, t in enumerate(logp_list) if t['token'] == "<|message|>")
-        logp_list = logp_list[last_message_index + 1:]
+    # 2. Jump over ```python if present
+    full_text = "".join([t['token'] for t in logp_list])
+    if full_text.startswith("```python"):
+        # Find the index of the token that completes "```python"
+        current_text = ""
+        for i, t in enumerate(logp_list):
+            current_text += t['token']
+            if "```python" in current_text:
+                # We skip everything up to the next newline or space after ```python
+                for j in range(i + 1, len(logp_list)):
+                    if "\n" in logp_list[j]['token']:
+                        logp_list = logp_list[j+1:]
+                        break
+                break
+    elif full_text.startswith("```"):
+         # Jump over ```
+        current_text = ""
+        for i, t in enumerate(logp_list):
+            current_text += t['token']
+            if "```" in current_text:
+                for j in range(i + 1, len(logp_list)):
+                    if "\n" in logp_list[j]['token']:
+                        logp_list = logp_list[j+1:]
+                        break
+                break
 
-    # Cut off at the first occurrence of each control token, if present
-    for ctrl_token in ("<|return|>", "<|im_end|>", "<｜end▁of▁sentence｜>"):
-        idx = _first_index(ctrl_token)
-        if idx is not None:
-            logp_list = logp_list[:idx]
+    # 3. Cut off at control tokens or trailing ```
+    end_idx = len(logp_list)
+    current_text = ""
+    for i, t in enumerate(logp_list):
+        if t['token'] in ("<|return|>", "<|im_end|>", "<｜end▁of▁sentence｜>"):
+            end_idx = i
+            break
+        
+        current_text += t['token']
+        if "```" in current_text and i > 2: # Avoid matching the starting one if it wasn't trimmed
+            end_idx = i - (len(t['token']) - t['token'].find("```")) # Stop just before ```
+            # Actually simpler: find where ``` starts
+            # But tokens might be "   ```" or "```\n"
+            # We just stop here.
+            end_idx = i
+            break
+            
+    logp_list = logp_list[:end_idx]
+
+    # 4. Trim trailing newlines/spaces
+    while logp_list and logp_list[-1]['token'].strip() == "":
+        logp_list.pop()
 
     return logp_list
 

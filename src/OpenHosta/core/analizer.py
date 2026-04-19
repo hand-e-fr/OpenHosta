@@ -22,6 +22,9 @@ class AnalyzedFunction:
     args: List[AnalyzedArgument]
     type: Any
     doc: Optional[str]
+    is_async: bool = False
+    is_generator: bool = False
+    item_type: Any = str
 
 def _extract_enums_from_guarded(guarded_type, seen_enums=None) -> str:
     if seen_enums is None:
@@ -147,7 +150,10 @@ def hosta_analyze_update(frame, analyse: AnalyzedFunction) -> AnalyzedFunction:
         name=analyse.name,
         args=new_args,
         type=analyse.type,
-        doc=analyse.doc
+        doc=analyse.doc,
+        is_async=analyse.is_async,
+        is_generator=analyse.is_generator,
+        item_type=analyse.item_type
     )
 
 def _resolve_annotation(annotation, globalns=None, localns=None):
@@ -170,6 +176,57 @@ def _resolve_annotation(annotation, globalns=None, localns=None):
         warnings.warn(f"[OpenHosta] Could not resolve stringified annotation '{annotation}'. Falling back to Any.")
         return typing.Any
 
+
+
+def _unwrap_iterator_type(annotation: Any) -> Any:
+    from typing import get_origin, get_args
+    import collections.abc
+    if annotation is None or annotation is inspect.Parameter.empty:
+        return str
+
+    origin = get_origin(annotation)
+    args   = get_args(annotation)
+
+    _iter_origins = (
+        collections.abc.Iterator,
+        collections.abc.Iterable,
+        collections.abc.AsyncIterator,
+        collections.abc.AsyncIterable,
+        collections.abc.Generator,
+        collections.abc.AsyncGenerator,
+    )
+
+    if origin in _iter_origins:
+        if args:
+            return args[0]
+        return str
+
+    if hasattr(annotation, "__name__") and annotation.__name__ in ("Iterator", "Iterable", "AsyncIterator", "AsyncIterable", "Generator", "AsyncGenerator"):
+        if args:
+            return args[0]
+        return str
+
+    return str
+
+def _is_iterator_type(annotation: Any) -> bool:
+    from typing import get_origin
+    import collections.abc
+    origin = get_origin(annotation)
+    _iter_origins = (
+        collections.abc.Iterator,
+        collections.abc.Iterable,
+        collections.abc.AsyncIterator,
+        collections.abc.AsyncIterable,
+        collections.abc.Generator,
+        collections.abc.AsyncGenerator,
+    )
+    if origin in _iter_origins:
+        return True
+
+    if hasattr(annotation, "__name__") and annotation.__name__ in ("Iterator", "Iterable", "AsyncIterator", "AsyncIterable", "Generator", "AsyncGenerator"):
+        return True
+
+    return False
 
 def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
     try:
@@ -221,11 +278,34 @@ def hosta_analyze(frame=None, function_pointer=None) -> AnalyzedFunction:
     result_return_type = _resolve_annotation(result_return_type, resolve_globalns, resolve_localns)
     result_docstring = function_pointer.__doc__
 
+    _CO_GENERATOR       = inspect.CO_GENERATOR       # 0x20
+    _CO_COROUTINE       = inspect.CO_COROUTINE       # 0x100
+    _CO_ASYNC_GENERATOR = inspect.CO_ASYNC_GENERATOR # 0x200
+
+    code_obj = getattr(function_pointer, "__code__", None)
+    if code_obj:
+        flags = code_obj.co_flags
+        is_async = bool(flags & _CO_COROUTINE) or bool(flags & _CO_ASYNC_GENERATOR)
+        is_generator = bool(flags & _CO_GENERATOR) or bool(flags & _CO_ASYNC_GENERATOR)
+    else:
+        is_async = inspect.iscoroutinefunction(function_pointer)
+        is_generator = inspect.isgeneratorfunction(function_pointer) or inspect.isasyncgenfunction(function_pointer)
+
+    if not is_generator and _is_iterator_type(result_return_type):
+        # The user didn't use 'yield' but the return type is an iterator.
+        # We promote the function to a generator mode so emulate() returns a stream.
+        is_generator = True
+
+    item_type = _unwrap_iterator_type(result_return_type) if is_generator else result_return_type
+
     return AnalyzedFunction(
         name=result_function_name,
         args=result_args_value_table,
         type=result_return_type,
-        doc=result_docstring
+        doc=result_docstring,
+        is_async=is_async,
+        is_generator=is_generator,
+        item_type=item_type
     )
 
 

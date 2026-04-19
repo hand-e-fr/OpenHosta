@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 
 
 from ..core.errors import UncertaintyError, UnreproducibleError
-from ..core.analizer import encode_function
+from ..core.analizer import encode_function, nice_type_name
 from ..core.base_model import Model, ModelCapabilities
 from ..core.inspection import Inspection
 from ..core.meta_prompt import MetaPrompt, EMULATE_META_PROMPT, USER_CALL_META_PROMPT
@@ -343,6 +343,32 @@ class OneTurnConversationPipeline(Pipeline):
         
         return raw_response
 
+    @staticmethod
+    def _extract_next_code_block(buffer: str):
+        """Find the next complete ```python...``` block in *buffer*.
+
+        Returns
+        -------
+        (content: str, remainder: str)
+            *content* is the text between the delimiters (stripped).
+            *remainder* is everything after the closing ``` .
+            If no complete block is found, returns (None, buffer).
+        """
+        START = "```python"
+        END   = "```"
+        start = buffer.find(START)
+        if start == -1:
+            return None, buffer
+        content_start = start + len(START)
+        # Search for closing ``` *after* the opening tag
+        end = buffer.find(END, content_start)
+        if end == -1:
+            return None, buffer  # block not yet closed
+        content   = buffer[content_start:end]
+        remainder = buffer[end + len(END):]
+        return content, remainder
+
+
     def pull_extract_data_section(self, inspection:Inspection, raw_response:str) -> Any:
         """Data & Schema Level"""
 
@@ -420,7 +446,30 @@ class OneTurnConversationPipeline(Pipeline):
         messages       = self.push_build_messages(inspection, meta_messages, encoded_data)
         
         return messages
-    
+
+    def push_streaming(self, inspection: Inspection, item_type) -> dict:
+        """Like push(), but injects is_streaming_generator and item_type_name into
+        the encoded_data before rendering the meta-prompt templates.
+        
+        These extra keys activate the streaming-mode instruction block inside
+        EMULATE_META_PROMPT ({% if is_streaming_generator %}).
+        """
+        inspection.pipeline = self
+
+        inspection   = self.push_detect_missing_types(inspection)
+        _            = self.push_choose_model(inspection)
+        inspection   = self.push_check_uncertainty(inspection)
+
+        meta_messages = self.push_select_meta_prompts(inspection)
+        encoded_data  = self.push_encode_inspected_data(inspection)
+
+        # Inject generator-mode template variables
+        encoded_data["is_streaming_generator"] = True
+        encoded_data["item_type_name"] = nice_type_name(item_type)
+
+        messages = self.push_build_messages(inspection, meta_messages, encoded_data)
+        return messages
+
     def pull(self, inspection:Inspection, response_dict ):
         inspection.logs["rational"] = ""
         inspection.logs["answer"] = ""
@@ -548,5 +597,76 @@ class OneTurnConversationPipeline(Pipeline):
             "attempts": max_retries
         })
         raise last_exception
-    
 
+
+    def execute_stream(self, inspection: Inspection, force_llm_args: dict, item_type):
+        """Stream typed items from the LLM, one ```python block per item."""
+        messages = self.push_streaming(inspection, item_type)
+        llm_args = inspection.force_llm_args | force_llm_args
+
+        buffer = ""
+        for chunk in inspection.model.generate_stream(messages, **llm_args):
+            buffer += chunk
+            # Extract as many complete blocks as possible from the buffer
+            while True:
+                content, remainder = self._extract_next_code_block(buffer)
+                if content is None:
+                    break
+                buffer = remainder
+                typed_item = self._pull_single_item(inspection, content, item_type)
+                if typed_item is not None:
+                    yield typed_item
+
+        # Flush any remaining partial block at end-of-stream
+        if buffer.strip():
+            # Force-close an open block if needed
+            probe = buffer if buffer.rstrip().endswith("```") else buffer + "\n```"
+            content, _ = self._extract_next_code_block(probe)
+            if content is not None:
+                typed_item = self._pull_single_item(inspection, content, item_type)
+                if typed_item is not None:
+                    yield typed_item
+
+
+    async def execute_stream_async(self, inspection: Inspection, force_llm_args: dict, item_type):
+        """Async version of _execute_stream."""
+        messages = self.push_streaming(inspection, item_type)
+        llm_args = inspection.force_llm_args | force_llm_args
+
+        buffer = ""
+        async for chunk in inspection.model.generate_stream_async(messages, **llm_args):
+            buffer += chunk
+            while True:
+                content, remainder = self._extract_next_code_block(buffer)
+                if content is None:
+                    break
+                buffer = remainder
+                typed_item = self._pull_single_item(inspection, content, item_type)
+                if typed_item is not None:
+                    yield typed_item
+
+        if buffer.strip():
+            probe = buffer if buffer.rstrip().endswith("```") else buffer + "\n```"
+            content, _ = self._extract_next_code_block(probe)
+            if content is not None:
+                typed_item = self._pull_single_item(inspection, content, item_type)
+                if typed_item is not None:
+                    yield typed_item
+
+
+    def _pull_single_item(self, inspection: Inspection, raw_str: str, item_type) -> Any:
+        """Run the standard pull_type_data_section pipeline on a single extracted item.
+
+        Temporarily overrides inspection.analyse.type with *item_type* so that the
+        full GuardedType resolution chain applies to the individual item rather than
+        the outer Iterator[item_type] annotation.
+        """
+        original_type = inspection.analyse.type
+        inspection.analyse.type = item_type
+        try:
+            return self.pull_type_data_section(inspection, raw_str.strip())
+        except (ValueError, TypeError, SyntaxError) as e:
+            print(f"[execute_stream] Skipping unparseable item: {e!r} — raw: {raw_str!r}")
+            return None
+        finally:
+            inspection.analyse.type = original_type
