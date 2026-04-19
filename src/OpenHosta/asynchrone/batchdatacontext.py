@@ -80,9 +80,12 @@ class BatchDataContext:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type: return False
         try:
-            asyncio.get_running_loop()
-            raise RuntimeError("Utilisez 'async with' dans un environnement asynchrone (FastAPI).")
-        except RuntimeError:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                raise RuntimeError("Utilisez 'async with' dans un environnement asynchrone (FastAPI).")
+        except RuntimeError as e:
+            if "environnement asynchrone" in str(e):
+                raise e
             asyncio.run(self.data._resolve(self.batch_size, self.max_delay))
 
     # --- Support Async (FastAPI) ---
