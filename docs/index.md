@@ -26,6 +26,9 @@ OpenHosta natively supports `int`, `str`, `List`, `Dict`, `Enum`, `dataclass`, `
 ### 🛡️ [Safe Context & Error Handling](safe_context_and_uncertainty.md)
 Handle uncertainty, catch ambiguous LLM responses, and build robust production workflows.
 
+### ⚡ [Parallel Processing](parallel_processing.md)
+Simplify concurrent execution of `emulate_async` with the `gather_data` batching utility to parse vast amount of items concurrently.
+
 ### 📐 [Guarded Types](guarded.md)
 Deep dive into OpenHosta's type validation and conversion system with configurable tolerance.
 
@@ -38,7 +41,6 @@ Deep dive into OpenHosta's type validation and conversion system with configurab
 | 📚 [Text Classification](examples/text_classification.md) | Classify text into `Enum` states |
 | 🗃️ [Data Extraction](examples/data_extraction.md) | Populate `dataclass` / `Pydantic` from unstructured text |
 | 👁️ [Local OCR](examples/ocr_local_ollama.md) | Image processing with `PIL.Image` + Ollama |
-| ⚡ [Parallel Processing](examples/parallel_processing.md) | Async batch workloads with `emulate_async` |
 | 🔄 [Streaming & Iterators](streaming.md) | Stream tokens or yield typed objects with `Iterator` |
 
 ---

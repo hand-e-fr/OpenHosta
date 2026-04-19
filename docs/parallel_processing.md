@@ -1,10 +1,10 @@
-# Example: Parallel Processing and Batch Context
+# Parallel Processing and Batch Context
 
-When dealing with a vast amount of documents, or extracting information continuously in a backend server context, using `emulate_async` prevents UI blocking and increases thoroughput.
+When dealing with a vast amount of documents, or extracting information continuously in a backend server context, OpenHosta provides built-in parallel processing features. Using `emulate_async` prevents UI blocking, and the `gather_data` module simplifies multi-processing workloads without manually tampering with event loops or explicit tasks.
 
 ## 1. Extracting Invoices Using Async Tasks
 
-This example demonstrates how to use `emulate_async` alongside `dataclasses` and `asyncio.gather` for highly concurrent validation. We define a data structure for invoice sender coordinates, and extract it instantly from multiple unstructured snippets.
+You can use `emulate_async` alongside `dataclasses` and standard `asyncio.gather` for highly concurrent validation. We define a data structure for invoice sender coordinates, and extract it instantly from multiple unstructured snippets.
 
 ```python
 import asyncio
