@@ -13,7 +13,7 @@ from .core.audit import register_audit_callback, unregister_audit_callback
 
 from .exec.ask import ask, ask_async, ask_stream, ask_stream_async
 from .exec.emulate import emulate, emulate_async
-from .exec.emulate_iterator import emulate_iterator
+from .exec.emulate_variants import emulate_variants
 from .exec.closure import closure, closure_async
 # from .semantics import SemanticSet, SemanticDict # Maybe in 5.0
 from .semantics.operators import test, test_async
@@ -35,7 +35,7 @@ __all__ = (
     "ask_stream_async",
     "emulate",
     "emulate_async",
-    "emulate_iterator", 
+    "emulate_variants", 
     "closure",
     "closure_async",
     "gather_data",
