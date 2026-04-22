@@ -134,22 +134,13 @@ EMULATE_META_PROMPT=MetaPrompt(
 
     Example for 3 items of type str:
     ```python
-    "first answer"
+    ...first answer...
     ```
     ```python
-    "second answer"
+    ...second answer...
     ```
     ```python
-    "third answer"
-    ```
-    {% else %}
-    OUTPUT FORMAT:
-    Respond with only the return value, placed inside a single fenced Python code block.
-    Do not add any prose, explanation, or comments outside the block.
-
-    Example for return type `str`:
-    ```python
-    "your answer here"
+    ...third answer...
     ```
     {% endif %}
     
