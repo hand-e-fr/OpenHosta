@@ -69,6 +69,8 @@ from OpenHosta import config
 config.AUDIT_MODE = True
 ```
 
+For more details on audit events, compliance, and production deployment, see the **[Production & Auditing Guide](production.md)**.
+
 ## Cost Tracking
 Use `track_costs` context manager to count tokens.
 ```python

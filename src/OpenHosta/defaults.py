@@ -89,32 +89,38 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
     if _dotenv_availbale:
         dotenv_path = os.path.abspath(dotenv_path)
         dotenv_find_path = recursive_find_dotenv(os.path.dirname(dotenv_path))
+        silence_warning = os.getenv("OPENHOSTA_SILENCE_ENV_WARNING", "False").lower() in ("true", "1", "t", "yes")
+
         if dotenv_path == dotenv_find_path:
             # There is a .env file at the specified path. This is good for production
             pass
         elif dotenv_find_path is not None:
             # There is a .env file in a parent directory. This is good for development.
-            sys.stderr.write(f"[OpenHosta/CONFIG_WARNING] .env file not found at {dotenv_path}. Using {dotenv_find_path} instead.\n")
+            if not silence_warning:
+                sys.stderr.write(f"[OpenHosta/CONFIG_WARNING] .env file not found at {dotenv_path}. Using {dotenv_find_path} instead.\n")
             dotenv_path = dotenv_find_path
         else:
-            # There is no .env file. This is bad.
-            sys.stderr.write(f"[OpenHosta/CONFIG_WARNING] .env file not found at {dotenv_path} or in any parent directory.\n")
-            sys.stderr.write(textwrap.dedent("""\
-                [OpenHosta/CONFIG_ERROR] .env file not found. It is a good practice to store your credentials in a .env file.
-                Example .env file:
-                ------------------
-                OPENHOSTA_DEFAULT_MODEL_API_KEY="your_api_key"
-                OPENHOSTA_DEFAULT_MODEL_BASE_URL="https://api.openai.com/v1" # Optional
-                OPENHOSTA_DEFAULT_MODEL_NAME="gpt-5"                 # Default to "gpt-4.1" 
-                OPENHOSTA_DEFAULT_MODEL_TEMPERATURE=0.7                    # Optional
-                OPENHOSTA_DEFAULT_MODEL_TOP_P=0.9                          # Optional
-                OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS=2048                    # Optional
-                OPENHOSTA_DEFAULT_MODEL_RATE_LIMIT_WAIT_TIME=60            # Optional. Set to 0 to prevent retry. Unit is seconds.
-                OPENHOSTA_DEFAULT_MODEL_SEED=42                            # Optional. If set with a local LLM your application will be deterministic.
-                OPENHOSTA_MAX_RETRIES=3                                    # Optional. Maximum number of parsing retry attempts.
-                OPENHOSTA_AUDIT_MODE=False                                 # Optional. Set to True to enable verbose audit logging.
-                ------------------
-                """))        
+            # There is no .env file.
+            if not silence_warning:
+                sys.stderr.write(f"[OpenHosta/CONFIG_WARNING] .env file not found at {dotenv_path} or in any parent directory.\n")
+                sys.stderr.write(textwrap.dedent("""\
+                    [OpenHosta/CONFIG_ERROR] .env file not found. It is a good practice to store your credentials in a .env file.
+                    Example .env file:
+                    ------------------
+                    OPENHOSTA_DEFAULT_MODEL_API_KEY="your_api_key"
+                    OPENHOSTA_DEFAULT_MODEL_BASE_URL="https://api.openai.com/v1" # Optional
+                    OPENHOSTA_DEFAULT_MODEL_NAME="gpt-5"                 # Default to "gpt-4.1" 
+                    OPENHOSTA_DEFAULT_MODEL_TEMPERATURE=0.7                    # Optional
+                    OPENHOSTA_DEFAULT_MODEL_TOP_P=0.9                          # Optional
+                    OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS=2048                    # Optional
+                    OPENHOSTA_DEFAULT_MODEL_RATE_LIMIT_WAIT_TIME=60            # Optional. Set to 0 to prevent retry. Unit is seconds.
+                    OPENHOSTA_DEFAULT_MODEL_SEED=42                            # Optional. If set with a local LLM your application will be deterministic.
+                    OPENHOSTA_MAX_RETRIES=3                                    # Optional. Maximum number of parsing retry attempts.
+                    OPENHOSTA_AUDIT_MODE=False                                 # Optional. Set to True to enable verbose audit logging.
+                    OPENHOSTA_SILENCE_ENV_WARNING=False                         # Optional. Set to True to disable this warning.
+                    ------------------
+                    """))
+        
     
         if not load_dotenv(dotenv_path=dotenv_path, override=override):
             sys.stderr.write(f"[OpenHosta/CONFIG_ERROR] Failed to load .env file at {dotenv_path}.\n")
