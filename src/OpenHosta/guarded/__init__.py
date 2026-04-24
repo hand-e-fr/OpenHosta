@@ -8,6 +8,7 @@ from .subclassablecollections import GuardedList, GuardedDict, GuardedSet, Guard
 from .subclassableclasses import GuardedEnum
 from .subclassableliterals import GuardedLiteral, guarded_literal
 from .subclassableunions import GuardedUnion, guarded_union
+from .subclassablecallables import GuardedCode as GuardedCallable
 from .resolver import TypeResolver, type_returned_data
 
 __all__ = [
@@ -44,6 +45,7 @@ __all__ = [
     'GuardedEnum',
     'GuardedLiteral',
     'GuardedUnion',
+    'GuardedCallable',
     'guarded_dataclass',
     'guarded_literal',
     'guarded_union',
