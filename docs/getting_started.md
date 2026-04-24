@@ -18,6 +18,9 @@ from OpenHosta import config
 config.DefaultModel.base_url = "http://localhost:11434/v1"
 config.DefaultModel.model_name = "qwen3.5:4b"
 config.DefaultModel.api_key = "not used by ollama local api"
+
+# Tip: Disable reasoning/thinking to speed up Qwen
+config.DefaultModel.api_parameters |= {"reasoning": {"effort": "none"}}
 ```
 
 ## Supported Environment Variables
