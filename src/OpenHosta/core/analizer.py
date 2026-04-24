@@ -417,7 +417,7 @@ def encode_function_parameter_types(analyse: AnalyzedFunction):
                 
     if python_types_definition_list:
         joined_types = "\n\n".join([f"# definition of type {k}:\n{v}" for k, v in python_types_definition_list.items()])
-        python_type_definition_dict = f"```python\n{joined_types}\n```"
+        python_type_definition_dict = joined_types
     else:
         python_type_definition_dict = ""
 
