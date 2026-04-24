@@ -378,14 +378,24 @@ class OpenAICompatibleModel(Model):
         """
         Print the last prompt sent to the LLM when using function `function_pointer`.
         """
-        if "llm_api_messages_sent" in inspection.logs and \
-            len(inspection.logs["llm_api_messages_sent"]) >= 1:
-            print("\nSystem prompt:\n-----------------")
-            print(inspection.logs["llm_api_messages_sent"][0]["content"][0]["text"])
-        if "llm_api_messages_sent" in inspection.logs and \
-            len(inspection.logs["llm_api_messages_sent"]) >= 2:
-            print("\nUser prompt:\n-----------------")
-            print(inspection.logs["llm_api_messages_sent"][1]["content"][0]["text"])
+        if "llm_api_messages_sent" in inspection.logs:
+            for i, msg in enumerate(inspection.logs["llm_api_messages_sent"]):
+                role = msg.get("role", "unknown")
+                content = msg.get("content", [])
+                
+                text = ""
+                if isinstance(content, list):
+                    for part in content:
+                        if isinstance(part, dict) and part.get("type") == "text":
+                            text += part.get("text", "")
+                        elif isinstance(part, str):
+                            text += part
+                elif isinstance(content, str):
+                    text = content
+                
+                print(f"\n{role.capitalize()} prompt:\n-----------------")
+                print(text)
+
         if "rational" in inspection.logs and inspection.logs["rational"]:
             print("\nRational:\n-----------------")
             print(inspection.logs["rational"])
@@ -393,6 +403,6 @@ class OpenAICompatibleModel(Model):
             "choices" in inspection.logs["llm_api_response"] and \
                 len(inspection.logs["llm_api_response"]["choices"]) >= 1:
             print("\nLLM response:\n-----------------")
-            print(inspection.logs["llm_api_response"]["choices"][0]["message"]["content"])
+            print(inspection.logs["llm_api_response"]["choices"][0]["message"].get("content", ""))
 
     # --- Removed old embedding_api_call as it's now handled by base class aliasing to _embed_without_retry ---
