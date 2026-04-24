@@ -78,8 +78,27 @@ def describe_type_as_python(p_type) -> str:
     
     try:
         guarded_type = TypeResolver.resolve(p_type)
+        type_name = nice_type_name(p_type)
+        
+        type_py_repr = getattr(guarded_type, "_type_py_repr", NotImplemented)
+        if type_py_repr is not NotImplemented:
+            type_py_repr_str = str(type_py_repr)
+        else:
+            type_py_repr_str = str(getattr(guarded_type, "_type_py", ""))
             
-        return str(guarded_type)
+        type_en = getattr(guarded_type, "_type_en", "")
+        
+        doc_lines = []
+        doc_lines.append(f"# Type: {type_name}")
+        if type_en:
+            doc_lines.append(f"# Description: {type_en}")
+            
+        if "\n" in type_py_repr_str:
+            doc_lines.append(type_py_repr_str)
+        else:
+            doc_lines.append(f"# Python Base: {type_py_repr_str}")
+            
+        return "\n".join(doc_lines)
     except Exception as e:
         # Fallback if resolution fails
         pass
@@ -338,17 +357,29 @@ def _collect_types(p_type, type_list, seen_types=None):
     
     seen_types.add(p_type)
     
+    is_builtin = False
+    
     # 1. Résoudre le type s'il n'est pas déjà un GuardedType
+    import typing
     try:
+        if getattr(p_type, "__origin__", None) is typing.Literal:
+            is_builtin = True
+            
+        if p_type in TypeResolver._PRIMITIVE_MAP:
+            mapped = TypeResolver._PRIMITIVE_MAP[p_type]
+            if mapped.__name__ != "GuardedCode":
+                is_builtin = True
+                
         guarded_type = TypeResolver.resolve(p_type)
     except:
         pass
 
     # 2. Si c'est un type complexe, on l'ajoute à la liste de documentation
-    type_name = nice_type_name(p_type)
-    doc = describe_type_as_python(p_type)
-    if doc and (not doc.startswith("#") or "Description for guarded type" in doc):
-        type_list[type_name] = doc
+    if not is_builtin:
+        type_name = nice_type_name(p_type)
+        doc = describe_type_as_python(p_type)
+        if doc:
+            type_list[type_name] = doc
 
     # 3. Récursivité
     # Generics
@@ -384,8 +415,14 @@ def encode_function_parameter_types(analyse: AnalyzedFunction):
     if analyse.type is not None and analyse.type is not inspect._empty:
         _collect_types(analyse.type, python_types_definition_list, seen_types)
                 
+    if python_types_definition_list:
+        joined_types = "\n\n".join([f"# definition of type {k}:\n{v}" for k, v in python_types_definition_list.items()])
+        python_type_definition_dict = f"```python\n{joined_types}\n```"
+    else:
+        python_type_definition_dict = ""
+
     return {
-        "python_type_definition_dict":       "\n".join([f"```python\n# definition of type {k}:\n{v}\n```" for k,v in python_types_definition_list.items()])
+        "python_type_definition_dict": python_type_definition_dict
     }
 
 def encode_function_parameter_values(analyse: AnalyzedFunction):

@@ -825,13 +825,11 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
         fields_repr = []
         hints = resolve_struct_hints(cls_to_guard)
 
+        from ..core.analizer import nice_type_name
         for field in field_definitions:
             field_type = hints.get(field.name, field.type)
             try:
-                guarded_field = TypeResolver.resolve(field_type)
-                type_str = getattr(guarded_field, "_type_py_repr", None)
-                if type_str is None or type_str is NotImplemented:
-                    type_str = getattr(guarded_field, "__name__", str(field_type))
+                type_str = nice_type_name(field_type)
             except Exception:
                 type_str = str(field_type)
             fields_repr.append(f"    {field.name}: {type_str}")
@@ -964,12 +962,10 @@ def guarded_typeddict(cls_to_guard):
     fields_repr = []
     hints = resolve_struct_hints(cls_to_guard)
 
+    from ..core.analizer import nice_type_name
     for field_name, field_type in hints.items():
         try:
-            guarded_field = TypeResolver.resolve(field_type)
-            type_str = getattr(guarded_field, "_type_py_repr", None)
-            if type_str is None or type_str is NotImplemented:
-                type_str = getattr(field_type, "__name__", str(field_type))
+            type_str = nice_type_name(field_type)
         except Exception:
             type_str = getattr(field_type, "__name__", str(field_type))
         fields_repr.append(f"    {field_name}: {type_str}")

@@ -181,6 +181,10 @@ class TypeResolver:
         if annotation is None:
             return GuardedNone
 
+        # Python 3.12 TypeAliasType
+        if hasattr(annotation, "__name__") and type(annotation).__name__ == "TypeAliasType":
+            return cls.resolve(annotation.__value__)
+
         # Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
             # Import GuardedEnum pour wrapper les enums standards
