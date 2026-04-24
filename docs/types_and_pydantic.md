@@ -45,3 +45,27 @@ print(find_first_name("The captain's age is one year more than the first officer
 In OpenHosta V4, **Guarded Types** provide a robust abstraction for ensuring type structural and semantic validitiy behind the scenes. This handles strict validation rules during extraction pipelines.
 
 See [Guarded Types Overview](guarded.md) for more details.
+
+## Python 3.12 Type Aliases
+
+Starting from Python 3.12, the `type` statement allows creating type aliases natively (PEP 695).
+OpenHosta supports this syntax out-of-the-box and will accurately map your aliases into the LLM prompt.
+
+```python
+from typing import Literal
+from dataclasses import dataclass
+from OpenHosta import emulate
+
+type RegimeMatrimonial = Literal["Marié", "PACS", "Concubin"]
+
+@dataclass
+class Family:
+    name: str
+    status: RegimeMatrimonial
+
+def identify_family(document: str) -> Family:
+    """Extract family information"""
+    return emulate()
+```
+
+OpenHosta will correctly display the alias name `RegimeMatrimonial` in the `Family` structure definition and document the alias itself separately in the prompt to provide clear context to the LLM.
