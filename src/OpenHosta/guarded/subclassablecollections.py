@@ -57,6 +57,44 @@ def _split_composite_string(inner: str) -> TypingList[Any]:
             evaluated.append(part)
     return evaluated
 
+def _split_dict_item(item: str) -> Tuple[Any, Any]:
+    """Safely split a single key-value string (e.g. '"a": Person(...)') by its colon."""
+    depth = 0
+    in_quote = False
+    quote_char = None
+    
+    for i, c in enumerate(item):
+        if c in '"\'' and (i == 0 or item[i - 1] != '\\'):
+            if not in_quote:
+                in_quote = True
+                quote_char = c
+            elif quote_char == c:
+                in_quote = False
+                quote_char = None
+
+        if not in_quote:
+            if c in '({[':
+                depth += 1
+            elif c in ')}]':
+                depth -= 1
+            elif c == ':' and depth == 0:
+                k_str = item[:i].strip()
+                v_str = item[i+1:].strip()
+                
+                try:
+                    k_eval = ast.literal_eval(k_str)
+                except (ValueError, SyntaxError):
+                    k_eval = k_str
+                
+                try:
+                    v_eval = ast.literal_eval(v_str)
+                except (ValueError, SyntaxError):
+                    v_eval = v_str
+                    
+                return k_eval, v_eval
+                
+    raise ValueError(f"No valid colon found in dict item: {item}")
+
 class GuardedList(GuardedPrimitive, list):
     """
     Liste sémantique.
@@ -80,7 +118,7 @@ class GuardedList(GuardedPrimitive, list):
             if cls._item_type:
                 try:
                     converted = []
-                    for item in value:
+                    for i, item in enumerate(value):
                         r = cls._item_type.attempt(item)
                         # We MUST use r.data to get the native value. 
                         # If attempt fails, it will raise eventually or we fallback to the raw item if we are tolerant.
@@ -88,7 +126,12 @@ class GuardedList(GuardedPrimitive, list):
                         if r.success:
                             converted.append(r.data)
                         else:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {r.error_message}"
+                            inner_err = r.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -133,12 +176,17 @@ class GuardedList(GuardedPrimitive, list):
         if cls._item_type:
             try:
                 converted = []
-                for item in items:
+                for i, item in enumerate(items):
                     r = cls._item_type.attempt(item)
                     if r.success:
                         converted.append(r.data)
                     else:
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item validation failed: {r.error_message}"
+                        inner_err = r.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -179,7 +227,12 @@ class GuardedSet(GuardedPrimitive, set):
                         if r.success:
                             converted.add(r.data)
                         else:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {r.error_message}"
+                            inner_err = r.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"Dans l'élément {repr(item)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Élément dans le Set: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -243,7 +296,12 @@ class GuardedSet(GuardedPrimitive, set):
                     if res.success:
                         converted_items.append(res.data)
                     else:
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item validation failed: {res.error_message}"
+                        inner_err = res.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"Dans l'élément {repr(item)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = f"→ Élément dans le Set: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                 return UncertaintyLevel(Tolerance.PRECISE), set(converted_items), None
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -284,7 +342,12 @@ class GuardedDict(GuardedPrimitive, dict):
                         if cls._key_type:
                             rk = cls._key_type.attempt(k)
                             if not rk.success:
-                                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Key conversion failed: {rk.error_message}"
+                                inner_err = rk.error_message or ""
+                                if "→" in inner_err:
+                                    msg = f"Dans la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                                else:
+                                    msg = f"→ Clé {repr(k)}: Type invalide. Reçu {repr(k)} (type: {type(k).__name__})."
+                                return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                             new_k = rk.data
                         else:
                             new_k = k
@@ -292,7 +355,12 @@ class GuardedDict(GuardedPrimitive, dict):
                         if cls._value_type:
                             rv = cls._value_type.attempt(v)
                             if not rv.success:
-                                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value conversion failed: {rv.error_message}"
+                                inner_err = rv.error_message or ""
+                                if "→" in inner_err:
+                                    msg = f"Dans la valeur de la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                                else:
+                                    msg = f"→ Valeur pour la clé {repr(k)}: Type invalide. Reçu {repr(v)} (type: {type(v).__name__})."
+                                return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                             new_v = rv.data
                         else:
                             new_v = v
@@ -320,12 +388,25 @@ class GuardedDict(GuardedPrimitive, dict):
                 except (json.JSONDecodeError, ValueError):
                     # Essayer avec ast.literal_eval
                     try:
-                        import ast
                         parsed = ast.literal_eval(value_s)
                         if isinstance(parsed, dict):
                             items = parsed
                     except (ValueError, SyntaxError):
-                        pass
+                        try:
+                            inner = value_s[1:-1].strip()
+                            if not inner:
+                                items = {}
+                            else:
+                                parts = _split_composite_string(inner)
+                                new_items = {}
+                                for part in parts:
+                                    # _split_composite_string might return the raw string if literal_eval fails
+                                    if isinstance(part, str):
+                                        k, v = _split_dict_item(part)
+                                        new_items[k] = v
+                                items = new_items
+                        except Exception:
+                            pass
         
         # Tenter de convertir en dict
         if items is None:
@@ -342,7 +423,12 @@ class GuardedDict(GuardedPrimitive, dict):
                     if cls._key_type:
                         rk = cls._key_type.attempt(k)
                         if not rk.success:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Key validation failed: {rk.error_message}"
+                            inner_err = rk.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"Dans la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Clé {repr(k)}: Type invalide. Reçu {repr(k)} (type: {type(k).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                         new_k = rk.data
                     else:
                         new_k = k
@@ -350,7 +436,12 @@ class GuardedDict(GuardedPrimitive, dict):
                     if cls._value_type:
                         rv = cls._value_type.attempt(v)
                         if not rv.success:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value validation failed: {rv.error_message}"
+                            inner_err = rv.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"Dans la valeur de la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Valeur pour la clé {repr(k)}: Type invalide. Reçu {repr(v)} (type: {type(v).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                         new_v = rv.data
                     else:
                         new_v = v
@@ -399,7 +490,12 @@ class GuardedTuple(GuardedPrimitive, tuple):
                         if res.success:
                             converted_items.append(res.data)
                         else:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item {i} conversion failed: {res.error_message}"
+                            inner_err = res.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(value[i])} (type: {type(value[i]).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                     converted = tuple(converted_items)
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
@@ -457,7 +553,12 @@ class GuardedTuple(GuardedPrimitive, tuple):
                     if item_result.success:
                         converted_items.append(item_result.data)
                     else:
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item {i} validation failed: {item_result.error_message}"
+                        inner_err = item_result.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(items[i])} (type: {type(items[i]).__name__})."
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                 converted = tuple(converted_items)
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
@@ -565,7 +666,18 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
 
                     attempt_result = guarded_type.attempt(raw_value)
                     if not attempt_result.success:
-                        raise ValueError(attempt_result.error_message)
+                        inner_err = attempt_result.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"Dans le champ '{field.name}':\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = (
+                                f"→ Champ '{field.name}': Type invalide.\n"
+                                f"   - Reçu    : {repr(raw_value)} (type: {type(raw_value).__name__})\n"
+                                f"   - Attendu : {expected_field_type}"
+                            )
+                            if raw_value is None:
+                                msg += f"\n   - Solution: Si 'None' est acceptable, modifiez le type en `{expected_field_type} | None` ou `Optional[{expected_field_type}]`."
+                        raise ValueError(msg)
 
                     # We use guarded_data for internal storage to preserve metadata and pass core tests
                     converted_kwargs[field.name] = attempt_result.guarded_data
