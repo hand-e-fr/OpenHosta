@@ -109,11 +109,11 @@ EMULATE_META_PROMPT=MetaPrompt(
     explain it in between <think></think> tags.{% endif %}
 
     Here's the function definition:
-
-    {{ python_type_definition_dict }}
     
     ```python    
-    def {{ function_name }}({{ function_args }}) -> {{ function_return_type_name }}:
+    {% if python_type_definition_dict %}{{ python_type_definition_dict }}
+    
+    {% endif %}def {{ function_name }}({{ function_args }}) -> {{ function_return_type_name }}:
         \"\"\"
         {{ function_doc | indent(4, true) }}
         \"\"\"
