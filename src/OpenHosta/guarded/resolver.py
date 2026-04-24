@@ -77,7 +77,16 @@ def type_returned_data(response: Any, expected_type: type|None) -> Any:
         # Prefer guarded data if available, pull_type_data_section will unwrap if needed
         return res.guarded_data if res.guarded_data is not None else res.data
     
-    raise ValueError(f"Failed to convert response to {expected_type}: {res.error_message}")
+    error_msg = f"Impossible de convertir la réponse du LLM vers le type {expected_type}.\n\n"
+    error_msg += f"=== Réponse du LLM ===\n{response}\n======================\n\n"
+    error_msg += f"=== Détail de l'erreur ===\n"
+    
+    if res.error_message and "→" in res.error_message:
+        error_msg += res.error_message
+    else:
+        error_msg += f"Type global invalide ou non parsable.\nRaison: {res.error_message}"
+
+    raise ValueError(error_msg)
     
 
 class TypeResolver:

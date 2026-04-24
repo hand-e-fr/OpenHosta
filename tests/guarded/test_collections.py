@@ -282,6 +282,29 @@ class TestCollectionEdgeCases:
         assert result[1].name == "Bob"
         assert result[1].age == 25
 
+    def test_nested_dict_dataclass_string(self):
+        """Test parsing a dict of stringified complex objects (like dataclass)."""
+        from dataclasses import dataclass
+        from OpenHosta.guarded.subclassablecollections import guarded_dataclass
+
+        @guarded_dataclass
+        @dataclass
+        class Person:
+            name: str
+            age: int
+
+        DictType = GuardedDict[GuardedUtf8, Person]
+        # This simulates LLM string output of a dict of Person
+        result = DictType("{'alice': Person(name='Alice', age=30), 'bob': Person(name='Bob', age=25)}")
+
+        assert len(result) == 2
+        assert "alice" in result
+        assert result["alice"].name == "Alice"
+        assert result["alice"].age == 30
+        assert "bob" in result
+        assert result["bob"].name == "Bob"
+        assert result["bob"].age == 25
+
     def test_mixed_types(self):
         """Test collections with mixed types."""
         lst = GuardedList([1, "two", 3.0, None])

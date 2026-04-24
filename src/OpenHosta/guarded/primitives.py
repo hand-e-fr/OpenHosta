@@ -326,7 +326,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         if tolerance is None:
             tolerance = cls._tolerance
     
-        full_message = ""
+        errors = []
         # At each layer we have a chance to reduce uncertainty
         
         def return_success(cleaned_val, uncertainty, level, message):
@@ -369,24 +369,34 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         uncertainty, cleaned_native_val, message = cls._parse_native(value)
         if uncertainty <= tolerance:
             return return_success(cleaned_native_val, uncertainty, 'native', message)
-        full_message += f"Native parsing failed: {message}\n"
+        errors.append(f"Native parsing failed: {message}")
 
         uncertainty, cleaned_heuristic_val, message = cls._parse_heuristic(cleaned_native_val)
         if uncertainty <= tolerance:
             return return_success(cleaned_heuristic_val, uncertainty, 'heuristic', message)
-        full_message += f"Heuristic parsing failed: {message}\n"
+        errors.append(f"Heuristic parsing failed: {message}")
 
         uncertainty, cleaned_semantic_value, message = cls._parse_semantic(cleaned_heuristic_val)
         if uncertainty <= tolerance:
             return return_success(cleaned_semantic_value, uncertainty, 'semantic', message)
-        full_message += f"Semantic parsing failed: {message}\n"
+        errors.append(f"Semantic parsing failed: {message}")
         
         uncertainty, cleaned_knowledge_value, message = cls._parse_knowledge(cleaned_semantic_value)
         if uncertainty <= tolerance:
             return return_success(cleaned_knowledge_value, uncertainty, 'knowledge', message)
-        full_message += f"Knowledge parsing failed: {message}\n"
+        errors.append(f"Knowledge parsing failed: {message}")
 
-        return CastingResult(False, None, None, Tolerance.ANYTHING, 'failed', value, cls._type_py, full_message)
+        def _get_best_error(errors_list):
+            for err in errors_list:
+                if err and "→" in err:
+                    # On retire le préfixe "Native parsing failed: " ou "Heuristic..." s'il existe
+                    if ":" in err and ("parsing failed" in err):
+                        return err.split(":", 1)[1].strip()
+                    return err
+            return "\n".join(e for e in errors_list if e)
+
+        best_message = _get_best_error(errors)
+        return CastingResult(False, None, None, Tolerance.ANYTHING, 'failed', value, cls._type_py, best_message)
     
     # --- Hooks Abstraits (À implémenter par SemanticInt, SemanticUtf8...) ---
     
