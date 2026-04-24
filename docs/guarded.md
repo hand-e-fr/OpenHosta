@@ -1083,3 +1083,73 @@ port = GuardedInt(config["port"])  # 8080
 - `subclassablecollections.py` - Collections and dataclasses
 - `subclassableclasses.py` - GuardedEnum
 - `resolver.py` - Type resolution
+
+---
+
+## X. Direct Usage: Parsing LLM Output
+
+While OpenHosta usually handles parsing automatically via `emulate()`, you can use Guarded types directly to parse raw strings from any LLM client (OpenAI, Anthropic, LangChain, etc.).
+
+### 10.1 Using TypeResolver
+
+The most robust way to parse a string into a specific type is to use `TypeResolver.resolve()`. It handles all Python annotations (List, Dict, Dataclasses, etc.).
+
+```python
+from typing import List
+from OpenHosta.guarded.resolver import TypeResolver
+
+# 1. Define your expected type
+MyType = List[int]
+
+# 2. Get the LLM output (raw string)
+raw_output = "I found these numbers: [10, 20, 30] # and some noise"
+
+# 3. Resolve the type and parse
+guarded_type = TypeResolver.resolve(MyType)
+result = guarded_type.attempt(raw_output)
+
+if result.success:
+    data = result.data  # [10, 20, 30]
+    print(f"Parsed {len(data)} items with uncertainty {result.uncertainty}")
+else:
+    print(f"Parsing failed: {result.error_message}")
+```
+
+### 10.2 Integrating with a custom Model call
+
+If you are using an OpenHosta `Model` instance directly:
+
+```python
+from OpenHosta.defaults import config
+from OpenHosta.guarded.resolver import TypeResolver
+
+model = config.DefaultModel
+messages = [{"role": "user", "content": "Return the price of BTC as a float."}]
+
+# Call the LLM
+response_dict = model.api_call(messages)
+raw_content = model.get_response_content(response_dict)
+
+# Parse directly
+price = TypeResolver.resolve(float).attempt(raw_content).data
+
+print(f"Current price: {price}")
+```
+
+### 10.3 Why use `attempt()`?
+
+Using `attempt()` instead of direct instantiation (e.g., `GuardedInt(val)`) gives you more control:
+
+1. **No Exceptions**: It returns a `CastingResult` instead of raising `ValueError`, making it safer for production pipelines.
+2. **Metadata**: You get the `uncertainty` and `abstraction_level` (native vs heuristic).
+3. **Configurable Tolerance**: You can specify how "creative" the parser should be.
+
+```python
+from OpenHosta.guarded import GuardedInt, Tolerance
+
+result = GuardedInt.attempt("42 # with comments", tolerance=Tolerance.STRICT)
+# result.success will be False (STRICT only accepts clean "42")
+
+result = GuardedInt.attempt("42 # with comments", tolerance=Tolerance.FLEXIBLE)
+# result.success will be True (FLEXIBLE accepts heuristic cleaning)
+```

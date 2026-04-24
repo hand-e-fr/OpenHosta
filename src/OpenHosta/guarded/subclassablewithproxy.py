@@ -29,20 +29,20 @@ class GuardedNone(GuardedPrimitive, ProxyWrapper):
         
     @classmethod
     def _parse_heuristic(cls, value) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        value = str(value)
+        cleaned = cls._clean_llm_response(value)
         
-        value = value.strip(" \n\"\'")
-        if value == 'None':
+        cleaned = cleaned.strip(" \"\'")
+        if cleaned == 'None':
             return UncertaintyLevel(Tolerance.FLEXIBLE), None, None
         
-        value = value.lower()
-        if value == "none":
+        cleaned = cleaned.lower()
+        if cleaned == "none":
             return UncertaintyLevel(Tolerance.FLEXIBLE), None, None
         
-        if value in cls._type_knowledge["PROG"]:
+        if cleaned in cls._type_knowledge["PROG"]:
             return UncertaintyLevel(Tolerance.CREATIVE), None, None
         
-        return UncertaintyLevel(Tolerance.ANYTHING), value, None
+        return UncertaintyLevel(Tolerance.ANYTHING), cleaned, None
 
     @classmethod
     def _parse_semantic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
@@ -119,8 +119,8 @@ class GuardedBool(GuardedPrimitive, ProxyWrapper):
         if isinstance(value, (int, float, bool)):
             return UncertaintyLevel(Tolerance.STRICT), bool(value), None
             
-        if isinstance(value, str):
-            v = value.strip().lower()
+        if isinstance(value, str) or value is not None:
+            v = cls._clean_llm_response(value).lower()
             if v in cls._type_knowledge[True]:
                 return UncertaintyLevel(Tolerance.STRICT), True, None
             if v in  cls._type_knowledge[False]:
@@ -160,12 +160,12 @@ class GuardedRange(GuardedPrimitive, ProxyWrapper):
 
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        if isinstance(value, str):
-            value = value.strip()
+        if isinstance(value, str) or value is not None:
+            cleaned = cls._clean_llm_response(value)
             # range(start, stop[, step])
-            if value.startswith("range(") and value.endswith(")"):
+            if cleaned.startswith("range(") and cleaned.endswith(")"):
                 try:
-                    content = value[6:-1]
+                    content = cleaned[6:-1]
                     parts = [int(x.strip()) for x in content.split(",") if x.strip()]
                     return UncertaintyLevel(Tolerance.PRECISE), range(*parts), None
                 except Exception:

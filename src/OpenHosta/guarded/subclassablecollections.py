@@ -147,7 +147,7 @@ class GuardedList(GuardedPrimitive, list):
         
         # Accepter les strings représentant des listes
         elif isinstance(value, str):
-            value_s = value.strip()
+            value_s = cls._clean_llm_response(value)
             
             # Format "[1, 2, 3]"
             if value_s.startswith('[') and value_s.endswith(']'):
@@ -248,7 +248,7 @@ class GuardedSet(GuardedPrimitive, set):
         
         # Accepter les strings représentant des sets
         elif isinstance(value, str):
-            value_s = value.strip()
+            value_s = cls._clean_llm_response(value)
             
             # Format "{1, 2, 3}" ou "frozenset({...})" ou "frozenset([...])"
             if value_s.startswith("frozenset(") and value_s.endswith(")"):
@@ -376,7 +376,7 @@ class GuardedDict(GuardedPrimitive, dict):
         items = None
         # Accepter les strings représentant des dicts
         if isinstance(value, str):
-            value_s = value.strip()
+            value_s = cls._clean_llm_response(value)
             
             # Format JSON
             if value_s.startswith('{') and value_s.endswith('}'):
@@ -512,7 +512,7 @@ class GuardedTuple(GuardedPrimitive, tuple):
         
         # Accepter les strings représentant des tuples
         elif isinstance(value, str):
-            value_s = value.strip("\n \t")
+            value_s = cls._clean_llm_response(value)
             
             # Format "(1, 2, 3)"
             if value_s.startswith('(') and value_s.endswith(')'):
@@ -743,7 +743,7 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
 
 
                 # We try to make it as a string if it's not already a string, to let the LLM try to parse it as a constructor call or dict
-                v_strip = str(value).strip().replace("\n", "")
+                v_strip = cls._clean_llm_response(value)
 
                 # Obtenir le nom de la classe d'origine (sans le préfixe Guarded_)
                 original_name = cls._type_py.__name__ if hasattr(cls, '_type_py') else cls.__name__
