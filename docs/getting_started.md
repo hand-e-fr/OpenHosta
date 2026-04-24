@@ -31,6 +31,9 @@ OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"               # Default
 OPENHOSTA_DEFAULT_MODEL_TEMPERATURE=0.7              # Optional
 OPENHOSTA_DEFAULT_MODEL_SEED=42                      # Optional. Deterministic for local LLMs
 OPENHOSTA_RATE_LIMIT_WAIT_TIME=60                    # Optional
+OPENHOSTA_AUDIT_MODE=False                           # Optional. Enable structured audit logs
+OPENHOSTA_SILENCE_ENV_WARNING=False                  # Optional. Silence .env missing warnings
+OPENHOSTA_DEFAULT_MODEL_API_PARAMETERS='{"top_k":5}' # Optional. JSON string for extra model params
 ```
 
 ### *Legal Framework*
