@@ -261,6 +261,27 @@ class TestCollectionEdgeCases:
         assert clst == [{"a": 1}, {"b": 2}]
         assert isinstance(clst[0]["a"], int)
 
+    def test_nested_dataclass_string(self):
+        """Test parsing a list of stringified complex objects (like dataclass)."""
+        from dataclasses import dataclass
+        from OpenHosta.guarded.subclassablecollections import guarded_dataclass
+
+        @guarded_dataclass
+        @dataclass
+        class Person:
+            name: str
+            age: int
+
+        ListType = GuardedList[Person]
+        # This simulates LLM string output of a list of Person
+        result = ListType("[Person(name='Alice', age=30), Person(name='Bob', age=25)]")
+
+        assert len(result) == 2
+        assert result[0].name == "Alice"
+        assert result[0].age == 30
+        assert result[1].name == "Bob"
+        assert result[1].age == 25
+
     def test_mixed_types(self):
         """Test collections with mixed types."""
         lst = GuardedList([1, "two", 3.0, None])
