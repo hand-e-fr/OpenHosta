@@ -599,10 +599,17 @@ class GuardedTuple(GuardedPrimitive, tuple):
         """Retourne un tuple natif avec unwrapping récursif des éléments."""
         return self._recursive_unwrap(tuple(self))
 
-def guarded_tuple(*item_types):
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_TUPLE_CACHE: dict = {}
 
+def guarded_tuple(*item_types):
     """Factory for parameterized tuples."""
-    return GuardedTuple[item_types]
+    if item_types in _GUARDED_TUPLE_CACHE:
+        return _GUARDED_TUPLE_CACHE[item_types]
+    
+    res = GuardedTuple[item_types]
+    _GUARDED_TUPLE_CACHE[item_types] = res
+    return res
 
 # Cache pour éviter de reconstruire la même classe multiple fois
 _DATACLASS_GUARDED_CACHE: Any = {}
