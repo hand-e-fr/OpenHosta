@@ -1,6 +1,61 @@
-from typing import Any, Tuple, Optional
+import ast
+from typing import Any, Tuple, Optional, List as TypingList
 from .primitives import GuardedPrimitive, GuardedCallInput, UncertaintyLevel, Tolerance, ProxyWrapper
 from .type_hints import resolve_struct_hints
+
+
+def _split_composite_string(inner: str) -> TypingList[Any]:
+    """Split a string of comma-separated items that may contain non-literal
+    expressions (e.g. dataclass constructors, enum reprs) which ast.literal_eval
+    cannot handle.
+
+    Splits on commas that are NOT inside quotes or nested brackets/parens/braces.
+    Each resulting part is individually evaluated with ast.literal_eval; if that
+    fails the raw string is kept, allowing downstream Guarded types to parse it.
+
+    Args:
+        inner: The content between the outer delimiters (already stripped of
+               surrounding [], {}, or ()).
+
+    Returns:
+        A list of parsed items (Python literals where possible, raw strings otherwise).
+    """
+    if not inner:
+        return []
+
+    parts: TypingList[str] = []
+    depth = 0
+    in_quote = False
+    quote_char = None
+    last_idx = 0
+
+    for i, c in enumerate(inner):
+        if c in '"\'' and (i == 0 or inner[i - 1] != '\\'):
+            if not in_quote:
+                in_quote = True
+                quote_char = c
+            elif quote_char == c:
+                in_quote = False
+                quote_char = None
+
+        if not in_quote:
+            if c in '({[':
+                depth += 1
+            elif c in ')}]':
+                depth -= 1
+            elif c == ',' and depth == 0:
+                parts.append(inner[last_idx:i].strip())
+                last_idx = i + 1
+
+    parts.append(inner[last_idx:].strip())
+
+    evaluated: TypingList[Any] = []
+    for part in parts:
+        try:
+            evaluated.append(ast.literal_eval(part))
+        except (ValueError, SyntaxError):
+            evaluated.append(part)
+    return evaluated
 
 class GuardedList(GuardedPrimitive, list):
     """
@@ -54,12 +109,14 @@ class GuardedList(GuardedPrimitive, list):
             # Format "[1, 2, 3]"
             if value_s.startswith('[') and value_s.endswith(']'):
                 try:
-                    import ast
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, list):
                         items = parsed
-                except (ValueError, SyntaxError) as e:
-                    pass
+                except (ValueError, SyntaxError):
+                    try:
+                        items = _split_composite_string(value_s[1:-1].strip())
+                    except Exception:
+                        pass
             
             # Format "1,2,3" (CSV)
             if items is None and ',' in value_s:
@@ -146,21 +203,25 @@ class GuardedSet(GuardedPrimitive, set):
             
             if value_s.startswith('{') and value_s.endswith('}'):
                 try:
-                    import ast
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, (set, list, tuple)):
                         items = set(parsed)
                 except (ValueError, SyntaxError):
-                    pass
+                    try:
+                        items = set(_split_composite_string(value_s[1:-1].strip()))
+                    except Exception:
+                        pass
             elif value_s.startswith('[') and value_s.endswith(']'):
                  # Case frozen_set([1, 2])
                 try:
-                    import ast
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, list):
                         items = set(parsed)
-                except:
-                    pass
+                except (ValueError, SyntaxError):
+                    try:
+                        items = set(_split_composite_string(value_s[1:-1].strip()))
+                    except Exception:
+                        pass
             
             # Format "1,2,3" (CSV)
             if items is None and ',' in value_s:
@@ -360,65 +421,18 @@ class GuardedTuple(GuardedPrimitive, tuple):
             # Format "(1, 2, 3)"
             if value_s.startswith('(') and value_s.endswith(')'):
                 try:
-                    import ast
-                    # Attempt to parse using ast.literal_eval for safe evaluation
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, tuple):
                         items = parsed
                     else:
                         return UncertaintyLevel(Tolerance.ANYTHING), value, f"Not a tuple: {value}"
                 except (ValueError, SyntaxError):
-                    # Handle cases like (<MyEnum.PAS_ASSEZ_INFORMATION: 'pas_assez_information'>, 're')
+                    # Handle cases like (<MyEnum.PAS_ASSEZ_INFORMATION: '...'>, 're')
                     # where ast.literal_eval fails due to non-literal expressions
                     try:
-                        # Strip the outer parentheses and split manually by commas not inside nested structures
-                        inner = value_s[1:-1].strip()
-                        if not inner:
-                            items = []
-                        else:
-                            # Simple split with comma, careful about potential nesting
-                            # This is a less safe fallback, but necessary for non-literal enum representations
-                            parts = []
-                            depth = 0
-                            in_quote = False
-                            quote_char = None
-                            last_idx = 0
-                            for i, c in enumerate(inner):
-                                if c in '"\'' and (i == 0 or inner[i-1] != '\\'):
-                                    if not in_quote:
-                                        in_quote = True
-                                        quote_char = c
-                                    elif quote_char == c:
-                                        in_quote = False
-                                        quote_char = None
-                                
-                                if not in_quote:
-                                    if c in '({[':
-                                        depth += 1
-                                    elif c in ')}]':
-                                        depth -= 1
-                                    elif c == ',' and depth == 0:
-                                        parts.append(inner[last_idx:i].strip())
-                                        last_idx = i + 1
-                            parts.append(inner[last_idx:].strip())
-
-                            # Attempt to evaluate each part individually, fallback to string if needed
-                            evaluated_parts = []
-                            for part in parts:
-                                try:
-                                    # First, try literal_eval for safety
-                                    evaluated = ast.literal_eval(part)
-                                except (ValueError, SyntaxError):
-                                    # If that fails, keep it as a string representation
-                                    # This preserves things like enum instances that can't be literal-evaluated
-                                    evaluated = part
-                                evaluated_parts.append(evaluated)
-
-                            items = evaluated_parts
+                        items = _split_composite_string(value_s[1:-1].strip())
                     except Exception:
                         return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not parse string as tuple"
-                except (ValueError, SyntaxError) as e:
-                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Could not parse tuple from string to {cls._type_py}:\n{e}\n{value}"
                     
             # Format "1,2,3" (CSV)
             if items is None and ',' in value_s:
