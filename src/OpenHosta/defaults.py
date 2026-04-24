@@ -141,6 +141,7 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
     TOP_P =             os.getenv("OPENHOSTA_DEFAULT_MODEL_TOP_P", None)
     MAX_TOKENS =        os.getenv("OPENHOSTA_DEFAULT_MODEL_MAX_TOKENS", None)
     SEED =              os.getenv("OPENHOSTA_DEFAULT_MODEL_SEED", None)
+    API_PARAMETERS =    os.getenv("OPENHOSTA_DEFAULT_MODEL_API_PARAMETERS", None)
     LOGPROBS_SUPPORT =  str(os.getenv("OPENHOSTA_DEFAULT_MODEL_LOGPROBS_SUPPORT", "False")).lower() in ("true", "1", "t", "yes")
 
     config.MAX_RETRIES = int(os.getenv("OPENHOSTA_MAX_RETRIES", 3))
@@ -154,6 +155,14 @@ def reload_dotenv(override: bool = True, dotenv_path="./.env"):
         _defaut_model.api_parameters |= {"max_tokens": int(MAX_TOKENS)}
     if SEED is not None:
         _defaut_model.api_parameters |= {"seed": int(SEED)}
+        
+    if API_PARAMETERS is not None:
+        import json
+        try:
+            params = json.loads(API_PARAMETERS)
+            _defaut_model.api_parameters |= params
+        except Exception as e:
+            sys.stderr.write(f"[OpenHosta/CONFIG_ERROR] Failed to parse OPENHOSTA_DEFAULT_MODEL_API_PARAMETERS as JSON: {e}\n")
         
     if LOGPROBS_SUPPORT is True:
         _defaut_model.capabilities |= { ModelCapabilities.LOGPROBS }
