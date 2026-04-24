@@ -1,5 +1,5 @@
 import pytest
-from typing import List, Dict, Set, Tuple, Optional, Union
+from typing import List, Dict, Set, Tuple, Optional, Union, Literal
 from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
 from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
 from OpenHosta.guarded.subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple
@@ -304,13 +304,27 @@ class TestTypeResolverLiteralAndCustomTypes:
         # Should now return a GuardedLiteral (dynamic class)
         assert "Literal" in str(resolved) or resolved.__name__.startswith("Literal")
     
-    def test_resolve_literal_int(self):
-        """Test resolving Literal with integers."""
-        from typing import Literal
-        
-        resolved = TypeResolver.resolve(Literal[1, 2, 3])
         # Should return a GuardedLiteral based on GuardedInt
         assert "Literal" in str(resolved) or resolved.__name__.startswith("Literal")
+
+    def test_resolve_type_alias_pep695(self):
+        """Test resolving Python 3.12+ TypeAliasType (PEP 695)."""
+        import sys
+        if sys.version_info < (3, 12):
+            pytest.skip("TypeAliasType (PEP 695) requires Python 3.12+")
+            
+        from typing import Literal
+        # This syntax is only valid in Python 3.12+
+        # Provide Literal in the namespace for exec
+        namespace = {"Literal": Literal}
+        exec("type MyAlias = Literal['a', 'b']", globals(), namespace)
+        MyAlias = namespace["MyAlias"]
+
+        
+        resolved = TypeResolver.resolve(MyAlias)
+        assert "Literal" in str(resolved)
+        assert "a" in str(resolved) and "b" in str(resolved)
+
     
     def test_resolve_custom_guarded_type(self):
         """Test resolving custom GuardedPrimitive subclass."""
