@@ -125,6 +125,8 @@ class TypeResolver:
         typing.Any: GuardedAny,
     }
 
+    _RESOLVE_CACHE: Dict[Any, Type[GuardedPrimitive]] = {}
+
     @classmethod
     def resolve(cls, annotation: Any) -> Type[GuardedPrimitive]:
         """
@@ -136,7 +138,15 @@ class TypeResolver:
         - Dict[str, float] -> GuardedDict[GuardedUtf8, GuardedFloat]
         - GuardedInt -> GuardedInt (Idempotence)
         """
+        if annotation in cls._RESOLVE_CACHE:
+            return cls._RESOLVE_CACHE[annotation]
         
+        result = cls._do_resolve(annotation)
+        cls._RESOLVE_CACHE[annotation] = result
+        return result
+
+    @classmethod
+    def _do_resolve(cls, annotation: Any) -> Type[GuardedPrimitive]:
         # 0. Safety net: Stringified annotations (from __future__ import annotations)
         # NOTE: This should rarely trigger now that analizer.py resolves strings via _resolve_annotation.
         # TODO(Phase 3): Remove this once all get_type_hints call sites are centralized.
@@ -299,4 +309,3 @@ class TypeResolver:
         # 6. Fallback
         raise TypeError(f"Type {annotation} (origin: {origin}) is not supported by OpenHosta TypeResolver. "
                         f"Consider using a supported primitive or wrapping your custom type.")
-    

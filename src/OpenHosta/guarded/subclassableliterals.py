@@ -8,6 +8,9 @@ from .constants import Tolerance
 from .subclassablescalars import GuardedUtf8, GuardedInt, GuardedFloat
 
 
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_LITERAL_CACHE: dict = {}
+
 def guarded_literal(*values):
     """
     Factory pour créer dynamiquement un GuardedLiteral avec des valeurs spécifiques.
@@ -32,6 +35,9 @@ def guarded_literal(*values):
         >>> StatusType = TypeResolver.resolve(Literal["pending", "active"])
         >>> status = StatusType("pending")
     """
+    if values in _GUARDED_LITERAL_CACHE:
+        return _GUARDED_LITERAL_CACHE[values]
+
     if not values:
         # Pas de valeurs, retourner GuardedUtf8 par défaut
         return GuardedUtf8
@@ -112,6 +118,7 @@ def guarded_literal(*values):
             return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value must be one of {cls._allowed_values}"
     
     DynamicLiteral.__name__ = f"Literal[{', '.join(repr(v) for v in values[:3])}{'...' if len(values) > 3 else ''}]"
+    _GUARDED_LITERAL_CACHE[values] = DynamicLiteral
     return DynamicLiteral
 
 
