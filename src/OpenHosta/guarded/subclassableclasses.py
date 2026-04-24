@@ -137,8 +137,7 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Recherche case-insensitive par nom ou par valeur."""
 
-        value = str(value)
-        cleaned_val = value.strip()
+        cleaned_val = cls._clean_llm_response(value)
 
         if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
             cleaned_val = cleaned_val[1:-1].strip()

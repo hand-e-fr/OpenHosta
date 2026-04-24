@@ -64,6 +64,7 @@ Création de types personnalisés :
     'john.doe@company.com'
 """
 
+import re
 from abc import ABC, ABCMeta
 from typing import Any, Tuple, ClassVar, Dict, Optional, Literal
 from dataclasses import dataclass, is_dataclass, fields
@@ -315,6 +316,84 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         """Méthode utilitaire pour récupérer la valeur native avec unwrapping récursif."""
         return self._recursive_unwrap(self)
 
+
+    @classmethod
+    def _clean_llm_response(cls, value: str) -> str:
+        """
+        Nettoie une réponse brute du LLM pour extraire la valeur utile.
+        - Extrait le contenu des blocs de code Markdown (```python ... ```)
+        - Supprime les commentaires Python (# ...)
+        - Gère les commentaires non-standard (ex: * ...)
+        - Supprime les explications textuelles avant/après l'expression
+        """
+        if not isinstance(value, str):
+            return value
+
+        cleaned = value.strip()
+
+        # 1. Extraction des blocs de code Markdown
+        # On cherche le premier bloc ```python ou ``` et on prend son contenu
+        code_block_match = re.search(r"```(?:python)?\n?(.*?)\n?```", cleaned, re.DOTALL)
+        if code_block_match:
+            cleaned = code_block_match.group(1).strip()
+        else:
+            # 1.b Heuristique pour le bruit avant l'expression (ex: "Le résultat est : 42")
+            # Si on n'a pas de bloc Markdown, on regarde s'il y a un séparateur ':'
+            if ":" in cleaned and not (cleaned.startswith("{") or cleaned.startswith("[")):
+                # On split au premier ':'
+                parts = cleaned.split(":", 1)
+                prefix = parts[0].strip()
+                potential = parts[1].strip()
+                
+                # Si la partie après ':' commence par un caractère d'expression typique, on la garde
+                is_expr = potential and (potential[0] in "[{('\"-0123456789" or 
+                                       potential.lower().startswith(("true", "false", "none")) or
+                                       re.match(r"^[A-Z][a-zA-Z0-9_]*\(", potential))
+                if is_expr:
+                    cleaned = potential
+
+        # 2. Heuristique pour les explications après l'expression
+        # On fait ça AVANT de supprimer les lignes vides, car on s'appuie sur \n\n
+        if "\n\n" in cleaned:
+            # On ne coupe que si la première partie semble être une expression complète
+            potential_expr = cleaned.split("\n\n")[0].strip()
+            
+            # Heuristiques de complétude :
+            # 1. Scalaire simple (int, float, bool, None, complex)
+            is_simple_val = potential_expr.isnumeric() or \
+                            potential_expr.replace(".","").replace("+","").replace("-","").replace("j","").isnumeric() or \
+                            potential_expr.lower() in ("true", "false", "none")
+            # 2. Chaîne quotée
+            is_quoted = (potential_expr.startswith("'") and potential_expr.endswith("'")) or \
+                        (potential_expr.startswith('"') and potential_expr.endswith('"'))
+            # 3. Nom qualifié (Enum)
+            is_qualified = re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+", potential_expr)
+            # 4. Parenthèses/Crochets/Accolades équilibrés
+            is_balanced = (potential_expr.endswith(")") and potential_expr.count("(") == potential_expr.count(")")) or \
+                          (potential_expr.endswith("]") and potential_expr.count("[") == potential_expr.count("]")) or \
+                          (potential_expr.endswith("}") and potential_expr.count("{") == potential_expr.count("}"))
+            
+            if is_simple_val or is_quoted or is_qualified or is_balanced:
+                cleaned = potential_expr
+
+        # 3. Suppression des commentaires ligne par ligne
+        lines = cleaned.split("\n")
+        new_lines = []
+        for line in lines:
+            # Supprimer tout ce qui suit #
+            line = line.split("#")[0]
+            # Supprimer tout ce qui suit * s'il est précédé d'un espace ou en début de ligne
+            if " *" in line:
+                line = line.split(" *")[0]
+            elif line.strip().startswith("*"):
+                line = ""
+            
+            if line.strip():
+                new_lines.append(line.rstrip())
+        
+        cleaned = "\n".join(new_lines).strip()
+
+        return cleaned
 
     @classmethod
     def attempt(cls, value: Any, tolerance: ToleranceLevel|None = None) -> CastingResult:
