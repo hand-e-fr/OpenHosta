@@ -54,7 +54,7 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             if not name.startswith('_') and not callable(value):
                 cls._members[name] = value
 
-        cls._type_en = f"a value from {cls.__name__} enum:\n\n" + cls._build_type_py_repr() + "\n"
+        cls._type_en = f"a value from {cls.__name__} enum"
         
         cls._type_py = str
         cls._type_py_repr = cls._build_type_py_repr()
@@ -204,12 +204,18 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         return self._members.get(self._python_value)
 
 
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_ENUM_CACHE: dict = {}
+
 def guarded_enum(enum_cls: Type[Enum]) -> Type[GuardedEnum]:
     """
     Factory pour transformer une Enum standard en GuardedEnum.
     """
     if issubclass(enum_cls, GuardedEnum):
         return enum_cls
+    
+    if enum_cls in _GUARDED_ENUM_CACHE:
+        return _GUARDED_ENUM_CACHE[enum_cls]
 
     attrs = {}
     for name, member in enum_cls.__members__.items():
@@ -220,4 +226,5 @@ def guarded_enum(enum_cls: Type[Enum]) -> Type[GuardedEnum]:
     WrappedEnum._native_class = enum_cls
     WrappedEnum.__doc__ = enum_cls.__doc__
 
+    _GUARDED_ENUM_CACHE[enum_cls] = WrappedEnum
     return WrappedEnum

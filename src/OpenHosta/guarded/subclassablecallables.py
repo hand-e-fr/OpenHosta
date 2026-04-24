@@ -110,12 +110,18 @@ class GuardedCode(GuardedPrimitive, ProxyWrapper):
         except Exception as e:
             return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_CALLABLE_CACHE: dict = {}
+
 def guarded_callable(*args):
     """
     Creates a dynamic subclass of GuardedCode.
     Injects the provided argument and return types into the `local_scope`
     so that `exec()` can access them when executing the generated string.
     """
+    if args in _GUARDED_CALLABLE_CACHE:
+        return _GUARDED_CALLABLE_CACHE[args]
+
     class GuardedCallableWrapper(GuardedCode):
         _type_knowledge = {"local_scope": {}}
         
@@ -131,4 +137,5 @@ def guarded_callable(*args):
             name = native_type.__name__
             GuardedCallableWrapper._type_knowledge["local_scope"][name] = native_type
             
+    _GUARDED_CALLABLE_CACHE[args] = GuardedCallableWrapper
     return GuardedCallableWrapper
