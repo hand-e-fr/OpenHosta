@@ -147,6 +147,7 @@ def nice_type_name(p_type) -> str:
         t=t.replace("typing.", "")
         t=t.replace("collections.abc.", "")
         t=t.replace("builtins.", "")
+        t=t.replace("OpenHosta.guarded.primitives.", "")
         return t
     
     if hasattr(p_type, "__name__"):

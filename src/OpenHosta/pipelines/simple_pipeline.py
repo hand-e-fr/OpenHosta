@@ -16,7 +16,7 @@ from ..core.cost_tracker import get_current_cost_tracker
 from ..core.audit import trigger_audit_event
 
 from ..guarded.resolver import type_returned_data
-from ..guarded.primitives import GuardedPrimitive
+from ..guarded.primitives import GuardedPrimitive, Guarded, ProxyWrapper
 
 MetaDialog = List[Tuple[str, MetaPrompt]]
 
@@ -405,9 +405,16 @@ class OneTurnConversationPipeline(Pipeline):
         # EXCEPT if the user explicitly requested a GuardedType via annotation
         if hasattr(l_ret_data, "unwrap"):
              requested_type = inspection.analyse.type
-             is_guarded_type = isinstance(requested_type, type) and issubclass(requested_type, GuardedPrimitive)
+             from typing import get_origin
+             is_guarded_type = (isinstance(requested_type, type) and issubclass(requested_type, GuardedPrimitive)) or \
+                               (get_origin(requested_type) is Guarded)
+                               
              if not is_guarded_type:
                 l_ret_data = l_ret_data.unwrap()
+        
+        # Inject provenance metadata if it's a Guarded value
+        if isinstance(l_ret_data, (GuardedPrimitive, ProxyWrapper)):
+             l_ret_data._hosta_inspection = inspection
              
         inspection.logs["response_data"] = l_ret_data
 

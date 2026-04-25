@@ -24,7 +24,7 @@ except ImportError:
 from dataclasses import is_dataclass
 
 # Imports des primitives OpenHosta
-from .primitives import GuardedPrimitive
+from .primitives import GuardedPrimitive, Guarded
 
 from .subclassablescalars import (
     GuardedInt, GuardedUtf8, GuardedFloat,
@@ -228,6 +228,9 @@ class TypeResolver:
         # Types Génériques (Typing)
         origin = get_origin(annotation)
         args = get_args(annotation)
+
+        if origin is Guarded:
+            return cls.resolve(args[0])
 
         if origin is not None:
             # Callable origin check (handles subscripted Callable[[...], ...])
