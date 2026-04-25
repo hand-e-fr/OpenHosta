@@ -4,6 +4,7 @@ from .defaults import config
 from .defaults import reload_dotenv
 
 from .core.logger import print_last_prompt, print_last_decoding
+from .core.logger import conversation, readable, markdown
 from .core.logger import print_last_probability_distribution, print_last_uncertainty
 from .core.meta_prompt import MetaPrompt
 from .core.uncertainty import safe
@@ -18,6 +19,7 @@ from .exec.closure import closure, closure_async
 # from .semantics import SemanticSet, SemanticDict # Maybe in 5.0
 from .semantics.operators import test, test_async
 
+from .guarded.primitives import Guarded
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
 
@@ -51,6 +53,9 @@ __all__ = (
     "MetaPrompt",
     "print_last_prompt",
     "print_last_decoding",
+    "conversation",
+    "readable",
+    "markdown",
     "print_last_probability_distribution",
     "print_last_uncertainty",
     "Pipeline",
@@ -60,6 +65,7 @@ __all__ = (
     "test_async",
     "UncertaintyError",
     "track_costs",
+    "Guarded",
     "register_audit_callback",
     "unregister_audit_callback",
 )

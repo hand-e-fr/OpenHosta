@@ -32,6 +32,9 @@ Simplify concurrent execution of `emulate_async` with the `gather_data` batching
 ### 📐 [Guarded Types](guarded.md)
 Deep dive into OpenHosta's type validation and conversion system with configurable tolerance.
 
+### 🛠️ [Debugging & Inspection](debugging.md)
+Learn how to use `conversation()`, `readable()`, and `markdown()` to inspect LLM outputs and debug your semantic code.
+
 ### 🛡️ [Production & Auditing](production.md)
 Learn how to deploy OpenHosta at scale, enable audit logging for compliance, and track token usage in production.
 

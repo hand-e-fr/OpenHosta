@@ -66,7 +66,7 @@ Création de types personnalisés :
 
 import re
 from abc import ABC, ABCMeta
-from typing import Any, Tuple, ClassVar, Dict, Optional, Literal
+from typing import Any, Tuple, ClassVar, Dict, Optional, Literal, TypeVar, Generic
 from dataclasses import dataclass, is_dataclass, fields
 
 
@@ -76,6 +76,15 @@ from .constants import Tolerance, ToleranceLevel
 
 AbstractionLevel = Literal["native", "heuristic", "semantic", "knowledge", "failed"]
 UncertaintyLevel = float
+
+T = TypeVar("T")
+
+class Guarded(Generic[T]):
+    """
+    Generic marker for explicitly requested Guarded types.
+    Usage: Guarded[int], Guarded[List[str]], etc.
+    """
+    pass
 
 @dataclass(frozen=True)
 class GuardedCallInput:
@@ -209,6 +218,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         instance._uncertainty = result.uncertainty
         instance._abstraction_level = result.abstraction
         instance._python_value = result.data
+        instance._hosta_inspection = None
         
         return instance
 
@@ -568,6 +578,8 @@ class ProxyWrapper:
         class GuardedBool(GuardedPrimitive, ProxyWrapper):
             ...
     """
+
+    _hosta_inspection: Optional[Any] = None
 
     def unwrap(self):
         """Retourne la valeur Python native avec unwrapping récursif."""
