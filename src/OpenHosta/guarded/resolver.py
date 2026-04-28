@@ -24,7 +24,7 @@ except ImportError:
 from dataclasses import is_dataclass
 
 # Imports des primitives OpenHosta
-from .primitives import GuardedPrimitive
+from .primitives import GuardedPrimitive, Guarded
 
 from .subclassablescalars import (
     GuardedInt, GuardedUtf8, GuardedFloat,
@@ -77,7 +77,16 @@ def type_returned_data(response: Any, expected_type: type|None) -> Any:
         # Prefer guarded data if available, pull_type_data_section will unwrap if needed
         return res.guarded_data if res.guarded_data is not None else res.data
     
-    raise ValueError(f"Failed to convert response to {expected_type}: {res.error_message}")
+    error_msg = f"Impossible de convertir la réponse du LLM vers le type {expected_type}.\n\n"
+    error_msg += f"=== Réponse du LLM ===\n{response}\n======================\n\n"
+    error_msg += f"=== Détail de l'erreur ===\n"
+    
+    if res.error_message and "→" in res.error_message:
+        error_msg += res.error_message
+    else:
+        error_msg += f"Type global invalide ou non parsable.\nRaison: {res.error_message}"
+
+    raise ValueError(error_msg)
     
 
 class TypeResolver:
@@ -116,6 +125,8 @@ class TypeResolver:
         typing.Any: GuardedAny,
     }
 
+    _RESOLVE_CACHE: Dict[Any, Type[GuardedPrimitive]] = {}
+
     @classmethod
     def resolve(cls, annotation: Any) -> Type[GuardedPrimitive]:
         """
@@ -127,7 +138,15 @@ class TypeResolver:
         - Dict[str, float] -> GuardedDict[GuardedUtf8, GuardedFloat]
         - GuardedInt -> GuardedInt (Idempotence)
         """
+        if annotation in cls._RESOLVE_CACHE:
+            return cls._RESOLVE_CACHE[annotation]
         
+        result = cls._do_resolve(annotation)
+        cls._RESOLVE_CACHE[annotation] = result
+        return result
+
+    @classmethod
+    def _do_resolve(cls, annotation: Any) -> Type[GuardedPrimitive]:
         # 0. Safety net: Stringified annotations (from __future__ import annotations)
         # NOTE: This should rarely trigger now that analizer.py resolves strings via _resolve_annotation.
         # TODO(Phase 3): Remove this once all get_type_hints call sites are centralized.
@@ -172,6 +191,10 @@ class TypeResolver:
         if annotation is None:
             return GuardedNone
 
+        # Python 3.12 TypeAliasType
+        if hasattr(annotation, "__name__") and type(annotation).__name__ == "TypeAliasType":
+            return cls.resolve(annotation.__value__)
+
         # Enums Python
         if isinstance(annotation, type) and issubclass(annotation, Enum):
             # Import GuardedEnum pour wrapper les enums standards
@@ -205,6 +228,9 @@ class TypeResolver:
         # Types Génériques (Typing)
         origin = get_origin(annotation)
         args = get_args(annotation)
+
+        if origin is Guarded:
+            return cls.resolve(args[0])
 
         if origin is not None:
             # Callable origin check (handles subscripted Callable[[...], ...])
@@ -286,4 +312,3 @@ class TypeResolver:
         # 6. Fallback
         raise TypeError(f"Type {annotation} (origin: {origin}) is not supported by OpenHosta TypeResolver. "
                         f"Consider using a supported primitive or wrapping your custom type.")
-    

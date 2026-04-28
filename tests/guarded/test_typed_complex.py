@@ -108,7 +108,7 @@ class TestNewScalars:
         from OpenHosta.guarded.subclassablescalars import GuardedComplex
         c = GuardedComplex("1+2j")
         assert c == complex(1, 2)
-        assert c.uncertainty == Tolerance.TYPE_COMPLIANT
+        assert c.uncertainty == Tolerance.PRECISE
 
     def test_bytes(self):
         from OpenHosta.guarded.subclassablescalars import GuardedBytes

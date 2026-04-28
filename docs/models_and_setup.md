@@ -45,6 +45,20 @@ vllm_model = OpenAICompatibleModel(
 )
 ```
 
+## Ollama & Local Models
+
+When using [Ollama](https://ollama.com/), you can configure advanced parameters via `api_parameters`.
+
+### Disabling Reasoning (e.g., Qwen)
+Some models like **Qwen** include reasoning capabilities (thinking) by default. If you want to disable this to speed up responses or get direct output, you can set the `reasoning` effort to `none`:
+
+```python
+from OpenHosta import config
+
+# Disable thinking for Qwen models in Ollama
+config.DefaultModel.api_parameters |= {"reasoning": {"effort": "none"}}
+```
+
 ## Changing the MetaPrompt
 You can customize the prompt templates via `config.DefaultPipeline.user_call_meta_prompt` or create your own `MetaPrompt`.
 
@@ -54,6 +68,8 @@ Enable audit mode for detailed execution logs:
 from OpenHosta import config
 config.AUDIT_MODE = True
 ```
+
+For more details on audit events, compliance, and production deployment, see the **[Production & Auditing Guide](production.md)**.
 
 ## Cost Tracking
 Use `track_costs` context manager to count tokens.
