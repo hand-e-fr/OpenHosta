@@ -77,7 +77,7 @@ nav:
   - Cookbook:
     - Text Classification: examples/text_classification.md
     - Data Extraction: examples/data_extraction.md
-    - Parallel Processing: examples/parallel_processing.md
+    - Parallel Processing: parallel_processing.md
     - Local OCR with Ollama: examples/ocr_local_ollama.md
   - Compatibility:
     - Python Versions: compatibility_table.md

@@ -68,3 +68,19 @@ class TestGuardedCode:
         code = GuardedCode(Adder())
         assert code(1, 1) == 2
         assert code.uncertainty == Tolerance.STRICT
+
+    def test_source_code_introspection(self):
+        """Test that str(code) returns the source code."""
+        source = "def power(x, y): return x ** y"
+        code = GuardedCode(source)
+        
+        # str(code) should return the input source code
+        assert str(code) == source
+        assert "def power" in str(code)
+        
+        # Test with markdown wrapping
+        source_md = "```python\ndef sub(a, b): return a - b\n```"
+        code_md = GuardedCode(source_md)
+        assert str(code_md) == source_md
+        assert code_md(10, 3) == 7
+

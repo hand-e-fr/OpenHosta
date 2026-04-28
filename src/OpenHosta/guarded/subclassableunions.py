@@ -71,6 +71,9 @@ class GuardedUnion(GuardedPrimitive):
         return winning_type(value)
 
 
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_UNION_CACHE: dict = {}
+
 def guarded_union(*guarded_types):
     """
     Factory pour créer un type GuardedUnion.
@@ -81,6 +84,9 @@ def guarded_union(*guarded_types):
     Returns:
         Une classe GuardedUnion configurée
     """
+    if guarded_types in _GUARDED_UNION_CACHE:
+        return _GUARDED_UNION_CACHE[guarded_types]
+
     # Résoudre les types pour s'assurer qu'ils ont .attempt()
     from .resolver import TypeResolver
     resolved_types = tuple(TypeResolver.resolve(t) for t in guarded_types)
@@ -94,4 +100,5 @@ def guarded_union(*guarded_types):
         }
         
     DynamicUnion.__name__ = f"Union[{', '.join(t.__name__ if hasattr(t, '__name__') else str(t) for t in resolved_types)}]"
+    _GUARDED_UNION_CACHE[guarded_types] = DynamicUnion
     return DynamicUnion
