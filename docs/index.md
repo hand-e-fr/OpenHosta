@@ -1,6 +1,6 @@
 # OpenHosta Documentation
 
-**Version 4.1** · [GitHub](https://github.com/hand-e-fr/OpenHosta) · [PyPI](https://pypi.org/project/OpenHosta/)
+**Version 4** · [GitHub](https://github.com/hand-e-fr/OpenHosta) · [PyPI](https://pypi.org/project/OpenHosta/)
 
 Welcome to the **OpenHosta** documentation. OpenHosta is the semantic layer for Python — it transforms human language and type annotations into executable, type-safe Python functions powered by Large Language Models.
 
