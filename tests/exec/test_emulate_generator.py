@@ -67,7 +67,7 @@ async def test_emulate_async_generator():
     
     async def my_async_gen() -> AsyncIterator[int]:
         """A test docstring."""
-        async for x in await emulate_async(pipeline=pipeline):
+        async for x in emulate_async(pipeline=pipeline):
             yield x
             
     results = []

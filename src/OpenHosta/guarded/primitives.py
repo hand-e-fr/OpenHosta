@@ -64,17 +64,26 @@ Création de types personnalisés :
     'john.doe@company.com'
 """
 
+import re
 from abc import ABC, ABCMeta
-from typing import Any, Tuple, ClassVar, Dict, Optional, Literal
+from typing import Any, Tuple, ClassVar, Dict, Optional, Literal, TypeVar, Generic
 from dataclasses import dataclass, is_dataclass, fields
 
 
 # Imports internes (Moteur & Incertitude)
 from .constants import Tolerance, ToleranceLevel
 
-
 AbstractionLevel = Literal["native", "heuristic", "semantic", "knowledge", "failed"]
 UncertaintyLevel = float
+
+T = TypeVar("T")
+
+class Guarded(Generic[T]):
+    """
+    Generic marker for explicitly requested Guarded types.
+    Usage: Guarded[int], Guarded[List[str]], etc.
+    """
+    pass
 
 @dataclass(frozen=True)
 class GuardedCallInput:
@@ -205,9 +214,11 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
 
         # 4. Injection des Métadonnées
         instance._input = value
-        instance._uncertainty = result.uncertainty
+        instance._casting_uncertainty = result.uncertainty
+        instance._source_uncertainty = None
         instance._abstraction_level = result.abstraction
         instance._python_value = result.data
+        instance._hosta_inspection = None
         
         return instance
 
@@ -240,9 +251,30 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         # la valeur a déjà été fixée dans __new__.
 
     @property
+    def casting_uncertainty(self) -> UncertaintyLevel:
+        """Uncertainty from the type-casting pipeline layer used to produce this value (0.0 to 1.0)."""
+        return getattr(self, '_casting_uncertainty', 1.0)
+
+    @property
+    def source_uncertainty(self) -> UncertaintyLevel:
+        """
+        Uncertainty of the data source that produced this value (0.0 to 1.0).
+        For LLM-produced values, this comes from token-level logprobs.
+        Returns None if no source uncertainty was measured.
+        """
+        return getattr(self, '_source_uncertainty', None)
+
+    @property
     def uncertainty(self) -> UncertaintyLevel:
-        """Score de confiance de la conversion (0.0 à 1.0)."""
-        return getattr(self, '_uncertainty', 1.0)
+        """
+        Combined uncertainty: 1 - (1 - casting) * (1 - source).
+        If source uncertainty is not available, falls back to casting uncertainty alone.
+        """
+        c = getattr(self, '_casting_uncertainty', 1.0)
+        s = getattr(self, '_source_uncertainty', None)
+        if s is None:
+            return c
+        return 1.0 - (1.0 - c) * (1.0 - s)
 
     @property
     def abstraction_level(self) -> str:
@@ -317,6 +349,84 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
 
 
     @classmethod
+    def _clean_llm_response(cls, value: str) -> str:
+        """
+        Nettoie une réponse brute du LLM pour extraire la valeur utile.
+        - Extrait le contenu des blocs de code Markdown (```python ... ```)
+        - Supprime les commentaires Python (# ...)
+        - Gère les commentaires non-standard (ex: * ...)
+        - Supprime les explications textuelles avant/après l'expression
+        """
+        if not isinstance(value, str):
+            value = str(value)
+
+        cleaned = value.strip()
+
+        # 1. Extraction des blocs de code Markdown
+        # On cherche le premier bloc ```python ou ``` et on prend son contenu
+        code_block_match = re.search(r"```(?:python)?\n?(.*?)\n?```", cleaned, re.DOTALL)
+        if code_block_match:
+            cleaned = code_block_match.group(1).strip()
+        else:
+            # 1.b Heuristique pour le bruit avant l'expression (ex: "Le résultat est : 42")
+            # Si on n'a pas de bloc Markdown, on regarde s'il y a un séparateur ':'
+            if ":" in cleaned and not (cleaned.startswith("{") or cleaned.startswith("[")):
+                # On split au premier ':'
+                parts = cleaned.split(":", 1)
+                prefix = parts[0].strip()
+                potential = parts[1].strip()
+                
+                # Si la partie après ':' commence par un caractère d'expression typique, on la garde
+                is_expr = potential and (potential[0] in "[{('\"-0123456789" or 
+                                       potential.lower().startswith(("true", "false", "none")) or
+                                       re.match(r"^[A-Z][a-zA-Z0-9_]*\(", potential))
+                if is_expr:
+                    cleaned = potential
+
+        # 2. Heuristique pour les explications après l'expression
+        # On fait ça AVANT de supprimer les lignes vides, car on s'appuie sur \n\n
+        if "\n\n" in cleaned:
+            # On ne coupe que si la première partie semble être une expression complète
+            potential_expr = cleaned.split("\n\n")[0].strip()
+            
+            # Heuristiques de complétude :
+            # 1. Scalaire simple (int, float, bool, None, complex)
+            is_simple_val = potential_expr.isnumeric() or \
+                            potential_expr.replace(".","").replace("+","").replace("-","").replace("j","").isnumeric() or \
+                            potential_expr.lower() in ("true", "false", "none")
+            # 2. Chaîne quotée
+            is_quoted = (potential_expr.startswith("'") and potential_expr.endswith("'")) or \
+                        (potential_expr.startswith('"') and potential_expr.endswith('"'))
+            # 3. Nom qualifié (Enum)
+            is_qualified = re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+", potential_expr)
+            # 4. Parenthèses/Crochets/Accolades équilibrés
+            is_balanced = (potential_expr.endswith(")") and potential_expr.count("(") == potential_expr.count(")")) or \
+                          (potential_expr.endswith("]") and potential_expr.count("[") == potential_expr.count("]")) or \
+                          (potential_expr.endswith("}") and potential_expr.count("{") == potential_expr.count("}"))
+            
+            if is_simple_val or is_quoted or is_qualified or is_balanced:
+                cleaned = potential_expr
+
+        # 3. Suppression des commentaires ligne par ligne
+        lines = cleaned.split("\n")
+        new_lines = []
+        for line in lines:
+            # Supprimer tout ce qui suit #
+            line = line.split("#")[0]
+            # Supprimer tout ce qui suit * s'il est précédé d'un espace ou en début de ligne
+            if " *" in line:
+                line = line.split(" *")[0]
+            elif line.strip().startswith("*"):
+                line = ""
+            
+            if line.strip():
+                new_lines.append(line.rstrip())
+        
+        cleaned = "\n".join(new_lines).strip()
+
+        return cleaned
+
+    @classmethod
     def attempt(cls, value: Any, tolerance: ToleranceLevel|None = None) -> CastingResult:
         """
         Le SQUELETTE de l'algorithme (Template Method).
@@ -326,7 +436,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         if tolerance is None:
             tolerance = cls._tolerance
     
-        full_message = ""
+        errors = []
         # At each layer we have a chance to reduce uncertainty
         
         def return_success(cleaned_val, uncertainty, level, message):
@@ -351,7 +461,8 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
                         instance = base_type.__new__(cls)
 
                 instance._input = value
-                instance._uncertainty = uncertainty
+                instance._casting_uncertainty = uncertainty
+                instance._source_uncertainty = None
                 instance._abstraction_level = level
                 instance._python_value = cleaned_val
                 
@@ -369,24 +480,34 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         uncertainty, cleaned_native_val, message = cls._parse_native(value)
         if uncertainty <= tolerance:
             return return_success(cleaned_native_val, uncertainty, 'native', message)
-        full_message += f"Native parsing failed: {message}\n"
+        errors.append(f"Native parsing failed: {message}")
 
         uncertainty, cleaned_heuristic_val, message = cls._parse_heuristic(cleaned_native_val)
         if uncertainty <= tolerance:
             return return_success(cleaned_heuristic_val, uncertainty, 'heuristic', message)
-        full_message += f"Heuristic parsing failed: {message}\n"
+        errors.append(f"Heuristic parsing failed: {message}")
 
         uncertainty, cleaned_semantic_value, message = cls._parse_semantic(cleaned_heuristic_val)
         if uncertainty <= tolerance:
             return return_success(cleaned_semantic_value, uncertainty, 'semantic', message)
-        full_message += f"Semantic parsing failed: {message}\n"
+        errors.append(f"Semantic parsing failed: {message}")
         
         uncertainty, cleaned_knowledge_value, message = cls._parse_knowledge(cleaned_semantic_value)
         if uncertainty <= tolerance:
             return return_success(cleaned_knowledge_value, uncertainty, 'knowledge', message)
-        full_message += f"Knowledge parsing failed: {message}\n"
+        errors.append(f"Knowledge parsing failed: {message}")
 
-        return CastingResult(False, None, None, Tolerance.ANYTHING, 'failed', value, cls._type_py, full_message)
+        def _get_best_error(errors_list):
+            for err in errors_list:
+                if err and "→" in err:
+                    # On retire le préfixe "Native parsing failed: " ou "Heuristic..." s'il existe
+                    if ":" in err and ("parsing failed" in err):
+                        return err.split(":", 1)[1].strip()
+                    return err
+            return "\n".join(e for e in errors_list if e)
+
+        best_message = _get_best_error(errors)
+        return CastingResult(False, None, None, Tolerance.ANYTHING, 'failed', value, cls._type_py, best_message)
     
     # --- Hooks Abstraits (À implémenter par SemanticInt, SemanticUtf8...) ---
     
@@ -479,6 +600,8 @@ class ProxyWrapper:
         class GuardedBool(GuardedPrimitive, ProxyWrapper):
             ...
     """
+
+    _hosta_inspection: Optional[Any] = None
 
     def unwrap(self):
         """Retourne la valeur Python native avec unwrapping récursif."""

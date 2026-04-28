@@ -8,6 +8,9 @@ from .constants import Tolerance
 from .subclassablescalars import GuardedUtf8, GuardedInt, GuardedFloat
 
 
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_LITERAL_CACHE: dict = {}
+
 def guarded_literal(*values):
     """
     Factory pour créer dynamiquement un GuardedLiteral avec des valeurs spécifiques.
@@ -32,6 +35,9 @@ def guarded_literal(*values):
         >>> StatusType = TypeResolver.resolve(Literal["pending", "active"])
         >>> status = StatusType("pending")
     """
+    if values in _GUARDED_LITERAL_CACHE:
+        return _GUARDED_LITERAL_CACHE[values]
+
     if not values:
         # Pas de valeurs, retourner GuardedUtf8 par défaut
         return GuardedUtf8
@@ -71,9 +77,10 @@ def guarded_literal(*values):
         @classmethod
         def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
             """Tentative de conversion avec nettoyage basique."""
+            cleaned = cls._clean_llm_response(value)
+
             # Pour les strings, essayer avec strip() et case-insensitive
-            if isinstance(value, str) and all(isinstance(v, str) for v in cls._allowed_values):
-                cleaned = value.strip()
+            if isinstance(cleaned, str) and all(isinstance(v, str) for v in cls._allowed_values):
                 # Remove quotes if present
                 if (cleaned.startswith('"') and cleaned.endswith('"')) or \
                    (cleaned.startswith("'") and cleaned.endswith("'")):
@@ -89,11 +96,11 @@ def guarded_literal(*values):
                         return UncertaintyLevel(Tolerance.PRECISE), allowed, None
             
             # Pour les nombres, essayer de convertir
-            if isinstance(value, str) and any(isinstance(v, (int, float)) for v in cls._allowed_values):
+            if isinstance(cleaned, str) and any(isinstance(v, (int, float)) for v in cls._allowed_values):
                 try:
                     # Essayer int
                     try:
-                        int_val = int(value)
+                        int_val = int(cleaned)
                         if int_val in cls._allowed_values:
                             return UncertaintyLevel(Tolerance.PRECISE), int_val, None
                     except ValueError:
@@ -101,7 +108,7 @@ def guarded_literal(*values):
                     
                     # Essayer float
                     try:
-                        float_val = float(value)
+                        float_val = float(cleaned)
                         if float_val in cls._allowed_values:
                             return UncertaintyLevel(Tolerance.PRECISE), float_val, None
                     except ValueError:
@@ -112,6 +119,7 @@ def guarded_literal(*values):
             return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value must be one of {cls._allowed_values}"
     
     DynamicLiteral.__name__ = f"Literal[{', '.join(repr(v) for v in values[:3])}{'...' if len(values) > 3 else ''}]"
+    _GUARDED_LITERAL_CACHE[values] = DynamicLiteral
     return DynamicLiteral
 
 

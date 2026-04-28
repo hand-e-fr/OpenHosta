@@ -54,7 +54,7 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
             if not name.startswith('_') and not callable(value):
                 cls._members[name] = value
 
-        cls._type_en = f"a value from {cls.__name__} enum:\n\n" + cls._build_type_py_repr() + "\n"
+        cls._type_en = f"a value from {cls.__name__} enum"
         
         cls._type_py = str
         cls._type_py_repr = cls._build_type_py_repr()
@@ -97,9 +97,20 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         return f"class {display_name}(Enum):\n{joined_members}"
 
     @property
-    def uncertainty(self) -> UncertaintyLevel:
+    def casting_uncertainty(self) -> UncertaintyLevel:
+        return getattr(self, "_casting_uncertainty", 1.0)
 
-        return getattr(self, "_uncertainty", 1.0)
+    @property
+    def source_uncertainty(self) -> UncertaintyLevel:
+        return getattr(self, "_source_uncertainty", None)
+
+    @property
+    def uncertainty(self) -> UncertaintyLevel:
+        c = getattr(self, "_casting_uncertainty", 1.0)
+        s = getattr(self, "_source_uncertainty", None)
+        if s is None:
+            return c
+        return 1.0 - (1.0 - c) * (1.0 - s)
 
     @property
     def abstraction_level(self) -> str:
@@ -137,8 +148,15 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         """Recherche case-insensitive par nom ou par valeur."""
 
-        value = str(value)
-        cleaned_val = value.strip(" `'\"\n")
+        cleaned_val = cls._clean_llm_response(value)
+        
+        if len(cleaned_val) > 3 and "\n" in cleaned_val[1:-1]:
+            candidates = [GuardedEnum.attempt(p) for p in cleaned_val.split("\n")]
+            candidates = [c for c in candidates if c.success == True]
+            if len(candidates) > 0:
+                print(f"Multiple candidates found: {candidates}")
+                # TODO: return the most likely candidate based on the context of the document
+                return UncertaintyLevel(Tolerance.CREATIVE), candidates[0].value, None
 
         if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
             cleaned_val = cleaned_val[1:-1].strip()
@@ -204,12 +222,18 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         return self._members.get(self._python_value)
 
 
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_ENUM_CACHE: dict = {}
+
 def guarded_enum(enum_cls: Type[Enum]) -> Type[GuardedEnum]:
     """
     Factory pour transformer une Enum standard en GuardedEnum.
     """
     if issubclass(enum_cls, GuardedEnum):
         return enum_cls
+    
+    if enum_cls in _GUARDED_ENUM_CACHE:
+        return _GUARDED_ENUM_CACHE[enum_cls]
 
     attrs = {}
     for name, member in enum_cls.__members__.items():
@@ -220,4 +244,5 @@ def guarded_enum(enum_cls: Type[Enum]) -> Type[GuardedEnum]:
     WrappedEnum._native_class = enum_cls
     WrappedEnum.__doc__ = enum_cls.__doc__
 
+    _GUARDED_ENUM_CACHE[enum_cls] = WrappedEnum
     return WrappedEnum

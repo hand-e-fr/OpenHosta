@@ -16,7 +16,7 @@ from ..core.cost_tracker import get_current_cost_tracker
 from ..core.audit import trigger_audit_event
 
 from ..guarded.resolver import type_returned_data
-from ..guarded.primitives import GuardedPrimitive
+from ..guarded.primitives import GuardedPrimitive, Guarded, ProxyWrapper
 
 MetaDialog = List[Tuple[str, MetaPrompt]]
 
@@ -309,6 +309,10 @@ class OneTurnConversationPipeline(Pipeline):
         inspection.logs["enum_normalized_probs"] = normalized_probability
         inspection.logs["uncertainty"] = uncertainty
 
+        # Inject logprobs-based source uncertainty into the Guarded object
+        if isinstance(result, (GuardedPrimitive, ProxyWrapper)):
+            result._source_uncertainty = uncertainty
+
         prompt_hash = hash( str(inspection.logs.get("llm_api_messages_sent", "")) )
         for v in reproducible_settings.values():
  
@@ -341,6 +345,11 @@ class OneTurnConversationPipeline(Pipeline):
         
         raw_response = inspection.model.get_response_content(response_dict)
         
+        # Prepend assistant_starts_with if it was used
+        assistant_starts_with = inspection.force_llm_args.get("assistant_starts_with")
+        if assistant_starts_with:
+            raw_response = assistant_starts_with + raw_response
+            
         return raw_response
 
     @staticmethod
@@ -400,9 +409,16 @@ class OneTurnConversationPipeline(Pipeline):
         # EXCEPT if the user explicitly requested a GuardedType via annotation
         if hasattr(l_ret_data, "unwrap"):
              requested_type = inspection.analyse.type
-             is_guarded_type = isinstance(requested_type, type) and issubclass(requested_type, GuardedPrimitive)
+             from typing import get_origin
+             is_guarded_type = (isinstance(requested_type, type) and issubclass(requested_type, GuardedPrimitive)) or \
+                               (get_origin(requested_type) is Guarded)
+                               
              if not is_guarded_type:
                 l_ret_data = l_ret_data.unwrap()
+        
+        # Inject provenance metadata if it's a Guarded value
+        if isinstance(l_ret_data, (GuardedPrimitive, ProxyWrapper)):
+             l_ret_data._hosta_inspection = inspection
              
         inspection.logs["response_data"] = l_ret_data
 
@@ -429,6 +445,15 @@ class OneTurnConversationPipeline(Pipeline):
                 "role": role,
                 "content": message_content
             }]
+
+        # Handle assistant_starts_with
+        assistant_starts_with = inspection.force_llm_args.get("assistant_starts_with")
+        if assistant_starts_with:
+            if messages and messages[-1]["role"] == "assistant":
+                messages[-1]["content"].append({"type": "text", "text": assistant_starts_with})
+            else:
+                messages.append({"role": "assistant", "content": [{"type": "text", "text": assistant_starts_with}]})
+
         return messages
 
     def push(self, inspection:Inspection) -> dict:
@@ -498,49 +523,57 @@ class OneTurnConversationPipeline(Pipeline):
         max_retries = config.MAX_RETRIES
         last_exception = None
         
-        for attempt in range(max_retries):
-            start_time = time.time()
-            try:
-                # 1. Push
-                messages = self.push(inspection)
-                
-                # 2. Call LLM
-                llm_args = inspection.force_llm_args | force_llm_args
-                if is_async:
-                    # In python 3.8+ asyncio.get_event_loop() is discouraged outside main thread, but run_until_complete is not used here, we assume it's awaited in emulate_async
-                    # But wait, execute cannot be async if it has the same signature. 
-                    # We will handle async separately in execute_async
-                    raise NotImplementedError("Use execute_async for asynchronous execution.")
-                else:
-                    response_dict = inspection.model.api_call(messages, llm_args)
+        # Save old args and merge one-shot args for this execution
+        old_force_llm_args = inspection.force_llm_args
+        inspection.force_llm_args = inspection.force_llm_args | force_llm_args
+        
+        try:
+            for attempt in range(max_retries):
+                start_time = time.time()
+                try:
+                    # 1. Push
+                    messages = self.push(inspection)
+                    
+                    # 2. Call LLM
+                    # llm_args already contains both now via inspection.force_llm_args
+                    llm_args = inspection.force_llm_args
+                    if is_async:
+                        # In python 3.8+ asyncio.get_event_loop() is discouraged outside main thread, but run_until_complete is not used here, we assume it's awaited in emulate_async
+                        # But wait, execute cannot be async if it has the same signature. 
+                        # We will handle async separately in execute_async
+                        raise NotImplementedError("Use execute_async for asynchronous execution.")
+                    else:
+                        response_dict = inspection.model.api_call(messages, llm_args)
 
-                # 3. Pull
-                response_data = self.pull(inspection, response_dict)
-                
-                duration = time.time() - start_time
-                trigger_audit_event("emulate_success", {
-                    "function": inspection.analyse.name,
-                    "attempt": attempt + 1,
-                    "duration": duration,
-                    "model": inspection.model.model_name
-                })
-                
-                return response_data
-                
-            except (ValueError, TypeError, UncertaintyError) as e:
-                duration = time.time() - start_time
-                last_exception = e
-                
-                trigger_audit_event("emulate_retry", {
-                    "function": inspection.analyse.name,
-                    "attempt": attempt + 1,
-                    "error": str(e),
-                    "duration": duration
-                })
-                
-                # Optionally, if we wanted to feedback the error to the LLM, we could add a user message here.
-                # For now, simply retrying allows the model's stochastic nature to generate a new answer.
-                continue
+                    # 3. Pull
+                    response_data = self.pull(inspection, response_dict)
+                    
+                    duration = time.time() - start_time
+                    trigger_audit_event("emulate_success", {
+                        "function": inspection.analyse.name,
+                        "attempt": attempt + 1,
+                        "duration": duration,
+                        "model": inspection.model.model_name
+                    })
+                    
+                    return response_data
+                    
+                except (ValueError, TypeError, UncertaintyError) as e:
+                    duration = time.time() - start_time
+                    last_exception = e
+                    
+                    trigger_audit_event("emulate_retry", {
+                        "function": inspection.analyse.name,
+                        "attempt": attempt + 1,
+                        "error": str(e),
+                        "duration": duration
+                    })
+                    
+                    # Optionally, if we wanted to feedback the error to the LLM, we could add a user message here.
+                    # For now, simply retrying allows the model's stochastic nature to generate a new answer.
+                    continue
+        finally:
+            inspection.force_llm_args = old_force_llm_args
                 
         trigger_audit_event("emulate_failure", {
             "function": inspection.analyse.name,
@@ -556,40 +589,47 @@ class OneTurnConversationPipeline(Pipeline):
         max_retries = config.MAX_RETRIES
         last_exception = None
         
-        for attempt in range(max_retries):
-            start_time = time.time()
-            try:
-                # 1. Push
-                messages = self.push(inspection)
-                
-                # 2. Call LLM
-                llm_args = inspection.force_llm_args | force_llm_args
-                response_dict = await inspection.model.api_call_async(messages, llm_args)
+        # Save old args and merge one-shot args for this execution
+        old_force_llm_args = inspection.force_llm_args
+        inspection.force_llm_args = inspection.force_llm_args | force_llm_args
+        
+        try:
+            for attempt in range(max_retries):
+                start_time = time.time()
+                try:
+                    # 1. Push
+                    messages = self.push(inspection)
+                    
+                    # 2. Call LLM
+                    llm_args = inspection.force_llm_args
+                    response_dict = await inspection.model.api_call_async(messages, llm_args)
 
-                # 3. Pull
-                response_data = self.pull(inspection, response_dict)
-                
-                duration = time.time() - start_time
-                trigger_audit_event("emulate_async_success", {
-                    "function": inspection.analyse.name,
-                    "attempt": attempt + 1,
-                    "duration": duration,
-                    "model": inspection.model.model_name
-                })
-                
-                return response_data
-                
-            except (ValueError, TypeError, UncertaintyError) as e:
-                duration = time.time() - start_time
-                last_exception = e
-                
-                trigger_audit_event("emulate_async_retry", {
-                    "function": inspection.analyse.name,
-                    "attempt": attempt + 1,
-                    "error": str(e),
-                    "duration": duration
-                })
-                continue
+                    # 3. Pull
+                    response_data = self.pull(inspection, response_dict)
+                    
+                    duration = time.time() - start_time
+                    trigger_audit_event("emulate_async_success", {
+                        "function": inspection.analyse.name,
+                        "attempt": attempt + 1,
+                        "duration": duration,
+                        "model": inspection.model.model_name
+                    })
+                    
+                    return response_data
+                    
+                except (ValueError, TypeError, UncertaintyError) as e:
+                    duration = time.time() - start_time
+                    last_exception = e
+                    
+                    trigger_audit_event("emulate_async_retry", {
+                        "function": inspection.analyse.name,
+                        "attempt": attempt + 1,
+                        "error": str(e),
+                        "duration": duration
+                    })
+                    continue
+        finally:
+            inspection.force_llm_args = old_force_llm_args
                 
         trigger_audit_event("emulate_async_failure", {
             "function": inspection.analyse.name,
@@ -601,21 +641,38 @@ class OneTurnConversationPipeline(Pipeline):
 
     def execute_stream(self, inspection: Inspection, force_llm_args: dict, item_type):
         """Stream typed items from the LLM, one ```python block per item."""
-        messages = self.push_streaming(inspection, item_type)
-        llm_args = inspection.force_llm_args | force_llm_args
+        inspection.logs["rational"] = ""
+        inspection.logs["answer"] = ""
+        inspection.logs["response_string"] = ""
+        inspection.logs["response_data"] = []
 
-        buffer = ""
-        for chunk in inspection.model.generate_stream(messages, **llm_args):
-            buffer += chunk
-            # Extract as many complete blocks as possible from the buffer
-            while True:
-                content, remainder = self._extract_next_code_block(buffer)
-                if content is None:
-                    break
-                buffer = remainder
-                typed_item = self._pull_single_item(inspection, content, item_type)
-                if typed_item is not None:
-                    yield typed_item
+        # Save old args and merge one-shot args for this execution
+        old_force_llm_args = inspection.force_llm_args
+        inspection.force_llm_args = inspection.force_llm_args | force_llm_args
+        
+        try:
+            messages = self.push_streaming(inspection, item_type)
+            llm_args = inspection.force_llm_args
+
+            assistant_starts_with = llm_args.get("assistant_starts_with", "")
+            buffer = assistant_starts_with
+            inspection.logs["answer"] = assistant_starts_with
+            
+            for chunk in inspection.model.generate_stream(messages, **llm_args):
+                inspection.logs["answer"] += chunk
+                buffer += chunk
+                # Extract as many complete blocks as possible from the buffer
+                while True:
+                    content, remainder = self._extract_next_code_block(buffer)
+                    if content is None:
+                        break
+                    buffer = remainder
+                    inspection.logs["response_string"] += f"```python\n{content}\n```\n"
+                    typed_item = self._pull_single_item(inspection, content, item_type)
+                    if typed_item is not None:
+                        yield typed_item
+        finally:
+            inspection.force_llm_args = old_force_llm_args
 
         # Flush any remaining partial block at end-of-stream
         if buffer.strip():
@@ -623,6 +680,7 @@ class OneTurnConversationPipeline(Pipeline):
             probe = buffer if buffer.rstrip().endswith("```") else buffer + "\n```"
             content, _ = self._extract_next_code_block(probe)
             if content is not None:
+                inspection.logs["response_string"] += f"```python\n{content}\n```\n"
                 typed_item = self._pull_single_item(inspection, content, item_type)
                 if typed_item is not None:
                     yield typed_item
@@ -630,25 +688,43 @@ class OneTurnConversationPipeline(Pipeline):
 
     async def execute_stream_async(self, inspection: Inspection, force_llm_args: dict, item_type):
         """Async version of _execute_stream."""
-        messages = self.push_streaming(inspection, item_type)
-        llm_args = inspection.force_llm_args | force_llm_args
+        inspection.logs["rational"] = ""
+        inspection.logs["answer"] = ""
+        inspection.logs["response_string"] = ""
+        inspection.logs["response_data"] = []
 
-        buffer = ""
-        async for chunk in inspection.model.generate_stream_async(messages, **llm_args):
-            buffer += chunk
-            while True:
-                content, remainder = self._extract_next_code_block(buffer)
-                if content is None:
-                    break
-                buffer = remainder
-                typed_item = self._pull_single_item(inspection, content, item_type)
-                if typed_item is not None:
-                    yield typed_item
+        # Save old args and merge one-shot args for this execution
+        old_force_llm_args = inspection.force_llm_args
+        inspection.force_llm_args = inspection.force_llm_args | force_llm_args
+        
+        try:
+            messages = self.push_streaming(inspection, item_type)
+            llm_args = inspection.force_llm_args
+
+            assistant_starts_with = llm_args.get("assistant_starts_with", "")
+            buffer = assistant_starts_with
+            inspection.logs["answer"] = assistant_starts_with
+
+            async for chunk in inspection.model.generate_stream_async(messages, **llm_args):
+                inspection.logs["answer"] += chunk
+                buffer += chunk
+                while True:
+                    content, remainder = self._extract_next_code_block(buffer)
+                    if content is None:
+                        break
+                    buffer = remainder
+                    inspection.logs["response_string"] += f"```python\n{content}\n```\n"
+                    typed_item = self._pull_single_item(inspection, content, item_type)
+                    if typed_item is not None:
+                        yield typed_item
+        finally:
+            inspection.force_llm_args = old_force_llm_args
 
         if buffer.strip():
             probe = buffer if buffer.rstrip().endswith("```") else buffer + "\n```"
             content, _ = self._extract_next_code_block(probe)
             if content is not None:
+                inspection.logs["response_string"] += f"```python\n{content}\n```\n"
                 typed_item = self._pull_single_item(inspection, content, item_type)
                 if typed_item is not None:
                     yield typed_item
@@ -663,10 +739,19 @@ class OneTurnConversationPipeline(Pipeline):
         """
         original_type = inspection.analyse.type
         inspection.analyse.type = item_type
+        
+        # Save the current list because pull_type_data_section will overwrite response_data
+        response_data_list = inspection.logs.get("response_data", [])
+        if not isinstance(response_data_list, list):
+             response_data_list = []
+
         try:
-            return self.pull_type_data_section(inspection, raw_str.strip())
+            item = self.pull_type_data_section(inspection, raw_str.strip())
+            response_data_list.append(item)
+            return item
         except (ValueError, TypeError, SyntaxError) as e:
             print(f"[execute_stream] Skipping unparseable item: {e!r} — raw: {raw_str!r}")
             return None
         finally:
             inspection.analyse.type = original_type
+            inspection.logs["response_data"] = response_data_list

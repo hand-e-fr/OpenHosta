@@ -194,7 +194,7 @@ def iterate_answers(
         return _iterator
     return decorator
 
-def emulate_iterator(
+def emulate_variants(
     pipeline : OneTurnConversationPipeline = config.DefaultPipeline,
     max_generation = 50,
     min_probability = 1e-4,
@@ -259,4 +259,9 @@ def emulate_iterator(
             if counted_generations <= 0:
                 break
                                         
-    return _iterator()
+    is_generator = inspection.analyse.is_generator
+    
+    if is_generator:
+        return _iterator()
+    else:
+        return list(_iterator())

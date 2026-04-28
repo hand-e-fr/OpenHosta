@@ -37,7 +37,7 @@ Take off your conceptual hat and observe OpenHosta in action through functional 
 - 📚 [**Text Classification:**](examples/text_classification.md) Sorting streams of text directly into rigidly typed `Enum` states.
 - 🗃️ [**Data Extraction:**](examples/data_extraction.md) Populating massive `Dataclasses` and `Pydantic` modules straight from unstructured text blobs.
 - 👁️ [**Local OCR with Ollama:**](examples/ocr_local_ollama.md) Passing images using `PIL.Image` directly into `emulate`, performing OCR securely and locally using `glm-ocr`.
-- ⚡ [**Parallel Processing:**](examples/parallel_processing.md) Running asynchronous workloads, parsing dataclasses like invoices, and batching prompts.
+- ⚡ [**Parallel Processing:**](parallel_processing.md) Running asynchronous workloads, parsing dataclasses like invoices, and batching prompts.
 - 🌊 [**Streaming & Iteration:**](streaming.md) Receiving results token-by-token or item-by-item to improve UX and handle long responses.
 
 ---

@@ -1,9 +1,10 @@
-__version__ = "4.2.2"
+__version__ = "4.3.0"
 
 from .defaults import config
 from .defaults import reload_dotenv
 
 from .core.logger import print_last_prompt, print_last_decoding
+from .core.logger import conversation, readable, markdown
 from .core.logger import print_last_probability_distribution, print_last_uncertainty
 from .core.meta_prompt import MetaPrompt
 from .core.uncertainty import safe
@@ -13,29 +14,34 @@ from .core.audit import register_audit_callback, unregister_audit_callback
 
 from .exec.ask import ask, ask_async, ask_stream, ask_stream_async
 from .exec.emulate import emulate, emulate_async
-from .exec.emulate_iterator import emulate_iterator
+from .exec.emulate_variants import emulate_variants
 from .exec.closure import closure, closure_async
 # from .semantics import SemanticSet, SemanticDict # Maybe in 5.0
 from .semantics.operators import test, test_async
 
+from .guarded.primitives import Guarded
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
+from .utils.gather_data import gather_data, gather_data_async
+
 DefaultModel = config.DefaultModel
 DefaultPipeline = config.DefaultPipeline
 
-all = (
+__all__ = (
     "ask",
     "ask_async",
     "ask_stream",
     "ask_stream_async",
     "emulate",
     "emulate_async",
-    "emulate_iterator", 
+    "emulate_variants", 
     "closure",
     "closure_async",
+    "gather_data",
+    "gather_data_async",
     "SemanticSet",
     "SemanticDict",
     "config",
@@ -47,6 +53,9 @@ all = (
     "MetaPrompt",
     "print_last_prompt",
     "print_last_decoding",
+    "conversation",
+    "readable",
+    "markdown",
     "print_last_probability_distribution",
     "print_last_uncertainty",
     "Pipeline",
@@ -56,6 +65,7 @@ all = (
     "test_async",
     "UncertaintyError",
     "track_costs",
+    "Guarded",
     "register_audit_callback",
     "unregister_audit_callback",
 )
