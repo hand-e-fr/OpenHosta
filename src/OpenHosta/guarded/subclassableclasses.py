@@ -138,7 +138,7 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         """Recherche case-insensitive par nom ou par valeur."""
 
         value = str(value)
-        cleaned_val = value.strip()
+        cleaned_val = value.strip(" `'\"\n")
 
         if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
             cleaned_val = cleaned_val[1:-1].strip()
