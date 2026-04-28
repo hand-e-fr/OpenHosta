@@ -29,3 +29,4 @@ final_capabilities.yaml
 **/.scannerwork
 logs/
 .supported_providers.yaml
+scratch/*
