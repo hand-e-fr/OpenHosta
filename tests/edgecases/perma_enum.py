@@ -30,15 +30,22 @@ idea="Installer un système de paillage épais avec des feuilles mortes et de l'
 context="## Description initiale du jardin \n\n### Localisation\nVille: Göteborg, Suède\nOrientation: Nord\nClimat: Tempéré et océanique \nSol: Tourbeux, peu de consistence, assez pauvre\nDimensions à déterminer\nHumidité du climat, mais la terre retient peu l'eau\n\n### Composition\nLe jardin est en pente du haut (Nord-Ouest) vers la maison (Sud). \nIl est bordé au nord par des rochers, au nord-ouest par 5 arbres (érables et chênes),\nau sud-ouest par une palissade, au sud-est par le jardin du voisin, au sud par la maison. \nLes zones proches de la maison et du jardin du voisin sont donc ombragées une partie de la journée, sauf en plein été quand le soleil est vraiment haut. \n\n### Actuelle\ndeux plants de framboisiers déjà plantés vers les érables\n\n### Ravageurs\nSurtout des limaces\n\n\n## Informations et descriptions supplementaires suite à l'analyse du retour utilisateur\n\nLe jardinier souhaite des solutions simples, réversibles et peu coûteuses, adaptées à une occupation temporaire de deux ans. Des méthodes comme les lasagnes végétales ou la butte Hugelkultur sont jugées trop complexes et sont écartées. Le paillage épais avec des feuilles mortes et de l’herbe tondue est maintenu et renforcé, car apprécié pour sa simplicité et son efficacité. L’idée de planter du fenouil, de la coriandre et de l’aneth autour des framboisiers est confirmée comme une piste réaliste pour créer une guilde végétale attractrice d’auxiliaires, même si la coriandre peut poser des contraintes de culture. Les protections contre les limaces à base de bouteilles en plastique coupées et d’anneaux de cuivre sont consolidées comme méthode fiable, facile à déplacer et peu coûteuse. La planification de successions échelonnées pour les radis et les salades est adoptée pour étaler les récoltes. L’association de plantes répulsives comme la ciboulette et le thym est maintenue, mais avec une attention portée à la rotation des cultures en raison de la persistance de la ciboulette. Un banc d’observation modulaire ou préfabriqué est recommandé pour limiter les efforts de bricolage. La culture en bacs en bois ou plastique recyclé près de la maison est retenue comme solution optimale pour les salades, radis et microsalades, permettant un meilleur contrôle de l’humidité et une protection contre les limaces. Le marc de café comme répulsif est écarté en raison de la quantité nécessaire. L’idée de tipis pour haricots est adaptée à la pente et au rocher via des structures souples ou des associations en lignes courbes, mais écartée comme système fixe. Le trèfle blanc comme couvre-sol est considéré comme non prioritaire, étant donné la végétation déjà présente. Le semis échelonné des haricots et pois gourmands est intégré au planning de culture pour répartir l’effort d’entretien. L’arrosage ciblé le matin avec un arrosoir est maintenu comme pratique adaptée au climat humide."
 
 
-try:
-    value = evaluate_idea_scope(idea, context)
-    print("Value:", value)
-except Exception as e:
-    print("error", e)
+from OpenHosta import safe, config
+from OpenHosta.models import ModelCapabilities
+config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
+
+with safe(acceptable_cumulated_uncertainty=1) as ctx:
+    try:
+        value = evaluate_idea_scope(idea, context)
+        print("Value:", value)
+    except Exception as e:
+        print("error", e)
+        
+    print(ctx)
     
 from OpenHosta import print_last_decoding, print_last_prompt
 
-# print_last_prompt(evaluate_idea_scope)
+print_last_prompt(evaluate_idea_scope)
 # print_last_decoding(evaluate_idea_scope)
 
 from OpenHosta.guarded import TypeResolver
