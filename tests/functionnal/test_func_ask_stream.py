@@ -20,7 +20,7 @@ def test_ask_stream_basic():
 def test_ask_stream_async_basic():
     """Test that ask_stream_async yields chunks that form a complete answer."""
     async def app():
-        prompt = "Count to 3: 1, 2, 3"
+        prompt = "Count up to 3."
         chunks = []
         async for chunk in ask_stream_async(prompt, interval_ms=10):
             chunks.append(chunk)

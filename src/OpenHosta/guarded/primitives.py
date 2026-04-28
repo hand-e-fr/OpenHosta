@@ -66,7 +66,7 @@ Création de types personnalisés :
 
 import re
 from abc import ABC, ABCMeta
-from typing import Any, Tuple, ClassVar, Dict, Optional, Literal, TypeVar, Generic, TypeAlias
+from typing import Any, Tuple, ClassVar, Dict, Optional, Literal, TypeVar, Generic
 from dataclasses import dataclass, is_dataclass, fields
 
 
@@ -647,5 +647,3 @@ class ProxyWrapper:
 
     def __getitem__(self, key):
         return self._python_value[key]
-
-Guarded:TypeAlias = GuardedPrimitive
