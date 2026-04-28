@@ -309,6 +309,10 @@ class OneTurnConversationPipeline(Pipeline):
         inspection.logs["enum_normalized_probs"] = normalized_probability
         inspection.logs["uncertainty"] = uncertainty
 
+        # Inject logprobs-based source uncertainty into the Guarded object
+        if isinstance(result, (GuardedPrimitive, ProxyWrapper)):
+            result._source_uncertainty = uncertainty
+
         prompt_hash = hash( str(inspection.logs.get("llm_api_messages_sent", "")) )
         for v in reproducible_settings.values():
  

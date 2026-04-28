@@ -140,6 +140,14 @@ def nice_type_name(p_type) -> str:
                 return name[8:]
             return name
 
+    # Handle Guarded[T] - unwrap to inner type for cleaner display
+    if hasattr(p_type, "__origin__"):
+        from OpenHosta.guarded.primitives import Guarded
+        if p_type.__origin__ is Guarded:
+            args = getattr(p_type, "__args__", ())
+            if args:
+                return nice_type_name(args[0])
+
     # Handle typing types and GenericAlias (tuple[int, ...], List[str], etc.)
     if is_typing_type(p_type) or hasattr(p_type, "__origin__"):
         t=repr(p_type)
