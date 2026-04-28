@@ -97,9 +97,20 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         return f"class {display_name}(Enum):\n{joined_members}"
 
     @property
-    def uncertainty(self) -> UncertaintyLevel:
+    def casting_uncertainty(self) -> UncertaintyLevel:
+        return getattr(self, "_casting_uncertainty", 1.0)
 
-        return getattr(self, "_uncertainty", 1.0)
+    @property
+    def source_uncertainty(self) -> UncertaintyLevel:
+        return getattr(self, "_source_uncertainty", None)
+
+    @property
+    def uncertainty(self) -> UncertaintyLevel:
+        c = getattr(self, "_casting_uncertainty", 1.0)
+        s = getattr(self, "_source_uncertainty", None)
+        if s is None:
+            return c
+        return 1.0 - (1.0 - c) * (1.0 - s)
 
     @property
     def abstraction_level(self) -> str:

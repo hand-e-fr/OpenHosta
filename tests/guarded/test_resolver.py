@@ -428,3 +428,67 @@ class TestTypeResolverLiteralAndCustomTypes:
         # Should be a CorporateEmail instance
         assert isinstance(result, str)
         assert str(result) == "marie.dupont@mycorp.com"
+
+
+class TestNiceTypeWithNameGuardedT:
+    """Test that nice_type_name properly unwraps Guarded[T] to display the inner type."""
+
+    def test_guarded_class_returns_class_name(self):
+        """Guarded[SomeClass] should display as the class name, not Guarded[SomeClass]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        class Sentiment:
+            pass
+
+        result = nice_type_name(Guarded[Sentiment])
+        assert result == "Sentiment", f"Expected 'Sentiment', got '{result}'"
+
+    def test_guarded_builtin_returns_builtin_name(self):
+        """Guarded[str], Guarded[int], etc. should display as the builtin name."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        assert nice_type_name(Guarded[str]) == "str"
+        assert nice_type_name(Guarded[int]) == "int"
+        assert nice_type_name(Guarded[float]) == "float"
+        assert nice_type_name(Guarded[bool]) == "bool"
+
+    def test_guarded_generic_returns_inner_generic(self):
+        """Guarded[List[int]] should display as List[int]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        result = nice_type_name(Guarded[List[int]])
+        assert result == "List[int]", f"Expected 'List[int]', got '{result}'"
+
+    def test_guarded_nested_generic(self):
+        """Guarded[Dict[str, int]] should display as Dict[str, int]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        result = nice_type_name(Guarded[Dict[str, int]])
+        assert result == "Dict[str, int]", f"Expected 'Dict[str, int]', got '{result}'"
+
+    def test_guarded_optional(self):
+        """Guarded[Optional[str]] should display as Optional[str]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        result = nice_type_name(Guarded[Optional[str]])
+        assert result == "Optional[str]", f"Expected 'Optional[str]', got '{result}'"
+
+    def test_regular_types_unchanged(self):
+        """Non-Guarded types should still work normally."""
+        from OpenHosta.core.analizer import nice_type_name
+
+        assert nice_type_name(str) == "str"
+        assert nice_type_name(int) == "int"
+        assert nice_type_name(None) == "Any"
+
+    def test_regular_generics_unchanged(self):
+        """Non-Guarded generic types should still work normally."""
+        from OpenHosta.core.analizer import nice_type_name
+
+        assert nice_type_name(List[int]) == "List[int]"
+        assert nice_type_name(Dict[str, int]) == "Dict[str, int]"
