@@ -66,7 +66,7 @@ Création de types personnalisés :
 
 import re
 from abc import ABC, ABCMeta
-from typing import Any, Tuple, ClassVar, Dict, Optional, Literal, TypeVar, Generic
+from typing import Any, Tuple, ClassVar, Dict, Optional, Literal, TypeVar, Generic, TypeAlias
 from dataclasses import dataclass, is_dataclass, fields
 
 
