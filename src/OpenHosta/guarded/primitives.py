@@ -73,7 +73,6 @@ from dataclasses import dataclass, is_dataclass, fields
 # Imports internes (Moteur & Incertitude)
 from .constants import Tolerance, ToleranceLevel
 
-
 AbstractionLevel = Literal["native", "heuristic", "semantic", "knowledge", "failed"]
 UncertaintyLevel = float
 
@@ -215,7 +214,8 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
 
         # 4. Injection des Métadonnées
         instance._input = value
-        instance._uncertainty = result.uncertainty
+        instance._casting_uncertainty = result.uncertainty
+        instance._source_uncertainty = None
         instance._abstraction_level = result.abstraction
         instance._python_value = result.data
         instance._hosta_inspection = None
@@ -251,9 +251,30 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         # la valeur a déjà été fixée dans __new__.
 
     @property
+    def casting_uncertainty(self) -> UncertaintyLevel:
+        """Uncertainty from the type-casting pipeline layer used to produce this value (0.0 to 1.0)."""
+        return getattr(self, '_casting_uncertainty', 1.0)
+
+    @property
+    def source_uncertainty(self) -> UncertaintyLevel:
+        """
+        Uncertainty of the data source that produced this value (0.0 to 1.0).
+        For LLM-produced values, this comes from token-level logprobs.
+        Returns None if no source uncertainty was measured.
+        """
+        return getattr(self, '_source_uncertainty', None)
+
+    @property
     def uncertainty(self) -> UncertaintyLevel:
-        """Score de confiance de la conversion (0.0 à 1.0)."""
-        return getattr(self, '_uncertainty', 1.0)
+        """
+        Combined uncertainty: 1 - (1 - casting) * (1 - source).
+        If source uncertainty is not available, falls back to casting uncertainty alone.
+        """
+        c = getattr(self, '_casting_uncertainty', 1.0)
+        s = getattr(self, '_source_uncertainty', None)
+        if s is None:
+            return c
+        return 1.0 - (1.0 - c) * (1.0 - s)
 
     @property
     def abstraction_level(self) -> str:
@@ -440,7 +461,8 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
                         instance = base_type.__new__(cls)
 
                 instance._input = value
-                instance._uncertainty = uncertainty
+                instance._casting_uncertainty = uncertainty
+                instance._source_uncertainty = None
                 instance._abstraction_level = level
                 instance._python_value = cleaned_val
                 
@@ -625,3 +647,5 @@ class ProxyWrapper:
 
     def __getitem__(self, key):
         return self._python_value[key]
+
+Guarded:TypeAlias = GuardedPrimitive
