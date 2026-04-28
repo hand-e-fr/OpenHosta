@@ -1,4 +1,4 @@
-__version__ = "4.2.2"
+__version__ = "4.3.0"
 
 from .defaults import config
 from .defaults import reload_dotenv
