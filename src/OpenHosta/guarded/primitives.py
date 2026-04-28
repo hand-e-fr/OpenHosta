@@ -337,7 +337,7 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         - Supprime les explications textuelles avant/après l'expression
         """
         if not isinstance(value, str):
-            return value
+            value = str(value)
 
         cleaned = value.strip()
 

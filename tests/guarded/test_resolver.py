@@ -115,9 +115,10 @@ class TestTypeResolver:
     def test_string_annotation_emits_warning(self):
         """Test that string annotations trigger a deprecation warning."""
         import warnings
+        TypeResolver._RESOLVE_CACHE.clear()
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            TypeResolver.resolve("int")
+            assert TypeResolver.resolve("int") == GuardedInt
             assert len(w) == 1
             assert "gap in upstream type resolution" in str(w[0].message)
 

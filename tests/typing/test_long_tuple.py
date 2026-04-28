@@ -17,7 +17,7 @@ def test_long_tuple_type_resolution():
     # The original LLM output - a tuple with two long strings
     # First string: 10-step irrigation system implementation
     # Second string: Monthly implementation calendar
-    llm_output = (
+    llm_output = """(
         "1. Évaluer les dimensions du jardin et calculer le besoin en eau journalier selon la surface cultivée, en tenant compte du sol tourbeux peu rétentif.\n"
         "2. Installer une cuve de 300 L de récupération d’eau de pluie, raccordée aux gouttières sud, avec filtre basique et surélevée pour bénéficier de la gravité.\n"
         "3. Concevoir un plan de pose des tuyaux goutte-à-goutte groupés par besoins hydriques (fraises, tomates, légumes).\n"
@@ -62,7 +62,7 @@ def test_long_tuple_type_resolution():
         "- Arrêt complet du système.\n"
         "- Vidange totale, rangement minuterie et filtres.\n"
         "- Conservation du réservoir partiellement ouvert pour éviter le gel."
-    )
+    )"""
     
     # Define the type we want to resolve
     MyType = TypeResolver.resolve(Tuple[str, str])
@@ -82,6 +82,9 @@ def test_long_tuple_type_resolution():
         assert "Évaluer les dimensions du jardin" in data[0]
         assert "Calendrier d'implémentation" in data[1]
         
+        assert llm_output[0] == data[0]
+        assert llm_output[1] == data[1]
+        
         # Test accessing the second element (calendar)
         calendar_content = data[1]
         assert "**Avril**" in calendar_content
@@ -94,7 +97,7 @@ def test_long_tuple_type_resolution():
 def test_long_tuple_attempt_method():
     """Test the attempt method with long tuple data."""
     
-    llm_output = (
+    llm_output = """(
         "1. Évaluer les dimensions du jardin et calculer le besoin en eau journalier selon la surface cultivée, en tenant compte du sol tourbeux peu rétentif.\n"
         "2. Installer une cuve de 300 L de récupération d’eau de pluie, raccordée aux gouttières sud, avec filtre basique et surélevée pour bénéficier de la gravité.",
         "Calendrier d'implémentation du système d’irrigation goutte-à-goutte avec récupération d’eau de pluie (Göteborg, climat océanique) :\n"
@@ -102,7 +105,7 @@ def test_long_tuple_attempt_method():
         "**Avril**\n"
         "- **Semaine 1-2** : Analyse du jardin, tracé du réseau. Installation de la cuve de 300 L orientée sud avec filtre.\n"
         "- **Semaine 3** : Achat du matériel (tuyaux, raccords, minuterie mécanique, supports)."
-    )
+    )"""
     
     MyType = TypeResolver.resolve(tuple[str, str])
     
