@@ -129,7 +129,7 @@ def guarded_pydantic_model(model_cls: Type[BaseModel]) -> Type[GuardedPrimitive]
             if isinstance(value, dict):
                 data_dict = value
             elif isinstance(value, str):
-                v_strip = value.strip().strip("\"'").replace("\n", "")
+                v_strip = cls._clean_llm_response(value)
                 if v_strip.startswith(model_cls.__name__ + "(") or v_strip.startswith("{"):
                     import ast
                     try:

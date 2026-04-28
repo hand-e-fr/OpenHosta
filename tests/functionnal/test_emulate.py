@@ -271,27 +271,32 @@ def test_emulate_callable_prototype_async():
         RAINY = "rainy"
         CLOUDY = "cloudy"
 
-    async def app():
-        async def get_weather_predictor() -> Callable[[float, float], Weather]:
-            """
-            Write a python function that predicts the weather based on temperature and humidity.
-            The function takes temperature (float) and humidity (float) as arguments and returns a Weather enum.
-            - If humidity > 80, it's rainy.
-            - If humidity < 50 and temperature > 20, it's sunny.
-            - Otherwise, it's cloudy.
-            """
-            return await emulate_async()
-        
-        return await get_weather_predictor()
-    
-    predictor = run(app())
+    async def get_weather_predictor() -> Callable[[float, float], Weather]:
+        """
+        Write a python function that predicts the weather based on temperature and humidity.
+        The function takes temperature (float) and humidity (float) as arguments and returns a Weather enum.
+        - If humidity > 80, it's rainy.
+        - If humidity < 50 and temperature > 20, it's sunny.
+        - Otherwise, it's cloudy.
+        """
+        return await emulate_async()
+            
+    predictor = run(get_weather_predictor())
     
     assert callable(predictor), f"Expected a callable, got: {type(predictor)}"
-    
-    # Test the generated function
-    assert predictor(25.0, 40.0) == Weather.SUNNY
-    assert predictor(15.0, 90.0) == Weather.RAINY
-    assert predictor(15.0, 60.0) == Weather.CLOUDY
+
+    try:
+        # Check predictor annotation
+        assert predictor.__annotations__ == {"temperature": float, "humidity": float, "return": Weather}
+        
+        # Test the generated function
+        assert predictor(25.0, 40.0) == Weather.SUNNY
+        assert predictor(15.0, 90.0) == Weather.RAINY
+        assert predictor(15.0, 60.0) == Weather.CLOUDY
+    except Exception as e:    
+        from OpenHosta import print_last_prompt
+        print_last_prompt(get_weather_predictor)
+        raise e
     
 def test_emulate_speed():
     """

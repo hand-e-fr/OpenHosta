@@ -28,8 +28,10 @@ class GuardedInt(GuardedPrimitive, int):
             return UncertaintyLevel(Tolerance.STRICT), int(value), None
             
         # Cas : String numérique propre "123"
-        if isinstance(value, str) and value.isnumeric():
-            return UncertaintyLevel(Tolerance.STRICT), int(value), None
+        if isinstance(value, str):
+            v_strip = value.strip()
+            if v_strip.isnumeric():
+                return UncertaintyLevel(Tolerance.STRICT), int(v_strip), None
              
         # Cas : Float rond (42.0) -> Accepté comme int
         if isinstance(value, float) and value.is_integer():
@@ -42,10 +44,9 @@ class GuardedInt(GuardedPrimitive, int):
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         if isinstance(value, bool):
             return UncertaintyLevel(Tolerance.FLEXIBLE), int(value), None
-        value = str(value)
-            
+        value = cls._clean_llm_response(value)
         # Nettoyage : espaces, et devises courantes
-        value = value.strip().replace(" ", "")
+        value = value.replace(" ", "")
         
         # Gestion des séparateurs de milliers (ex: 1,000 -> 1000)
         # On enlève les virgules si la chaîne contient uniquement des chiffres et des virgules
@@ -55,7 +56,7 @@ class GuardedInt(GuardedPrimitive, int):
         # Gestion des nombres négatifs et validation finale
         # Regex: Optionnel '-', suivi de chiffres
         if re.fullmatch(r'-?\d+', value):
-            return UncertaintyLevel(Tolerance.FLEXIBLE), int(value), None
+            return UncertaintyLevel(Tolerance.PRECISE), int(value), None
             
         return UncertaintyLevel(Tolerance.ANYTHING), value, None        
         
@@ -88,9 +89,8 @@ class GuardedFloat(GuardedPrimitive, float):
 
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
-        value = str(value)
-            
-        value = value.strip().replace(" ", "")
+        value = cls._clean_llm_response(value)
+        value = value.replace(" ", "")
         
         # Standardisation : Remplacer ',' par '.' (Format européen)
         value = value.replace(",", ".")
@@ -99,7 +99,7 @@ class GuardedFloat(GuardedPrimitive, float):
             value = ''.join(slices[:-1])+ "." + slices[-1]
         
         try:
-            return UncertaintyLevel(Tolerance.FLEXIBLE), float(value), None
+            return UncertaintyLevel(Tolerance.PRECISE), float(value), None
         except ValueError as e:
             return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 
@@ -118,13 +118,14 @@ class GuardedUtf8(GuardedPrimitive, str):
     def _parse_native(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
 
         if isinstance(value, str):
+            # If the string has leading/trailing whitespace, starts with quotes, 
+            # contains markdown blocks or comments, let heuristic handle it for better cleaning
+            if (value.strip() != value or 
+                value.startswith("'") or value.startswith('"') or 
+                "```" in value or "#" in value or "\n" in value):
+                return UncertaintyLevel(Tolerance.ANYTHING), value, "String needs cleaning"
             
-            if value.startswith("'") or value.startswith('"'):
-                # Remove quotes if they are present at the beginning and end of the string
-                # This is a common pattern in JSON and other format
-                return UncertaintyLevel(Tolerance.FLEXIBLE), str(value.strip("\"'")), None
-            else:
-                return UncertaintyLevel(Tolerance.STRICT), str(value), None
+            return UncertaintyLevel(Tolerance.STRICT), str(value), None
             
         return UncertaintyLevel(Tolerance.ANYTHING), value, None
     
@@ -136,6 +137,13 @@ class GuardedUtf8(GuardedPrimitive, str):
                 return UncertaintyLevel(Tolerance.STRICT), value.decode("utf-8"), None
             except UnicodeDecodeError as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"{e}"
+        
+        if isinstance(value, str):
+            cleaned = cls._clean_llm_response(value)
+            # Remove quotes if they wrap the whole thing
+            if (cleaned.startswith("'") and cleaned.endswith("'")) or (cleaned.startswith('"') and cleaned.endswith('"')):
+                cleaned = cleaned[1:-1]
+            return UncertaintyLevel(Tolerance.PRECISE), cleaned, None
             
         return UncertaintyLevel(Tolerance.ANYTHING), value, f"Expected str or bytes, got {type(value)}"
     
@@ -159,8 +167,8 @@ class GuardedComplex(GuardedPrimitive, complex):
     @classmethod
     def _parse_heuristic(cls, value: Any) -> Tuple[UncertaintyLevel, Any, Optional[str]]:
         try:
-            value = str(value).replace(" ", "")
-            return UncertaintyLevel(Tolerance.TYPE_COMPLIANT), complex(value), None
+            value = cls._clean_llm_response(value).replace(" ", "")
+            return UncertaintyLevel(Tolerance.PRECISE), complex(value), None
         except (ValueError, TypeError) as e:
             return UncertaintyLevel(Tolerance.ANYTHING), value, str(e)
 

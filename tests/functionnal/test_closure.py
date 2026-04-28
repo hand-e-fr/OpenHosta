@@ -56,9 +56,9 @@ def test_closure_math_async():
 def test_closure_routing_async():
     async def app():
         prompt = "what is a good next step after this command: (between 'git push', 'git commit', 'git status', 'git pull', 'git fetch')"
-        next_step = closure_async(prompt)
+        next_step = closure_async(prompt, force_return_type=str)
         return await next_step("git commit -m 'Initial commit'")
     response = run(app())
-    assert "push" in response, f"Expected 'push' and 'origin' in response, got: {response}"
+    assert "push" in response, f"Expected 'push' in response, got: {response}"
     
     

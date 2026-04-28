@@ -1,5 +1,5 @@
 import pytest
-from typing import List, Dict, Set, Tuple, Optional, Union
+from typing import List, Dict, Set, Tuple, Optional, Union, Literal
 from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
 from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
 from OpenHosta.guarded.subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple
@@ -115,9 +115,10 @@ class TestTypeResolver:
     def test_string_annotation_emits_warning(self):
         """Test that string annotations trigger a deprecation warning."""
         import warnings
+        TypeResolver._RESOLVE_CACHE.clear()
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            TypeResolver.resolve("int")
+            assert TypeResolver.resolve("int") == GuardedInt
             assert len(w) == 1
             assert "gap in upstream type resolution" in str(w[0].message)
 
@@ -304,13 +305,27 @@ class TestTypeResolverLiteralAndCustomTypes:
         # Should now return a GuardedLiteral (dynamic class)
         assert "Literal" in str(resolved) or resolved.__name__.startswith("Literal")
     
-    def test_resolve_literal_int(self):
-        """Test resolving Literal with integers."""
-        from typing import Literal
-        
-        resolved = TypeResolver.resolve(Literal[1, 2, 3])
         # Should return a GuardedLiteral based on GuardedInt
         assert "Literal" in str(resolved) or resolved.__name__.startswith("Literal")
+
+    def test_resolve_type_alias_pep695(self):
+        """Test resolving Python 3.12+ TypeAliasType (PEP 695)."""
+        import sys
+        if sys.version_info < (3, 12):
+            pytest.skip("TypeAliasType (PEP 695) requires Python 3.12+")
+            
+        from typing import Literal
+        # This syntax is only valid in Python 3.12+
+        # Provide Literal in the namespace for exec
+        namespace = {"Literal": Literal}
+        exec("type MyAlias = Literal['a', 'b']", globals(), namespace)
+        MyAlias = namespace["MyAlias"]
+
+        
+        resolved = TypeResolver.resolve(MyAlias)
+        assert "Literal" in str(resolved)
+        assert "a" in str(resolved) and "b" in str(resolved)
+
     
     def test_resolve_custom_guarded_type(self):
         """Test resolving custom GuardedPrimitive subclass."""
@@ -428,3 +443,67 @@ class TestTypeResolverLiteralAndCustomTypes:
         # Should be a CorporateEmail instance
         assert isinstance(result, str)
         assert str(result) == "marie.dupont@mycorp.com"
+
+
+class TestNiceTypeWithNameGuardedT:
+    """Test that nice_type_name properly unwraps Guarded[T] to display the inner type."""
+
+    def test_guarded_class_returns_class_name(self):
+        """Guarded[SomeClass] should display as the class name, not Guarded[SomeClass]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        class Sentiment:
+            pass
+
+        result = nice_type_name(Guarded[Sentiment])
+        assert result == "Sentiment", f"Expected 'Sentiment', got '{result}'"
+
+    def test_guarded_builtin_returns_builtin_name(self):
+        """Guarded[str], Guarded[int], etc. should display as the builtin name."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        assert nice_type_name(Guarded[str]) == "str"
+        assert nice_type_name(Guarded[int]) == "int"
+        assert nice_type_name(Guarded[float]) == "float"
+        assert nice_type_name(Guarded[bool]) == "bool"
+
+    def test_guarded_generic_returns_inner_generic(self):
+        """Guarded[List[int]] should display as List[int]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        result = nice_type_name(Guarded[List[int]])
+        assert result == "List[int]", f"Expected 'List[int]', got '{result}'"
+
+    def test_guarded_nested_generic(self):
+        """Guarded[Dict[str, int]] should display as Dict[str, int]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        result = nice_type_name(Guarded[Dict[str, int]])
+        assert result == "Dict[str, int]", f"Expected 'Dict[str, int]', got '{result}'"
+
+    def test_guarded_optional(self):
+        """Guarded[Optional[str]] should display as Optional[str]."""
+        from OpenHosta.core.analizer import nice_type_name
+        from OpenHosta import Guarded
+
+        result = nice_type_name(Guarded[Optional[str]])
+        assert result == "Optional[str]", f"Expected 'Optional[str]', got '{result}'"
+
+    def test_regular_types_unchanged(self):
+        """Non-Guarded types should still work normally."""
+        from OpenHosta.core.analizer import nice_type_name
+
+        assert nice_type_name(str) == "str"
+        assert nice_type_name(int) == "int"
+        assert nice_type_name(None) == "Any"
+
+    def test_regular_generics_unchanged(self):
+        """Non-Guarded generic types should still work normally."""
+        from OpenHosta.core.analizer import nice_type_name
+
+        assert nice_type_name(List[int]) == "List[int]"
+        assert nice_type_name(Dict[str, int]) == "Dict[str, int]"

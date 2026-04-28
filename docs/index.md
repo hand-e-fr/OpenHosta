@@ -12,7 +12,10 @@ Welcome to the **OpenHosta** documentation. OpenHosta is the semantic layer for 
 Set up your environment, configure a local or remote model, and run your first `emulate()` call.
 
 ### ⚙️ [Core Functions](core_functions.md)
-Learn about `emulate`, `emulate_async`, `emulate_iterator`, `closure`, `ask`, and `test`.
+Learn about `emulate`, `emulate_async`, `emulate_variants`, `closure`, `ask`, and `test`.
+
+### 🔄 [Streaming & Iterators](streaming.md)
+Stream raw tokens with `ask_stream`, or yield structured Python objects one-by-one with `Iterator` return types and `emulate_variants`.
 
 ### 🔧 [Models & Setup](models_and_setup.md)
 Connect any OpenAI-compatible endpoint (Ollama, vLLM, Azure OpenAI), customize prompts, enable audit mode, and track costs.
@@ -23,8 +26,17 @@ OpenHosta natively supports `int`, `str`, `List`, `Dict`, `Enum`, `dataclass`, `
 ### 🛡️ [Safe Context & Error Handling](safe_context_and_uncertainty.md)
 Handle uncertainty, catch ambiguous LLM responses, and build robust production workflows.
 
+### ⚡ [Parallel Processing](parallel_processing.md)
+Simplify concurrent execution of `emulate_async` with the `gather_data` batching utility to parse vast amount of items concurrently.
+
 ### 📐 [Guarded Types](guarded.md)
 Deep dive into OpenHosta's type validation and conversion system with configurable tolerance.
+
+### 🛠️ [Debugging & Inspection](debugging.md)
+Learn how to use `conversation()`, `readable()`, and `markdown()` to inspect LLM outputs and debug your semantic code.
+
+### 🛡️ [Production & Auditing](production.md)
+Learn how to deploy OpenHosta at scale, enable audit logging for compliance, and track token usage in production.
 
 ---
 
@@ -35,7 +47,7 @@ Deep dive into OpenHosta's type validation and conversion system with configurab
 | 📚 [Text Classification](examples/text_classification.md) | Classify text into `Enum` states |
 | 🗃️ [Data Extraction](examples/data_extraction.md) | Populate `dataclass` / `Pydantic` from unstructured text |
 | 👁️ [Local OCR](examples/ocr_local_ollama.md) | Image processing with `PIL.Image` + Ollama |
-| ⚡ [Parallel Processing](examples/parallel_processing.md) | Async batch workloads with `emulate_async` |
+| 🔄 [Streaming & Iterators](streaming.md) | Stream tokens or yield typed objects with `Iterator` |
 
 ---
 

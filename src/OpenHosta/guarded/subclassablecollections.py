@@ -1,6 +1,99 @@
-from typing import Any, Tuple, Optional
+import ast
+from typing import Any, Tuple, Optional, List as TypingList
 from .primitives import GuardedPrimitive, GuardedCallInput, UncertaintyLevel, Tolerance, ProxyWrapper
 from .type_hints import resolve_struct_hints
+
+
+def _split_composite_string(inner: str) -> TypingList[Any]:
+    """Split a string of comma-separated items that may contain non-literal
+    expressions (e.g. dataclass constructors, enum reprs) which ast.literal_eval
+    cannot handle.
+
+    Splits on commas that are NOT inside quotes or nested brackets/parens/braces.
+    Each resulting part is individually evaluated with ast.literal_eval; if that
+    fails the raw string is kept, allowing downstream Guarded types to parse it.
+
+    Args:
+        inner: The content between the outer delimiters (already stripped of
+               surrounding [], {}, or ()).
+
+    Returns:
+        A list of parsed items (Python literals where possible, raw strings otherwise).
+    """
+    if not inner:
+        return []
+
+    parts: TypingList[str] = []
+    depth = 0
+    in_quote = False
+    quote_char = None
+    last_idx = 0
+
+    for i, c in enumerate(inner):
+        if c in '"\'' and (i == 0 or inner[i - 1] != '\\'):
+            if not in_quote:
+                in_quote = True
+                quote_char = c
+            elif quote_char == c:
+                in_quote = False
+                quote_char = None
+
+        if not in_quote:
+            if c in '({[':
+                depth += 1
+            elif c in ')}]':
+                depth -= 1
+            elif c == ',' and depth == 0:
+                parts.append(inner[last_idx:i].strip())
+                last_idx = i + 1
+
+    parts.append(inner[last_idx:].strip())
+
+    evaluated: TypingList[Any] = []
+    for part in parts:
+        try:
+            evaluated.append(ast.literal_eval(part))
+        except (ValueError, SyntaxError):
+            evaluated.append(part)
+    return evaluated
+
+def _split_dict_item(item: str) -> Tuple[Any, Any]:
+    """Safely split a single key-value string (e.g. '"a": Person(...)') by its colon."""
+    depth = 0
+    in_quote = False
+    quote_char = None
+    
+    for i, c in enumerate(item):
+        if c in '"\'' and (i == 0 or item[i - 1] != '\\'):
+            if not in_quote:
+                in_quote = True
+                quote_char = c
+            elif quote_char == c:
+                in_quote = False
+                quote_char = None
+
+        if not in_quote:
+            if c in '({[':
+                depth += 1
+            elif c in ')}]':
+                depth -= 1
+            elif c == ':' and depth == 0:
+                k_str = item[:i].strip()
+                v_str = item[i+1:].strip()
+                
+                try:
+                    k_eval = ast.literal_eval(k_str)
+                except (ValueError, SyntaxError):
+                    k_eval = k_str
+                
+                try:
+                    v_eval = ast.literal_eval(v_str)
+                except (ValueError, SyntaxError):
+                    v_eval = v_str
+                    
+                return k_eval, v_eval
+                
+    raise ValueError(f"No valid colon found in dict item: {item}")
 
 class GuardedList(GuardedPrimitive, list):
     """
@@ -25,7 +118,7 @@ class GuardedList(GuardedPrimitive, list):
             if cls._item_type:
                 try:
                     converted = []
-                    for item in value:
+                    for i, item in enumerate(value):
                         r = cls._item_type.attempt(item)
                         # We MUST use r.data to get the native value. 
                         # If attempt fails, it will raise eventually or we fallback to the raw item if we are tolerant.
@@ -33,7 +126,12 @@ class GuardedList(GuardedPrimitive, list):
                         if r.success:
                             converted.append(r.data)
                         else:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {r.error_message}"
+                            inner_err = r.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -49,17 +147,19 @@ class GuardedList(GuardedPrimitive, list):
         
         # Accepter les strings représentant des listes
         elif isinstance(value, str):
-            value_s = value.strip()
+            value_s = cls._clean_llm_response(value)
             
             # Format "[1, 2, 3]"
             if value_s.startswith('[') and value_s.endswith(']'):
                 try:
-                    import ast
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, list):
                         items = parsed
-                except (ValueError, SyntaxError) as e:
-                    pass
+                except (ValueError, SyntaxError):
+                    try:
+                        items = _split_composite_string(value_s[1:-1].strip())
+                    except Exception:
+                        pass
             
             # Format "1,2,3" (CSV)
             if items is None and ',' in value_s:
@@ -76,12 +176,17 @@ class GuardedList(GuardedPrimitive, list):
         if cls._item_type:
             try:
                 converted = []
-                for item in items:
+                for i, item in enumerate(items):
                     r = cls._item_type.attempt(item)
                     if r.success:
                         converted.append(r.data)
                     else:
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item validation failed: {r.error_message}"
+                        inner_err = r.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -122,7 +227,12 @@ class GuardedSet(GuardedPrimitive, set):
                         if r.success:
                             converted.add(r.data)
                         else:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {r.error_message}"
+                            inner_err = r.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"Dans l'élément {repr(item)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Élément dans le Set: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
                     return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -138,7 +248,7 @@ class GuardedSet(GuardedPrimitive, set):
         
         # Accepter les strings représentant des sets
         elif isinstance(value, str):
-            value_s = value.strip()
+            value_s = cls._clean_llm_response(value)
             
             # Format "{1, 2, 3}" ou "frozenset({...})" ou "frozenset([...])"
             if value_s.startswith("frozenset(") and value_s.endswith(")"):
@@ -146,21 +256,25 @@ class GuardedSet(GuardedPrimitive, set):
             
             if value_s.startswith('{') and value_s.endswith('}'):
                 try:
-                    import ast
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, (set, list, tuple)):
                         items = set(parsed)
                 except (ValueError, SyntaxError):
-                    pass
+                    try:
+                        items = set(_split_composite_string(value_s[1:-1].strip()))
+                    except Exception:
+                        pass
             elif value_s.startswith('[') and value_s.endswith(']'):
                  # Case frozen_set([1, 2])
                 try:
-                    import ast
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, list):
                         items = set(parsed)
-                except:
-                    pass
+                except (ValueError, SyntaxError):
+                    try:
+                        items = set(_split_composite_string(value_s[1:-1].strip()))
+                    except Exception:
+                        pass
             
             # Format "1,2,3" (CSV)
             if items is None and ',' in value_s:
@@ -182,7 +296,12 @@ class GuardedSet(GuardedPrimitive, set):
                     if res.success:
                         converted_items.append(res.data)
                     else:
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item validation failed: {res.error_message}"
+                        inner_err = res.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"Dans l'élément {repr(item)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = f"→ Élément dans le Set: Type invalide. Reçu {repr(item)} (type: {type(item).__name__})."
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                 return UncertaintyLevel(Tolerance.PRECISE), set(converted_items), None
             except Exception as e:
                 return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item conversion failed: {e}"
@@ -223,7 +342,12 @@ class GuardedDict(GuardedPrimitive, dict):
                         if cls._key_type:
                             rk = cls._key_type.attempt(k)
                             if not rk.success:
-                                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Key conversion failed: {rk.error_message}"
+                                inner_err = rk.error_message or ""
+                                if "→" in inner_err:
+                                    msg = f"Dans la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                                else:
+                                    msg = f"→ Clé {repr(k)}: Type invalide. Reçu {repr(k)} (type: {type(k).__name__})."
+                                return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                             new_k = rk.data
                         else:
                             new_k = k
@@ -231,7 +355,12 @@ class GuardedDict(GuardedPrimitive, dict):
                         if cls._value_type:
                             rv = cls._value_type.attempt(v)
                             if not rv.success:
-                                return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value conversion failed: {rv.error_message}"
+                                inner_err = rv.error_message or ""
+                                if "→" in inner_err:
+                                    msg = f"Dans la valeur de la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                                else:
+                                    msg = f"→ Valeur pour la clé {repr(k)}: Type invalide. Reçu {repr(v)} (type: {type(v).__name__})."
+                                return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                             new_v = rv.data
                         else:
                             new_v = v
@@ -247,7 +376,7 @@ class GuardedDict(GuardedPrimitive, dict):
         items = None
         # Accepter les strings représentant des dicts
         if isinstance(value, str):
-            value_s = value.strip()
+            value_s = cls._clean_llm_response(value)
             
             # Format JSON
             if value_s.startswith('{') and value_s.endswith('}'):
@@ -259,12 +388,25 @@ class GuardedDict(GuardedPrimitive, dict):
                 except (json.JSONDecodeError, ValueError):
                     # Essayer avec ast.literal_eval
                     try:
-                        import ast
                         parsed = ast.literal_eval(value_s)
                         if isinstance(parsed, dict):
                             items = parsed
                     except (ValueError, SyntaxError):
-                        pass
+                        try:
+                            inner = value_s[1:-1].strip()
+                            if not inner:
+                                items = {}
+                            else:
+                                parts = _split_composite_string(inner)
+                                new_items = {}
+                                for part in parts:
+                                    # _split_composite_string might return the raw string if literal_eval fails
+                                    if isinstance(part, str):
+                                        k, v = _split_dict_item(part)
+                                        new_items[k] = v
+                                items = new_items
+                        except Exception:
+                            pass
         
         # Tenter de convertir en dict
         if items is None:
@@ -281,7 +423,12 @@ class GuardedDict(GuardedPrimitive, dict):
                     if cls._key_type:
                         rk = cls._key_type.attempt(k)
                         if not rk.success:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Key validation failed: {rk.error_message}"
+                            inner_err = rk.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"Dans la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Clé {repr(k)}: Type invalide. Reçu {repr(k)} (type: {type(k).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                         new_k = rk.data
                     else:
                         new_k = k
@@ -289,7 +436,12 @@ class GuardedDict(GuardedPrimitive, dict):
                     if cls._value_type:
                         rv = cls._value_type.attempt(v)
                         if not rv.success:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Value validation failed: {rv.error_message}"
+                            inner_err = rv.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"Dans la valeur de la clé {repr(k)}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Valeur pour la clé {repr(k)}: Type invalide. Reçu {repr(v)} (type: {type(v).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                         new_v = rv.data
                     else:
                         new_v = v
@@ -338,7 +490,12 @@ class GuardedTuple(GuardedPrimitive, tuple):
                         if res.success:
                             converted_items.append(res.data)
                         else:
-                            return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item {i} conversion failed: {res.error_message}"
+                            inner_err = res.error_message or ""
+                            if "→" in inner_err:
+                                msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                            else:
+                                msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(value[i])} (type: {type(value[i]).__name__})."
+                            return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                     converted = tuple(converted_items)
                     return UncertaintyLevel(Tolerance.STRICT), converted, None
                 except Exception as e:
@@ -355,70 +512,23 @@ class GuardedTuple(GuardedPrimitive, tuple):
         
         # Accepter les strings représentant des tuples
         elif isinstance(value, str):
-            value_s = value.strip("\n \t")
+            value_s = cls._clean_llm_response(value)
             
             # Format "(1, 2, 3)"
             if value_s.startswith('(') and value_s.endswith(')'):
                 try:
-                    import ast
-                    # Attempt to parse using ast.literal_eval for safe evaluation
                     parsed = ast.literal_eval(value_s)
                     if isinstance(parsed, tuple):
                         items = parsed
                     else:
                         return UncertaintyLevel(Tolerance.ANYTHING), value, f"Not a tuple: {value}"
                 except (ValueError, SyntaxError):
-                    # Handle cases like (<MyEnum.PAS_ASSEZ_INFORMATION: 'pas_assez_information'>, 're')
+                    # Handle cases like (<MyEnum.PAS_ASSEZ_INFORMATION: '...'>, 're')
                     # where ast.literal_eval fails due to non-literal expressions
                     try:
-                        # Strip the outer parentheses and split manually by commas not inside nested structures
-                        inner = value_s[1:-1].strip()
-                        if not inner:
-                            items = []
-                        else:
-                            # Simple split with comma, careful about potential nesting
-                            # This is a less safe fallback, but necessary for non-literal enum representations
-                            parts = []
-                            depth = 0
-                            in_quote = False
-                            quote_char = None
-                            last_idx = 0
-                            for i, c in enumerate(inner):
-                                if c in '"\'' and (i == 0 or inner[i-1] != '\\'):
-                                    if not in_quote:
-                                        in_quote = True
-                                        quote_char = c
-                                    elif quote_char == c:
-                                        in_quote = False
-                                        quote_char = None
-                                
-                                if not in_quote:
-                                    if c in '({[':
-                                        depth += 1
-                                    elif c in ')}]':
-                                        depth -= 1
-                                    elif c == ',' and depth == 0:
-                                        parts.append(inner[last_idx:i].strip())
-                                        last_idx = i + 1
-                            parts.append(inner[last_idx:].strip())
-
-                            # Attempt to evaluate each part individually, fallback to string if needed
-                            evaluated_parts = []
-                            for part in parts:
-                                try:
-                                    # First, try literal_eval for safety
-                                    evaluated = ast.literal_eval(part)
-                                except (ValueError, SyntaxError):
-                                    # If that fails, keep it as a string representation
-                                    # This preserves things like enum instances that can't be literal-evaluated
-                                    evaluated = part
-                                evaluated_parts.append(evaluated)
-
-                            items = evaluated_parts
+                        items = _split_composite_string(value_s[1:-1].strip())
                     except Exception:
                         return UncertaintyLevel(Tolerance.ANYTHING), value, "Could not parse string as tuple"
-                except (ValueError, SyntaxError) as e:
-                    return UncertaintyLevel(Tolerance.ANYTHING), value, f"Could not parse tuple from string to {cls._type_py}:\n{e}\n{value}"
                     
             # Format "1,2,3" (CSV)
             if items is None and ',' in value_s:
@@ -443,7 +553,12 @@ class GuardedTuple(GuardedPrimitive, tuple):
                     if item_result.success:
                         converted_items.append(item_result.data)
                     else:
-                        return UncertaintyLevel(Tolerance.ANYTHING), value, f"Item {i} validation failed: {item_result.error_message}"
+                        inner_err = item_result.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"À l'index {i}:\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = f"→ Élément à l'index {i}: Type invalide. Reçu {repr(items[i])} (type: {type(items[i]).__name__})."
+                        return UncertaintyLevel(Tolerance.ANYTHING), value, msg
                 converted = tuple(converted_items)
                 return UncertaintyLevel(Tolerance.PRECISE), converted, None
             except Exception as e:
@@ -484,10 +599,17 @@ class GuardedTuple(GuardedPrimitive, tuple):
         """Retourne un tuple natif avec unwrapping récursif des éléments."""
         return self._recursive_unwrap(tuple(self))
 
-def guarded_tuple(*item_types):
+# Cache pour éviter de recréer la même classe wrapper
+_GUARDED_TUPLE_CACHE: dict = {}
 
+def guarded_tuple(*item_types):
     """Factory for parameterized tuples."""
-    return GuardedTuple[item_types]
+    if item_types in _GUARDED_TUPLE_CACHE:
+        return _GUARDED_TUPLE_CACHE[item_types]
+    
+    res = GuardedTuple[item_types]
+    _GUARDED_TUPLE_CACHE[item_types] = res
+    return res
 
 # Cache pour éviter de reconstruire la même classe multiple fois
 _DATACLASS_GUARDED_CACHE: Any = {}
@@ -551,7 +673,18 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
 
                     attempt_result = guarded_type.attempt(raw_value)
                     if not attempt_result.success:
-                        raise ValueError(attempt_result.error_message)
+                        inner_err = attempt_result.error_message or ""
+                        if "→" in inner_err:
+                            msg = f"Dans le champ '{field.name}':\n  {inner_err.replace(chr(10), chr(10) + '  ')}"
+                        else:
+                            msg = (
+                                f"→ Champ '{field.name}': Type invalide.\n"
+                                f"   - Reçu    : {repr(raw_value)} (type: {type(raw_value).__name__})\n"
+                                f"   - Attendu : {expected_field_type}"
+                            )
+                            if raw_value is None:
+                                msg += f"\n   - Solution: Si 'None' est acceptable, modifiez le type en `{expected_field_type} | None` ou `Optional[{expected_field_type}]`."
+                        raise ValueError(msg)
 
                     # We use guarded_data for internal storage to preserve metadata and pass core tests
                     converted_kwargs[field.name] = attempt_result.guarded_data
@@ -610,7 +743,7 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
 
 
                 # We try to make it as a string if it's not already a string, to let the LLM try to parse it as a constructor call or dict
-                v_strip = str(value).strip().replace("\n", "")
+                v_strip = cls._clean_llm_response(value)
 
                 # Obtenir le nom de la classe d'origine (sans le préfixe Guarded_)
                 original_name = cls._type_py.__name__ if hasattr(cls, '_type_py') else cls.__name__
@@ -699,13 +832,11 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
         fields_repr = []
         hints = resolve_struct_hints(cls_to_guard)
 
+        from ..core.analizer import nice_type_name
         for field in field_definitions:
             field_type = hints.get(field.name, field.type)
             try:
-                guarded_field = TypeResolver.resolve(field_type)
-                type_str = getattr(guarded_field, "_type_py_repr", None)
-                if type_str is None or type_str is NotImplemented:
-                    type_str = getattr(guarded_field, "__name__", str(field_type))
+                type_str = nice_type_name(field_type)
             except Exception:
                 type_str = str(field_type)
             fields_repr.append(f"    {field.name}: {type_str}")
@@ -838,12 +969,10 @@ def guarded_typeddict(cls_to_guard):
     fields_repr = []
     hints = resolve_struct_hints(cls_to_guard)
 
+    from ..core.analizer import nice_type_name
     for field_name, field_type in hints.items():
         try:
-            guarded_field = TypeResolver.resolve(field_type)
-            type_str = getattr(guarded_field, "_type_py_repr", None)
-            if type_str is None or type_str is NotImplemented:
-                type_str = getattr(field_type, "__name__", str(field_type))
+            type_str = nice_type_name(field_type)
         except Exception:
             type_str = getattr(field_type, "__name__", str(field_type))
         fields_repr.append(f"    {field_name}: {type_str}")
