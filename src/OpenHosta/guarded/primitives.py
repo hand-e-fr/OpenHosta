@@ -647,5 +647,3 @@ class ProxyWrapper:
 
     def __getitem__(self, key):
         return self._python_value[key]
-
-Guarded:TypeAlias = GuardedPrimitive
