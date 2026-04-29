@@ -20,8 +20,7 @@ def evaluate_idea_scope(idea: str, context: str) -> Rating:
     ou si elle est liée au contexte spécifique décrit dans `contexte` (contextuelle).
     Sa mise en oeuvre peut être évidente (proven), incertaine (unproven) ou impossible (disproven).
 
-    Returns a Rating enum value.
-
+    Returns a Rating enum value on the first line followed by two empty lines then a python comment that is a justification of the rating.
     """
     return emulate()
 
@@ -34,19 +33,22 @@ from OpenHosta import safe, config
 from OpenHosta.models import ModelCapabilities
 config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
 
-with safe(acceptable_cumulated_uncertainty=1) as ctx:
+# with safe(acceptable_cumulated_uncertainty=1) as ctx:
+if True:
     try:
         value = evaluate_idea_scope(idea, context)
-        print("Value:", value)
     except Exception as e:
         print("error", e)
+        value = "<ERROR>"
         
-    print(ctx)
+    # print(ctx)
     
 from OpenHosta import print_last_decoding, print_last_prompt
 
 print_last_prompt(evaluate_idea_scope)
 # print_last_decoding(evaluate_idea_scope)
+
+print("Value:", value)
 
 from OpenHosta.guarded import TypeResolver
 
