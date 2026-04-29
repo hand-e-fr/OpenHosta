@@ -1,10 +1,10 @@
 import ast
-from typing import Any, Tuple, Optional, List as TypingList
+from typing import Any, Tuple, Optional, List
 from .primitives import GuardedPrimitive, GuardedCallInput, UncertaintyLevel, Tolerance, ProxyWrapper
 from .type_hints import resolve_struct_hints
 
 
-def _split_composite_string(inner: str) -> TypingList[Any]:
+def _split_composite_string(inner: str) -> List[Any]:
     """Split a string of comma-separated items that may contain non-literal
     expressions (e.g. dataclass constructors, enum reprs) which ast.literal_eval
     cannot handle.
@@ -23,7 +23,7 @@ def _split_composite_string(inner: str) -> TypingList[Any]:
     if not inner:
         return []
 
-    parts: TypingList[str] = []
+    parts: List[str] = []
     depth = 0
     in_quote = False
     quote_char = None
@@ -49,7 +49,7 @@ def _split_composite_string(inner: str) -> TypingList[Any]:
 
     parts.append(inner[last_idx:].strip())
 
-    evaluated: TypingList[Any] = []
+    evaluated: List[Any] = []
     for part in parts:
         try:
             evaluated.append(ast.literal_eval(part))
