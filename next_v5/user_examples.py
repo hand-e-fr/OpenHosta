@@ -3,7 +3,7 @@
 # - https://pypi.org/project/marvin/
 # - DSPy
 
-# from openhosta import auto, emulate, formulate, use, Guarded, oh
+# from openhosta import auto, emulate, formulate, use, Guarded
 from openhosta import HostaModel, Guarded, guard, unguard, GuardConfig
 from typing import Callable, Annotated, TypeAlias
 
@@ -14,6 +14,9 @@ qwen:HostaModel = HostaModel(
         "logprobs", "streaming"
     }
 )
+
+# Par default le modele test Ollama puis OpenAI.
+# Ollama+qwen3.5:4b doit être ok sur tous les tests 
 
 #### OpenHosta: IA-as-a-Function for Zero DSL Agents in poduction 
 
