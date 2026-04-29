@@ -158,6 +158,8 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
                 # TODO: return the most likely candidate based on the context of the document
                 return UncertaintyLevel(Tolerance.CREATIVE), candidates[0].value, None
 
+        cleaned_val = cleaned_val.strip(" `'\"\n")
+
         if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
             cleaned_val = cleaned_val[1:-1].strip()
 
