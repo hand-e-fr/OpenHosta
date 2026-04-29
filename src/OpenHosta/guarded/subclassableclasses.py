@@ -149,6 +149,14 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
         """Recherche case-insensitive par nom ou par valeur."""
 
         cleaned_val = cls._clean_llm_response(value)
+        
+        if len(cleaned_val) > 3 and "\n" in cleaned_val[1:-1]:
+            candidates = [GuardedEnum.attempt(p) for p in cleaned_val.split("\n")]
+            candidates = [c for c in candidates if c.success == True]
+            if len(candidates) > 0:
+                print(f"Multiple candidates found: {candidates}")
+                # TODO: return the most likely candidate based on the context of the document
+                return UncertaintyLevel(Tolerance.CREATIVE), candidates[0].value, None
 
         if cleaned_val.startswith("<") and cleaned_val.endswith(">"):
             cleaned_val = cleaned_val[1:-1].strip()

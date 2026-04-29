@@ -259,13 +259,13 @@ def get_enum_logprobes(*, function_pointer=None, inspection:Inspection=None) -> 
             else:
                 answer_part.append(token_data)
                 
-        rational_certainty, branch_count = get_naive_certainty(rational_part)
-        print(f"Rational part uncertainty: {1 - rational_certainty:0.6f} over {branch_count} branches")
+        #rational_certainty, branch_count = get_naive_certainty(rational_part)
+        #print(f"Rational part uncertainty: {1 - rational_certainty:0.6f} over {branch_count} branches")
         
         logp_list = answer_part
     else:
         rational_uncertainty = 1
-        
+    
     possible_outcomes = [(
         str(v.value),
         f'"{v.value}"', 
@@ -287,7 +287,7 @@ def get_enum_logprobes(*, function_pointer=None, inspection:Inspection=None) -> 
         prior_prob_list = {k: math.exp(v) for k,v in logprobes.items()}
         previouse_string += prediction['token']
     
-    if all([previouse_string not in v for v in possible_outcomes]):
+    if all([previouse_string.split("\n")[0] not in v for v in possible_outcomes]):
         raise UncertaintyError(f"The generated string '{previouse_string}' does not match any of the possible enum outcomes. Risk of hallucination.")
         
     return logprobes
