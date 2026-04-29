@@ -298,15 +298,13 @@ def test_sage_closure_color_detector_fail():
     assert uncertainty > 0.1, \
         f"Expected low confidence for all options, got: {uncertainty} above threshold: 0.1"
 
-
-
 def test_safe_workflow_color_detector():
     
     from enum import Enum
 
     class Bool(Enum):
-        TRUE = "true"
-        FALSE = "false"
+        TRUE = 1
+        FALSE = 2
 
     def IsThisInThat(this_description:str, that_description:str)->Bool:
         """
@@ -319,6 +317,10 @@ def test_safe_workflow_color_detector():
         """
         return emulate()
 
+    # from OpenHosta import print_last_uncertainty, print_last_prompt
+    # print_last_uncertainty(IsThisInThat)
+    # print_last_prompt(IsThisInThat)
+    
     with safe(acceptable_cumulated_uncertainty=math.exp(-5)) as safe_context:
         ret =  IsThisInThat("the sun", "the sky on a clear day")    
 
@@ -330,13 +332,16 @@ def test_safe_workflow_color_detector():
         ret = IsThisInThat("hand", "finger")
         assert ret is Bool.FALSE, f"Expected FALSE for hand in finger, got: {ret}"
 
+    with safe(acceptable_cumulated_uncertainty=math.exp(-5)) as safe_context:
+
         try:
-            ret = IsThisInThat("train 42535", "Paris Train station")
+            ret = IsThisInThat("45785", "Paris Train station")
+            print_last_prompt(IsThisInThat)
         except UncertaintyError as e:
             print(f"Caught expected UncertaintyError due to uncertainty: {e}")
             ret = None
             
-        assert ret is None, f"Expected None for train in station due to uncertainty error, got: {ret}"
+        assert ret is None, f"Expected None for train in station due to uncertainty error, got: {ret} with {safe_context}"
     
         print(safe_context)
     
@@ -403,6 +408,9 @@ def test_safe_workflow_organ_location():
     location = find_organ_location("right and left hands")
         
     assert location is None, f"Expected None for blood location due to uncertainty error, got: {location}" 
+
+    # from OpenHosta import print_last_prompt
+    # print_last_prompt(IsThisInThat)
 
 def test_safe_on_string_return():
         
