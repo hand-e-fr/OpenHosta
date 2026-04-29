@@ -166,7 +166,8 @@ class GuardedEnum(GuardedPrimitive, ProxyWrapper):
 
         # Remove wrapping quotes, including doubled quotes like ''git push''
         while len(cleaned_val) >= 2 and (
-            (cleaned_val.startswith("'") and cleaned_val.endswith("'"))
+            (cleaned_val.startswith("`") and cleaned_val.endswith("`"))
+            or (cleaned_val.startswith("'") and cleaned_val.endswith("'"))
             or (cleaned_val.startswith('"') and cleaned_val.endswith('"'))
         ):
             cleaned_val = cleaned_val[1:-1].strip()
