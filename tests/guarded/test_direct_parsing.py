@@ -96,3 +96,44 @@ def test_prefix_noise_literal():
     result = guarded_type.attempt("Option chosen: 'A'", tolerance=Tolerance.FLEXIBLE)
     assert result.success
     assert result.data == "A"
+
+def test_colon_inside_string_literal_not_misinterpreted():
+    """
+    Verify that a colon inside a quoted string literal is not treated as a prefix separator.
+    This reproduces a real bug where LLM responses like:
+        EtapesEtCalendrier(Etapes=["cible : 8–10 cm"], ...)
+    were split on the colon inside the string, destroying the constructor call.
+    """
+    from pydantic import BaseModel
+    class EtapesEtCalendrier(BaseModel):
+        Etapes: List[str]
+        Calendrier: List[str]
+
+    guarded_type = TypeResolver.resolve(EtapesEtCalendrier)
+    resp = (
+        'EtapesEtCalendrier(\n'
+        '    Etapes=["cible : 8–10 cm", "Printemps (avril-juin) : Renouveler"],\n'
+        '    Calendrier=["été : juillet-août", "hiver : planifier"]\n'
+        ')'
+    )
+    result = guarded_type.attempt(resp)
+    assert result.success, f"Should parse constructor call with colons inside quoted strings. Error: {result.error_message}"
+    assert result.data.Etapes == ["cible : 8–10 cm", "Printemps (avril-juin) : Renouveler"]
+    assert result.data.Calendrier == ["été : juillet-août", "hiver : planifier"]
+
+def test_find_first_out_of_string_colon():
+    """Unit-test the _find_first_out_of_string_colon helper."""
+    from OpenHosta.guarded.primitives import GuardedPrimitive
+
+    # Simple colon
+    assert GuardedPrimitive._find_first_out_of_string_colon("Résultat : 42") == 9
+    # No colon
+    assert GuardedPrimitive._find_first_out_of_string_colon("hello world") is None
+    # Colon only inside double-quoted string
+    assert GuardedPrimitive._find_first_out_of_string_colon('x["a:b"]') is None
+    # Colon only inside single-quoted string
+    assert GuardedPrimitive._find_first_out_of_string_colon("x['a:b']") is None
+    # Prefix colon before quoted string with inner colon
+    assert GuardedPrimitive._find_first_out_of_string_colon('key: "val: inner"') == 3
+    # Escaped quote
+    assert GuardedPrimitive._find_first_out_of_string_colon('k: "with \\" nested: still inside": 1') == 1
