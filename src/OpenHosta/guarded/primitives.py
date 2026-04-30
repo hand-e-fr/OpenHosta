@@ -347,6 +347,44 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         """Méthode utilitaire pour récupérer la valeur native avec unwrapping récursif."""
         return self._recursive_unwrap(self)
 
+    @staticmethod
+    def _find_first_out_of_string_colon(s: str) -> Optional[int]:
+        """
+        Find the index of the first ':' that is NOT inside a quoted string.
+        Handles both single ('...) and double ("...) quoted strings,
+        including triple-quoted strings.
+        Returns None if no such colon exists.
+        """
+        i = 0
+        n = len(s)
+        while i < n:
+            ch = s[i]
+            # Check for triple quotes first
+            if i + 2 < n and ch in ('"', "'") and s[i + 1] == ch and s[i + 2] == ch:
+                quote = ch * 3
+                i += 3
+                end = s.find(quote, i)
+                if end == -1:
+                    return None
+                i = end + 3
+                continue
+            # Single/double quote
+            if ch in ('"', "'"):
+                quote = ch
+                i += 1
+                while i < n:
+                    if s[i] == '\\':
+                        i += 2
+                        continue
+                    if s[i] == quote:
+                        i += 1
+                        break
+                    i += 1
+                continue
+            if ch == ':':
+                return i
+            i += 1
+        return None
 
     @classmethod
     def _clean_llm_response(cls, value: str) -> str:
@@ -370,18 +408,21 @@ class GuardedPrimitive(ABC, metaclass=GuardedPrimitiveMeta):
         else:
             # 1.b Heuristique pour le bruit avant l'expression (ex: "Le résultat est : 42")
             # Si on n'a pas de bloc Markdown, on regarde s'il y a un séparateur ':'
+            # IMPORTANT: only split on a colon that's OUTSIDE any quoted string.
             if ":" in cleaned and not (cleaned.startswith("{") or cleaned.startswith("[")):
-                # On split au premier ':'
-                parts = cleaned.split(":", 1)
-                prefix = parts[0].strip()
-                potential = parts[1].strip()
-                
-                # Si la partie après ':' commence par un caractère d'expression typique, on la garde
-                is_expr = potential and (potential[0] in "[{('\"-0123456789" or 
-                                       potential.lower().startswith(("true", "false", "none")) or
-                                       re.match(r"^[A-Z][a-zA-Z0-9_]*\(", potential))
-                if is_expr:
-                    cleaned = potential
+                # Find the first colon not inside single/double/ triple-quoted strings
+                col_pos = cls._find_first_out_of_string_colon(cleaned)
+                if col_pos is not None:
+                    parts = [cleaned[:col_pos], cleaned[col_pos + 1:]]
+                    prefix = parts[0].strip()
+                    potential = parts[1].strip()
+                    
+                    # Si la partie après ':' commence par un caractère d'expression typique, on la garde
+                    is_expr = potential and (potential[0] in "[{('\"-0123456789" or 
+                                            potential.lower().startswith(("true", "false", "none")) or
+                                            re.match(r"^[A-Z][a-zA-Z0-9_]*\(", potential))
+                    if is_expr:
+                        cleaned = potential
 
         # 2. Heuristique pour les explications après l'expression
         # On fait ça AVANT de supprimer les lignes vides, car on s'appuie sur \n\n

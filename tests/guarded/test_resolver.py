@@ -507,3 +507,40 @@ class TestNiceTypeWithNameGuardedT:
 
         assert nice_type_name(List[int]) == "List[int]"
         assert nice_type_name(Dict[str, int]) == "Dict[str, int]"
+
+
+class TestGenericArityValidation:
+    """Test that malformed generic annotations raise TypeError at resolve time."""
+
+    def test_dict_missing_value_type(self):
+        """dict[list[str]] should raise TypeError (only 1 arg, needs 2)."""
+        with pytest.raises(TypeError, match="requires exactly 2"):
+            TypeResolver.resolve(dict[list[str]])
+
+    def test_dict_three_args(self):
+        """dict[str, int, bool] should raise TypeError (too many args)."""
+        with pytest.raises(TypeError, match="requires exactly 2"):
+            TypeResolver.resolve(dict[str, int, bool])
+
+    def test_list_two_args(self):
+        """list[int, str] should raise TypeError (too many args)."""
+        with pytest.raises(TypeError, match="requires exactly 1"):
+            TypeResolver.resolve(list[int, str])
+
+    def test_set_two_args(self):
+        """set[int, str] should raise TypeError (too many args)."""
+        with pytest.raises(TypeError, match="requires exactly 1"):
+            TypeResolver.resolve(set[int, str])
+
+    def test_dict_valid_still_works(self):
+        """Ensure valid dict[str, list[str]] still resolves correctly."""
+        resolved = TypeResolver.resolve(dict[str, list[str]])
+        assert issubclass(resolved, GuardedDict)
+        assert resolved._key_type == GuardedUtf8
+        assert issubclass(resolved._value_type, GuardedList)
+
+    def test_list_valid_still_works(self):
+        """Ensure valid list[str] still resolves correctly."""
+        resolved = TypeResolver.resolve(list[str])
+        assert issubclass(resolved, GuardedList)
+        assert resolved._item_type == GuardedUtf8
