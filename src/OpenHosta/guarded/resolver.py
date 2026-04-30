@@ -247,17 +247,34 @@ class TypeResolver:
 
             # List, Iterable, Sequence -> GuardedList
             if origin in (list, List, typing.Sequence, typing.Iterable, collections.abc.Sequence, collections.abc.Iterable):
+                if args and len(args) != 1:
+                    raise TypeError(
+                        f"Invalid type annotation: {annotation!r}. "
+                        f"list requires exactly 1 type argument, "
+                        f"but got {len(args)}."
+                    )
                 inner = cls.resolve(args[0]) if args else GuardedUtf8
                 return GuardedList[inner]
 
             # Set, Frozenset -> GuardedSet
             if origin in (set, frozenset, typing.Set, typing.AbstractSet, collections.abc.Set):
+                if args and len(args) != 1:
+                    raise TypeError(
+                        f"Invalid type annotation: {annotation!r}. "
+                        f"set requires exactly 1 type argument, "
+                        f"but got {len(args)}."
+                    )
                 inner = cls.resolve(args[0]) if args else GuardedUtf8
                 return GuardedSet[inner]
 
             # Tuple -> GuardedTuple
             if origin in (tuple, typing.Tuple):
                 from .subclassablecollections import guarded_tuple
+                if args and len(args) == 0:
+                    raise TypeError(
+                        f"Invalid type annotation: {annotation!r}. "
+                        f"tuple requires at least 1 type argument."
+                    )
                 if args:
                     # Support for fixed-length tuples: Tuple[int, str]
                     # We Filter out Ellipsis (...) for now as it indicates variable length
@@ -271,6 +288,12 @@ class TypeResolver:
 
             # Dict, Mapping -> GuardedDict
             if origin in (dict, Dict, typing.Mapping, typing.MutableMapping, collections.abc.Mapping, collections.abc.MutableMapping):
+                if args and len(args) != 2:
+                    raise TypeError(
+                        f"Invalid type annotation: {annotation!r}. "
+                        f"dict requires exactly 2 type arguments (key_type, value_type), "
+                        f"but got {len(args)}."
+                    )
                 k = cls.resolve(args[0]) if len(args) > 0 else GuardedUtf8
                 v = cls.resolve(args[1]) if len(args) > 1 else GuardedUtf8
                 return GuardedDict[k, v]

@@ -319,3 +319,12 @@ def generic_filter(filter_query:str, data:pd.DataFrame) -> Guarded[Callable[[pd.
     ...
 
 generic_filter("grosses fleurs", iris)
+
+
+##### Et en streaming ? 
+
+
+##### Et si je fais mon propre prompt ?
+
+
+##### et le semantic collections
