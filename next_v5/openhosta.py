@@ -17,10 +17,17 @@ Principes :
 
 from __future__ import annotations
 
+import asyncio
 import dataclasses
-import inspect
 import functools
+import inspect
+import json
 import os
+import re
+import sys
+import typing
+import urllib.request
+import urllib.error
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
@@ -32,10 +39,96 @@ from typing import (
     overload,
     cast,
     Callable,
+    get_origin,
+    get_args,
+    Annotated,
 )
 
 T = TypeVar("T")
 F = TypeVar("F", bound=Callable)
+
+# --------------------------------------------------------------------------- #
+# V4 BRIDGE — Lazy imports to src/OpenHosta                                   #
+# --------------------------------------------------------------------------- #
+
+def _get_v4_imports():
+    """
+    Lazily imports V4 bricks once.
+    """
+    if hasattr(_get_v4_imports, "_cache"):
+        return _get_v4_imports._cache
+    
+    cache = {}
+    
+    # Determine V4 src path relative to this file: next_v5/ -> ../src/
+    v4_src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+    if v4_src_dir not in sys.path:
+        sys.path.insert(0, v4_src_dir)
+
+    try:
+        from OpenHosta.core.analizer import hosta_analyze, AnalyzedFunction, AnalyzedArgument, encode_function
+        cache["hosta_analyze"] = hosta_analyze
+        cache["AnalyzedFunction"] = AnalyzedFunction
+        cache["AnalyzedArgument"] = AnalyzedArgument
+        cache["encode_function"] = encode_function
+    except ImportError as e:
+        print(f"[V5] Warning: Failed to import V4 analizer: {e}")
+        
+    try:
+        from OpenHosta.core.meta_prompt import EMULATE_META_PROMPT, USER_CALL_META_PROMPT
+        cache["EMULATE_META_PROMPT"] = EMULATE_META_PROMPT
+        cache["USER_CALL_META_PROMPT"] = USER_CALL_META_PROMPT
+    except ImportError as e:
+        print(f"[V5] Warning: Failed to import V4 meta_prompt: {e}")
+
+    try:
+        from OpenHosta.guarded.resolver import type_returned_data
+        cache["type_returned_data"] = type_returned_data
+    except ImportError as e:
+        print(f"[V5] Warning: Failed to import V4 resolver: {e}")
+
+    _get_v4_imports._cache = cache
+    return cache
+
+
+# --------------------------------------------------------------------------- #
+# V4 BRIDGE — Import des briques V4 sans copier de code                       #
+# --------------------------------------------------------------------------- #
+
+_srcdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
+if _srcdir not in sys.path:
+    sys.path.insert(0, _srcdir)
+
+try:
+    from OpenHosta.core.analizer import (
+        hosta_analyze,
+        encode_function,
+        nice_type_name,
+        AnalyzedArgument,
+        AnalyzedFunction,
+    )
+    from OpenHosta.core.meta_prompt import (
+        EMULATE_META_PROMPT,
+        USER_CALL_META_PROMPT,
+    )
+    from OpenHosta.guarded.resolver import type_returned_data
+    try:
+        from OpenHosta.guarded.primitives import Guarded as V4_Guarded
+        from OpenHosta.guarded.primitives import GuardedPrimitive as V4_GuardedPrimitive
+    except ImportError:
+        V4_Guarded = None
+        V4_GuardedPrimitive = None
+except ImportError:
+    # If V4 is unavailable, auto_body will raise a clear error at call time
+    hosta_analyze = None
+    encode_function = None
+    nice_type_name = None
+    AnalyzedArgument = None
+    AnalyzedFunction = None
+    EMULATE_META_PROMPT = None
+    USER_CALL_META_PROMPT = None
+    type_returned_data = None
+    V4_Guarded = None
 
 
 # --------------------------------------------------------------------------- #
@@ -476,11 +569,34 @@ def guard(value: T, metadata: GuardMetadata | None = None) -> Guarded[T]:
 def unguard(obj: Any) -> Any:
     """Extrait récursivement la valeur native d'un graphe de données.
 
-    Nettoie tout le graphe de ses proxies Guarded, permettant un export
-    propre (JSON, DB, API) garanti sans erreur de sérialisation.
+    Nettoie tout le graphe de ses proxies Guarded (V5) et des primitives
+    V4 (GuardedUtf8, GuardedInt...) en valeur native.
     """
+    # -- V5 Guarded[T] --
     if _is_guarded(obj):
         return unguard(obj._value)
+
+    # -- V4 GuardedPrimitive (GuardedUtf8, GuardedInt, etc.) --
+    # Ces classes héritent du type natif ET de GuardedPrimitive.
+    if V4_GuardedPrimitive is not None and isinstance(obj, V4_GuardedPrimitive):
+
+        # 1) Dataclass wrapper (GuardedDataclassWrapper)
+        #    V4 creates a new class that inherits GuardedPrimitive, ProxyWrapper
+        #    but NOT the original dataclass. _type_py holds the original class.
+        if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+            _type_py = getattr(type(obj), "_type_py", None)
+            if _type_py is not None and dataclasses.is_dataclass(_type_py):
+                # Reconstruct the original dataclass with unguarded fields
+                kwargs = {}
+                for fld in dataclasses.fields(obj):
+                    kwargs[fld.name] = unguard(getattr(obj, fld.name))
+                return _type_py(**kwargs)
+
+        # 2) Scalar primitives (GuardedUtf8 inherits str, GuardedInt inherits int...)
+        for base in type(obj).__mro__:
+            if base in (str, int, float, bool, list, dict, tuple, set, bytes):
+                return base(obj)
+        return obj
 
     if isinstance(obj, list):
         return [unguard(item) for item in obj]
@@ -836,6 +952,46 @@ def guarded_to_markdown(target: Any) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# 5.5 RESPONSE CLEANER — Extract code blocks from LLM markdown                #
+# --------------------------------------------------------------------------- #
+
+def _extract_code_block(raw: str, expected_type: Any = None) -> str:
+    """Extract the code block from an LLM response.
+
+    LLMs often wrap JSON/Python in ```python ... ``` fences and add
+    surrounding explanations. This strips the noise and returns the
+    best candidate block, or the original string if no block is found.
+    """
+    # Match all ```python ... ``` or ``` ... ``` or ```json ... ```
+    blocks = re.findall(r"```(?:python|json|py)?\n?(.*?)\n?```", raw, re.DOTALL)
+    if blocks:
+        # Prefer the last block, but fall back if it looks like a function call
+        best = blocks[-1].strip()
+        # If it starts with a function call pattern, try earlier blocks
+        if re.match(r"^\w+\(", best):
+            for b in reversed(blocks[:-1]):
+                candidate = b.strip()
+                if not re.match(r"^\w+\(", candidate):
+                    best = candidate
+                    break
+        return best
+
+    # No code fences — try to extract the last constructor or JSON dict from
+    # prose like: "identify_person(x) -> Person(name='Alice', age=30)"
+    # Strategy: find the last occurrence of ClassName(...) or { ... }
+    m = re.search(r"(\w+\([^)]*(?:\([^)]*\)[^)]*)*\)|\{[^{}]*\})$", raw.strip(), re.DOTALL)
+    if m:
+        # Extract the first match if it looks like a valid constructor or JSON
+        candidate = m.group(1).strip()
+        # Avoid matching simple function calls like identify_person(text)
+        if expected_type is not None:
+            cls_name = getattr(expected_type, "__name__", "")
+            if cls_name and candidate.startswith(cls_name + "("):
+                return candidate
+    return raw.strip()
+
+
+# --------------------------------------------------------------------------- #
 # 6. HOSTAMODEL — décorateur auto_body (squelette v5)                         #
 # --------------------------------------------------------------------------- #
 
@@ -863,6 +1019,14 @@ class HostaModel:
     def auto_body(self, *args: Any, **kwargs: Any) -> Any:
         """Décorateur auto_body : transforme une fonction Python en appel LLM.
 
+        Pipeline :
+          1. Analyser la signature via hosta_analyze() (brique V4).
+          2. Encoder les données via encode_function() (brique V4).
+          3. Construire les prompts system/user via les Jinja2 templates V4.
+          4. Appeler le modèle LLM via HTTP (OpenAI-compatible /chat/completions).
+          5. Parser + caster la réponse via type_returned_data() (brique V4).
+          6. Retourner Guarded[T] ou valeur native selon l'annotation.
+
         Accepte optionnellement un GuardConfig en premier argument.
         """
         config = None
@@ -870,20 +1034,293 @@ class HostaModel:
             config = args[0]
             args = args[1:]
 
+        # Gate : V4 must be importable
+        if hosta_analyze is None:
+            def _v4_missing_error(_func: F) -> F:
+                def _fail(*_a: Any, **_kw: Any) -> Any:
+                    raise RuntimeError(
+                        "[auto_body] OpenHosta V4 is not installed or not importable. "
+                        "Ensure src/OpenHosta is present and jinja2 is installed."
+                    )
+                return cast(F, _fail)
+            if len(args) == 1 and not kwargs and callable(args[0]):
+                return _v4_missing_error(args[0])
+            return _v4_missing_error
+
+        model_ref = self  # capture self for use inside closures
+
         def decorator(func: F) -> F:
-            @functools.wraps(func)
-            def wrapper(*f_args: Any, **f_kwargs: Any) -> Any:
-                # TODO: Implémentation LLM (prompting, casting, self-healing)
-                metadata = GuardMetadata()
-                if config:
-                    metadata.uncertainty = 0.0
-                    metadata.time_consumed = 0.0
-                return Guarded(NotImplemented, metadata)
-            return cast(F, wrapper)
+            # -----------------------------------------------------------------
+            # Extraire le GuardConfig de l'annotation de retour, si présent
+            # -----------------------------------------------------------------
+            sig = inspect.signature(func)
+            return_annotation = sig.return_annotation
+
+            annotation_config: GuardConfig | None = None
+            raw_return_type: Any = return_annotation
+
+            if return_annotation is not inspect.Parameter.empty:
+                origin = get_origin(return_annotation)
+                if origin is typing.Annotated:
+                    ann_args = get_args(return_annotation)
+                    if len(ann_args) >= 2:
+                        raw_return_type = ann_args[0]
+                        if isinstance(ann_args[1], GuardConfig):
+                            annotation_config = ann_args[1]
+
+            # La config décorateur a priorité, sinon la config annotation
+            effective_config: GuardConfig | None = config if config is not None else annotation_config
+
+            # Détecter le type inner du return (unwrap Guarded[T] si nécessaire)
+            inner_return_type: Any = raw_return_type
+            is_guarded_annotation = False
+
+            if raw_return_type is not inspect.Parameter.empty:
+                # Check for Guarded[T] — peut être le V4 ou le V5
+                origin = get_origin(raw_return_type)
+                if origin is Guarded:
+                    is_guarded_annotation = True
+                    inner_return_type = get_args(raw_return_type)[0]
+                else:
+                    # Check against V4 Guarded
+                    if V4_Guarded is not None and origin is V4_Guarded:
+                        is_guarded_annotation = True
+                        inner_return_type = get_args(raw_return_type)[0]
+
+            analyse = hosta_analyze(function_pointer=func)
+
+            if analyse.is_generator:
+                # TODO: Phase 3 — Streaming/generator support
+                def _gen_not_impl(*_f_args: Any, **_f_kwargs: Any) -> Any:
+                    raise NotImplementedError(
+                        "[auto_body] Generator functions are not yet supported (Phase 3)."
+                        "Use a non-generator return type for now."
+                    )
+                wrapped = cast(F, cast(Callable, _gen_not_impl))
+                # Preserve original metadata
+                functools.update_wrapper(_gen_not_impl, func)
+                return wrapped
+
+            if analyse.is_async:
+                # -----------------------------------------------------------------
+                # ASYNC WRAPPER — utilise asyncio.to_thread pour l'HTTP blocking
+                # -----------------------------------------------------------------
+                model_ref = self
+
+                async def async_wrapper(*f_args: Any, **f_kwargs: Any) -> Any:
+                    messages = model_ref._auto_body_prepare(
+                        func, analyse, f_args, f_kwargs, inner_return_type,
+                    )
+                    import time
+                    start_ms = time.monotonic()
+                    raw_content = await asyncio.to_thread(
+                        model_ref._llm_call_sync, messages,
+                    )
+                    end_ms = time.monotonic()
+                    elapsed_ms = round((end_ms - start_ms) * 1000, 1)
+
+                    return model_ref._auto_body_result(
+                        raw_content, elapsed_ms,
+                        inner_return_type, is_guarded_annotation, self.model,
+                    )
+
+                functools.update_wrapper(async_wrapper, func)
+                return cast(F, async_wrapper)
+            else:
+                # -----------------------------------------------------------------
+                # SYNC WRAPPER
+                # -----------------------------------------------------------------
+                model_ref = self
+
+                def sync_wrapper(*f_args: Any, **f_kwargs: Any) -> Any:
+                    messages = model_ref._auto_body_prepare(
+                        func, analyse, f_args, f_kwargs, inner_return_type,
+                    )
+                    import time
+                    start_ms = time.monotonic()
+                    raw_content = model_ref._llm_call_sync(messages)
+                    end_ms = time.monotonic()
+                    elapsed_ms = round((end_ms - start_ms) * 1000, 1)
+
+                    return model_ref._auto_body_result(
+                        raw_content, elapsed_ms,
+                        inner_return_type, is_guarded_annotation, self.model,
+                    )
+
+                functools.update_wrapper(sync_wrapper, func)
+                return cast(F, sync_wrapper)
 
         if len(args) == 1 and not kwargs and callable(args[0]):
             return decorator(args[0])
         return decorator
+
+    # --------------------------------------------------------------------- #
+    # Internal engine — préparation prompts (pure, réutilisable sync/async) #
+    # --------------------------------------------------------------------- #
+
+    def _auto_body_prepare(
+        self,
+        func: Callable,
+        analyse: AnalyzedFunction,
+        f_args: tuple,
+        f_kwargs: dict,
+        inner_return_type: Any,
+    ) -> list[dict]:
+        """Phase 1-3 : analyser, encoder, construire les messages.
+
+        Retourne la liste de messages OpenAI-compatible prête à être envoyée.
+        """
+        # -- 1. Remplir les valeurs effectives dans analyse.args --
+        sig = inspect.signature(func)
+        bound = sig.bind_partial(*f_args, **f_kwargs)
+        bound.apply_defaults()
+
+        filled_args: list[AnalyzedArgument] = []
+        existing_args_map = {a.name: a.type for a in analyse.args}
+        for name, value in bound.arguments.items():
+            arg_type = existing_args_map.get(name, type(value))
+            filled_args.append(AnalyzedArgument(
+                name=name,
+                value=value,
+                type=arg_type,
+            ))
+
+        live_analyse = AnalyzedFunction(
+            name=analyse.name,
+            args=filled_args,
+            type=inner_return_type,  # Use inner type — LLM sees `-> Person`, not `-> Guarded[Person]`
+            doc=analyse.doc,
+            is_async=analyse.is_async,
+            is_generator=analyse.is_generator,
+            item_type=analyse.item_type,
+        )
+
+        # -- 2. Encoder les données --
+        encoded = encode_function(live_analyse)
+
+        # -- 3. Construire les prompts system/user --
+        system_prompt = EMULATE_META_PROMPT.render(encoded)
+        user_prompt = USER_CALL_META_PROMPT.render(encoded)
+
+        # Tri-Modal : enrichir si type retour complexe (dataclass, struct, collection)
+        if inner_return_type not in (str, int, float, bool, type(None), inspect.Parameter.empty) \
+           and inner_return_type is not None and inner_return_type is not inspect._empty:
+
+            is_complex = False
+            if dataclasses.is_dataclass(inner_return_type):
+                is_complex = True
+            else:
+                origin = get_origin(inner_return_type)
+                typing_origins = (
+                    list, dict, set, tuple,
+                    typing.List, typing.Dict, typing.Set, typing.Tuple,
+                    typing.Sequence, typing.Mapping, typing.Iterable,
+                )
+                if origin in typing_origins:
+                    is_complex = True
+                # Pydantic detection
+                if hasattr(inner_return_type, "model_fields"):
+                    is_complex = True
+
+            if is_complex:
+                type_def_md = guarded_to_markdown(inner_return_type)
+                # Force JSON mode for complex types — the V4 resolver parses JSON dicts
+                # into dataclasses reliably, whereas "free Python" leads to formats like
+                # Eve(28,Berlin) that the resolver cannot handle.
+                encoded["use_json_mode"] = True
+                encoded["function_return_as_json_schema"] = json.dumps(
+                    _field_to_json_schema(inner_return_type), indent=2
+                )
+
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+    # --------------------------------------------------------------------- #
+    # Post-traitement — casting + Guarded (pure, réutilisable sync/async)    #
+    # --------------------------------------------------------------------- #
+
+    def _auto_body_result(
+        self,
+        raw_content: str,
+        elapsed_ms: float,
+        inner_return_type: Any,
+        is_guarded_annotation: bool,
+        model_name: str,
+    ) -> Any:
+        """Phase 5-6 : caster la réponse, construire metadata, retourner."""
+        # -- 4bis. Strip markdown code fences around the raw response --
+        cleaned_content = _extract_code_block(raw_content)
+
+        # -- 5. Parser + caster --
+        cast_result = type_returned_data(cleaned_content, inner_return_type)
+
+        # -- 6. Construire metadata + retourner --
+        metadata = GuardMetadata(
+            uncertainty=0.05,  # Heuristic baseline — to be refined with logprobs
+            time_consumed=elapsed_ms,
+            llm_logs=[{
+                "model": model_name,
+                "raw_response": raw_content[:200],
+            }],
+        )
+
+        if is_guarded_annotation:
+            # If the inner value is already a V4 GuardedPrimitive,
+            # re-wrap it in our V5 Guarded[T] (the V4 one has different behavior)
+            inner = (
+                unguard(cast_result)
+                if V4_GuardedPrimitive is not None and isinstance(cast_result, V4_GuardedPrimitive)
+                else cast_result
+            )
+            return Guarded(inner, metadata)
+        else:
+            # Return native value — unwrap any V4 GuardedPrimitive wrappers
+            if V4_GuardedPrimitive is not None and isinstance(cast_result, V4_GuardedPrimitive):
+                return unguard(cast_result)
+            return cast_result
+
+    # --------------------------------------------------------------------- #
+    # LLM HTTP call — standalone, no V4 pipeline dependency                 #
+    # --------------------------------------------------------------------- #
+
+    def _llm_call_sync(self, messages: list[dict]) -> str:
+        """Appel HTTP direct au LLM via une API OpenAI-compatible.
+
+        Utilise urllib stdlib (zéro dépendance externe) pour POST sur
+        <base_url>/chat/completions et retourne le contenu brut du message.
+        """
+        api_url = self.base_url.rstrip("/") + "/chat/completions"
+
+        body = json.dumps({
+            "model": self.model,
+            "messages": messages,
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            api_url,
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+                content = payload["choices"][0]["message"]["content"]
+                return content.strip() if content else ""
+        except urllib.error.URLError as exc:
+            raise RuntimeError(
+                f"[auto_body] Failed to reach LLM at {api_url}: {exc.reason}"
+            ) from exc
+        except (KeyError, IndexError, json.JSONDecodeError) as exc:
+            raise RuntimeError(
+                f"[auto_body] Unexpected LLM response format: {exc}"
+            ) from exc
 
     # --- emulate_body ---
     @overload
@@ -937,7 +1374,7 @@ class HostaModel:
 def envmodel() -> HostaModel:
     """Crée un HostaModel à partir des variables d'environnement."""
     return HostaModel(
-        model=os.environ.get("HOSTA_MODEL", "gpt-4.1"),
-        base_url=os.environ.get("HOSTA_BASE_URL", "http://localhost:11434/v1"),
+        model=os.environ.get("HOSTA_MODEL", "qwen3.5:4b"),
+        base_url=os.environ.get("HOSTA_BASE_URL", "http://192.168.1.188:11434/v1"),
         capabilities={"logprobs", "streaming"},
     )

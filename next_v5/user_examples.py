@@ -9,7 +9,7 @@ from typing import Callable, Annotated, TypeAlias
 
 qwen:HostaModel = HostaModel(
     model="qwen3.5:4b",
-    base_url="http://localhost:11434/v1",
+    base_url="http://192.168.1.188:11434/v1",
     capabilities={
         "logprobs", "streaming"
     }
