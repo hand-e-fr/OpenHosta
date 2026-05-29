@@ -22,6 +22,9 @@ from .semantics.operators import test, test_async
 from .guarded.primitives import Guarded
 from .models import OpenAICompatibleModel as Model
 from .models import OpenAICompatibleModel
+from .models import ModelResponse, ToolCall, ToolResult
+
+from .tools import tool, ToolMeta, tool_to_schema
 
 from .pipelines import Pipeline, OneTurnConversationPipeline
 
@@ -68,4 +71,10 @@ __all__ = (
     "Guarded",
     "register_audit_callback",
     "unregister_audit_callback",
+    "tool",
+    "ToolMeta",
+    "tool_to_schema",
+    "ModelResponse",
+    "ToolCall",
+    "ToolResult",
 )

@@ -1,5 +1,6 @@
 from ..core.base_model import Model, ModelCapabilities
 from .OpenAICompatible import OpenAICompatibleModel
+from .responses import ModelResponse, ToolCall, ToolResult
 
 # Disabled for 4.0
 # from .LiteLLMModel import LiteLLMModel
@@ -14,6 +15,9 @@ __all__ = (
     "Model",
     "ModelCapabilities",
     "OpenAICompatibleModel",
+    "ModelResponse",
+    "ToolCall",
+    "ToolResult",
     # "OllamaModel",
     # "AnthropicModel",
     # "GeminiModel",

@@ -6,6 +6,7 @@ import requests
 
 from ..core.base_model import Model, ModelCapabilities
 from ..core.errors import ApiKeyError, RequestError, RateLimitError
+from .responses import ModelResponse, ToolCall, parse_tool_args
 
 class OpenAICompatibleModel(Model):
 
@@ -17,6 +18,7 @@ class OpenAICompatibleModel(Model):
             capabilities:Set[ModelCapabilities] = {
                 ModelCapabilities.TEXT2TEXT,
                 ModelCapabilities.STREAMING,
+                ModelCapabilities.TOOL_CALLING,
             },
             base_url: str = "https://api.openai.com/v1", 
             chat_completion_url: str = "/chat/completions",
@@ -343,8 +345,65 @@ class OpenAICompatibleModel(Model):
             response = ""
 
         return response
-    
-        
+
+    async def respond(
+        self,
+        system: str,
+        messages: List[Dict[str, Any]],
+        *,
+        tools: List[Dict[str, Any]] | None = None,
+        tool_choice: str = "auto",
+        **params: Any,
+    ) -> ModelResponse:
+        """Async, tool-aware completion returning a structured `ModelResponse`.
+
+        This is the entry point a ReAct loop (e.g. HostaAgent) drives. It is a
+        sibling of `generate`/`generate_async` (which return raw dicts for the
+        typed pipeline): it prepends the system prompt, forwards an optional
+        `tools` schema list, and parses the reply into text + parsed tool calls.
+        """
+        full_messages: List[Dict[str, Any]] = list(messages)
+        if system:
+            full_messages = [{"role": "system", "content": system}, *full_messages]
+
+        extra = dict(params)
+        if tools:
+            extra["tools"] = tools
+            extra["tool_choice"] = tool_choice
+
+        response_dict = await self.generate_async(full_messages, **extra)
+        return self._parse_model_response(response_dict)
+
+    def _parse_model_response(self, response_dict: Dict[str, Any]) -> ModelResponse:
+        """Parse an OpenAI-compatible chat response dict into a `ModelResponse`."""
+        if "usage" in response_dict and "total_tokens" in response_dict["usage"]:
+            self._used_tokens += int(response_dict["usage"]["total_tokens"])
+
+        choices = response_dict.get("choices") or []
+        if not choices:
+            return ModelResponse(text=None, tool_calls=[], raw_calls=[], finish_reason="stop")
+
+        choice = choices[0]
+        message = choice.get("message", {}) or {}
+        text = message.get("content")
+        raw_calls = message.get("tool_calls") or []
+
+        calls: List[ToolCall] = []
+        for c in raw_calls:
+            fn = c.get("function", {}) or {}
+            calls.append(ToolCall(
+                id=c.get("id", ""),
+                name=fn.get("name", ""),
+                args=parse_tool_args(fn.get("arguments", "{}")),
+            ))
+
+        return ModelResponse(
+            text=text,
+            tool_calls=calls,
+            raw_calls=raw_calls,
+            finish_reason=choice.get("finish_reason") or "stop",
+        )
+
     def get_thinking_and_data_sections(
                         self,
                         response:str, 

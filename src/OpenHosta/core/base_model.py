@@ -21,6 +21,7 @@ class ModelCapabilities(Enum):
     THINK = "THINK"              # Model supports/emits reasoning tokens
     JSON_OUTPUT = "JSON_OUTPUT"  # API supports native JSON mode
     STREAMING = "STREAMING"      # API supports token-by-token streaming
+    TOOL_CALLING = "TOOL_CALLING"  # API supports function/tool calling
 
 class Model:
     def __init__(self,
