@@ -163,6 +163,44 @@ def test_respond_plain_text(monkeypatch):
     assert r.tool_calls == []
 
 
+class _FakeStream:
+    status_code = 200
+    headers: dict = {}
+
+    def __init__(self, lines):
+        self._lines = lines
+
+    def iter_lines(self):
+        for ln in self._lines:
+            yield ln.encode("utf-8")
+
+
+def test_respond_streams_text_and_tool_calls(monkeypatch):
+    # SSE: two content deltas, then a tool call assembled from two argument fragments.
+    lines = [
+        'data: {"choices":[{"delta":{"content":"Hel"}}]}',
+        'data: {"choices":[{"delta":{"content":"lo"}}]}',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"c1",'
+        '"function":{"name":"add","arguments":"{\\"a\\": "}}]}}]}',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,'
+        '"function":{"arguments":"2}"}}]}}]}',
+        'data: {"choices":[{"finish_reason":"tool_calls","delta":{}}]}',
+        "data: [DONE]",
+    ]
+    monkeypatch.setattr(oc.requests, "post", lambda *a, **k: _FakeStream(lines))
+
+    tokens: list = []
+    r = asyncio.run(_model().respond(
+        "sys", [{"role": "user", "content": "hi"}],
+        tools=[tool_to_schema(add)], on_token=tokens.append,
+    ))
+    assert "".join(tokens) == "Hello"          # streamed text deltas
+    assert r.text == "Hello"
+    assert r.tool_calls[0].name == "add"
+    assert r.tool_calls[0].args == {"a": 2}     # reassembled from fragments
+    assert r.finish_reason == "tool_calls"
+
+
 @pytest.mark.parametrize("raw,expected", [
     ('{"a": 1}', {"a": 1}),
     ("{'a': 1}", {"a": 1}),         # single quotes -> Guarded cascade

@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Callable, Dict, List, Set, Tuple
 
+import asyncio
 import os
 import requests
 
@@ -353,6 +354,7 @@ class OpenAICompatibleModel(Model):
         *,
         tools: List[Dict[str, Any]] | None = None,
         tool_choice: str = "auto",
+        on_token: Callable[[str], None] | None = None,
         **params: Any,
     ) -> ModelResponse:
         """Async, tool-aware completion returning a structured `ModelResponse`.
@@ -361,6 +363,10 @@ class OpenAICompatibleModel(Model):
         sibling of `generate`/`generate_async` (which return raw dicts for the
         typed pipeline): it prepends the system prompt, forwards an optional
         `tools` schema list, and parses the reply into text + parsed tool calls.
+
+        If `on_token` is given and the model can stream, text is streamed delta by
+        delta to that callback (tool-call fragments are accumulated under the hood);
+        otherwise it falls back to a single non-streamed request.
         """
         full_messages: List[Dict[str, Any]] = list(messages)
         if system:
@@ -371,8 +377,118 @@ class OpenAICompatibleModel(Model):
             extra["tools"] = tools
             extra["tool_choice"] = tool_choice
 
+        if on_token is not None and ModelCapabilities.STREAMING in self.capabilities:
+            return await self._respond_streaming(full_messages, extra, on_token)
+
         response_dict = await self.generate_async(full_messages, **extra)
         return self._parse_model_response(response_dict)
+
+    async def _respond_streaming(
+        self,
+        messages: List[Dict[str, Any]],
+        extra: Dict[str, Any],
+        on_token: Callable[[str], None],
+    ) -> ModelResponse:
+        """Run the blocking SSE consumer in a thread; bridge text deltas to `on_token`
+        on the event loop (so callbacks run on the caller's thread)."""
+        loop = asyncio.get_running_loop()
+
+        def emit(delta: str) -> None:
+            loop.call_soon_threadsafe(on_token, delta)
+
+        return await loop.run_in_executor(
+            self.get_executor(),
+            lambda: self._consume_tool_stream(messages, extra, emit),
+        )
+
+    def _consume_tool_stream(
+        self,
+        messages: List[Dict[str, Any]],
+        extra: Dict[str, Any],
+        emit_text: Callable[[str], None],
+    ) -> ModelResponse:
+        """Stream an OpenAI-compatible SSE response, emitting text deltas and
+        accumulating tool-call fragments, then return the assembled `ModelResponse`."""
+        import json as _json
+
+        api_key = self._get_api_key()
+        if api_key is None and "api.openai.com/v1" in self.base_url:
+            api_key = os.environ.get("OPENAI_API_KEY", None)
+            if api_key is None:
+                raise ApiKeyError("[OpenAICompatibleModel._consume_tool_stream] Empty API key.")
+
+        body: Dict[str, Any] = {"model": self.model_name, "messages": messages, "stream": True}
+        for key, value in (self.api_parameters | extra).items():
+            if key == "force_json_output" and value:
+                body["response_format"] = {"type": "json_object"}
+            elif key != "stream":
+                body[key] = value
+
+        headers = self._get_headers(api_key)
+        full_url = f"{self.base_url}{self.chat_completion_url}"
+        response = requests.post(full_url, headers=headers, json=body, timeout=self.timeout, stream=True)
+        self._handle_rate_limit_headers(response)
+        if response.status_code == 429:
+            raise RateLimitError(f"[_consume_tool_stream] Rate limit. {response.text}")
+        if response.status_code == 401:
+            raise ApiKeyError(f"[_consume_tool_stream] Unauthorized. {response.text}")
+        if response.status_code != 200:
+            raise RequestError(f"[_consume_tool_stream] Failed ({response.status_code}):\n{response.text}")
+
+        self._nb_requests += 1
+        text_parts: List[str] = []
+        tool_calls: Dict[int, Dict[str, Any]] = {}
+        finish = "stop"
+        for raw_line in response.iter_lines():
+            if not raw_line:
+                continue
+            if isinstance(raw_line, bytes):
+                raw_line = raw_line.decode("utf-8")
+            if not raw_line.startswith("data:"):
+                continue
+            data_str = raw_line[len("data:"):].strip()
+            if data_str == "[DONE]":
+                break
+            try:
+                chunk = _json.loads(data_str)
+            except _json.JSONDecodeError:
+                continue
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+            choice = choices[0]
+            delta = choice.get("delta", {}) or {}
+            content = delta.get("content")
+            if content:
+                text_parts.append(content)
+                emit_text(content)
+            for tc in delta.get("tool_calls") or []:
+                slot = tool_calls.setdefault(
+                    tc.get("index", 0),
+                    {"id": "", "type": "function", "function": {"name": "", "arguments": ""}},
+                )
+                if tc.get("id"):
+                    slot["id"] = tc["id"]
+                fn = tc.get("function", {}) or {}
+                if fn.get("name"):
+                    slot["function"]["name"] = fn["name"]
+                if fn.get("arguments"):
+                    slot["function"]["arguments"] += fn["arguments"]
+            if choice.get("finish_reason"):
+                finish = choice["finish_reason"]
+
+        raw_calls = [tool_calls[i] for i in sorted(tool_calls)]
+        calls = [
+            ToolCall(id=c.get("id", ""), name=c["function"]["name"],
+                     args=parse_tool_args(c["function"].get("arguments", "{}")))
+            for c in raw_calls
+        ]
+        return ModelResponse(
+            text="".join(text_parts) or None,
+            tool_calls=calls,
+            raw_calls=raw_calls,
+            finish_reason=finish,
+        )
 
     def _parse_model_response(self, response_dict: Dict[str, Any]) -> ModelResponse:
         """Parse an OpenAI-compatible chat response dict into a `ModelResponse`."""
