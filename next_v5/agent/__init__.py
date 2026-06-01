@@ -30,6 +30,29 @@ Phase 3 — Observability
 - :class:`EventType` — canonical event taxonomy enum
 - :class:`Event` — immutable canonical event record
 - :class:`EventStream` — immutable-append ordered event list
+
+Phase 4 — Auto-Healing, Roles, Downstream
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- :class:`GuardConfig` — declarative healing guardrails
+- :class:`HealingState` — mutable runtime healing tracker
+- :class:`HealingHook` — extensible hook base class
+- :class:`HealingResult` — encapsulated healing outcome
+- :class:`Healer` — retry orchestrator with fuzzy fallback
+- :func:`heal` — one-shot convenience healing function
+- :class:`Principal` — authenticated identity with role bindings
+- :class:`Roles` — scoped role-authority context manager
+- :func:`roles` — factory convenience for ``agent.roles()``
+- :class:`RoleBindingError` — raised on missing role binding
+- :class:`Authority` — multi-principal authority composer
+- :class:`DependencyMode` — lazy vs eager evaluation mode enum
+- :class:`Dependency` — single downstream dependency node
+- :func:`lazy` — lazy dependency constructor
+- :func:`eager` — eager dependency constructor
+- :class:`ResolutionResult` — single dependency resolution outcome
+- :class:`TopologyLog` — immutable topology snapshot
+- :class:`DownstreamContext` — dependency + heritage + overrides manager
+- :class:`AgentGraph` — lightweight DAG of interconnected contexts
+- :class:`MissingDependencyError` — raised on unsatisfied dependency
 """
 
 from .agent_engine import AgentEngine
@@ -49,10 +72,36 @@ from .dispatch import (
     CapabilityDispatcher,
     DispatchResult,
 )
+from .downstream import (
+    AgentGraph,
+    Dependency,
+    DependencyMode,
+    DownstreamContext,
+    MissingDependencyError,
+    ResolutionResult,
+    TopologyLog,
+    eager,
+    lazy,
+)
 from .events import (
     Event,
     EventStream,
     EventType,
+)
+from .healing import (
+    GuardConfig,
+    Healer,
+    HealingHook,
+    HealingResult,
+    HealingState,
+    heal,
+)
+from .roles import (
+    Authority,
+    Principal,
+    RoleBindingError,
+    Roles,
+    roles,
 )
 from .tasklist import (
     TaskList,
@@ -97,4 +146,27 @@ __all__ = [
     "EventType",
     "Event",
     "EventStream",
+    # Phase 4 — auto-healing
+    "GuardConfig",
+    "HealingState",
+    "HealingHook",
+    "HealingResult",
+    "Healer",
+    "heal",
+    # Phase 4 — roles
+    "Principal",
+    "Roles",
+    "roles",
+    "RoleBindingError",
+    "Authority",
+    # Phase 4 — downstream
+    "DependencyMode",
+    "Dependency",
+    "lazy",
+    "eager",
+    "ResolutionResult",
+    "TopologyLog",
+    "DownstreamContext",
+    "AgentGraph",
+    "MissingDependencyError",
 ]
