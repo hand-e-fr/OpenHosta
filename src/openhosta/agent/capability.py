@@ -15,6 +15,12 @@ Registry
 --------
 CapabilityRegistration — global singleton that collects every decorated
 capability and exposes lookup by name, type, or tag.
+
+Inference delegation
+--------------------
+When @infer/@planner/@router decorate a stub function (body is only `...`),
+the decorator wraps the callable so that invocation delegates to the
+InferenceEngine (LLM backend). Non-stub functions execute directly.
 """
 
 from __future__ import annotations
@@ -224,6 +230,54 @@ def _make_decorator(capacity_type: CapabilityType) -> Callable[..., Callable[...
     return decorator
 
 
+def _wrap_inference(
+    func: Callable[..., Any],
+    meta: CapabilityMetadata,
+) -> Callable[..., Any]:
+    """Wrap a stub capability to delegate to InferenceEngine on invocation.
+
+    When the decorated function is a stub (body is only `...` or `pass`),
+    this wrapper intercepts calls and delegates to the LLM backend via
+    the InferenceEngine. Non-stub functions are returned unchanged.
+
+    Parameters
+    ----------
+    func: Callable[..., Any]
+        The decorated callable.
+    meta: CapabilityMetadata
+        The capability metadata.
+
+    Returns
+    -------
+    Callable[..., Any]
+        Either the original function (non-stub) or an inference wrapper.
+    """
+    from openhosta.agent.inference import is_stub, execute_inference
+
+    if not is_stub(func):
+        return func
+
+    @functools.wraps(func)
+    def _infer_wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Lazy import to avoid circular dependency at module load time
+        from openhosta.backend import BackendModel, BackendSelector
+
+        backend = BackendSelector.select()
+        if backend is None:
+            raise RuntimeError(
+                f"No backend configured for inference capability '{meta.name}'. "
+                "Configure a backend via BackendSelector or set LLM_* environment variables."
+            )
+        result = execute_inference(func, meta, backend, *args, **kwargs)
+        if not result.success:
+            raise RuntimeError(
+                f"Inference failed for '{meta.name}': {result.error}"
+            ) from result.error
+        return result.value
+
+    return _infer_wrapper
+
+
 def tool(
     *,
     name: str,
@@ -272,15 +326,31 @@ def infer(
 ) -> Callable[..., Callable[..., Any]]:
     """Mark a function as an **inference** capability (LLM-driven).
 
+    If the decorated function is a stub (body is only `...`), invocation
+    delegates to the InferenceEngine (LLM backend). Non-stub functions
+    execute directly.
+
     Parameters are identical to :func:`tool`.
     """
-    return _make_decorator(CapabilityType.INFERENCE)(
-        name=name,
-        description=description,
-        tags=tags,
-        priority=priority,
-        requires_async=requires_async,
-    )
+    tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
+
+    def inner(func: Callable[..., Any]) -> Callable[..., Any]:
+        meta = CapabilityMetadata(
+            name=name,
+            capacity_type=CapabilityType.INFERENCE,
+            description=description,
+            tags=tags_tuple,
+            priority=priority,
+            requires_async=requires_async,
+        )
+        attached = functools.wraps(func)(func)
+        attached._capability = meta  # type: ignore[attr-defined]
+        # Wrap stubs with inference delegation
+        wrapped = _wrap_inference(attached, meta)
+        _registry.register(wrapped, meta)
+        return wrapped
+
+    return inner
 
 
 def playbook(
@@ -314,15 +384,30 @@ def planner(
 ) -> Callable[..., Callable[..., Any]]:
     """Mark a function as a **planner** capability (goal decomposition).
 
+    If the decorated function is a stub (body is only `...`), invocation
+    delegates to the InferenceEngine (LLM backend). Non-stub functions
+    execute directly.
+
     Parameters are identical to :func:`tool`.
     """
-    return _make_decorator(CapabilityType.PLANNER)(
-        name=name,
-        description=description,
-        tags=tags,
-        priority=priority,
-        requires_async=requires_async,
-    )
+    tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
+
+    def inner(func: Callable[..., Any]) -> Callable[..., Any]:
+        meta = CapabilityMetadata(
+            name=name,
+            capacity_type=CapabilityType.PLANNER,
+            description=description,
+            tags=tags_tuple,
+            priority=priority,
+            requires_async=requires_async,
+        )
+        attached = functools.wraps(func)(func)
+        attached._capability = meta  # type: ignore[attr-defined]
+        wrapped = _wrap_inference(attached, meta)
+        _registry.register(wrapped, meta)
+        return wrapped
+
+    return inner
 
 
 def router(
@@ -335,12 +420,27 @@ def router(
 ) -> Callable[..., Callable[..., Any]]:
     """Mark a function as a **router** capability (routing decision).
 
+    If the decorated function is a stub (body is only `...`), invocation
+    delegates to the InferenceEngine (LLM backend). Non-stub functions
+    execute directly.
+
     Parameters are identical to :func:`tool`.
     """
-    return _make_decorator(CapabilityType.ROUTER)(
-        name=name,
-        description=description,
-        tags=tags,
-        priority=priority,
-        requires_async=requires_async,
-    )
+    tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
+
+    def inner(func: Callable[..., Any]) -> Callable[..., Any]:
+        meta = CapabilityMetadata(
+            name=name,
+            capacity_type=CapabilityType.ROUTER,
+            description=description,
+            tags=tags_tuple,
+            priority=priority,
+            requires_async=requires_async,
+        )
+        attached = functools.wraps(func)(func)
+        attached._capability = meta  # type: ignore[attr-defined]
+        wrapped = _wrap_inference(attached, meta)
+        _registry.register(wrapped, meta)
+        return wrapped
+
+    return inner
