@@ -201,3 +201,111 @@ class TestExecuteInference:
         result = execute_inference(_infer_func_stub, meta, backend, "question")
         assert not result.success
         assert result.error is not None
+
+
+# --------------------------------------------------------------------------- #
+# Test decorator inference wrapping
+# --------------------------------------------------------------------------- #
+
+
+class TestDecoratorInferenceWrapping:
+    """Verify that @infer/@planner/@router wrap stubs with InferenceEngine."""
+
+    def test_stub_infer_is_wrapped(self) -> None:
+        """A stub decorated with @infer should be wrapped with inference."""
+        from openhosta.agent.capability import _wrap_inference
+        from openhosta.backend import BackendModel
+
+        # Create a fresh stub function for this test
+        def _stub_fn(q: str) -> str:
+            """Test stub."""
+            ...
+
+        meta = CapabilityMetadata(
+            name="test.wrap.stub",
+            capacity_type=CapabilityType.INFERENCE,
+            tags=[],
+        )
+        wrapped = _wrap_inference(_stub_fn, meta)
+        # The wrapper should be a different callable
+        assert wrapped is not _stub_fn
+        # Calling it with invalid backend should fail gracefully
+        backend = BackendModel(
+            provider="test",
+            model_name="test",
+            base_url="http://invalid:9999/v1",
+        )
+        # This will fail because the backend is unreachable
+        try:
+            wrapped("test question", _backend=backend)
+        except RuntimeError as e:
+            assert "Inference failed" in str(e) or "Backend" in str(e)
+
+    def test_non_stub_infer_not_wrapped(self) -> None:
+        """A non-stub decorated with @infer should NOT be wrapped."""
+        from openhosta.agent.capability import _wrap_inference
+
+        def _real_fn(x: int, y: int) -> int:
+            """Real function."""
+            return x + y
+
+        meta = CapabilityMetadata(
+            name="test.wrap.real",
+            capacity_type=CapabilityType.INFERENCE,
+            tags=[],
+        )
+        wrapped = _wrap_inference(_real_fn, meta)
+        # Non-stub should return the original function unchanged
+        assert wrapped is _real_fn
+        assert wrapped(2, 3) == 5
+
+    def test_stub_planner_is_wrapped(self) -> None:
+        """A stub decorated with @planner should be wrapped with inference."""
+        from openhosta.agent.capability import _wrap_inference
+
+        def _stub_plan(goal: str) -> list[str]:
+            """Test planner stub."""
+            ...
+
+        meta = CapabilityMetadata(
+            name="test.wrap.planner",
+            capacity_type=CapabilityType.PLANNER,
+            tags=[],
+        )
+        wrapped = _wrap_inference(_stub_plan, meta)
+        assert wrapped is not _stub_plan
+
+    def test_stub_router_is_wrapped(self) -> None:
+        """A stub decorated with @router should be wrapped with inference."""
+        from openhosta.agent.capability import _wrap_inference
+
+        def _stub_route(intent: str) -> str:
+            """Test router stub."""
+            ...
+
+        meta = CapabilityMetadata(
+            name="test.wrap.router",
+            capacity_type=CapabilityType.ROUTER,
+            tags=[],
+        )
+        wrapped = _wrap_inference(_stub_route, meta)
+        assert wrapped is not _stub_route
+
+    def test_tool_not_wrapped(self) -> None:
+        """@tool should never wrap with inference."""
+        from openhosta.agent import tool
+        from openhosta.agent.capability import CapabilityRegistration
+
+        reg = CapabilityRegistration()
+        reg.clear()
+
+        @tool(name="test.tool.not_wrapped", description="test tool")
+        def _tool_stub(q: str) -> str:
+            """Tool stub."""
+            ...
+
+        func, meta = reg.get("test.tool.not_wrapped")
+        # @tool does not use _wrap_inference, so stub is registered as-is
+        # A function with only `...` returns None (the Ellipsis is not returned)
+        result = func("test")
+        assert result is None

@@ -259,14 +259,17 @@ def _wrap_inference(
 
     @functools.wraps(func)
     def _infer_wrapper(*args: Any, **kwargs: Any) -> Any:
-        # Lazy import to avoid circular dependency at module load time
-        from openhosta.backend import BackendModel, BackendSelector
+        # Extract backend from kwargs if provided, otherwise require configuration
+        backend = kwargs.pop("_backend", None)
+        if backend is None:
+            # Check for a global backend configuration
+            from openhosta.agent._config import get_default_backend
+            backend = get_default_backend()
 
-        backend = BackendSelector.select()
         if backend is None:
             raise RuntimeError(
                 f"No backend configured for inference capability '{meta.name}'. "
-                "Configure a backend via BackendSelector or set LLM_* environment variables."
+                "Pass `_backend=BackendModel(...)` or configure a default backend."
             )
         result = execute_inference(func, meta, backend, *args, **kwargs)
         if not result.success:
