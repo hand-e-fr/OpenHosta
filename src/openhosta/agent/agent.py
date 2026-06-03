@@ -181,30 +181,43 @@ class Agent:
 
     # Dispatch priority: router > planner > playbook > infer > tool
         priority_order = (
-            CapabilityType.ROUTER,
-            CapabilityType.PLANNER,
-            CapabilityType.PLAYBOOK,
-            CapabilityType.INFERENCE,
-            CapabilityType.TOOL,
+            (CapabilityType.ROUTER, True),
+            (CapabilityType.PLANNER, True),
+            (CapabilityType.PLAYBOOK, False),
+            (CapabilityType.INFERENCE, True),
+            (CapabilityType.TOOL, False),
         )
 
-        # Inject backend for inference capabilities
+        # Resolve backend for inference-capable types
         from openhosta.backend import BackendSelector  # noqa: PLC2701
 
+        resolved_backend = None
         if self._backend is not None:
             if isinstance(self._backend, BackendSelector):
-                resolved = self._backend.resolve()
+                resolved_backend = self._backend.resolve()
             else:
-                resolved = self._backend
-            dispatch_kwargs = {"msg": msg, "_backend": resolved}
-        else:
-            dispatch_kwargs = {"msg": msg}
+                resolved_backend = self._backend
 
-        for cap_type in priority_order:
-            results = dispatcher.route_by_type(cap_type, **dispatch_kwargs)
+        for cap_type, needs_backend in priority_order:
+            if needs_backend and resolved_backend is not None:
+                kwargs = {"msg": msg, "_backend": resolved_backend}
+            else:
+                kwargs = {"msg": msg}
+
+            results = dispatcher.route_by_type(cap_type, **kwargs)
             for dr in results:
                 if dr.success is not None and dr.success:
-                    return str(dr.result) if dr.result is not None else ""
+                    result_str = str(dr.result) if dr.result is not None else ""
+                    # Interpret router decisions: "route:tag" → dispatch to tagged capabilities
+                    if cap_type == CapabilityType.ROUTER and result_str.startswith("route:"):
+                        target_tag = result_str.split(":", 1)[1].strip()
+                        routed = dispatcher.route_by_tag(target_tag, **kwargs)
+                        for r2 in routed:
+                            if r2.success is not None and r2.success:
+                                return str(r2.result) if r2.result is not None else ""
+                        # Router target not found or failed → fall through
+                        continue
+                    return result_str
 
         # Fallback: use the engine's execute_step on the agent session
         if session is not None:

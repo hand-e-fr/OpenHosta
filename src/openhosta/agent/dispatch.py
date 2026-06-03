@@ -8,6 +8,7 @@ provides dispatch-by-name, route-by-tag, and route-by-type strategies.
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 from typing import Any
 
@@ -65,6 +66,43 @@ class CapabilityDispatcher:
 
     # ---- dispatch by name ----
 
+    @staticmethod
+    def _filter_kwargs(func, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """Return kwargs filtered to only those accepted by *func*.
+
+        Removes internal kwargs (e.g. ``_backend``) when the callable
+        does not declare them in its signature.  Handles decorated
+        functions by inspecting the wrapper's ``__code__`` object.
+        """
+        code = getattr(func, "__code__", None)
+        if code is not None:
+            # co_flags bit 0x08 (CO_VARKEYWORDS) → **kwargs present
+            if code.co_flags & 0x08:
+                return kwargs  # accepts anything
+
+            # Build accepted param names from the code object
+            accepted = set()
+            npos = code.co_argcount  # positional + positional-or-keyword
+            nkwonly = code.co_kwonlyargcount  # keyword-only
+            total_named = npos + nkwonly
+            for i in range(total_named):
+                accepted.add(code.co_varnames[i])
+            # Also include 'self' for bound methods if present
+            # (co_argcount already includes self)
+            return {k: v for k, v in kwargs.items() if k in accepted}
+
+        # Fallback: try inspect.signature, tolerate wrapper loops
+        try:
+            sig = inspect.signature(func)
+            for p in sig.parameters.values():
+                if p.kind == inspect.Parameter.VAR_KEYWORD:
+                    return kwargs
+            accepted = set(sig.parameters.keys())
+            return {k: v for k, v in kwargs.items() if k in accepted}
+        except (ValueError, TypeError):
+            # Wrapper loop or builtin: pass kwargs as-is
+            return kwargs
+
     def dispatch(
         self,
         name: str,
@@ -104,7 +142,8 @@ class CapabilityDispatcher:
 
         func, metadata = lookup
         try:
-            result = func(*args, **kwargs)
+            filtered = self._filter_kwargs(func, kwargs)
+            result = func(*args, **filtered)
             return DispatchResult(success=True, result=result, metadata=metadata)
         except Exception as exc:  # noqa: BLE001 – we capture everything
             return DispatchResult(success=False, error=exc, metadata=metadata)
@@ -139,7 +178,8 @@ class CapabilityDispatcher:
         results: list[DispatchResult] = []
         for func, metadata in ranked:
             try:
-                result = func(*args, **kwargs)
+                filtered = self._filter_kwargs(func, kwargs)
+                result = func(*args, **filtered)
                 results.append(DispatchResult(success=True, result=result, metadata=metadata))
             except Exception as exc:  # noqa: BLE001
                 results.append(DispatchResult(success=False, error=exc, metadata=metadata))
@@ -167,7 +207,8 @@ class CapabilityDispatcher:
         results: list[DispatchResult] = []
         for func, metadata in ranked:
             try:
-                result = func(*args, **kwargs)
+                filtered = self._filter_kwargs(func, kwargs)
+                result = func(*args, **filtered)
                 results.append(DispatchResult(success=True, result=result, metadata=metadata))
             except Exception as exc:  # noqa: BLE001
                 results.append(DispatchResult(success=False, error=exc, metadata=metadata))
