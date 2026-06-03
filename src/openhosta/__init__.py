@@ -10,6 +10,9 @@ from .guarded.defaults import ALLOW_CODE_EXECUTION
 from .guarded.primitives import GuardConfig as GuardedGuardConfig
 from .guarded.wrapper import GuardMetadata, Guarded, guard_info, guarded_to_json, guarded_to_markdown, guarded_to_python
 
+# V5 - Public Agent
+from openhosta.agent.agent import Agent
+
 # V5 - Agent runtime
 from openhosta.agent import (
     AgentEngine,
@@ -36,6 +39,8 @@ from openhosta.agent import (
 )
 
 __all__ = (
+    # Public Agent
+    "Agent",
     # Backend
     "BackendModel",
     "BackendSelector",
