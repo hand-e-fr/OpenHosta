@@ -11,9 +11,9 @@ sys.path.insert(0, str(src_path))
 from dotenv import load_dotenv
 load_dotenv()
 
-from OpenHosta.models import OpenAICompatibleModel
-from OpenHosta.core.base_model import ModelCapabilities
-from OpenHosta.pipelines import OneTurnConversationPipeline
+from openhosta.models import OpenAICompatibleModel
+from openhosta.core.base_model import ModelCapabilities
+from openhosta.pipelines import OneTurnConversationPipeline
 
 
 @pytest.fixture(scope="session")
@@ -37,7 +37,7 @@ def ollama_pipeline(ollama_model):
 @pytest.fixture(scope="session")
 def animal_set(ollama_model, ollama_pipeline):
     """Pre-built SemanticSet for animals, shared across tests."""
-    from OpenHosta.semantics import SemanticSet
+    from openhosta.semantics import SemanticSet
     return SemanticSet(
         axis="Type d'animal",
         tolerance=0.25,
@@ -50,7 +50,7 @@ def animal_set(ollama_model, ollama_pipeline):
 @pytest.fixture(scope="session")
 def animal_dict(ollama_model, ollama_pipeline):
     """Pre-built SemanticDict for animals, shared across tests."""
-    from OpenHosta.semantics import SemanticDict
+    from openhosta.semantics import SemanticDict
     return SemanticDict(
         axis="Animal",
         tolerance=0.25,

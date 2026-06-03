@@ -28,7 +28,7 @@ load_dotenv()
 #
 #########################################################
 
-from OpenHosta import ask
+from openhosta import ask
 ask("hello world!")
 
 #########################################################
@@ -37,7 +37,7 @@ ask("hello world!")
 #
 #########################################################
 
-from OpenHosta import emulate
+from openhosta import emulate
 
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
@@ -62,7 +62,7 @@ def find_people(sentence:str)->Person:
 
 first_person = find_people("The french president went with his wife Brigite Macron to london.")
 
-from OpenHosta import print_last_prompt, print_last_decoding
+from openhosta import print_last_prompt, print_last_decoding
 
 print_last_prompt(find_people)
 print_last_decoding(find_people)

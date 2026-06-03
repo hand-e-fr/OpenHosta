@@ -1,10 +1,10 @@
 import pytest
 from typing import List, Dict, Set, Tuple, Optional, Union, Literal
-from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
-from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
-from OpenHosta.guarded.subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple
-from OpenHosta.guarded.subclassablewithproxy import GuardedBool, GuardedNone
-from OpenHosta.guarded.subclassableunions import GuardedUnion
+from openhosta.guarded.resolver import TypeResolver, type_returned_data
+from openhosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
+from openhosta.guarded.subclassablecollections import GuardedList, GuardedDict, GuardedSet, GuardedTuple
+from openhosta.guarded.subclassablewithproxy import GuardedBool, GuardedNone
+from openhosta.guarded.subclassableunions import GuardedUnion
 
 
 class TestTypeResolver:
@@ -92,7 +92,7 @@ class TestTypeResolver:
         """Test resolving Callable types."""
         from typing import Callable as TypingCallable
         import collections.abc
-        from OpenHosta.guarded.subclassablecallables import GuardedCode
+        from openhosta.guarded.subclassablecallables import GuardedCode
         
         assert TypeResolver.resolve(TypingCallable) == GuardedCode
         assert TypeResolver.resolve(collections.abc.Callable) == GuardedCode
@@ -101,8 +101,8 @@ class TestTypeResolver:
     def test_resolve_string_annotations(self):
         """Test resolving stringified annotations (safety net in resolver)."""
         import warnings
-        from OpenHosta.guarded.subclassablecallables import GuardedCode
-        from OpenHosta.guarded.subclassablescalars import GuardedInt
+        from openhosta.guarded.subclassablecallables import GuardedCode
+        from openhosta.guarded.subclassablescalars import GuardedInt
         
         # These should still work but now emit a deprecation warning
         with warnings.catch_warnings():
@@ -128,13 +128,13 @@ class TestResolveAnnotationHelper:
     
     def test_resolve_non_string_passthrough(self):
         """Non-string annotations pass through unchanged."""
-        from OpenHosta.core.analizer import _resolve_annotation
+        from openhosta.core.analizer import _resolve_annotation
         assert _resolve_annotation(int) is int
         assert _resolve_annotation(None) is None
     
     def test_resolve_string_to_type(self):
         """String annotations are resolved via eval in the correct namespace."""
-        from OpenHosta.core.analizer import _resolve_annotation
+        from openhosta.core.analizer import _resolve_annotation
         import typing
         
         ns = {"int": int, "str": str, "typing": typing, "Callable": typing.Callable}
@@ -146,7 +146,7 @@ class TestResolveAnnotationHelper:
         """Unresolvable strings fall back to typing.Any with a warning."""
         import typing
         import warnings
-        from OpenHosta.core.analizer import _resolve_annotation
+        from openhosta.core.analizer import _resolve_annotation
         
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -161,7 +161,7 @@ class TestHostaAnalyzeStringAnnotations:
     
     def test_analyze_resolves_return_type(self):
         """hosta_analyze should resolve string return annotations."""
-        from OpenHosta.core.analizer import hosta_analyze
+        from openhosta.core.analizer import hosta_analyze
         import typing
         
         def my_func(x: int) -> str:
@@ -175,7 +175,7 @@ class TestHostaAnalyzeStringAnnotations:
     
     def test_analyze_with_callable_annotation(self):
         """hosta_analyze should handle Callable annotations."""
-        from OpenHosta.core.analizer import hosta_analyze
+        from openhosta.core.analizer import hosta_analyze
         from typing import Callable
         
         def my_func(callback: Callable) -> int:
@@ -329,9 +329,9 @@ class TestTypeResolverLiteralAndCustomTypes:
     
     def test_resolve_custom_guarded_type(self):
         """Test resolving custom GuardedPrimitive subclass."""
-        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from OpenHosta.guarded.constants import Tolerance
+        from openhosta.guarded.subclassablescalars import GuardedUtf8
+        from openhosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from openhosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         
@@ -355,9 +355,9 @@ class TestTypeResolverLiteralAndCustomTypes:
     
     def test_resolve_dict_with_custom_type(self):
         """Test resolving Dict[str, CustomGuardedType]."""
-        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from OpenHosta.guarded.constants import Tolerance
+        from openhosta.guarded.subclassablescalars import GuardedUtf8
+        from openhosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from openhosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         
@@ -385,9 +385,9 @@ class TestTypeResolverLiteralAndCustomTypes:
     
     def test_resolve_list_with_custom_type(self):
         """Test resolving List[CustomGuardedType]."""
-        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from OpenHosta.guarded.constants import Tolerance
+        from openhosta.guarded.subclassablescalars import GuardedUtf8
+        from openhosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from openhosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         
@@ -414,9 +414,9 @@ class TestTypeResolverLiteralAndCustomTypes:
     
     def test_type_returned_data_with_custom_type(self):
         """Test type_returned_data with custom GuardedPrimitive."""
-        from OpenHosta.guarded.subclassablescalars import GuardedUtf8
-        from OpenHosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
-        from OpenHosta.guarded.constants import Tolerance
+        from openhosta.guarded.subclassablescalars import GuardedUtf8
+        from openhosta.guarded.primitives import GuardedPrimitive, UncertaintyLevel
+        from openhosta.guarded.constants import Tolerance
         from typing import Tuple, Optional, Any
         import re
         
@@ -450,8 +450,8 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_class_returns_class_name(self):
         """Guarded[SomeClass] should display as the class name, not Guarded[SomeClass]."""
-        from OpenHosta.core.analizer import nice_type_name
-        from OpenHosta import Guarded
+        from openhosta.core.analizer import nice_type_name
+        from openhosta import Guarded
 
         class Sentiment:
             pass
@@ -461,8 +461,8 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_builtin_returns_builtin_name(self):
         """Guarded[str], Guarded[int], etc. should display as the builtin name."""
-        from OpenHosta.core.analizer import nice_type_name
-        from OpenHosta import Guarded
+        from openhosta.core.analizer import nice_type_name
+        from openhosta import Guarded
 
         assert nice_type_name(Guarded[str]) == "str"
         assert nice_type_name(Guarded[int]) == "int"
@@ -471,31 +471,31 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_generic_returns_inner_generic(self):
         """Guarded[List[int]] should display as List[int]."""
-        from OpenHosta.core.analizer import nice_type_name
-        from OpenHosta import Guarded
+        from openhosta.core.analizer import nice_type_name
+        from openhosta import Guarded
 
         result = nice_type_name(Guarded[List[int]])
         assert result == "List[int]", f"Expected 'List[int]', got '{result}'"
 
     def test_guarded_nested_generic(self):
         """Guarded[Dict[str, int]] should display as Dict[str, int]."""
-        from OpenHosta.core.analizer import nice_type_name
-        from OpenHosta import Guarded
+        from openhosta.core.analizer import nice_type_name
+        from openhosta import Guarded
 
         result = nice_type_name(Guarded[Dict[str, int]])
         assert result == "Dict[str, int]", f"Expected 'Dict[str, int]', got '{result}'"
 
     def test_guarded_optional(self):
         """Guarded[Optional[str]] should display as Optional[str]."""
-        from OpenHosta.core.analizer import nice_type_name
-        from OpenHosta import Guarded
+        from openhosta.core.analizer import nice_type_name
+        from openhosta import Guarded
 
         result = nice_type_name(Guarded[Optional[str]])
         assert result == "Optional[str]", f"Expected 'Optional[str]', got '{result}'"
 
     def test_regular_types_unchanged(self):
         """Non-Guarded types should still work normally."""
-        from OpenHosta.core.analizer import nice_type_name
+        from openhosta.core.analizer import nice_type_name
 
         assert nice_type_name(str) == "str"
         assert nice_type_name(int) == "int"
@@ -503,7 +503,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_regular_generics_unchanged(self):
         """Non-Guarded generic types should still work normally."""
-        from OpenHosta.core.analizer import nice_type_name
+        from openhosta.core.analizer import nice_type_name
 
         assert nice_type_name(List[int]) == "List[int]"
         assert nice_type_name(Dict[str, int]) == "Dict[str, int]"

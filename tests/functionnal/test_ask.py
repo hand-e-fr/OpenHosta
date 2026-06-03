@@ -13,7 +13,7 @@ import pytest
 # pytest OpenHosta/tests/functionnalTests/test_ask.py
 
 
-from OpenHosta import ask
+from openhosta import ask
 
 # Basic test to check if the ask function works with a simple prompt
 def test_ask_basic():
@@ -34,7 +34,7 @@ def test_ask_routing():
     assert "push" in response, f"Expected 'push' in response, got: {response}"
     
 ## Exact same tests but with async version of ask
-from OpenHosta import ask_async
+from openhosta import ask_async
 from asyncio import run
 
 def test_ask_basic_async():

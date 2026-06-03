@@ -1,8 +1,8 @@
 """Tests for GuardedEnum."""
 
 import pytest
-from OpenHosta.guarded.constants import Tolerance
-from OpenHosta.guarded.subclassableclasses import guarded_enum
+from openhosta.guarded.constants import Tolerance
+from openhosta.guarded.subclassableclasses import guarded_enum
 from enum import Enum
 
 

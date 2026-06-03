@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from OpenHosta import ask_stream, ask_stream_async
+from openhosta import ask_stream, ask_stream_async
 from asyncio import run
 
 def test_ask_stream_basic():

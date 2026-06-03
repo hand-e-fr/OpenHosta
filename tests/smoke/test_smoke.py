@@ -2,7 +2,7 @@ import pytest
 from dotenv import load_dotenv
 load_dotenv()
 
-from OpenHosta import ask, emulate
+from openhosta import ask, emulate
 
 def test_smoke_ask():
     """Verify that ask works for a simple query."""

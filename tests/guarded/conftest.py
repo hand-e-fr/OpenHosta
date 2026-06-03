@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures for guarded tests."""
 
+import os
 import pytest
 import sys
 from pathlib import Path
@@ -7,6 +8,16 @@ from pathlib import Path
 # Add src to path
 src_path = Path(__file__).parent.parent.parent / "src"
 sys.path.insert(0, str(src_path))
+
+
+def pytest_configure(config):
+    """Enable code execution for GuardedCode tests by default."""
+    os.environ.setdefault("OPENHOSTA_ALLOW_CODE_EXECUTION", "1")
+    # Directly set the flag on the module to avoid reload identity issues
+    import openhosta.guarded.defaults as defaults_mod
+    defaults_mod.ALLOW_CODE_EXECUTION = True
+    import openhosta.guarded.subclassablecallables as callables_mod
+    callables_mod.ALLOW_CODE_EXECUTION = True
 
 
 @pytest.fixture

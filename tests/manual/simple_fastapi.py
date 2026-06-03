@@ -1,6 +1,6 @@
-from OpenHosta.asynchrone import emulate
-from OpenHosta import DefaultModel
-from OpenHosta import reload_dotenv
+from openhosta.asynchrone import emulate
+from openhosta import DefaultModel
+from openhosta import reload_dotenv
 
 from fastapi import FastAPI
 

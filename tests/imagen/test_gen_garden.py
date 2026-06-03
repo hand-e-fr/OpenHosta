@@ -24,8 +24,8 @@ import os
 os.environ["GTK_PATH"] = ""
 
 
-from OpenHosta import emulate, ask
-from OpenHosta import print_last_decoding, print_last_prompt
+from openhosta import emulate, ask
+from openhosta import print_last_decoding, print_last_prompt
 
 # ask("quel est ton nom de model ? quelle version et quelle data de fin d'entraienement ?")
 
@@ -62,7 +62,7 @@ def what_is_the_python_module_for(action_description:str) -> str:
     return emulate()
     
 
-from OpenHosta import config, MetaPrompt
+from openhosta import config, MetaPrompt
 config.DefaultModel.api_parameters["reasoning_effort"] = "low"
 config.DefaultModel.api_parameters["max_tokens"] = 1000
 
@@ -106,7 +106,7 @@ print(f"Time taken: {t1-t0}")
 
 
 
-from OpenHosta.core.inspection import Inspection
+from openhosta.core.inspection import Inspection
 insp:Inspection = get_bounding_box.hosta_inspection
 
 insp.model.api_parameters

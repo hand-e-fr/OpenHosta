@@ -1,4 +1,4 @@
-from OpenHosta import emulate, config
+from openhosta import emulate, config
 
 config.DefaultModel.model_name="qwen3.5:4b"
 config.DefaultModel.base_url="http://127.0.0.1:11434"
@@ -13,7 +13,7 @@ def answer_as_repl(request:str) -> str:
 
 answer_as_repl("print('hello')")
 
-from OpenHosta import print_last_prompt, print_last_decoding
+from openhosta import print_last_prompt, print_last_decoding
 print_last_prompt(answer_as_repl)
 print_last_decoding(answer_as_repl)
 

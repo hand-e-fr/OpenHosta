@@ -16,8 +16,8 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_emulate.py
 
-from OpenHosta import emulate
-from OpenHosta import OneTurnConversationPipeline, config
+from openhosta import emulate
+from openhosta import OneTurnConversationPipeline, config
 
 
 # Basic test to check if the emulate function works with a simple prompt

@@ -6,7 +6,7 @@ from asyncio import run
 
 load_dotenv()
 
-from OpenHosta import emulate, emulate_async
+from openhosta import emulate, emulate_async
 
 def test_emulate_sync_generator_basic():
     """Test emulate() inside a synchronous generator returns typed items."""

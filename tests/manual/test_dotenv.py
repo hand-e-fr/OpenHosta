@@ -1,6 +1,6 @@
 import os
 from unittest.mock import patch, mock_open
-from OpenHosta.defaults import reload_dotenv, config
+from openhosta.defaults import reload_dotenv, config
 
 def test_reload_dotenv_success():
     """Test that reload_dotenv successfully loads environment variables."""

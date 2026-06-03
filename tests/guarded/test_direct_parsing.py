@@ -1,7 +1,7 @@
 import pytest
 from typing import List
-from OpenHosta.guarded.resolver import TypeResolver
-from OpenHosta.guarded import GuardedInt, Tolerance
+from openhosta.guarded.resolver import TypeResolver
+from openhosta.guarded import GuardedInt, Tolerance
 
 def test_doc_example_10_1():
     """Verify example 10.1 from documentation: List parsing with prefix noise."""
@@ -36,7 +36,7 @@ def test_prefix_noise_scalar():
 
 def test_prefix_noise_complex():
     """Verify complex parsing with prefix noise."""
-    from OpenHosta.guarded import GuardedComplex
+    from openhosta.guarded import GuardedComplex
     result = GuardedComplex.attempt("Result: 1+2j", tolerance=Tolerance.FLEXIBLE)
     assert result.success
     assert result.data == 1+2j
@@ -63,7 +63,7 @@ def test_prefix_noise_dict():
 
 def test_prefix_noise_dataclass():
     """Verify dataclass parsing with prefix noise."""
-    from OpenHosta.guarded import guarded_dataclass
+    from openhosta.guarded import guarded_dataclass
     
     @guarded_dataclass
     class Person:
@@ -123,7 +123,7 @@ def test_colon_inside_string_literal_not_misinterpreted():
 
 def test_find_first_out_of_string_colon():
     """Unit-test the _find_first_out_of_string_colon helper."""
-    from OpenHosta.guarded.primitives import GuardedPrimitive
+    from openhosta.guarded.primitives import GuardedPrimitive
 
     # Simple colon
     assert GuardedPrimitive._find_first_out_of_string_colon("Résultat : 42") == 9

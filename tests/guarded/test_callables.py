@@ -2,8 +2,8 @@
 
 import pytest
 import types
-from OpenHosta.guarded.subclassablecallables import GuardedCode
-from OpenHosta.guarded.constants import Tolerance
+from openhosta.guarded.subclassablecallables import GuardedCode
+from openhosta.guarded.constants import Tolerance
 
 
 class TestGuardedCode:

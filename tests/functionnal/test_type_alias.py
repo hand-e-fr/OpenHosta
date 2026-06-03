@@ -1,7 +1,7 @@
 import pytest
 from typing import Literal
 from dataclasses import dataclass
-from OpenHosta import emulate
+from openhosta import emulate
 
 type RegimeMatrimonial = Literal["Marié", "PACS", "Concubin"]
 

@@ -76,11 +76,11 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-"OpenHosta" = ["utils/*.json"]
+"openhosta" = ["utils/*.json"]
 
 [tool.bandit]
 skips = ["B112"]
-targets = ["src/OpenHosta"]
+targets = ["src/openhosta"]
 recursive = true
 
 [tool.pylint]

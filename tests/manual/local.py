@@ -1,6 +1,6 @@
-from OpenHosta import ask_stream, print_last_prompt
+from openhosta import ask_stream, print_last_prompt
 
-from OpenHosta import config
+from openhosta import config
 
 config.DefaultModel.api_parameters |= {"extra_body" : {"enable_thinking": False}, "reasoning_effort": "low"}
 
@@ -8,7 +8,7 @@ for line in ask_stream("liste les présidents de la france"):
     print("--->", line, end="", flush=True)
     
 from typing import Iterator
-from OpenHosta import emulate
+from openhosta import emulate
 from dataclasses import dataclass
 
 @dataclass

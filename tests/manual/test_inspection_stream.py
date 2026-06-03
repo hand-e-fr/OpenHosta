@@ -1,10 +1,10 @@
 
-from OpenHosta import emulate, Guarded, conversation, readable, markdown
+from openhosta import emulate, Guarded, conversation, readable, markdown
 from typing import Iterator
 import os
 
 # Ensure .env is loaded
-from OpenHosta import reload_dotenv
+from openhosta import reload_dotenv
 reload_dotenv()
 
 def test_inspection_stream():

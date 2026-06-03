@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from OpenHosta import emulate, ask
-from OpenHosta.guarded import guarded_dataclass
+from openhosta import emulate, ask
+from openhosta.guarded import guarded_dataclass
 
 
 answer = ask("Just say: The API to the model works!")

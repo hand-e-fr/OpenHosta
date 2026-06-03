@@ -10,19 +10,19 @@ class TestGenerateExamples:
     """Tests for the example generation pipeline."""
 
     def test_generates_nonempty_list(self, ollama_pipeline):
-        from OpenHosta.semantics.engine import generate_examples
+        from openhosta.semantics.engine import generate_examples
         examples = generate_examples(axis="Couleur", pipeline=ollama_pipeline, n=10)
         assert len(examples) > 0, "Should generate at least one example"
 
     def test_examples_are_strings(self, ollama_pipeline):
-        from OpenHosta.semantics.engine import generate_examples
+        from openhosta.semantics.engine import generate_examples
         examples = generate_examples(axis="Fruit", pipeline=ollama_pipeline, n=10)
         for ex in examples:
             assert isinstance(ex, str)
             assert len(ex.strip()) > 0
 
     def test_no_duplicates(self, ollama_pipeline):
-        from OpenHosta.semantics.engine import generate_examples
+        from openhosta.semantics.engine import generate_examples
         examples = generate_examples(axis="Pays européen", pipeline=ollama_pipeline, n=15)
         lowered = [e.lower() for e in examples]
         assert len(lowered) == len(set(lowered)), "Should not contain duplicates"
@@ -32,7 +32,7 @@ class TestSemanticEngine:
     """Tests for clustering and prediction."""
 
     def test_fit_creates_clusters(self, ollama_model):
-        from OpenHosta.semantics.engine import SemanticEngine
+        from openhosta.semantics.engine import SemanticEngine
 
         texts = ["chat", "chien", "lion", "voiture", "avion", "train"]
         embeddings = ollama_model.embed(texts)
@@ -41,7 +41,7 @@ class TestSemanticEngine:
         assert engine.n_clusters >= 1, "Should create at least 1 cluster"
 
     def test_predict_returns_valid_cluster(self, ollama_model):
-        from OpenHosta.semantics.engine import SemanticEngine
+        from openhosta.semantics.engine import SemanticEngine
 
         texts = ["chat", "chien", "lion", "voiture", "avion", "train"]
         embeddings = ollama_model.embed(texts)
@@ -53,7 +53,7 @@ class TestSemanticEngine:
         assert cluster_id in engine.cluster_ids
 
     def test_top_k_nearest_center(self, ollama_model):
-        from OpenHosta.semantics.engine import SemanticEngine
+        from openhosta.semantics.engine import SemanticEngine
 
         texts = ["chat", "chien", "lion", "tigre", "panthère"]
         embeddings = ollama_model.embed(texts)
@@ -67,7 +67,7 @@ class TestSemanticEngine:
                 assert item in texts
 
     def test_nearest_clusters(self, ollama_model):
-        from OpenHosta.semantics.engine import SemanticEngine
+        from openhosta.semantics.engine import SemanticEngine
 
         texts = ["chat", "chien", "voiture", "avion", "pomme", "banane"]
         embeddings = ollama_model.embed(texts)
@@ -85,7 +85,7 @@ class TestQualityFilter:
     """Tests for the garbled output quality filter."""
 
     def test_rejects_concatenated_tokens(self):
-        from OpenHosta.semantics.engine import generate_examples
+        from openhosta.semantics.engine import generate_examples
         # Access the inner function via module-level test
         # We test the heuristic directly
         def _is_quality(text):

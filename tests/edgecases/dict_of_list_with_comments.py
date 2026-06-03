@@ -1,5 +1,5 @@
 
-from OpenHosta import emulate
+from openhosta import emulate
 
 # def answer_exactly_this(input:str)->dict[str, list[str]]: # This is the fix for the issue below. The point is that the error report is missleading.
 def answer_exactly_this(input:str)->dict[list[str]]: # This is a bad annotation that is being captured by pylance but not by OpenHosta. 

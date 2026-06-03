@@ -1,7 +1,7 @@
 import pytest
 from typing import Any
 
-from OpenHosta import emulate, test as oh_test
+from openhosta import emulate, test as oh_test
 
 class TestTypes:
     

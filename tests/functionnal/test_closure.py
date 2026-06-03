@@ -15,7 +15,7 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_closure.py
 
-from OpenHosta import closure
+from openhosta import closure
 
 # Basic test to check if the closure function works with a simple prompt
 def test_closure_basic():
@@ -36,7 +36,7 @@ def test_closure_routing():
     
     
 ## Exact same tests but with async version of ask
-from OpenHosta import closure_async
+from openhosta import closure_async
 from asyncio import run
 
 def test_closure_basic_async():
