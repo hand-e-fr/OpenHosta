@@ -878,7 +878,7 @@ def guarded_dataclass(first_arg=None, **dataclass_kwargs):
         fields_repr = []
         hints = resolve_struct_hints(cls_to_guard)
 
-        from ..core.analizer import nice_type_name
+        from .type_hints import nice_type_name
         for field in field_definitions:
             field_type = hints.get(field.name, field.type)
             try:
@@ -1015,7 +1015,7 @@ def guarded_typeddict(cls_to_guard):
     fields_repr = []
     hints = resolve_struct_hints(cls_to_guard)
 
-    from ..core.analizer import nice_type_name
+    from .type_hints import nice_type_name
     for field_name, field_type in hints.items():
         try:
             type_str = nice_type_name(field_type)
