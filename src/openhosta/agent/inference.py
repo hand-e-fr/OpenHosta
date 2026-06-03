@@ -59,8 +59,12 @@ def build_infer_prompt(
         The formatted prompt ready for the LLM.
     """
     sig = inspect.signature(func)
-    # Priority: capability_meta.description > func.__doc__
-    doc = (capability_meta.description or (func.__doc__ or "")).strip()
+    # Convention V5 : utiliser long_description quand disponible,
+    # sinon description courte, sinon docstring brute
+    doc = (capability_meta.long_description
+           or capability_meta.description
+           or (func.__doc__ or "")
+           ).strip()
 
     # Build parameter descriptions
     params_desc = []
@@ -94,10 +98,16 @@ def build_infer_prompt(
         "You are a specialized AI function executor. Your task is to execute the following bounded contract:",
         "",
         f"**Function:** `{capability_meta.name or func.__name__}`",
-        f"**Description:** {doc}",
-        "",
-        "**Parameters:**",
     ]
+
+    # Use long_description (rich prompt) or fall back to short description
+    if capability_meta.long_description:
+        prompt_lines.append(capability_meta.long_description)
+    else:
+        prompt_lines.append(f"**Description:** {doc}")
+
+    prompt_lines.append("")
+    prompt_lines.append("**Parameters:**")
 
     if params_desc:
         prompt_lines.extend(params_desc)
