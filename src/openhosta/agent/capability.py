@@ -219,11 +219,11 @@ def _make_decorator(capacity_type: CapabilityType) -> Callable[..., Callable[...
                 priority=priority,
                 requires_async=requires_async,
             )
-            # Attach metadata as an attribute for runtime introspection
-            attached = functools.wraps(func)(func)
-            attached._capability = meta  # type: ignore[attr-defined]
-            _registry.register(attached, meta)
-            return attached
+            # Attach metadata directly without functools.wraps to avoid
+            # creating a wrapper loop (func.__wrapped__ = func).
+            func._capability = meta  # type: ignore[attr-defined]
+            _registry.register(func, meta)
+            return func
 
         return inner
 
@@ -346,10 +346,11 @@ def infer(
             priority=priority,
             requires_async=requires_async,
         )
-        attached = functools.wraps(func)(func)
-        attached._capability = meta  # type: ignore[attr-defined]
+        # Attach metadata directly without functools.wraps to avoid
+        # creating a wrapper loop (func.__wrapped__ = func).
+        func._capability = meta  # type: ignore[attr-defined]
         # Wrap stubs with inference delegation
-        wrapped = _wrap_inference(attached, meta)
+        wrapped = _wrap_inference(func, meta)
         _registry.register(wrapped, meta)
         return wrapped
 
@@ -404,9 +405,10 @@ def planner(
             priority=priority,
             requires_async=requires_async,
         )
-        attached = functools.wraps(func)(func)
-        attached._capability = meta  # type: ignore[attr-defined]
-        wrapped = _wrap_inference(attached, meta)
+        # Attach metadata directly without functools.wraps to avoid
+        # creating a wrapper loop (func.__wrapped__ = func).
+        func._capability = meta  # type: ignore[attr-defined]
+        wrapped = _wrap_inference(func, meta)
         _registry.register(wrapped, meta)
         return wrapped
 
@@ -440,9 +442,10 @@ def router(
             priority=priority,
             requires_async=requires_async,
         )
-        attached = functools.wraps(func)(func)
-        attached._capability = meta  # type: ignore[attr-defined]
-        wrapped = _wrap_inference(attached, meta)
+        # Attach metadata directly without functools.wraps to avoid
+        # creating a wrapper loop (func.__wrapped__ = func).
+        func._capability = meta  # type: ignore[attr-defined]
+        wrapped = _wrap_inference(func, meta)
         _registry.register(wrapped, meta)
         return wrapped
 

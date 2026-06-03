@@ -430,12 +430,29 @@ def is_stub(func: Any) -> bool:
                             return True
                 return False
     except (OSError, TypeError, ValueError):
-        # Fallback: if we can't get source, check bytecode heuristically
+          # Fallback: if we can't get source, use dis to check bytecode
         try:
-            code = func.__code__.co_code
-            # Common bytecode patterns for stub functions
-            if code in (b'd\x01.', b'd\x01S', b'S'):
-                return True
-        except (AttributeError, TypeError):
+            import dis
+            ops = [instr.opname for instr in dis.get_instructions(func)]
+            # A stub has only trivial instructions:
+            # - RESUME (entry point)
+            # - LOAD_CONST / RETURN_CONST (Ellipsis or None)
+            # - RETURN_VALUE / RETURN_CONST (return)
+            # - LOAD_FAST / POP_TOP (arg handling)
+            # - NOP (no-op)
+            trivial_ops = {
+                "RESUME", "LOAD_CONST", "RETURN_CONST",
+                "RETURN_VALUE", "LOAD_FAST", "POP_TOP", "NOP",
+            }
+            non_trivial = {op for op in ops if op not in trivial_ops}
+            if not non_trivial and len(ops) <= 5:
+                # Further check: constants (excluding docstring at co_consts[0])
+                # should only be None or Ellipsis
+                const_values = func.__code__.co_consts
+                # co_consts[0] is the docstring; check remaining constants
+                body_consts = const_values[1:] if len(const_values) > 1 else ()
+                if all(c is None or c is ... for c in body_consts):
+                    return True
+        except (AttributeError, TypeError, ImportError):
             pass
     return False
