@@ -1,5 +1,9 @@
 __version__ = "5.0.0-dev"
 
+# V5 - Backend
+from .backend import BackendModel, BackendSelector
+from .workspace import Workspace
+
 # V5 - Guarded API
 from .guarded.api import guard, unguard
 from .guarded.defaults import ALLOW_CODE_EXECUTION
@@ -32,6 +36,10 @@ from openhosta.agent import (
 )
 
 __all__ = (
+    # Backend
+    "BackendModel",
+    "BackendSelector",
+    "Workspace",
     # Guarded API
     "guard",
     "unguard",
