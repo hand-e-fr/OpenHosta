@@ -173,11 +173,27 @@ class TestAgentKill:
 
 
 class TestAgentGet:
-    def test_get_not_implemented(self) -> None:
+    def test_get_raises_when_not_recruited(self) -> None:
         from openhosta.agent.agent import Agent
 
         agent = Agent()
-        with pytest.raises(NotImplementedError, match="Phase 3"):
+        with pytest.raises(RuntimeError, match="Agent must be recruited first"):
+            agent.get("hello")
+
+    def test_get_raises_after_freed(self) -> None:
+        from openhosta.agent.agent import Agent
+
+        agent = Agent()
+        agent.status = "FREED"
+        with pytest.raises(RuntimeError, match="Agent must be recruited first"):
+            agent.get("hello")
+
+    def test_get_raises_after_killed(self) -> None:
+        from openhosta.agent.agent import Agent
+
+        agent = Agent()
+        agent.status = "KILLED"
+        with pytest.raises(RuntimeError, match="Agent must be recruited first"):
             agent.get("hello")
 
 

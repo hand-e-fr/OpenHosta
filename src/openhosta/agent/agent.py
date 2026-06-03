@@ -129,14 +129,64 @@ class Agent:
         self.status = "KILLED"
 
     # ------------------------------------------------------------------
-    # Interaction stub (Phase 3)
+    # Interaction
 
     def get(self, msg: str) -> str:
-        """Send a message to the agent session.
+        """Send a message to the agent session via the capability dispatcher.
 
-        Stub — to be implemented in Phase 3.
+        Dispatch order:
+        1. ``@router`` capabilities — first successful router decides the path.
+        2. ``@planner`` capabilities — first successful planner generates a plan.
+        3. ``@playbook`` capabilities — first successful playbook executes the workflow.
+        4. ``@infer`` capabilities — first successful inference produces a result.
+        5. ``@tool`` capabilities — first successful tool runs.
+        6. Fallback to ``AgentEngine.execute_step`` (echoes the message).
+
+        Parameters
+        ----------
+        msg: str
+            The inbound message to dispatch.
+
+        Returns
+        -------
+        str
+            The text result produced by the dispatched capability or the engine fallback.
+
+        Raises
+        ------
+        RuntimeError
+            If the agent has not yet been recruited (status != ``"RECRUITED"``).
         """
-        raise NotImplementedError("Agent.get() will be implemented in Phase 3")
+        if self.status != "RECRUITED":
+            raise RuntimeError("Agent must be recruited first.")
+
+        from openhosta.agent.capability import CapabilityType  # noqa: PLC2701
+        from openhosta.agent.dispatch import CapabilityDispatcher  # noqa: PLC2701
+
+        engine = self._ensure_engine()
+        session = self._agent_session
+        dispatcher = CapabilityDispatcher()
+
+        # Dispatch priority: router > planner > playbook > infer > tool
+        priority_order = (
+            CapabilityType.ROUTER,
+            CapabilityType.PLANNER,
+            CapabilityType.PLAYBOOK,
+            CapabilityType.INFERENCE,
+            CapabilityType.TOOL,
+        )
+
+        for cap_type in priority_order:
+            results = dispatcher.route_by_type(cap_type, msg=msg)
+            for dr in results:
+                if dr.success is not None and dr.success:
+                    return str(dr.result) if dr.result is not None else ""
+
+        # Fallback: use the engine's execute_step on the agent session
+        if session is not None:
+            return engine.execute_step(session.session_id, msg)
+
+        return f"response to: {msg}"
 
     # ------------------------------------------------------------------
     # Properties
