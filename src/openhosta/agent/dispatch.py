@@ -74,12 +74,28 @@ class CapabilityDispatcher:
         Removes internal kwargs (e.g. ``_backend``) when the callable
         does not declare them in its signature.  Handles decorated
         functions by inspecting the wrapper's ``__code__`` object.
+
+        Also performs "msg bridging": if ``msg`` is in kwargs but the
+        function declares a different first parameter (e.g. ``texte``,
+        ``chiffres``), ``msg`` is aliased to that parameter name.
         """
         code = getattr(func, "__code__", None)
         if code is not None:
             # co_flags bit 0x08 (CO_VARKEYWORDS) → **kwargs present
             if code.co_flags & 0x08:
-                return kwargs  # accepts anything
+                filtered = {k: v for k, v in kwargs.items() if not k.startswith("_")}
+                # Msg bridging: alias 'msg' to the first real parameter
+                if "msg" in filtered:
+                    try:
+                        sig = inspect.signature(func)
+                        params = list(sig.parameters.keys())
+                        # Skip 'self' for bound methods
+                        real_params = [p for p in params if p != "self"]
+                        if real_params and real_params[0] not in filtered:
+                            filtered[real_params[0]] = filtered["msg"]
+                    except (ValueError, TypeError):
+                        pass
+                return filtered
 
             # Build accepted param names from the code object
             accepted = set()
@@ -90,16 +106,41 @@ class CapabilityDispatcher:
                 accepted.add(code.co_varnames[i])
             # Also include 'self' for bound methods if present
             # (co_argcount already includes self)
-            return {k: v for k, v in kwargs.items() if k in accepted}
+            filtered = {k: v for k, v in kwargs.items() if k in accepted}
+            # Msg bridging
+            if "msg" in kwargs and "msg" not in accepted:
+                try:
+                    sig = inspect.signature(func)
+                    params = list(sig.parameters.keys())
+                    real_params = [p for p in params if p != "self"]
+                    if real_params:
+                        filtered[real_params[0]] = kwargs["msg"]
+                except (ValueError, TypeError):
+                    pass
+            return filtered
 
         # Fallback: try inspect.signature, tolerate wrapper loops
         try:
             sig = inspect.signature(func)
             for p in sig.parameters.values():
                 if p.kind == inspect.Parameter.VAR_KEYWORD:
-                    return kwargs
+                    filtered = {k: v for k, v in kwargs.items() if not k.startswith("_")}
+                    # Msg bridging
+                    if "msg" in filtered:
+                        params = list(sig.parameters.keys())
+                        real_params = [p for p in params if p != "self"]
+                        if real_params and real_params[0] not in filtered:
+                            filtered[real_params[0]] = filtered["msg"]
+                    return filtered
             accepted = set(sig.parameters.keys())
-            return {k: v for k, v in kwargs.items() if k in accepted}
+            filtered = {k: v for k, v in kwargs.items() if k in accepted}
+            # Msg bridging
+            if "msg" in kwargs and "msg" not in accepted:
+                params = list(sig.parameters.keys())
+                real_params = [p for p in params if p != "self"]
+                if real_params:
+                    filtered[real_params[0]] = kwargs["msg"]
+            return filtered
         except (ValueError, TypeError):
             # Wrapper loop or builtin: pass kwargs as-is
             return kwargs

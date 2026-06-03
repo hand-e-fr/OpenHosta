@@ -43,13 +43,32 @@ class Agent:
         # Build per-agent capability registry by scanning class methods
         from openhosta.agent.capability import CapabilityRegistration, _default_registry  # noqa: PLC2701
         self._registry = CapabilityRegistration()
-        # Merge global default registry capabilities (for standalone functions / tests)
-        for func, meta in _default_registry.list_all():
-            self._registry.register(func, meta)
-        # Add class methods with _capability metadata (Agent's virtual body)
+        # Collect class method names (Agent's "virtual body")
+        class_method_names: set[str] = set()
         for name, attr in vars(self.__class__).items():
             if callable(attr) and hasattr(attr, "_capability"):
-                self._registry.register(attr, attr._capability)
+                class_method_names.add(attr._capability.name)
+        # Merge global default registry, replacing class methods with bound versions
+        for func, meta in _default_registry.list_all():
+            if meta.name in class_method_names:
+                # Replace with bound method so dispatcher calls self.func(...)
+                bound = getattr(self, func.__name__, func)
+                if callable(bound) and hasattr(bound, '__self__'):
+                    self._registry.register(bound, meta)
+                else:
+                    self._registry.register(func, meta)
+            else:
+                self._registry.register(func, meta)
+        # Add class methods not already registered (e.g. @model.infer which doesn't use _default_registry)
+        for name, attr in vars(self.__class__).items():
+            if callable(attr) and hasattr(attr, "_capability"):
+                existing = self._registry.find_by_name(attr._capability.name)
+                if existing is None:
+                    bound = getattr(self, attr.__name__, attr)
+                    if callable(bound) and hasattr(bound, '__self__'):
+                        self._registry.register(bound, attr._capability)
+                    else:
+                        self._registry.register(attr, attr._capability)
 
     # ------------------------------------------------------------------
     # Lifecycle
