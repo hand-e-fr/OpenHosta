@@ -88,6 +88,18 @@ class Agent:
         )
         if quota is not None:
             self._agent_session.tokens_limit = quota
+
+        # Register backend as default for inference capabilities
+        if self._backend is not None:
+            from openhosta.agent._config import set_default_backend  # noqa: PLC2701
+            from openhosta.backend import BackendSelector  # noqa: PLC2701
+
+            if isinstance(self._backend, BackendSelector):
+                resolved = self._backend.resolve()
+            else:
+                resolved = self._backend
+            set_default_backend(resolved)
+
         self.status = "RECRUITED"
         return self
 
@@ -167,7 +179,7 @@ class Agent:
         session = self._agent_session
         dispatcher = CapabilityDispatcher()
 
-        # Dispatch priority: router > planner > playbook > infer > tool
+    # Dispatch priority: router > planner > playbook > infer > tool
         priority_order = (
             CapabilityType.ROUTER,
             CapabilityType.PLANNER,
@@ -176,8 +188,20 @@ class Agent:
             CapabilityType.TOOL,
         )
 
+        # Inject backend for inference capabilities
+        from openhosta.backend import BackendSelector  # noqa: PLC2701
+
+        if self._backend is not None:
+            if isinstance(self._backend, BackendSelector):
+                resolved = self._backend.resolve()
+            else:
+                resolved = self._backend
+            dispatch_kwargs = {"msg": msg, "_backend": resolved}
+        else:
+            dispatch_kwargs = {"msg": msg}
+
         for cap_type in priority_order:
-            results = dispatcher.route_by_type(cap_type, msg=msg)
+            results = dispatcher.route_by_type(cap_type, **dispatch_kwargs)
             for dr in results:
                 if dr.success is not None and dr.success:
                     return str(dr.result) if dr.result is not None else ""
