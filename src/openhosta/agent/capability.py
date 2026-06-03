@@ -105,22 +105,16 @@ class CapabilityMetadata:
 
 
 class CapabilityRegistration:
-    """Global registry for decorated capabilities.
+    """Registry for decorated capabilities.
 
-    Every @tool / @infer / @playbook / @planner / @router decorator
-    registers the target callable here automatically.
-
-    The registry is thread-safe for single-writer / multi-reader workloads.
+    Historiquement un singleton global, désormais instancié par Agent
+    pour garantir l'isolation des capacités entre les agents.
     """
 
-    _instance: CapabilityRegistration | None = None
     _store: dict[str, tuple[Callable[..., Any], CapabilityMetadata]]
 
-    def __new__(cls) -> CapabilityRegistration:
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._store = {}
-        return cls._instance
+    def __init__(self) -> None:
+        self._store = {}
 
     # ---- public API ----
 
@@ -194,8 +188,9 @@ class CapabilityRegistration:
 # Decorators
 # --------------------------------------------------------------------------- #
 
-# Single global registry instance
-_registry = CapabilityRegistration()
+# Registre global par défaut pour usages standalone / tests.
+# Chaque Agent construit désormais son propre registre à partir de ses méthodes.
+_default_registry = CapabilityRegistration()
 
 
 # --------------------------------------------------------------------------- #
@@ -307,7 +302,8 @@ def _make_decorator(capacity_type: CapabilityType) -> Callable[..., Callable[...
             # Attach metadata directly without functools.wraps to avoid
             # creating a wrapper loop (func.__wrapped__ = func).
             func._capability = meta  # type: ignore[attr-defined]
-            _registry.register(func, meta)
+            # Register to default registry for standalone usage / tests
+            _default_registry.register(func, meta)
             return func
 
         return inner
@@ -423,7 +419,8 @@ def infer(
         func._capability = meta  # type: ignore[attr-defined]
         # Wrap stubs with inference delegation
         wrapped = _wrap_inference(func, meta)
-        _registry.register(wrapped, meta)
+        # Register to default registry for standalone usage / tests
+        _default_registry.register(wrapped, meta)
         return wrapped
 
     return inner
@@ -475,7 +472,8 @@ def planner(
         # creating a wrapper loop (func.__wrapped__ = func).
         func._capability = meta  # type: ignore[attr-defined]
         wrapped = _wrap_inference(func, meta)
-        _registry.register(wrapped, meta)
+        # Register to default registry for standalone usage / tests
+        _default_registry.register(wrapped, meta)
         return wrapped
 
     return inner
@@ -506,7 +504,8 @@ def router(
         # creating a wrapper loop (func.__wrapped__ = func).
         func._capability = meta  # type: ignore[attr-defined]
         wrapped = _wrap_inference(func, meta)
-        _registry.register(wrapped, meta)
+        # Register to default registry for standalone usage / tests
+        _default_registry.register(wrapped, meta)
         return wrapped
 
     return inner

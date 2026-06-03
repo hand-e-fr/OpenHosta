@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -38,6 +39,13 @@ class Agent:
         self._agent_engine: AgentEngine | None = None
         self.status = "CONFIGURED"
         self.notes: list[str] = []
+
+        # Build per-agent capability registry by scanning class methods
+        from openhosta.agent.capability import CapabilityRegistration  # noqa: PLC2701
+        self._registry = CapabilityRegistration()
+        for name, attr in vars(self.__class__).items():
+            if callable(attr) and hasattr(attr, "_capability"):
+                self._registry.register(attr, attr._capability)
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -177,7 +185,7 @@ class Agent:
 
         engine = self._ensure_engine()
         session = self._agent_session
-        dispatcher = CapabilityDispatcher()
+        dispatcher = CapabilityDispatcher(registry=self._registry)
 
     # Dispatch priority: router > planner > playbook > infer > tool
         priority_order = (
