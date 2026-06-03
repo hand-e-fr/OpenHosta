@@ -3,6 +3,7 @@ from openhosta.agent.capability import (
     CapabilityMetadata,
     CapabilityRegistration,
     CapabilityType,
+    _default_registry,
     infer,
     planner,
     playbook,

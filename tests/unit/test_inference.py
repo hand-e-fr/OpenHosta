@@ -19,7 +19,7 @@ from openhosta.agent.inference import (
     execute_inference,
     InferenceResult,
 )
-from openhosta.agent.capability import CapabilityMetadata, CapabilityType
+from openhosta.agent.capability import CapabilityMetadata, CapabilityType, _default_registry
 from openhosta.guarded.wrapper import Guarded
 
 
@@ -296,7 +296,7 @@ class TestDecoratorInferenceWrapping:
         from openhosta.agent import tool
         from openhosta.agent.capability import CapabilityRegistration
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         reg.clear()
 
         @tool(name="test.tool.not_wrapped", description="test tool")
@@ -337,7 +337,7 @@ class TestEndToEndInference:
         from openhosta.agent import infer
         from openhosta.agent.capability import CapabilityRegistration
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         reg.clear()
 
         @infer(name="e2e.stub_infer", description="End-to-end stub inference")
@@ -352,7 +352,7 @@ class TestEndToEndInference:
         # Call via dispatcher (simulates Agent.get() flow)
         from openhosta.agent.dispatch import CapabilityDispatcher
 
-        dispatcher = CapabilityDispatcher()
+        dispatcher = CapabilityDispatcher(registry=agent._registry)
         results = dispatcher.route_by_type(
             CapabilityType.INFERENCE,
             msg="test message",

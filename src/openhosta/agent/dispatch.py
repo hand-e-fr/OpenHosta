@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from openhosta.agent.capability import (
+    _default_registry,
     CapabilityMetadata,
     CapabilityRegistration,
     CapabilityType,
@@ -62,7 +63,7 @@ class CapabilityDispatcher:
     """
 
     def __init__(self, registry: CapabilityRegistration | None = None) -> None:
-        self._registry = registry if registry is not None else CapabilityRegistration()
+        self._registry = registry if registry is not None else _default_registry
 
     # ---- dispatch by name ----
 

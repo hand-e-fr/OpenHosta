@@ -6,6 +6,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from openhosta.agent import (
+    _default_registry,
+    Agent,
     CapabilityDispatcher,
     CapabilityRegistration,
     CapabilityType,
@@ -19,7 +21,7 @@ from openhosta.agent import (
 
 @pytest.fixture(autouse=True)
 def _clean_registry() -> None:
-    reg = CapabilityRegistration()
+    reg = _default_registry
     reg.clear()
     yield
     reg.clear()
@@ -232,7 +234,7 @@ class TestPlaybookPlannerRegistration:
         def example_playbook(msg: str) -> str:
             return msg
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert reg.count == 1
         _, meta = reg.get("dispatch.reg_pb")
         assert meta.capacity_type == CapabilityType.PLAYBOOK
@@ -243,7 +245,7 @@ class TestPlaybookPlannerRegistration:
         def example_planner(msg: str) -> str:
             return msg
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert reg.count == 1
         _, meta = reg.get("dispatch.reg_pl")
         assert meta.capacity_type == CapabilityType.PLANNER
