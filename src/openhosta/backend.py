@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 from dataclasses import dataclass, field
 from typing import Any
+from collections.abc import Callable
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,52 @@ class BackendModel:
             return cls
 
         return decorator
+
+    def infer(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute inference for a decorated function using this backend.
+
+        Explicit is better than implicit: use ``model.infer(func, ...)``
+        instead of calling the stub function directly.
+
+        Parameters
+        ----------
+        func: Callable
+            A function decorated with ``@infer``, ``@planner``, or ``@router``.
+        *args: Any
+            Positional arguments forwarded to the inference engine.
+        **kwargs: Any
+            Keyword arguments forwarded to the inference engine.
+
+        Returns
+        -------
+        Any
+            The parsed result from the LLM backend.
+
+        Raises
+        ------
+        RuntimeError
+            If inference fails or the function is not a registered capability.
+        """
+        meta = getattr(func, "_capability", None)
+        if meta is None:
+            raise ValueError(
+                f"Function '{func.__name__}' is not a registered capability. "
+                f"Decorate it with @infer, @planner, or @router first."
+            )
+
+        from openhosta.agent.inference import execute_inference  # noqa: PLC2701
+
+        result = execute_inference(func, meta, self, *args, **kwargs)
+        if not result.success:
+            raise RuntimeError(
+                f"Inference failed for '{meta.name}': {result.error}"
+            ) from result.error
+        return result.value
 
     @property
     def tag_set(self) -> set[str]:
