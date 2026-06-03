@@ -344,17 +344,19 @@ def _wrap_inference(
 
     @functools.wraps(func)
     def _infer_wrapper(*args: Any, **kwargs: Any) -> Any:
-        # Extract backend from kwargs if provided, otherwise require configuration
+        # Explicit is better than implicit: backend must be injected.
+        # Inside Agent.get(), this is handled via _backend kwarg.
+        # Standalone, the user should call model.infer(func, ...).
         backend = kwargs.pop("_backend", None)
         if backend is None:
-            # Check for a global backend configuration
+            # Fallback to global config (Agent.recruit() sets this)
             from openhosta.agent._config import get_default_backend
             backend = get_default_backend()
 
         if backend is None:
-            raise RuntimeError(
-                f"No backend configured for inference capability '{meta.name}'. "
-                "Pass `_backend=BackendModel(...)` or configure a default backend."
+            raise NotImplementedError(
+                f"This capability '{meta.name}' is a stub and requires a backend. "
+                f"Use model.infer({func.__name__}, ...) or Agent.get(...) to execute it."
             )
         result = execute_inference(func, meta, backend, *args, **kwargs)
         if not result.success:
