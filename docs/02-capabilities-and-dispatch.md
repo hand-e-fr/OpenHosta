@@ -24,20 +24,45 @@ All five decorators share the same signature:
 
 ```python
 @decorator(
-    name: str,
-    description: str = "",
+    name: str | None = None,
+    description: str | None = None,
     tags: list[str] | tuple[str, ...] | None = None,
     priority: int = 0,
     requires_async: bool = False,
 )
 def my_capability(msg: str) -> str:
+    """Short description derived automatically."""
     ...
+```
+
+### V5 Convention — Automatic Derivation
+
+| Parameter        | When not provided          | Source                           |
+|------------------|----------------------------|----------------------------------|
+| `name`           | `func.__name__`            | Function name                    |
+| `description`    | First line of docstring    | `func.__doc__`                   |
+| `long_description` | Signature + full docstring | Auto-generated for inference     |
+
+```python
+# Before (redundant)
+@tool(name="list_files", description="Liste les fichiers", tags=["files"])
+def list_files(msg: str) -> str:
+    """Liste les fichiers."""
+    return "files"
+
+# V5 convention (derived)
+@tool(tags=["files"])
+def list_files(msg: str) -> str:
+    """Liste les fichiers du workspace."""
+    return "files"
+# → name="list_files", description="Liste les fichiers du workspace."
+# → long_description="**Signature:** `list_files(msg: str) -> str`\n**Docstring:**\nListe les fichiers..."
 ```
 
 | Parameter        | Description                                  |
 |------------------|----------------------------------------------|
-| `name`           | Unique identifier (dot-notation preferred)  |
-| `description`    | Human-readable one-liner                     |
+| `name`           | Unique identifier (auto-derived from `__name__`) |
+| `description`    | Human-readable one-liner (auto-derived from docstring) |
 | `tags`           | Arbitrary search tags                        |
 | `priority`       | Scheduling priority (lower = more urgent)    |
 | `requires_async` | Whether the callable is async                |
@@ -60,14 +85,32 @@ def add_tool(msg: str) -> str:
 
 ## @infer
 
-Marks an LLM-based probabilistic capability.
+Marks an LLM-based probabilistic capability. When the decorated function is a
+**stub** (body is only `...`), invocation delegates to the InferenceEngine.
+Non-stub functions execute directly.
+
+**Explicit is better than implicit**: a stub must be executed via
+`model.infer()` or `Agent.get()`, not called directly.
 
 ```python
-from openhosta import infer
+from openhosta import infer, BackendModel
 
-@infer(name="nlp.summarize", description="Summarize text")
-def summarize(msg: str) -> str:
-    return f"Summary: {msg[:100]}..."
+@infer(tags=["nlp"])
+def summarize(text: str) -> str:
+    """Résume le texte fourni."""
+    ...  # stub → LLM delegation
+
+# ✅ Standalone: explicit backend
+model = BackendModel(provider="...", model_name="...", base_url="...")
+result = model.infer(summarize, text="Long article...")
+
+# ✅ Via Agent: backend injected automatically
+agent = Agent(backend=model)
+agent.recruit()
+result = agent.get("Résume ce texte")
+
+# ❌ Direct call: raises NotImplementedError
+# summarize("test")
 ```
 
 ## @playbook
@@ -99,17 +142,35 @@ def plan_tasks(msg: str) -> str:
 
 ## @router
 
-Marks a routing-decision capability.
+Marks a routing-decision capability. When the decorated function is a **stub**,
+invocation delegates to the InferenceEngine for LLM-powered classification.
+
+The router's return value is interpreted by `Agent.get()`: if it starts with
+`"route:"`, the dispatcher routes to capabilities tagged with the specified
+target tag.
 
 ```python
 from openhosta import router
 
-@router(name="route.intent", description="Route by user intent")
-def route_by_intent(msg: str) -> str:
-    if "search" in msg.lower():
-        return "route: search_handler"
-    return "route: default"
+# Non-stub: keyword-based routing (executes directly)
+@router(tags=["demo"], priority=-10)
+def keyword_router(msg: str) -> str:
+    """Routage par mots-clés."""
+    if "fichier" in msg.lower():
+        return "route:list"
+    return "route:default"
+
+# Stub: LLM-powered semantic routing
+@router(tags=["demo"], priority=-10)
+def semantic_router(msg: str) -> str:
+    """Classe l'intention sémantiquement."""
+    ...  # stub → LLM delegation via model.infer() or Agent.get()
 ```
+
+Router return conventions:
+- `"route:list"` → dispatch to capabilities tagged with `"list"`
+- `"route:analyze"` → dispatch to capabilities tagged with `"analyze"`
+- Any other string → returned as-is (no routing)
 
 ## CapabilityMetadata
 
@@ -120,11 +181,16 @@ Every registered capability carries a frozen `CapabilityMetadata`:
 class CapabilityMetadata:
     name: str
     capacity_type: CapabilityType
-    description: str = ""
+    description: str = ""            # Short (first line of docstring)
+    long_description: str = ""       # Signature + full docstring
     tags: tuple[str, ...] = ()
     priority: int = 0
     requires_async: bool = False
 ```
+
+`long_description` is automatically generated from the function's signature
+and complete docstring. It is used by the InferenceEngine to build richer
+prompts for LLM-backed stubs.
 
 ## CapabilityDispatcher
 
