@@ -5,12 +5,12 @@ import re
 import pytest
 
 from openhosta import Agent, BackendModel
-from openhosta.agent import CapabilityRegistration, infer, tool
+from openhosta.agent import _default_registry, CapabilityRegistration, infer, tool
 
 
 @pytest.fixture(autouse=True)
 def _clean_registry() -> None:
-    reg = CapabilityRegistration()
+    reg = _default_registry
     reg.clear()
     yield
     reg.clear()

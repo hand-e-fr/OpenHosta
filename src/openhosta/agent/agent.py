@@ -41,8 +41,12 @@ class Agent:
         self.notes: list[str] = []
 
         # Build per-agent capability registry by scanning class methods
-        from openhosta.agent.capability import CapabilityRegistration  # noqa: PLC2701
+        from openhosta.agent.capability import CapabilityRegistration, _default_registry  # noqa: PLC2701
         self._registry = CapabilityRegistration()
+        # Merge global default registry capabilities (for standalone functions / tests)
+        for func, meta in _default_registry.list_all():
+            self._registry.register(func, meta)
+        # Add class methods with _capability metadata (Agent's virtual body)
         for name, attr in vars(self.__class__).items():
             if callable(attr) and hasattr(attr, "_capability"):
                 self._registry.register(attr, attr._capability)

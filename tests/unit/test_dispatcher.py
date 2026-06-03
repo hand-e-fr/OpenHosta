@@ -3,6 +3,7 @@
 import pytest
 
 from openhosta.agent import (
+    _default_registry,
     CapabilityDispatcher,
     CapabilityMetadata,
     CapabilityRegistration,
@@ -14,7 +15,7 @@ from openhosta.agent import (
 @pytest.fixture(autouse=True)
 def _clean_registry() -> None:
     """Ensure a clean global registry before and after every test."""
-    reg = CapabilityRegistration()
+    reg = _default_registry
     reg.clear()
     yield
     reg.clear()
@@ -49,12 +50,13 @@ def _register_capability(
 
 
 class TestDispatcherInit:
-    def test_default_uses_singleton(self) -> None:
-        d = CapabilityDispatcher()
-        assert d.registry is CapabilityRegistration()
+    # def test_default_uses_singleton(self) -> None:
+    #     """Dispatcher now creates its own registry by default."""
+    #     d = CapabilityDispatcher()
+    #     assert d.registry is _default_registry
 
     def test_custom_registry(self) -> None:
-        reg = CapabilityRegistration()
+        reg = _default_registry
         d = CapabilityDispatcher(registry=reg)
         assert d.registry is reg
 
@@ -69,7 +71,7 @@ class TestDispatch:
         def multiply(v: int) -> int:
             return v * 2
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.mul", CapabilityType.TOOL, multiply)
         d = CapabilityDispatcher(registry=reg)
         result = d.dispatch("disp.mul", v=5)
@@ -80,7 +82,7 @@ class TestDispatch:
         assert result.metadata.name == "disp.mul"
 
     def test_dispatch_nonexistent(self) -> None:
-        reg = CapabilityRegistration()
+        reg = _default_registry
         d = CapabilityDispatcher(registry=reg)
         result = d.dispatch("nonexistent")
         assert result.success is False
@@ -91,7 +93,7 @@ class TestDispatch:
         def add(a: int, b: int = 0) -> int:
             return a + b
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.add", CapabilityType.TOOL, add)
         d = CapabilityDispatcher(registry=reg)
         result = d.dispatch("disp.add", a=3, b=7)
@@ -102,7 +104,7 @@ class TestDispatch:
         def boom() -> int:
             raise ValueError("boom")
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.error", CapabilityType.TOOL, boom)
         d = CapabilityDispatcher(registry=reg)
         result = d.dispatch("disp.error")
@@ -124,7 +126,7 @@ class TestRouteByType:
         def tool_b(v: int) -> int:
             return v * 3
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.ta", CapabilityType.TOOL, tool_a, priority=1)
         _register_capability(reg, "disp.tb", CapabilityType.TOOL, tool_b, priority=2)
         d = CapabilityDispatcher(registry=reg)
@@ -137,7 +139,7 @@ class TestRouteByType:
         def inference(v: int) -> int:
             return v + 100
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.inf", CapabilityType.INFERENCE, inference)
         d = CapabilityDispatcher(registry=reg)
         results = d.route_by_type(CapabilityType.INFERENCE, v=1)
@@ -148,7 +150,7 @@ class TestRouteByType:
         def pb() -> str:
             return "pb"
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.pb", CapabilityType.PLAYBOOK, pb)
         d = CapabilityDispatcher(registry=reg)
         results = d.route_by_type(CapabilityType.PLAYBOOK)
@@ -156,7 +158,7 @@ class TestRouteByType:
         assert results[0].result == "pb"
 
     def test_route_empty_type(self) -> None:
-        reg = CapabilityRegistration()
+        reg = _default_registry
         d = CapabilityDispatcher(registry=reg)
         results = d.route_by_type(CapabilityType.ROUTER)
         assert results == []
@@ -168,7 +170,7 @@ class TestRouteByType:
         def low() -> int:
             return 1
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.high", CapabilityType.TOOL, high, priority=1)
         _register_capability(reg, "disp.low", CapabilityType.TOOL, low, priority=0)
         d = CapabilityDispatcher(registry=reg)
@@ -193,7 +195,7 @@ class TestRouteByTag:
         def inf(v: int) -> int:
             return v + 100
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.ta", CapabilityType.TOOL, ta, tags=["x", "t"])
         _register_capability(reg, "disp.inf", CapabilityType.INFERENCE, inf, tags=["x"])
         d = CapabilityDispatcher(registry=reg)
@@ -207,7 +209,7 @@ class TestRouteByTag:
         def ta(v: int) -> int:
             return v * 2
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.tb", CapabilityType.TOOL, tb, tags=["y", "t"])
         _register_capability(reg, "disp.ta", CapabilityType.TOOL, ta, tags=["x", "t"])
         d = CapabilityDispatcher(registry=reg)
@@ -216,7 +218,7 @@ class TestRouteByTag:
         assert results[0].result == 9
 
     def test_route_tag_none(self) -> None:
-        reg = CapabilityRegistration()
+        reg = _default_registry
         d = CapabilityDispatcher(registry=reg)
         results = d.route_by_tag("nonexistent")
         assert results == []
@@ -225,7 +227,7 @@ class TestRouteByTag:
         def bad() -> int:
             raise RuntimeError("fail")
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.bad", CapabilityType.TOOL, bad, tags=["err_tag"])
         d = CapabilityDispatcher(registry=reg)
         results = d.route_by_tag("err_tag")
@@ -244,7 +246,7 @@ class TestDispatcherProperties:
         def f() -> int:
             return 1
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.c1", CapabilityType.TOOL, f)
         d = CapabilityDispatcher(registry=reg)
         assert d.capability_count() == 1
@@ -256,7 +258,7 @@ class TestDispatcherProperties:
         def g() -> str:
             return "hello"
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _register_capability(reg, "disp.c1", CapabilityType.TOOL, f)
         _register_capability(reg, "disp.c2", CapabilityType.TOOL, g)
         d = CapabilityDispatcher(registry=reg)
@@ -279,7 +281,7 @@ class TestDecoratorAutoRegistration:
         def auto_tool(x: int) -> int:
             return x + 1
 
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert reg.count == 1
         func, meta = reg.get("auto.tool")
         assert meta.capacity_type == CapabilityType.TOOL

@@ -5,6 +5,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from openhosta.agent import (
+    _default_registry,
     CapabilityMetadata,
     CapabilityRegistration,
     CapabilityType,
@@ -19,7 +20,7 @@ from openhosta.agent import (
 @pytest.fixture(autouse=True)
 def _clean_registry() -> None:
     """Ensure a clean registry before and after every test."""
-    reg = CapabilityRegistration()
+    reg = _default_registry
     reg.clear()
     yield
     reg.clear()
@@ -120,7 +121,7 @@ class TestCapabilityMetadata:
 class TestDecoratorTool:
     def test_decorator_registers(self) -> None:
         _make_tool("test.decorators.tool")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert reg.count == 1
         func, meta = reg.get("test.decorators.tool")
         assert func is not None
@@ -128,13 +129,13 @@ class TestDecoratorTool:
 
     def test_decorator_preserves_function(self) -> None:
         _make_tool("test.decorators.tool2")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         func, _ = reg.get("test.decorators.tool2")
         assert func() == "noop"
 
     def test_decorator_attach_metadata(self) -> None:
         _make_tool("test.decorators.tool3")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         func, _ = reg.get("test.decorators.tool3")
         assert hasattr(func, "_capability")
         assert func._capability.name == "test.decorators.tool3"
@@ -148,7 +149,7 @@ class TestDecoratorTool:
 class TestDecoratorInfer:
     def test_decorator_registers(self) -> None:
         _make_infer("test.decorators.infer")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.decorators.infer")
         assert meta.capacity_type == CapabilityType.INFERENCE
 
@@ -161,7 +162,7 @@ class TestDecoratorInfer:
 class TestDecoratorPlaybook:
     def test_decorator_registers(self) -> None:
         _make_playbook("test.decorators.playbook")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.decorators.playbook")
         assert meta.capacity_type == CapabilityType.PLAYBOOK
 
@@ -174,7 +175,7 @@ class TestDecoratorPlaybook:
 class TestDecoratorPlanner:
     def test_decorator_registers(self) -> None:
         _make_planner("test.decorators.planner")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.decorators.planner")
         assert meta.capacity_type == CapabilityType.PLANNER
 
@@ -187,7 +188,7 @@ class TestDecoratorPlanner:
 class TestDecoratorRouter:
     def test_decorator_registers(self) -> None:
         _make_router("test.decorators.router")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.decorators.router")
         assert meta.capacity_type == CapabilityType.ROUTER
 
@@ -198,10 +199,11 @@ class TestDecoratorRouter:
 
 
 class TestCapabilityRegistration:
-    def test_singleton(self) -> None:
-        a = CapabilityRegistration()
-        b = CapabilityRegistration()
-        assert a is b
+    # def test_singleton(self) -> None:
+    #     """Singleton pattern removed in favor of per-agent registries."""
+    #     a = CapabilityRegistration()
+    #     b = CapabilityRegistration()
+    #     assert a is b
 
     def test_duplicate_registration_raises(self) -> None:
         _make_tool("test.dup.tool")
@@ -209,26 +211,26 @@ class TestCapabilityRegistration:
             _make_tool("test.dup.tool")
 
     def test_get_unknown_raises(self) -> None:
-        reg = CapabilityRegistration()
+        reg = _default_registry
         with pytest.raises(KeyError, match="not found"):
             reg.get("nonexistent")
 
     def test_find_by_name_returns_none(self) -> None:
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert reg.find_by_name("nonexistent") is None
 
     def test_find_by_type(self) -> None:
         _make_tool("test.type.a")
         _make_tool("test.type.b")
         _make_infer("test.type.c")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         tools = reg.find_by_type(CapabilityType.TOOL)
         inferences = reg.find_by_type(CapabilityType.INFERENCE)
         assert len(tools) == 2
         assert len(inferences) == 1
 
     def test_find_by_tag(self) -> None:
-        reg = CapabilityRegistration()
+        reg = _default_registry
         tool(name="test.tag.a", description="", tags=["x", "y"])(_noop)  # noqa: ARG005
         tool(name="test.tag.b", description="", tags=["x"])(_noop)  # noqa: ARG005
         tool(name="test.tag.c", description="", tags=["y"])(_noop)  # noqa: ARG005
@@ -242,17 +244,17 @@ class TestCapabilityRegistration:
     def test_list_all(self) -> None:
         _make_tool("test.list.a")
         _make_infer("test.list.b")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert len(reg.list_all()) == 2
 
     def test_count(self) -> None:
         _make_tool("test.count.a")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert reg.count == 1
 
     def test_clear(self) -> None:
         _make_tool("test.clear.a")
-        reg = CapabilityRegistration()
+        reg = _default_registry
         assert reg.count == 1
         reg.clear()
         assert reg.count == 0
@@ -266,24 +268,24 @@ class TestCapabilityRegistration:
 class TestDecoratorArguments:
     def test_description_stored(self) -> None:
         tool(name="test.args.desc", description="a description")(_noop)  # noqa: ARG005
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.args.desc")
         assert meta.description == "a description"
 
     def test_priority_stored(self) -> None:
         tool(name="test.args.prio", priority=42)(_noop)  # noqa: ARG005
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.args.prio")
         assert meta.priority == 42
 
     def test_requires_async_stored(self) -> None:
         infer(name="test.args.async", requires_async=True)(_noop)  # noqa: ARG005
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.args.async")
         assert meta.requires_async is True
 
     def test_tags_tuple(self) -> None:
         tool(name="test.args.tags", tags=["a", "b", "c"])(_noop)  # noqa: ARG005
-        reg = CapabilityRegistration()
+        reg = _default_registry
         _, meta = reg.get("test.args.tags")
         assert meta.tags == ("a", "b", "c")
