@@ -23,15 +23,15 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_ask.py
 
-from OpenHosta import ask
+from openhosta import ask
 ask("hello world!")
 
 
-from OpenHosta import ask_stream
+from openhosta import ask_stream
 for line in ask_stream("raconte une histoire"):
     print(line, end='')
     
-from OpenHosta import emulate
+from openhosta import emulate
 from typing import Iterator
 def answer_step_by_step(question:str) -> Iterator[str]:
     """
@@ -69,7 +69,7 @@ long_text = "... some very long text ..."
 for paragraph in split_into_paragraphs2(long_text):
     print(f"--- Received Paragraph ---\n{paragraph}\n")
 
-from OpenHosta import closure, closure_async
+from openhosta import closure, closure_async
 
 increment=closure("add one to this number")
 increment(29865.1)
@@ -80,7 +80,7 @@ increment(29865.1)
 #
 #########################################################
 
-from OpenHosta import ask, ask_async
+from openhosta import ask, ask_async
 
 city = ask("what is the capital of France?")
 assert "paris" in city.lower()
@@ -96,14 +96,14 @@ assert "warsaw"     in city1.lower()
 assert "washington" in city2.lower()
 assert "paris"      in city3.lower()
 
-from OpenHosta import closure, closure_async
+from openhosta import closure, closure_async
 
 increment=closure("add one to this number")
 
 assert increment(2) == 3
 
 
-from OpenHosta import print_last_prompt, print_last_decoding
+from openhosta import print_last_prompt, print_last_decoding
 
 print('Should print "No prompt found for this function."')
 print_last_prompt(increment)
@@ -115,7 +115,7 @@ assert type(rnd_flt()) == float
 hello_async=closure_async("say hello in a foreign language")
 assert "onjour" in asyncio.run(hello_async("french"))
 
-from OpenHosta import emulate, emulate_async
+from openhosta import emulate, emulate_async
 
 def capitalize_cities(sentence:str)->str:
     """

@@ -9,7 +9,7 @@ Two categories:
 import asyncio
 import pytest
 
-from OpenHosta.utils.gather_data import (
+from openhosta.utils.gather_data import (
     _Placeholder,
     _extract_tasks,
     _inject_results,
@@ -333,7 +333,7 @@ class TestGatherDataWithEmulate:
         Builds a dict mixing emulate_async coroutines and static data,
         then resolves everything with gather_data (sync).
         """
-        from OpenHosta import emulate_async
+        from openhosta import emulate_async
 
         async def name_list(topic: str) -> list[str]:
             """Generates three names related to the topic."""
@@ -371,7 +371,7 @@ class TestGatherDataWithEmulate:
         """
         Same scenario but using gather_data_async directly in an async test.
         """
-        from OpenHosta import emulate_async
+        from openhosta import emulate_async
         import asyncio
 
         async def capital_of(country: str) -> str:
@@ -398,7 +398,7 @@ class TestGatherDataWithEmulate:
         """
         Resolve a list of emulate_async coroutines via the sync API.
         """
-        from OpenHosta import emulate_async
+        from openhosta import emulate_async
 
         async def sentiment(text: str) -> str:
             """Classify the sentiment of the text as 'positive', 'negative', or 'neutral'."""
@@ -421,7 +421,7 @@ class TestGatherDataWithEmulate:
         but resolved through gather_data instead of manual asyncio.gather.
         """
         from dataclasses import dataclass
-        from OpenHosta import emulate_async
+        from openhosta import emulate_async
 
         @dataclass
         class InvoiceSender:

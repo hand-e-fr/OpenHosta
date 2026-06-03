@@ -1,8 +1,8 @@
 import pytest
 import asyncio
 
-from OpenHosta import test as oh_test
-from OpenHosta import test_async as oh_test_async
+from openhosta import test as oh_test
+from openhosta import test_async as oh_test_async
     
 
 class TestSemanticTests:

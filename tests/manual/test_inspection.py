@@ -1,9 +1,9 @@
 
-from OpenHosta import emulate, Guarded, conversation, readable, markdown, print_last_prompt
+from openhosta import emulate, Guarded, conversation, readable, markdown, print_last_prompt
 import os
 
 # Ensure .env is loaded
-from OpenHosta import reload_dotenv
+from openhosta import reload_dotenv
 reload_dotenv()
 
 def test_inspection():
@@ -27,7 +27,7 @@ def test_inspection():
     print(f"Markdown:\n{m}")
 
     print("\n--- Testing stability: GuardedInt(readable(age)) ---")
-    from OpenHosta.guarded import GuardedInt
+    from openhosta.guarded import GuardedInt
     age_copy = GuardedInt(readable(age))
     print(f"Copy: {age_copy} (type: {type(age_copy)})")
     assert age_copy == age

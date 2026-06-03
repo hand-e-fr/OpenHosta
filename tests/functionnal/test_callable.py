@@ -1,6 +1,6 @@
 import pytest
-from OpenHosta.guarded import GuardedCallable
-from OpenHosta import emulate
+from openhosta.guarded import GuardedCallable
+from openhosta import emulate
 
 def generate_calculator() -> GuardedCallable:
     """

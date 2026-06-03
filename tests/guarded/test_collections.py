@@ -1,11 +1,11 @@
 """Tests for GuardedList, GuardedDict, GuardedSet, GuardedTuple."""
 
 import pytest
-from OpenHosta.guarded.constants import Tolerance
-from OpenHosta.guarded.subclassablecollections import (
+from openhosta.guarded.constants import Tolerance
+from openhosta.guarded.subclassablecollections import (
     GuardedList, GuardedDict, GuardedSet, GuardedTuple
 )
-from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8
+from openhosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8
 
 
 class TestGuardedList:
@@ -264,7 +264,7 @@ class TestCollectionEdgeCases:
     def test_nested_dataclass_string(self):
         """Test parsing a list of stringified complex objects (like dataclass)."""
         from dataclasses import dataclass
-        from OpenHosta.guarded.subclassablecollections import guarded_dataclass
+        from openhosta.guarded.subclassablecollections import guarded_dataclass
 
         @guarded_dataclass
         @dataclass
@@ -285,7 +285,7 @@ class TestCollectionEdgeCases:
     def test_nested_dict_dataclass_string(self):
         """Test parsing a dict of stringified complex objects (like dataclass)."""
         from dataclasses import dataclass
-        from OpenHosta.guarded.subclassablecollections import guarded_dataclass
+        from openhosta.guarded.subclassablecollections import guarded_dataclass
 
         @guarded_dataclass
         @dataclass

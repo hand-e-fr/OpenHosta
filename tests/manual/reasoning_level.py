@@ -1,8 +1,8 @@
 import time
 
-# from OpenHosta.models import OllamaModel, OpenAICompatibleModel
-# from OpenHosta import config
-from OpenHosta import emulate
+# from openhosta.models import OllamaModel, OpenAICompatibleModel
+# from openhosta import config
+from openhosta import emulate
 
 # config.DefaultModel = OpenAICompatibleModel(
 #     model_name="qwen3.5:9b", 
@@ -23,5 +23,5 @@ response = first_letter_of("France")
 t1 = time.time()
 print(f"Time to get answer with low reasoning effort: {t1-t0:.2f} seconds")
 
-from OpenHosta import print_last_prompt
+from openhosta import print_last_prompt
 print_last_prompt(first_letter_of)

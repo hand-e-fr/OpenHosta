@@ -53,9 +53,9 @@ def override_default_pipeline(request: pytest.FixtureRequest):
     endpoint_url = request.config.getoption("--endpoint-url") or "https://api.openai.com/v1"
     api_key = request.config.getoption("--endpoint-api-key") or None
 
-    from OpenHosta.models import OpenAICompatibleModel
-    from OpenHosta.pipelines import OneTurnConversationPipeline
-    from OpenHosta import defaults
+    from openhosta.models import OpenAICompatibleModel
+    from openhosta.pipelines import OneTurnConversationPipeline
+    from openhosta import defaults
 
     model = OpenAICompatibleModel(
         model_name=model_name,

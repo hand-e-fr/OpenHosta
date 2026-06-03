@@ -1,6 +1,6 @@
 import pytest
 
-from OpenHosta import emulate
+from openhosta import emulate
 
 from typing import Optional
 

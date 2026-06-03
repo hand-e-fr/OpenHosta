@@ -16,8 +16,8 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_emulate.py
 
-from OpenHosta import emulate
-from OpenHosta import OneTurnConversationPipeline, config
+from openhosta import emulate
+from openhosta import OneTurnConversationPipeline, config
 
 
 # Basic test to check if the emulate function works with a simple prompt
@@ -148,7 +148,7 @@ def test_emulate_callable_prototype():
     try:
         predictor = get_weather_predictor()
     except Exception as e:
-        from OpenHosta import print_last_prompt
+        from openhosta import print_last_prompt
         print("====== LLM PROMPT AND RESPONSE ======")
         print_last_prompt(get_weather_predictor)
         print("=====================================")
@@ -164,7 +164,7 @@ def test_emulate_callable_prototype():
     assert predictor(15.0, 60.0) == Weather.CLOUDY
 
 ## Exact same tests but with async version of ask
-from OpenHosta import emulate_async
+from openhosta import emulate_async
 from asyncio import run
 
 def test_emulate_basic_async():
@@ -294,7 +294,7 @@ def test_emulate_callable_prototype_async():
         assert predictor(15.0, 90.0) == Weather.RAINY
         assert predictor(15.0, 60.0) == Weather.CLOUDY
     except Exception as e:    
-        from OpenHosta import print_last_prompt
+        from openhosta import print_last_prompt
         print_last_prompt(get_weather_predictor)
         raise e
     

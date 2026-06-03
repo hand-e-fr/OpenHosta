@@ -1,6 +1,6 @@
 import pytest
-from OpenHosta import emulate, emulate_async, Guarded, conversation, readable, markdown
-from OpenHosta.guarded import GuardedInt, GuardedList, GuardedUtf8
+from openhosta import emulate, emulate_async, Guarded, conversation, readable, markdown
+from openhosta.guarded import GuardedInt, GuardedList, GuardedUtf8
 import asyncio
 
 def test_inspection_guarded_int(capsys):

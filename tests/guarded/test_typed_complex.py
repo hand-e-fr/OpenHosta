@@ -2,11 +2,11 @@
 
 import pytest
 from typing import List, Tuple, Dict, Union, Literal
-from OpenHosta.guarded.resolver import TypeResolver, type_returned_data
-from OpenHosta.guarded.subclassableliterals import GuardedLiteral, guarded_literal
-from OpenHosta.guarded.subclassableunions import GuardedUnion, guarded_union
-from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
-from OpenHosta.guarded.constants import Tolerance
+from openhosta.guarded.resolver import TypeResolver, type_returned_data
+from openhosta.guarded.subclassableliterals import GuardedLiteral, guarded_literal
+from openhosta.guarded.subclassableunions import GuardedUnion, guarded_union
+from openhosta.guarded.subclassablescalars import GuardedInt, GuardedUtf8, GuardedFloat
+from openhosta.guarded.constants import Tolerance
 
 
 class TestGuardedLiteral:
@@ -105,13 +105,13 @@ class TestNewScalars:
     """Tests for newer scalar types."""
     
     def test_complex(self):
-        from OpenHosta.guarded.subclassablescalars import GuardedComplex
+        from openhosta.guarded.subclassablescalars import GuardedComplex
         c = GuardedComplex("1+2j")
         assert c == complex(1, 2)
         assert c.uncertainty == Tolerance.PRECISE
 
     def test_bytes(self):
-        from OpenHosta.guarded.subclassablescalars import GuardedBytes
+        from openhosta.guarded.subclassablescalars import GuardedBytes
         b = GuardedBytes("hello")
         assert b == b"hello"
         assert isinstance(b, bytes)

@@ -1,6 +1,6 @@
 import pytest
 
-from OpenHosta.guarded.primitives import GuardedPrimitive, ProxyWrapper
+from openhosta.guarded.primitives import GuardedPrimitive, ProxyWrapper
 
 
 def test_guardedprimitive_must_be_first_base_in_multiple_inheritance():

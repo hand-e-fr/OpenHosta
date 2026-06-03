@@ -8,7 +8,7 @@ like multi-step processes or calendar implementations.
 
 from typing import Tuple
 import pytest
-from OpenHosta.guarded import TypeResolver
+from openhosta.guarded import TypeResolver
 
 
 def test_long_tuple_type_resolution():
@@ -159,7 +159,7 @@ def test_enum_str_tuple():
         B = "b"
         PAS_ASSEZ_INFORMATION = "pas_assez_information"
     
-    from OpenHosta import emulate
+    from openhosta import emulate
 
     def action_router(msg:str) -> tuple[SelectedAction, str]:
         """
@@ -189,7 +189,7 @@ def test_enum_str_tuple_hard():
         B = "b"
         PAS_ASSEZ_INFORMATION = "pas_assez_information"
     
-    from OpenHosta import emulate
+    from openhosta import emulate
 
     def action_router(msg:str) -> tuple[SelectedAction, str]:
         """

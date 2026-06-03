@@ -16,7 +16,7 @@ load_dotenv()
 # To run the tests, use the command:
 # pytest OpenHosta/tests/functionnalTests/test_emulate.py
 
-from OpenHosta import emulate, emulate_async
+from openhosta import emulate, emulate_async
 
 import asyncio
 

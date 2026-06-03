@@ -1,9 +1,9 @@
 import pytest
 import asyncio
 from typing import Iterator, AsyncIterator
-import OpenHosta
-from OpenHosta.core.base_model import ModelCapabilities
-from OpenHosta.models.OpenAICompatible import OpenAICompatibleModel
+import openhosta
+from openhosta.core.base_model import ModelCapabilities
+from openhosta.models.OpenAICompatible import OpenAICompatibleModel
 
 class MockStreamingModel(OpenAICompatibleModel):
     def __init__(self, chunks, **kwargs):

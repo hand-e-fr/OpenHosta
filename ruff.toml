@@ -1,10 +1,17 @@
 target-version = "py312"
 line-length = 120
-exclude = ["src/OpenHosta/**"]
+exclude = []
 
 [lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C90"]
-ignore = []
 
 [lint.isort]
-known-first-party = ["next_v5", "OpenHosta"]
+known-first-party = ["openhosta"]
+
+# V4 guarded/ module: heavy metaprogramming with intentional patterns
+[lint.per-file-ignores]
+"src/openhosta/guarded/*.py" = ["C901", "E501", "E402", "E721"]
+"src/openhosta/models/*.py" = ["N802", "N803", "N806"]
+"src/openhosta/core/*.py" = ["N802", "N803", "N806"]
+"src/openhosta/semantics/*.py" = ["N802", "N803", "N806"]
+"src/openhosta/exec/*.py" = ["N802", "N803", "N806"]

@@ -20,7 +20,7 @@ from typing import List, Dict, Optional, Tuple, Union, Literal
 import pytest
 from pydantic import BaseModel
 
-from OpenHosta import emulate
+from openhosta import emulate
 
 
 # ── Domain dataclasses ────────────────────────────────────────────────────────

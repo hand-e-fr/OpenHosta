@@ -18,11 +18,11 @@ if (test_dir / "assets").exists():
 else:
     raise FileNotFoundError(f"Assets directory not found in {test_dir}. Cannot continue.")
     
-from OpenHosta import emulate, emulate_async
-from OpenHosta import ask, ask_async
+from openhosta import emulate, emulate_async
+from openhosta import ask, ask_async
 
-from OpenHosta import test as oh_test
-from OpenHosta import test_async as oh_test_async
+from openhosta import test as oh_test
+from openhosta import test_async as oh_test_async
 
 
 class TestMultiModal:

@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from OpenHosta import emulate, closure
-from OpenHosta import safe, UncertaintyError
+from openhosta import emulate, closure
+from openhosta import safe, UncertaintyError
 
-# from OpenHosta import print_last_uncertainty
-from OpenHosta.core.uncertainty import last_uncertainty
+# from openhosta import print_last_uncertainty
+from openhosta.core.uncertainty import last_uncertainty
 
 
 from enum import Enum, auto
@@ -51,8 +51,8 @@ class Color(Enum):
     OLIVE = auto() 
 
 # Force logprobs capability for testing
-from OpenHosta import config
-from OpenHosta.core.base_model import ModelCapabilities
+from openhosta import config
+from openhosta.core.base_model import ModelCapabilities
 config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
 
 def test_safe_emulate_success():
@@ -81,7 +81,7 @@ def test_safe_emulate_success():
 
     assert next_step is NextStep.GIT_PUSH, f"Expected 'git push' in response, got: {next_step}"
 
-    # from OpenHosta import print_last_uncertainty, print_last_prompt
+    # from openhosta import print_last_uncertainty, print_last_prompt
     # print_last_uncertainty(get_next_step)
     # print_last_prompt(get_next_step)
     # print_last_probability_distribution(get_next_step)    
@@ -172,7 +172,7 @@ def test_safe_emulate_fail():
         # The exact cumulated_uncertainty depends on whether the last retry was an actual probabilities-parseable error or a syntactic error.
         
 
-from OpenHosta import emulate_async
+from openhosta import emulate_async
 import asyncio
 
 def test_safe_emulate_fail_async():
@@ -317,7 +317,7 @@ def test_safe_workflow_color_detector():
         """
         return emulate()
 
-    # from OpenHosta import print_last_uncertainty, print_last_prompt
+    # from openhosta import print_last_uncertainty, print_last_prompt
     # print_last_uncertainty(IsThisInThat)
     # print_last_prompt(IsThisInThat)
     
@@ -409,7 +409,7 @@ def test_safe_workflow_organ_location():
         
     assert location is None, f"Expected None for blood location due to uncertainty error, got: {location}" 
 
-    # from OpenHosta import print_last_prompt
+    # from openhosta import print_last_prompt
     # print_last_prompt(IsThisInThat)
 
 def test_safe_on_string_return():
@@ -532,4 +532,4 @@ def test_emulate_inconsistent_type():
         assert isinstance(e, ValueError), f"Expected ValueError, got {e}"
         
 
-from OpenHosta import print_last_prompt
+from openhosta import print_last_prompt

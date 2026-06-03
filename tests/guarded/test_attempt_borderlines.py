@@ -3,7 +3,7 @@ from typing import List, Dict, Set, Tuple, Optional, Union, Literal
 from dataclasses import dataclass
 from enum import Enum
 from pydantic import BaseModel
-from OpenHosta.guarded.resolver import TypeResolver
+from openhosta.guarded.resolver import TypeResolver
 
 @dataclass
 class Person:

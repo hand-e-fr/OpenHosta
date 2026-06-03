@@ -7,14 +7,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from OpenHosta import reload_dotenv
+from openhosta import reload_dotenv
 reload_dotenv()
 
-from OpenHosta import emulate_variants
+from openhosta import emulate_variants
 
 # Force logprobs capability for testing
-from OpenHosta import config
-from OpenHosta.core.base_model import ModelCapabilities
+from openhosta import config
+from openhosta.core.base_model import ModelCapabilities
 config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
 
 # Basic test to check if the emulate function works with a simple prompt
@@ -22,7 +22,7 @@ def test_generate_basic():
     """
     This test checks if the emulate function works with a simple prompt in iterator mode.
     """
-    from OpenHosta import print_last_prompt
+    from openhosta import print_last_prompt
 
     from typing import Iterator
     @dataclass

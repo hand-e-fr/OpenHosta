@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from OpenHosta import emulate
+from openhosta import emulate
 
 @dataclass
 class Person:

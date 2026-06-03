@@ -1,9 +1,9 @@
 import pytest
 from enum import auto
 
-from OpenHosta.guarded import GuardedEnum
-from OpenHosta.core.meta_prompt import EMULATE_META_PROMPT, USER_CALL_META_PROMPT
-from OpenHosta.core.analizer import hosta_analyze, encode_function # NOTE: analysis will be updated
+from openhosta.guarded import GuardedEnum
+from openhosta.core.meta_prompt import EMULATE_META_PROMPT, USER_CALL_META_PROMPT
+from openhosta.core.analizer import hosta_analyze, encode_function # NOTE: analysis will be updated
 
 class MyEnum(GuardedEnum):
     ACTION_A = auto()

@@ -1,7 +1,7 @@
 import pytest
-from OpenHosta import emulate, config
-from OpenHosta.core.cost_tracker import track_costs
-from OpenHosta.core.audit import register_audit_callback, unregister_audit_callback, AuditEvent
+from openhosta import emulate, config
+from openhosta.core.cost_tracker import track_costs
+from openhosta.core.audit import register_audit_callback, unregister_audit_callback, AuditEvent
 
 def test_cost_tracker():
     def say_hello(name: str) -> str:

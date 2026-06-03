@@ -1,9 +1,9 @@
 import pytest
 import asyncio
 from typing import Iterator, AsyncIterator, List
-from OpenHosta import emulate, emulate_async
-from OpenHosta.core.base_model import ModelCapabilities
-from OpenHosta.models.OpenAICompatible import OpenAICompatibleModel
+from openhosta import emulate, emulate_async
+from openhosta.core.base_model import ModelCapabilities
+from openhosta.models.OpenAICompatible import OpenAICompatibleModel
 
 class MockCodeBlockModel(OpenAICompatibleModel):
     def __init__(self, blocks: List[str]):
@@ -32,7 +32,7 @@ class MockCodeBlockModel(OpenAICompatibleModel):
         return {"choices": [{"message": {"content": content}}]}
 
 # Create a custom pipeline to avoid actual API calls during tests
-from OpenHosta.pipelines import OneTurnConversationPipeline
+from openhosta.pipelines import OneTurnConversationPipeline
 import copy
 
 def get_mock_pipeline(blocks: List[str]):

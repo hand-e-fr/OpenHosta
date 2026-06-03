@@ -1,5 +1,5 @@
 
-from OpenHosta import emulate
+from openhosta import emulate
 
 from enum import Enum
 
@@ -16,5 +16,5 @@ def return_exactly() -> Rating:
 
 return_exactly()
 
-from OpenHosta import print_last_prompt
+from openhosta import print_last_prompt
 print_last_prompt(return_exactly)

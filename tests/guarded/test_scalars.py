@@ -1,8 +1,8 @@
 """Tests for GuardedInt, GuardedFloat, and GuardedUtf8."""
 
 import pytest
-from OpenHosta.guarded.constants import Tolerance
-from OpenHosta.guarded.subclassablescalars import GuardedInt, GuardedFloat, GuardedUtf8
+from openhosta.guarded.constants import Tolerance
+from openhosta.guarded.subclassablescalars import GuardedInt, GuardedFloat, GuardedUtf8
 
 
 class TestGuardedInt:

@@ -1,7 +1,7 @@
 import pytest
 from enum import Enum
 from pydantic import BaseModel
-from OpenHosta.guarded import (
+from openhosta.guarded import (
     GuardedInt, GuardedUtf8, 
     GuardedList, GuardedDict, GuardedTuple,
     TypeResolver, GuardedEnum
@@ -56,7 +56,7 @@ def test_enum_consistency():
         RED = "red"
         BLUE = "blue"
     
-    from OpenHosta.guarded.subclassableclasses import guarded_enum
+    from openhosta.guarded.subclassableclasses import guarded_enum
     GColor = guarded_enum(Color)
     
     res = GColor.attempt("RED")

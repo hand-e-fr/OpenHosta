@@ -8,13 +8,13 @@ Usage:
 from dotenv import load_dotenv
 load_dotenv()
 
-from OpenHosta import config, reload_dotenv
+from openhosta import config, reload_dotenv
 reload_dotenv()
 
-from OpenHosta.core.base_model import ModelCapabilities
+from openhosta.core.base_model import ModelCapabilities
 config.DefaultModel.capabilities |= {ModelCapabilities.LOGPROBS}
 
-from OpenHosta.semantics import SemanticSet, SemanticDict
+from openhosta.semantics import SemanticSet, SemanticDict
 
 
 def test_semantic_set():

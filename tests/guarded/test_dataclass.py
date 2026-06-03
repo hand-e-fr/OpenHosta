@@ -2,9 +2,9 @@
 
 import pytest
 from dataclasses import dataclass
-from OpenHosta.guarded.constants import Tolerance
-from OpenHosta.guarded.primitives import CastingResult
-from OpenHosta.guarded.subclassablecollections import guarded_dataclass
+from openhosta.guarded.constants import Tolerance
+from openhosta.guarded.primitives import CastingResult
+from openhosta.guarded.subclassablecollections import guarded_dataclass
 
 @guarded_dataclass
 class Address:

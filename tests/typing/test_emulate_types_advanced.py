@@ -32,7 +32,7 @@ from typing import (
     ByteString,
 )
 
-from OpenHosta import emulate, ask
+from openhosta import emulate, ask
 
 answer = ask("Just say: The API to the model works!")
 assert "The API to the model works!" in answer
