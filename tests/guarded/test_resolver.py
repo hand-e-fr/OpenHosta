@@ -124,69 +124,31 @@ class TestTypeResolver:
 
 
 class TestResolveAnnotationHelper:
-    """Tests for _resolve_annotation in analizer.py."""
-    
+    """Tests for _resolve_annotation — skipped: function removed in V5 (was in openhosta.core.analizer)."""
+
+    @pytest.mark.skip(reason="V4 function _resolve_annotation no longer exists in V5")
     def test_resolve_non_string_passthrough(self):
-        """Non-string annotations pass through unchanged."""
-        from openhosta.core.analizer import _resolve_annotation
-        assert _resolve_annotation(int) is int
-        assert _resolve_annotation(None) is None
-    
+        pass
+
+    @pytest.mark.skip(reason="V4 function _resolve_annotation no longer exists in V5")
     def test_resolve_string_to_type(self):
-        """String annotations are resolved via eval in the correct namespace."""
-        from openhosta.core.analizer import _resolve_annotation
-        import typing
-        
-        ns = {"int": int, "str": str, "typing": typing, "Callable": typing.Callable}
-        assert _resolve_annotation("int", ns) is int
-        assert _resolve_annotation("str", ns) is str
-        assert _resolve_annotation("Callable", ns) is typing.Callable
-    
+        pass
+
+    @pytest.mark.skip(reason="V4 function _resolve_annotation no longer exists in V5")
     def test_resolve_unknown_string_falls_back_to_any(self):
-        """Unresolvable strings fall back to typing.Any with a warning."""
-        import typing
-        import warnings
-        from openhosta.core.analizer import _resolve_annotation
-        
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            result = _resolve_annotation("CompletelyFakeType", {})
-            assert result is typing.Any
-            assert len(w) == 1
-            assert "Could not resolve" in str(w[0].message)
+        pass
 
 
 class TestHostaAnalyzeStringAnnotations:
-    """Test that hosta_analyze resolves stringified annotations."""
-    
+    """Tests for hosta_analyze — skipped: function removed in V5 (was in openhosta.core.analizer)."""
+
+    @pytest.mark.skip(reason="V4 function hosta_analyze no longer exists in V5")
     def test_analyze_resolves_return_type(self):
-        """hosta_analyze should resolve string return annotations."""
-        from openhosta.core.analizer import hosta_analyze
-        import typing
-        
-        def my_func(x: int) -> str:
-            """doc"""
-            pass
-        
-        result = hosta_analyze(frame=None, function_pointer=my_func)
-        # With get_type_hints succeeding, types should be resolved
-        assert result.type is str
-        assert result.args[0].type is int
-    
+        pass
+
+    @pytest.mark.skip(reason="V4 function hosta_analyze no longer exists in V5")
     def test_analyze_with_callable_annotation(self):
-        """hosta_analyze should handle Callable annotations."""
-        from openhosta.core.analizer import hosta_analyze
-        from typing import Callable
-        
-        def my_func(callback: Callable) -> int:
-            """doc"""
-            pass
-        
-        result = hosta_analyze(frame=None, function_pointer=my_func)
-        # get_type_hints should resolve Callable to typing.Callable
-        assert result.type is int
-        # The callback arg type should be Callable (not a string)
-        assert not isinstance(result.args[0].type, str)
+        pass
 
 
 class TestComplexityGenericResolution:
@@ -450,7 +412,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_class_returns_class_name(self):
         """Guarded[SomeClass] should display as the class name, not Guarded[SomeClass]."""
-        from openhosta.core.analizer import nice_type_name
+        from openhosta.guarded.type_hints import nice_type_name
         from openhosta import Guarded
 
         class Sentiment:
@@ -461,7 +423,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_builtin_returns_builtin_name(self):
         """Guarded[str], Guarded[int], etc. should display as the builtin name."""
-        from openhosta.core.analizer import nice_type_name
+        from openhosta.guarded.type_hints import nice_type_name
         from openhosta import Guarded
 
         assert nice_type_name(Guarded[str]) == "str"
@@ -471,7 +433,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_generic_returns_inner_generic(self):
         """Guarded[List[int]] should display as List[int]."""
-        from openhosta.core.analizer import nice_type_name
+        from openhosta.guarded.type_hints import nice_type_name
         from openhosta import Guarded
 
         result = nice_type_name(Guarded[List[int]])
@@ -479,7 +441,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_nested_generic(self):
         """Guarded[Dict[str, int]] should display as Dict[str, int]."""
-        from openhosta.core.analizer import nice_type_name
+        from openhosta.guarded.type_hints import nice_type_name
         from openhosta import Guarded
 
         result = nice_type_name(Guarded[Dict[str, int]])
@@ -487,7 +449,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_guarded_optional(self):
         """Guarded[Optional[str]] should display as Optional[str]."""
-        from openhosta.core.analizer import nice_type_name
+        from openhosta.guarded.type_hints import nice_type_name
         from openhosta import Guarded
 
         result = nice_type_name(Guarded[Optional[str]])
@@ -495,7 +457,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_regular_types_unchanged(self):
         """Non-Guarded types should still work normally."""
-        from openhosta.core.analizer import nice_type_name
+        from openhosta.guarded.type_hints import nice_type_name
 
         assert nice_type_name(str) == "str"
         assert nice_type_name(int) == "int"
@@ -503,7 +465,7 @@ class TestNiceTypeWithNameGuardedT:
 
     def test_regular_generics_unchanged(self):
         """Non-Guarded generic types should still work normally."""
-        from openhosta.core.analizer import nice_type_name
+        from openhosta.guarded.type_hints import nice_type_name
 
         assert nice_type_name(List[int]) == "List[int]"
         assert nice_type_name(Dict[str, int]) == "Dict[str, int]"
