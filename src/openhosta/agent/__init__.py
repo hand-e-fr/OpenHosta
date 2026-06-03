@@ -1,3 +1,4 @@
+from openhosta.agent.agent import Agent
 from openhosta.agent.capability import (
     CapabilityMetadata,
     CapabilityRegistration,
@@ -31,6 +32,7 @@ from openhosta.agent.traces import (
 )
 
 __all__ = [
+    "Agent",
     "AgentStatus",
     "AgentSession",
     "AgentEngine",
