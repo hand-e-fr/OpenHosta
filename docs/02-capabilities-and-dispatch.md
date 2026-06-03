@@ -2,9 +2,10 @@
 
 ## Overview
 
-Capabilities are Python callables decorated with one of five decorators.
-Each decorated function is automatically registered in the global
-`CapabilityRegistration` singleton and executed by `CapabilityDispatcher`.
+Capabilities are class methods decorated with one of five decorators. When an
+`Agent` is instantiated, it scans its own class for methods with `_capability`
+metadata, binds them to `self`, and registers them in a **per-agent isolated
+registry**. Standalone decorated functions register to `_default_registry`.
 
 ## Dispatch Priority
 
@@ -17,6 +18,34 @@ this strict priority order — the first successful result wins:
 4. **@infer** — LLM-based inference
 5. **@tool** — deterministic routine
 6. **Fallback** — `AgentEngine.execute_step()` (echoes the message)
+
+## Two Binding Patterns
+
+### Pattern A: `@model.infer(tags=[...])` — Bind to a specific backend
+
+Canonical pattern for binding a stub to a backend. Combines metadata registration
+and inference delegation:
+
+```python
+model = BackendModel(provider="...", model_name="...", base_url="...")
+
+@model.infer(tags=["lang"])
+def translate(texte: str) -> str:
+    """Translate from French to English."""
+    ...  # stub → inference via `model`
+```
+
+### Pattern B: `@infer(tags=[...])` — Metadata only, deferred backend
+
+Registers metadata in `_default_registry`. The backend is injected later
+by `Agent.get()` or `model.infer(func, ...)`:
+
+```python
+@infer(tags=["lang"])
+def translate(texte: str) -> str:
+    """Translate from French to English."""
+    ...  # stub → backend injected by Agent.get() or model.infer()
+```
 
 ## Decorator API
 
@@ -44,12 +73,6 @@ def my_capability(msg: str) -> str:
 | `long_description` | Signature + full docstring | Auto-generated for inference     |
 
 ```python
-# Before (redundant)
-@tool(name="list_files", description="Liste les fichiers", tags=["files"])
-def list_files(msg: str) -> str:
-    """Liste les fichiers."""
-    return "files"
-
 # V5 convention (derived)
 @tool(tags=["files"])
 def list_files(msg: str) -> str:
@@ -76,10 +99,11 @@ Marks a deterministic, side-effect-capable routine.
 ```python
 from openhosta import tool
 
-@tool(name="math.add", description="Add two numbers from a message")
-def add_tool(msg: str) -> str:
+@tool(tags=["math"])
+def add_numbers(chiffres: str) -> str:
+    """Sum all numbers found in the message."""
     import re
-    nums = re.findall(r"\d+", msg)
+    nums = re.findall(r"\d+", chiffres)
     return str(sum(int(n) for n in nums))
 ```
 
@@ -120,8 +144,9 @@ Marks a multi-step orchestrated workflow.
 ```python
 from openhosta import playbook
 
-@playbook(name="workflow.review", description="Code review workflow")
+@playbook(tags=["workflow"])
 def code_review(msg: str) -> str:
+    """Code review workflow."""
     # Step 1: parse
     # Step 2: analyze
     # Step 3: report
@@ -135,8 +160,9 @@ Marks a goal-decomposition / planning capability.
 ```python
 from openhosta import planner
 
-@planner(name="plan.tasks", description="Decompose goals into tasks")
+@planner(tags=["planning"])
 def plan_tasks(msg: str) -> str:
+    """Decompose goals into tasks."""
     return "1. First task\n2. Second task"
 ```
 
@@ -153,7 +179,7 @@ target tag.
 from openhosta import router
 
 # Non-stub: keyword-based routing (executes directly)
-@router(tags=["demo"], priority=-10)
+@router(tags=["dispatch"], priority=-10)
 def keyword_router(msg: str) -> str:
     """Routage par mots-clés."""
     if "fichier" in msg.lower():
@@ -161,7 +187,7 @@ def keyword_router(msg: str) -> str:
     return "route:default"
 
 # Stub: LLM-powered semantic routing
-@router(tags=["demo"], priority=-10)
+@router(tags=["dispatch"], priority=-10)
 def semantic_router(msg: str) -> str:
     """Classe l'intention sémantiquement."""
     ...  # stub → LLM delegation via model.infer() or Agent.get()
@@ -171,6 +197,27 @@ Router return conventions:
 - `"route:list"` → dispatch to capabilities tagged with `"list"`
 - `"route:analyze"` → dispatch to capabilities tagged with `"analyze"`
 - Any other string → returned as-is (no routing)
+
+## Virtual Body Pattern
+
+The recommended pattern is to define capabilities as class methods inside the
+`Agent`. At construction, the agent binds these methods to `self` and registers
+them in its private registry:
+
+```python
+@model.compile()
+class MyAgent(Agent):
+    @model.infer(tags=["lang"])
+    def translate(self, texte: str) -> str:
+        """Translate text."""
+        ...
+
+    @tool(tags=["math"])
+    def add_numbers(self, chiffres: str) -> str:
+        """Sum numbers."""
+        import re
+        return str(sum(int(n) for n in re.findall(r"\d+", chiffres)))
+```
 
 ## CapabilityMetadata
 
@@ -213,18 +260,35 @@ results = disp.route_by_tag("math", msg="hello")
 
 Each strategy returns `DispatchResult(success, result, error, metadata)`.
 
+### Msg Bridging
+
+When the dispatcher routes with `msg` kwarg but the target function declares a
+different first parameter (e.g. `texte`, `chiffres`), the dispatcher
+automatically aliases `msg` to that parameter name. This enables seamless
+`agent.get(msg)` → `capability(texte=msg)` dispatch.
+
+### Per-Agent Registry
+
+The dispatcher accepts an optional `registry` parameter. When called from
+`Agent.get()`, the agent passes its own `_registry`:
+
+```python
+dispatcher = CapabilityDispatcher(registry=self._registry)
+```
+
+When called standalone, it defaults to `_default_registry`.
+
 ## Test Isolation
 
-Because `CapabilityRegistration` is a singleton, tests must clear the registry:
+Since capabilities register to `_default_registry`, tests must clear it:
 
 ```python
 import pytest
-from openhosta import CapabilityRegistration
+from openhosta.agent import _default_registry
 
 @pytest.fixture(autouse=True)
 def _clean_registry():
-    reg = CapabilityRegistration()
-    reg.clear()
+    _default_registry.clear()
     yield
-    reg.clear()
+    _default_registry.clear()
 ```
