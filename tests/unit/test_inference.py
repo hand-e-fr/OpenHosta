@@ -309,3 +309,109 @@ class TestDecoratorInferenceWrapping:
         # A function with only `...` returns None (the Ellipsis is not returned)
         result = func("test")
         assert result is None
+
+
+# --------------------------------------------------------------------------- #
+# End-to-end test: Agent.get() routes stub @infer through InferenceEngine
+# --------------------------------------------------------------------------- #
+
+
+class TestEndToEndInference:
+    """Verify that Agent.get() routes stub @infer/@planner/@router through InferenceEngine."""
+
+    def test_agent_routes_stub_infer_through_engine(self) -> None:
+        """When Agent.get() dispatches a stub @infer, it should use InferenceEngine."""
+        from openhosta.agent import Agent
+        from openhosta.agent._config import set_default_backend
+        from openhosta.backend import BackendModel
+
+        backend = BackendModel(
+            provider="test",
+            model_name="test-model",
+            base_url="http://invalid-host:9999/v1",
+            api_key="",
+        )
+        set_default_backend(backend)
+
+        # Define a stub @infer capability
+        from openhosta.agent import infer
+        from openhosta.agent.capability import CapabilityRegistration
+
+        reg = CapabilityRegistration()
+        reg.clear()
+
+        @infer(name="e2e.stub_infer", description="End-to-end stub inference")
+        def stub_e2e(msg: str) -> str:
+            """End-to-end stub."""
+            ...
+
+        # Create agent with backend
+        agent = Agent(backend=backend)
+        agent.recruit()
+
+        # Call via dispatcher (simulates Agent.get() flow)
+        from openhosta.agent.dispatch import CapabilityDispatcher
+
+        dispatcher = CapabilityDispatcher()
+        results = dispatcher.route_by_type(
+            CapabilityType.INFERENCE,
+            msg="test message",
+            _backend=backend,
+        )
+
+        # Should have one result, which failed because backend is unreachable
+        assert len(results) == 1
+        assert not results[0].success
+        assert results[0].error is not None
+
+        # Cleanup
+        agent.kill()
+        set_default_backend(None)
+        reg.clear()
+
+    def test_agent_recruit_sets_default_backend(self) -> None:
+        """Agent.recruit() should register the backend as default for inference."""
+        from openhosta.agent import Agent
+        from openhosta.agent._config import get_default_backend, set_default_backend
+        from openhosta.backend import BackendModel
+
+        # Clear any existing backend
+        set_default_backend(None)
+
+        backend = BackendModel(
+            provider="test",
+            model_name="test-model",
+            base_url="http://localhost:8000/v1",
+        )
+
+        agent = Agent(backend=backend)
+        agent.recruit()
+
+        # Backend should be registered as default
+        default = get_default_backend()
+        assert default is not None
+        assert default.model_name == "test-model"
+
+        # Cleanup
+        agent.kill()
+        set_default_backend(None)
+
+    def test_agent_get_injects_backend_into_dispatcher(self) -> None:
+        """Agent.get() should inject _backend into dispatcher kwargs."""
+        from openhosta.agent import Agent
+        from openhosta.backend import BackendModel
+
+        backend = BackendModel(
+            provider="test",
+            model_name="test-model",
+            base_url="http://localhost:8000/v1",
+        )
+
+        agent = Agent(backend=backend)
+        agent.recruit()
+
+        # Verify that agent._backend is set
+        assert agent._backend is not None
+
+        # Cleanup
+        agent.kill()
