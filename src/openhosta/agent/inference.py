@@ -13,6 +13,7 @@ from __future__ import annotations
 import ast
 import inspect
 import json
+import textwrap
 import time
 import urllib.request
 import urllib.error
@@ -404,6 +405,7 @@ def is_stub(func: Any) -> bool:
 
     try:
         source = inspect.getsource(func)
+        source = textwrap.dedent(source)
         tree = ast.parse(source)
         # Find the function definition in the AST
         for node in ast.walk(tree):
