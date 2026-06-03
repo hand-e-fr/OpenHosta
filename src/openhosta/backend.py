@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import functools
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from collections.abc import Callable
+
+from openhosta.agent.inference import execute_inference
+
+if TYPE_CHECKING:
+    from openhosta.agent.capability import CapabilityMetadata
 
 
 @dataclass(frozen=True)
@@ -29,36 +34,92 @@ class BackendModel:
 
         return decorator
 
-    def infer(
-        self,
-        func: Callable[..., Any],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
-        """Execute inference for a decorated function using this backend.
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Guard against misuse: BackendModel is NOT a decorator.
 
-        Explicit is better than implicit: use ``model.infer(func, ...)``
-        instead of calling the stub function directly.
-
-        Parameters
-        ----------
-        func: Callable
-            A function decorated with ``@infer``, ``@planner``, or ``@router``.
-        *args: Any
-            Positional arguments forwarded to the inference engine.
-        **kwargs: Any
-            Keyword arguments forwarded to the inference engine.
-
-        Returns
-        -------
-        Any
-            The parsed result from the LLM backend.
+        If someone writes ``@model(...)`` they get a clear error redirecting
+        them to the correct decorator syntax ``@model.infer(...)``.
 
         Raises
         ------
-        RuntimeError
-            If inference fails or the function is not a registered capability.
+        TypeError
+            Always – ``BackendModel`` instances must not be called directly.
         """
+        # Binding misuse: @model(tags=...)
+        if not args and any(k in kwargs for k in ("tags", "priority")):
+            raise TypeError(
+                "BackendModel is not a decorator. "
+                "Use ``@model.infer(tags=[...])`` as the decorator, "
+                "not ``@model(tags=[...])``. "
+                "See: model.infer(func, ...) for standalone inference."
+            )
+
+        # Execution misuse: model(42) or model(func, ...)
+        if args:
+            target = getattr(args[0], "__name__", repr(args[0]))
+            raise TypeError(
+                f"BackendModel is not callable with positional arguments. "
+                f"Did you mean ``model.infer({target}, ...)`` ?"
+            )
+
+        raise TypeError(
+            "BackendModel is not callable. "
+            "Use ``model.infer(func, ...)`` for standalone inference, "
+            "or ``agent.get(msg)`` inside an Agent session."
+        )
+
+    # ------------------------------------------------------------------ #
+    # Infer as decorator: @model.infer(tags=[...])
+    # ------------------------------------------------------------------ #
+
+    def infer(self, *args: Any, **kwargs: Any) -> Any:
+        """Dual-mode: decorator binding or direct inference execution.
+
+        Decorator binding (returns a decorator):
+            @model.infer(tags=["lang"])
+            def translate(text: str) -> str: ...
+
+        Direct execution:
+            model.infer(my_func, arg1, key=value)
+        """
+        from openhosta.agent.capability import CapabilityMetadata, CapabilityType
+
+        # Decorator binding: @model.infer(tags=[...])
+        if not args and any(k in kwargs for k in ("tags", "priority")):
+            bind_tags = kwargs.get("tags", ())
+            bind_priority = kwargs.get("priority", 0)
+
+            def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+                if not hasattr(func, "_capability"):
+                    desc = (func.__doc__ or "").strip().split("\n")[0].strip(".")
+                    meta = CapabilityMetadata(
+                        name=func.__name__,
+                        capacity_type=CapabilityType.INFERENCE,
+                        description=desc,
+                        tags=tuple(bind_tags) if bind_tags else (),
+                        priority=bind_priority,
+                    )
+                    func._capability = meta  # type: ignore[attr-defined]
+
+                @functools.wraps(func)
+                def wrapper(*call_args: Any, **call_kwargs: Any) -> Any:
+                    meta = getattr(func, "_capability", None)
+                    result = execute_inference(
+                        func, meta, self, *call_args, **call_kwargs
+                    )
+                    if not result.success:
+                        raise RuntimeError(
+                            f"Inference failed for '{meta.name}': {result.error}"
+                        ) from result.error
+                    return result.value
+
+                return wrapper
+
+            return decorator
+
+        # Direct execution: model.infer(func, *args, **kwargs)
+        func = args[0]
+        rest_args = args[1:]
         meta = getattr(func, "_capability", None)
         if meta is None:
             raise ValueError(
@@ -66,9 +127,7 @@ class BackendModel:
                 f"Decorate it with @infer, @planner, or @router first."
             )
 
-        from openhosta.agent.inference import execute_inference  # noqa: PLC2701
-
-        result = execute_inference(func, meta, self, *args, **kwargs)
+        result = execute_inference(func, meta, self, *rest_args, **kwargs)
         if not result.success:
             raise RuntimeError(
                 f"Inference failed for '{meta.name}': {result.error}"
