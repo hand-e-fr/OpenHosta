@@ -7,9 +7,62 @@ Replaces the scattered `get_type_hints` calls throughout the guarded wrappers,
 providing consistent error handling and string annotation resolution.
 """
 
+import inspect
 import typing
 import warnings
 from typing import Any
+
+
+def nice_type_name(p_type: Any) -> str:
+    """
+    Get a nice name for the type to insert in function description for LLM.
+    (Migrated from core.analizer to remove V4 dependency.)
+    """
+    if p_type is None or p_type is inspect._empty:
+        return "Any"
+
+    # Handle Python 3.12 TypeAliasType
+    if hasattr(p_type, "__name__") and type(p_type).__name__ == "TypeAliasType":
+        return p_type.__name__
+
+    # Handle Guarded Types
+    from .primitives import GuardedPrimitive
+    if isinstance(p_type, type):
+        if issubclass(p_type, GuardedPrimitive):
+            if hasattr(p_type, "_item_type") and p_type._item_type:
+                return f"{p_type.__name__}[{nice_type_name(p_type._item_type)}]"
+            if hasattr(p_type, "_item_types") and p_type._item_types:
+                return f"{p_type.__name__}[{', '.join(nice_type_name(t) for t in p_type._item_types)}]"
+            if hasattr(p_type, "_key_type") and p_type._key_type and hasattr(p_type, "_value_type") and p_type._value_type:
+                return f"{p_type.__name__}[{nice_type_name(p_type._key_type)}, {nice_type_name(p_type._value_type)}]"
+            name = p_type.__name__
+            if name.startswith("Guarded_") and len(name) > 8:
+                return name[8:]
+            return name
+
+    # Handle Guarded[T] - unwrap to inner type for cleaner display
+    if hasattr(p_type, "__origin__"):
+        from .primitives import Guarded as GuardedPrimitiveMarker
+        from .wrapper import Guarded as GuardedWrapper
+        origin = p_type.__origin__
+        if origin is GuardedPrimitiveMarker or origin is GuardedWrapper:
+            args = getattr(p_type, "__args__", ())
+            if args:
+                return nice_type_name(args[0])
+
+    # Handle typing types and GenericAlias (tuple[int, ...], List[str], etc.)
+    if str(p_type).startswith("typing.") or hasattr(p_type, "__origin__"):
+        t = repr(p_type)
+        t = t.replace("typing.", "")
+        t = t.replace("collections.abc.", "")
+        t = t.replace("builtins.", "")
+        t = t.replace("openhosta.guarded.primitives.", "")
+        return t
+
+    if hasattr(p_type, "__name__"):
+        return p_type.__name__
+
+    return str(p_type)
 
 
 def resolve_struct_hints(cls: type, fallback_annotations: bool = True) -> dict[str, Any]:
