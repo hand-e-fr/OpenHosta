@@ -26,6 +26,7 @@ InferenceEngine (LLM backend). Non-stub functions execute directly.
 from __future__ import annotations
 
 import functools
+import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -68,10 +69,14 @@ class CapabilityMetadata:
     ----------
     name: str
         Unique capability identifier (dot-notation encouraged).
+        Defaults to the decorated function's ``__name__``.
     capacity_type: CapabilityType
         Category of this capability.
     description: str
-        Human-readable one-liner.
+        Human-readable one-liner (first line of docstring by default).
+    long_description: str
+        Full docstring enriched with the function signature and type
+        annotations.  Used by the InferenceEngine to build prompts.
     tags: tuple[str, ...]
         Arbitrary search tags (frozen tuple for hashability).
     priority: int
@@ -83,6 +88,7 @@ class CapabilityMetadata:
     name: str
     capacity_type: CapabilityType
     description: str = ""
+    long_description: str = ""
     tags: tuple[str, ...] = ()
     priority: int = 0
     requires_async: bool = False
@@ -192,32 +198,111 @@ class CapabilityRegistration:
 _registry = CapabilityRegistration()
 
 
+# --------------------------------------------------------------------------- #
+# Metadata resolution helpers
+# --------------------------------------------------------------------------- #
+
+
+def _extract_first_line(docstring: str | None) -> str:
+    """Return the first non-empty line of a docstring."""
+    if not docstring:
+        return ""
+    lines = docstring.strip().splitlines()
+    for line in lines:
+        stripped = line.strip()
+        if stripped:
+            return stripped
+    return ""
+
+
+def _build_signature_summary(func: Callable[..., Any]) -> str:
+    """Build a human-readable signature with type annotations.
+
+    Example: ``func(msg: str, count: int = 10) -> str``
+    """
+    try:
+        sig = inspect.signature(func)
+        return f"{func.__name__}{sig}"
+    except (ValueError, TypeError):
+        return func.__name__
+
+
+def _build_long_description(func: Callable[..., Any]) -> str:
+    """Build the long description from docstring + signature.
+
+    Convention V5 : la description longue combine la docstring complète
+    et le prototype annoté pour alimenter les prompts de l'InferenceEngine.
+    """
+    parts: list[str] = []
+
+    sig_summary = _build_signature_summary(func)
+    parts.append(f"**Signature:** `{sig_summary}`")
+
+    doc = (func.__doc__ or "").strip()
+    if doc:
+        parts.append(f"\n**Docstring:**\n{doc}")
+
+    return "\n".join(parts)
+
+
+def _resolve_metadata(
+    func: Callable[..., Any],
+    capacity_type: CapabilityType,
+    name: str | None = None,
+    description: str | None = None,
+    tags: list[str] | tuple[str, ...] | None = None,
+    priority: int = 0,
+    requires_async: bool = False,
+) -> CapabilityMetadata:
+    """Resolve capability metadata from the decorated function.
+
+    Convention V5 :
+    - ``name`` dérive de ``func.__name__`` si non fourni
+    - ``description`` courte = première ligne de la docstring
+    - ``long_description`` = docstring complète + signature annotée
+    """
+    tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
+
+    resolved_name = name if name is not None else func.__name__
+    docstring = (func.__doc__ or "").strip()
+    resolved_description = (
+        description if description is not None
+        else _extract_first_line(docstring)
+    )
+    long_desc = _build_long_description(func)
+
+    return CapabilityMetadata(
+        name=resolved_name,
+        capacity_type=capacity_type,
+        description=resolved_description,
+        long_description=long_desc,
+        tags=tags_tuple,
+        priority=priority,
+        requires_async=requires_async,
+    )
+
+
 def _make_decorator(capacity_type: CapabilityType) -> Callable[..., Callable[..., Any]]:
     """Factory that returns a decorator for *capacity_type*.
 
-    The returned decorator accepts keyword arguments:
-        name, description, tags, priority, requires_async
-    and attaches ``CapabilityMetadata`` to the callable before registering it.
+    Convention V5 : ``name`` et ``description`` sont optionnels.
+    S'ils ne sont pas fournis, ils sont dérivés de la fonction décorée :
+    - ``name`` ← ``func.__name__``
+    - ``description`` ← première ligne de la docstring
+    - ``long_description`` ← docstring complète + signature annotée
     """
 
     def decorator(
         *,
-        name: str,
-        description: str = "",
+        name: str | None = None,
+        description: str | None = None,
         tags: list[str] | tuple[str, ...] | None = None,
         priority: int = 0,
         requires_async: bool = False,
     ) -> Callable[..., Callable[..., Any]]:
-        tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
-
         def inner(func: Callable[..., Any]) -> Callable[..., Any]:
-            meta = CapabilityMetadata(
-                name=name,
-                capacity_type=capacity_type,
-                description=description,
-                tags=tags_tuple,
-                priority=priority,
-                requires_async=requires_async,
+            meta = _resolve_metadata(
+                func, capacity_type, name, description, tags, priority, requires_async
             )
             # Attach metadata directly without functools.wraps to avoid
             # creating a wrapper loop (func.__wrapped__ = func).
@@ -283,32 +368,23 @@ def _wrap_inference(
 
 def tool(
     *,
-    name: str,
-    description: str = "",
+    name: str | None = None,
+    description: str | None = None,
     tags: list[str] | tuple[str, ...] | None = None,
     priority: int = 0,
     requires_async: bool = False,
 ) -> Callable[..., Callable[..., Any]]:
     """Mark a function as a **tool** capability (deterministic routine).
 
-    Parameters
-    ----------
-    name: str
-        Unique capability name.
-    description: str
-        Human-readable description.
-    tags: list[str] | tuple[str, ...] | None
-        Optional metadata tags.
-    priority: int
-        Scheduling priority (lower = more urgent).
-    requires_async: bool
-        Whether the callable is async.
+    Convention V5 : ``name`` et ``description`` sont optionnels.
+    S'ils ne sont pas fournis, ils sont dérivés de la fonction décorée.
 
     Example
     -------
-    >>> @tool(name="file.read", description="Read a file")
+    >>> @tool(tags=["files"])
     ... def read_file(path: str) -> str:
-    ...     ...
+    ...     \"\"\"Read the file at *path\"\"\"
+    ...     return Path(path).read_text()
     """
     return _make_decorator(CapabilityType.TOOL)(
         name=name,
@@ -321,8 +397,8 @@ def tool(
 
 def infer(
     *,
-    name: str,
-    description: str = "",
+    name: str | None = None,
+    description: str | None = None,
     tags: list[str] | tuple[str, ...] | None = None,
     priority: int = 0,
     requires_async: bool = False,
@@ -333,18 +409,12 @@ def infer(
     delegates to the InferenceEngine (LLM backend). Non-stub functions
     execute directly.
 
-    Parameters are identical to :func:`tool`.
+    Convention V5 : ``name`` et ``description`` sont optionnels.
     """
-    tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
 
     def inner(func: Callable[..., Any]) -> Callable[..., Any]:
-        meta = CapabilityMetadata(
-            name=name,
-            capacity_type=CapabilityType.INFERENCE,
-            description=description,
-            tags=tags_tuple,
-            priority=priority,
-            requires_async=requires_async,
+        meta = _resolve_metadata(
+            func, CapabilityType.INFERENCE, name, description, tags, priority, requires_async
         )
         # Attach metadata directly without functools.wraps to avoid
         # creating a wrapper loop (func.__wrapped__ = func).
@@ -359,15 +429,15 @@ def infer(
 
 def playbook(
     *,
-    name: str,
-    description: str = "",
+    name: str | None = None,
+    description: str | None = None,
     tags: list[str] | tuple[str, ...] | None = None,
     priority: int = 0,
     requires_async: bool = False,
 ) -> Callable[..., Callable[..., Any]]:
     """Mark a function as a **playbook** capability (multi-step workflow).
 
-    Parameters are identical to :func:`tool`.
+    Convention V5 : ``name`` et ``description`` sont optionnels.
     """
     return _make_decorator(CapabilityType.PLAYBOOK)(
         name=name,
@@ -380,8 +450,8 @@ def playbook(
 
 def planner(
     *,
-    name: str,
-    description: str = "",
+    name: str | None = None,
+    description: str | None = None,
     tags: list[str] | tuple[str, ...] | None = None,
     priority: int = 0,
     requires_async: bool = False,
@@ -392,18 +462,12 @@ def planner(
     delegates to the InferenceEngine (LLM backend). Non-stub functions
     execute directly.
 
-    Parameters are identical to :func:`tool`.
+    Convention V5 : ``name`` et ``description`` sont optionnels.
     """
-    tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
 
     def inner(func: Callable[..., Any]) -> Callable[..., Any]:
-        meta = CapabilityMetadata(
-            name=name,
-            capacity_type=CapabilityType.PLANNER,
-            description=description,
-            tags=tags_tuple,
-            priority=priority,
-            requires_async=requires_async,
+        meta = _resolve_metadata(
+            func, CapabilityType.PLANNER, name, description, tags, priority, requires_async
         )
         # Attach metadata directly without functools.wraps to avoid
         # creating a wrapper loop (func.__wrapped__ = func).
@@ -417,8 +481,8 @@ def planner(
 
 def router(
     *,
-    name: str,
-    description: str = "",
+    name: str | None = None,
+    description: str | None = None,
     tags: list[str] | tuple[str, ...] | None = None,
     priority: int = 0,
     requires_async: bool = False,
@@ -429,18 +493,12 @@ def router(
     delegates to the InferenceEngine (LLM backend). Non-stub functions
     execute directly.
 
-    Parameters are identical to :func:`tool`.
+    Convention V5 : ``name`` et ``description`` sont optionnels.
     """
-    tags_tuple: tuple[str, ...] = tuple(tags) if tags is not None else ()
 
     def inner(func: Callable[..., Any]) -> Callable[..., Any]:
-        meta = CapabilityMetadata(
-            name=name,
-            capacity_type=CapabilityType.ROUTER,
-            description=description,
-            tags=tags_tuple,
-            priority=priority,
-            requires_async=requires_async,
+        meta = _resolve_metadata(
+            func, CapabilityType.ROUTER, name, description, tags, priority, requires_async
         )
         # Attach metadata directly without functools.wraps to avoid
         # creating a wrapper loop (func.__wrapped__ = func).
