@@ -1,137 +1,141 @@
-<p align="center">
-  <img src="docs/logo.png" alt="OpenHosta Logo" width="180"/>
-</p>
+# OpenHosta — V5
 
-<h1 align="center">OpenHosta</h1>
-
-<p align="center">
-  <strong>The semantic layer for Python.</strong><br/>
-  <em>Write what you mean. Python does the rest.</em>
-</p>
-
-<p align="center">
-  <a href="https://pypi.org/project/OpenHosta/"><img src="https://img.shields.io/pypi/v/OpenHosta?color=blue" alt="PyPI Version"/></a>
-  <a href="https://pypi.org/project/OpenHosta/"><img src="https://img.shields.io/pypi/pyversions/OpenHosta" alt="Python Versions"/></a>
-  <a href="https://github.com/hand-e-fr/OpenHosta/blob/main/LICENSE"><img src="https://img.shields.io/github/license/hand-e-fr/OpenHosta" alt="License"/></a>
-  <a href="https://github.com/hand-e-fr/OpenHosta/actions/workflows/quality_check.yml"><img src="https://github.com/hand-e-fr/OpenHosta/actions/workflows/quality_check.yml/badge.svg" alt="CI Status"/></a>
-</p>
+**Semantic layer for Python. Write what you mean. Guard types. Deploy agents.**
 
 ---
 
-OpenHosta integrates Large Language Models directly into Python as native functions. Define a function with type hints and a docstring — OpenHosta uses AI to implement it. No DSL, no wrappers, just Python.
-
-```python
-from OpenHosta import emulate
-
-def translate(text: str, language: str) -> str:
-    """Translates the text into the specified language."""
-    return emulate()
-
-print(translate("Hello World!", "French"))
-# 'Bonjour le monde !'
-```
-
-OpenHosta also enables **semantic testing** — evaluate conditions that require cultural knowledge or fuzzy logic, something traditional `assert` statements can never do:
-
-```python
-from OpenHosta import test
-
-sentence = "You are an nice person."
-
-if test(f"this contains an insult: {sentence}"):
-    print("The sentence is considered an insult.")
-else:
-    print("The sentence is not considered an insult.")
-# The sentence is not considered an insult.
-```
-
-## Why OpenHosta?
-
-- **Zero DSL** — Pure Python syntax. Your functions stay readable, testable, and IDE-friendly.
-- **Type-safe** — Guarded types validate LLM output against your annotations (`int`, `dict`, `Enum`, `Pydantic`, `Callable`…).
-- **Model-agnostic** — Works with OpenAI, Ollama, Azure, vLLM — any OpenAI-compatible endpoint.
-- **Runs offline** — Full local execution with [Ollama](https://ollama.com/). Your data stays private.
-- **Production-ready** — Uncertainty tracking, cost tracking, audit mode, and async support built-in.
+OpenHosta V5 introduces two core primitives: **Guarded Types** — first-class Python types with built-in validation, uncertainty tracking, and tolerance — and an **Agent Runtime** — a capability-driven engine for building, orchestrating, and deploying AI agents with roles, healing, streaming, and audit trails.
 
 ## Installation
 
+OpenHosta V5 is currently a prototype under active development.
+
 ```sh
-pip install OpenHosta
+pip install git+https://github.com/hand-e-fr/OpenHosta.git@dev_version_5
 ```
 
-> We recommend using a virtual environment (`python -m venv .venv`).
-> See the full [installation guide](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/installation.md) for local model setup, optional dependencies, and troubleshooting.
+Or clone and install locally:
 
-## Quick Start
+```sh
+git clone https://github.com/hand-e-fr/OpenHosta.git
+cd OpenHosta
+git checkout dev_version_5
+pip install -e ".[tests]"
+```
 
-### Option A: Local Execution (Ollama)
+## Guarded Types
 
-Ensure you have [Ollama installed](https://ollama.com/) and run `ollama run qwen3.5:4b` in your terminal.
+Guarded types wrap Python values with automatic validation, tolerance-aware comparisons, and metadata tracking. Every value can be queried for its confidence level, origin, and validation history.
 
 ```python
-from OpenHosta import emulate, OpenAICompatibleModel, config
+from openhosta import guard, unguard
 
-# 1. Point OpenHosta to your local Ollama instance
-local_model = OpenAICompatibleModel(
-    model_name="qwen3.5:4b",
-    base_url="http://localhost:11434/v1",
-    api_key="none"  # Ollama does not require a key
-)
-config.DefaultModel = local_model
+# Guard a value — validate and wrap with metadata
+result = guard("42", int)
+# result: GuardedInt with value=42, confidence=1.0
 
-# 2. Define and call your function
-def translate(text: str, language: str) -> str:
-    """Translates the text into the specified language."""
-    return emulate()
+# Access the raw value
+raw = unguard(result)
+# raw: 42
 
-print(translate("Hello World!", "French"))
-# 'Bonjour le monde !'
+# Guarded types support collections, enums, unions, dataclasses, callables…
+from openhosta.guarded import GuardedList, GuardedDict, GuardedEnum, GuardedUnion
+
+items = GuardedList[str]([a, b, c])
+mapping = GuardedDict[str, int]({x: 1, y: 2})
 ```
 
-### Option B: Remote API (OpenAI)
+### Coverage
 
-Create a `.env` file in your project directory:
+The guarded types module implements the full specification CR-01 through CR-09:
 
-```env
-OPENHOSTA_DEFAULT_MODEL_NAME="gpt-4.1"
-OPENHOSTA_DEFAULT_MODEL_API_KEY="your-api-key-here"
-```
+| Criterion | Description |
+|-----------|-------------|
+| CR-01 | Scalar guarded types (int, float, str, bytes, complex, bool, None, any) |
+| CR-02 | Collection guarded types (list, dict, set, tuple) |
+| CR-03 | Enum and literal guarded types |
+| CR-04 | Union guarded types with automatic dispatch |
+| CR-05 | Callable guarded types with signature validation |
+| CR-06 | Dataclass guarded types with field-level guards |
+| CR-07 | Tolerance-aware comparisons and uncertainty levels |
+| CR-08 | Type resolution and metadata extraction |
+| CR-09 | Proxy wrappers and transparent value access |
+
+## Agent Runtime
+
+The agent runtime provides a capability-driven architecture for building agents that can plan, execute, heal, and stream results.
+
+### Quick Example
 
 ```python
-from OpenHosta import emulate
+from openhosta import AgentEngine, AgentSession, tool
 
-def translate(text: str, language: str) -> str:
-    """Translates the text into the specified language."""
-    return emulate()
+# 1. Create an engine and session
+engine = AgentEngine()
+session = AgentSession(engine)
 
-print(translate("Hello World!", "French"))
-# 'Bonjour le monde !'
+# 2. Register a capability
+@tool(name="search", description="Search the knowledge base")
+def search_knowledge(query: str) -> str:
+    """Search and return relevant results for the given query."""
+    ...
+
+session.register(search_knowledge)
+
+# 3. Run a task
+result = session.run("Find information about Python type hints")
+# Returns a structured result with execution traces, confidence, and streaming events
 ```
 
-## What Can You Do?
+### Features
 
 | Feature | Description |
 |---------|-------------|
-| [`emulate`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | AI-implemented functions from docstrings |
-| [`emulate_async`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Non-blocking async variant for concurrency |
-| [`emulate_variants`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Streaming results via lazy generators |
-| [`closure`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Semantic lambda functions |
-| [`test`](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/core_functions.md) | Fuzzy logic / semantic boolean tests |
-| [Types & Pydantic](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/types_and_pydantic.md) | `int`, `dict`, `Enum`, `dataclass`, `Pydantic`, `Callable`… |
-| [Safe Context](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/safe_context_and_uncertainty.md) | Uncertainty tracking & error handling |
-| [Image input](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/examples/ocr_local_ollama.md) | Pass `PIL.Image` directly to functions |
+| **Capabilities** | First-class registration of tools, routers, planners, playbooks, and inferrers |
+| **Roles & Authority** | Principal-based access control with role hierarchies |
+| **Healing** | Automatic recovery hooks when a capability fails or returns invalid data |
+| **Streaming** | Real-time event streams for task progress, intermediate results, and diagnostics |
+| **Traces** | Full execution traces: interactions, workspace activity, and guard metadata per turn |
+| **Task Lists** | Structured step-by-step task planning with per-step status tracking |
+| **Downstream** | Dependency graphs for agent-to-agent communication and result passing |
+| **Session API** | Isolated agent sessions with their own capability registries and state |
 
-📖 **[Full Documentation](https://github.com/hand-e-fr/OpenHosta/blob/main/docs/doc.md)** · 📝 **[Changelog](https://github.com/hand-e-fr/OpenHosta/blob/main/CHANGELOG.md)** · 🧪 **[Examples](https://github.com/hand-e-fr/OpenHosta/tree/main/tests/)**
+## Architecture
+
+```
+openhosta/
+├── guarded/          # Guarded types — CR-01 to CR-09
+│   ├── api/          # guard(), unguard() entry points
+│   ├── primitives/   # GuardConfig, GuardedPrimitive, UncertaintyLevel
+│   ├── scalars/      # GuardedInt, GuardedFloat, GuardedUtf8, …
+│   ├── collections/  # GuardedList, GuardedDict, GuardedSet, GuardedTuple
+│   ├── classes/      # GuardedEnum, guarded_dataclass
+│   ├── literals/     # GuardedLiteral, guarded_literal
+│   ├── unions/       # GuardedUnion, guarded_union
+│   ├── callables/    # GuardedCallable
+│   ├── resolver/     # Type resolution and metadata extraction
+│   └── wrapper/      # Transparent proxy wrappers
+└── agent/            # Agent runtime
+    ├── engine/       # AgentEngine — main orchestrator
+    ├── session/      # AgentSession — isolated execution context
+    ├── capability/   # Capability registration and metadata
+    ├── dispatch/     # CapabilityDispatcher — routing and execution
+    ├── roles/        # Principal, Roles, Authority
+    ├── healing/      # Healer, HealingHook, automatic recovery
+    ├── events/       # EventStream, EventType — real-time streaming
+    ├── traces/       # ExecutionTrace, InteractionTrace, WorkspaceActivity
+    ├── tasklist/     # TaskList, TaskStep, step-level status
+    ├── downstream/   # AgentGraph, dependency management
+    └── status/       # AgentStatus — lifecycle states
+```
 
 ## Contributing
 
-We warmly welcome contributions! Please refer to our [Contribution Guide](https://github.com/hand-e-fr/OpenHosta/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/hand-e-fr/OpenHosta/blob/main/CODE_OF_CONDUCT.md).
-
-Browse existing [issues](https://github.com/hand-e-fr/OpenHosta/issues) to find contribution ideas.
+We warmly welcome contributions. Browse existing issues to find contribution ideas.
 
 ## License
 
-MIT License — see [LICENSE](https://github.com/hand-e-fr/OpenHosta/blob/main/LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Authors
 
@@ -139,9 +143,3 @@ MIT License — see [LICENSE](https://github.com/hand-e-fr/OpenHosta/blob/main/L
 - **William Jolivet** — DevOps, SysAdmin
 - **Léandre Ramos** — AI Developer
 - **Merlin Devillard** — UX Designer, Product Owner
-
-GitHub: https://github.com/hand-e-fr/OpenHosta
-
----
-
-**The future of development is human.** — The OpenHosta Team

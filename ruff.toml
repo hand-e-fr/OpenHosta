@@ -7,11 +7,3 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C90"]
 
 [lint.isort]
 known-first-party = ["openhosta"]
-
-# V4 guarded/ module: heavy metaprogramming with intentional patterns
-[lint.per-file-ignores]
-"src/openhosta/guarded/*.py" = ["C901", "E501", "E402", "E721"]
-"src/openhosta/models/*.py" = ["N802", "N803", "N806"]
-"src/openhosta/core/*.py" = ["N802", "N803", "N806"]
-"src/openhosta/semantics/*.py" = ["N802", "N803", "N806"]
-"src/openhosta/exec/*.py" = ["N802", "N803", "N806"]
