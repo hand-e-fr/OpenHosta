@@ -157,9 +157,17 @@ class InferenceResult:
 def call_backend(
     prompt: str,
     backend_model: Any,
+    headers: dict[str, str] | None = None,
+    body: dict[str, Any] | None = None,
     model_params: dict[str, Any] | None = None,
+    timeout: int = 120,
 ) -> tuple[str, dict]:
     """Call an OpenAI-compatible backend and return the response text.
+
+    Priority chain (lowest → highest):
+      1. call_backend defaults (code level)
+      2. BackendModel.__init__ (headers, body, model_params, timeout)
+      3. @model.infer / direct call (headers, body, model_params, timeout)
 
     Parameters
     ----------
@@ -167,8 +175,14 @@ def call_backend(
         The prompt to send.
     backend_model: BackendModel
         The backend configuration.
+    headers: dict[str, str] | None
+        Override headers from @model.infer / call-time (highest priority).
+    body: dict[str, Any] | None
+        Override body fields from @model.infer / call-time (highest priority).
     model_params: dict[str, Any] | None
-        Optional model parameters (temperature, max_tokens, etc.)
+        Override model params from @model.infer / call-time (highest priority).
+    timeout: int
+        Request timeout in seconds.
 
     Returns
     -------
@@ -182,36 +196,60 @@ def call_backend(
     """
     import json as _json
 
-    default_params = {
+    # --- Merge model params: defaults < BackendModel < infer/call ---
+    merged_params: dict[str, Any] = {
         "temperature": 0.1,
         "max_tokens": 4096,
     }
+    bp = getattr(backend_model, "model_params", None)
+    if bp:
+        merged_params.update(bp)
     if model_params:
-        default_params.update(model_params)
+        merged_params.update(model_params)
 
-    payload = {
+    # --- Merge body: defaults < BackendModel < infer/call ---
+    payload: dict[str, Any] = {
         "model": backend_model.model_name,
         "messages": [
             {"role": "system", "content": "You are a precise function executor. Return ONLY the result, no explanations."},
             {"role": "user", "content": prompt},
         ],
-        **default_params,
+        **merged_params,
     }
+    bb = getattr(backend_model, "body", None)
+    if bb:
+        payload.update(bb)
+    if body:
+        payload.update(body)
+
+    # --- Merge timeout: code default < BackendModel < infer/call ---
+    bt = getattr(backend_model, "timeout", 120)
+    if timeout != 120:
+        bt = timeout
 
     url = backend_model.base_url.rstrip("/") + "/chat/completions"
+
+    # --- Merge headers: defaults < BackendModel < infer/call ---
+    req_headers: dict[str, str] = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {backend_model.api_key}" if backend_model.api_key else "",
+        "User-Agent": "openhosta/5.0",
+    }
+    bh = getattr(backend_model, "headers", None)
+    if bh:
+        req_headers.update(bh)
+    if headers:
+        req_headers.update(headers)
 
     req = urllib.request.Request(
         url,
         data=_json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {backend_model.api_key}" if backend_model.api_key else "",
-        },
+        headers=req_headers,
         method="POST",
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=bt) as resp:
             data = _json.loads(resp.read().decode("utf-8"))
             content = data["choices"][0]["message"]["content"]
             usage = data.get("usage", {})
@@ -328,12 +366,24 @@ def execute_inference(
     """
     start_time = time.time()
 
+    # Extract inference-override kwargs (__ prefix to avoid collision with func params)
+    infer_headers: dict[str, str] = kwargs.pop("__infer_headers__", {})
+    infer_body: dict[str, Any] = kwargs.pop("__infer_body__", {})
+    infer_model_params: dict[str, Any] = kwargs.pop("__infer_model_params__", {})
+    infer_timeout: int = kwargs.pop("__infer_timeout__", 120)
+
     try:
         # Step 1: Build prompt
         prompt = build_infer_prompt(func, capability_meta, *args, **kwargs)
 
         # Step 2: Call backend
-        raw_response, usage = call_backend(prompt, backend_model)
+        raw_response, usage = call_backend(
+            prompt, backend_model,
+            headers=infer_headers,
+            body=infer_body,
+            model_params=infer_model_params,
+            timeout=infer_timeout,
+        )
 
         # Step 3: Parse with guarded types
         sig = inspect.signature(func)
