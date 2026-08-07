@@ -1,24 +1,16 @@
 #!/usr/bin/env python3
 """OpenHosta v5 — Exemples progressifs avec @model.infer"""
 
-import sys
-sys.path.insert(0, "/home/ebatt/hand-e/hand-e-lab-2026/prototypes/OpenHosta-v5/src")
-
-from openhosta import BackendModel
-
-# 1. Backend commun
-model = BackendModel(
-    provider="openai_compatible",
-    model_name="Qwen3.6-27B-AWQ-INT4",
-    base_url="http://127.0.0.1:8000/v1",
-    api_key="none",
-)
+# from models import aikit as model
+from models import rtx4000 as model
 
 # 2. Stub de traduction
 @model.infer(tags=["lang"])
 def traduire_fr_en(texte: str) -> str:
     """Traduit le texte du français vers l'anglais en préservant le sens et le ton."""
     ...
+
+traduire_fr_en("bonjour")
 
 # 3. Stub de résumé
 @model.infer(tags=["nlp", "summarize"])
