@@ -30,3 +30,5 @@ final_capabilities.yaml
 logs/
 .supported_providers.yaml
 scratch/*
+# Fix case-sensitive pattern
+src/openhosta.egg-info
