@@ -38,6 +38,9 @@ model = BackendModel(
 class AssistantAgent(Agent):
     """Agent with a virtual body of capabilities."""
 
+    def __init__():
+        self.userdata=None
+
     # LLM-powered translation — stub bound to the model
     @model.infer(tags=["lang"])
     def translate(self, texte: str) -> str:
@@ -52,11 +55,22 @@ class AssistantAgent(Agent):
         nums = re.findall(r"\d+", chiffres)
         return str(sum(int(n) for n in nums))
 
+    @tool()
+    def set_user_data(new_user_data:UserData) -> bool:
+        self.userdata=new_user_data
+
     # LLM-powered router — stub bound to the model
     @router(tags=["dispatch"], priority=-10)
     def decide_route(self, msg: str) -> str:
         """Route to 'route:lang' for translation or 'route:math' for calculation."""
         ...
+
+@dataclass
+class UserData:
+    name: str
+    age: int
+
+userdata = UserData()
 
 agent = AssistantAgent()
 agent.recruit()

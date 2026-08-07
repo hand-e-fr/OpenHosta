@@ -11,14 +11,17 @@ This module is the core delegation mechanism:
 from __future__ import annotations
 
 import ast
+import dataclasses
 import inspect
 import json
+import os
 import textwrap
 import time
+import types
 import urllib.request
 import urllib.error
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, get_origin, get_args, get_type_hints
 
 from openhosta.guarded.api import guard
 from openhosta.guarded.primitives import GuardedPrimitive
@@ -29,6 +32,94 @@ from openhosta.agent.capability import CapabilityMetadata
 # --------------------------------------------------------------------------- #
 # Prompt building
 # --------------------------------------------------------------------------- #
+
+
+# --------------------------------------------------------------------------- #
+# Type schema extraction for prompts
+# --------------------------------------------------------------------------- #
+
+
+def _is_builtin_type(t: Any) -> bool:
+    """Return True if *t* is a built-in type or a simple typed collection."""
+    builtin = {int, str, float, bool, bytes, bytearray, type(None), complex, range, memoryview}
+    if t in builtin:
+        return True
+    origin = get_origin(t)
+    if origin is None:
+        # Not subscripted — check if it's a class with a __name__ in builtins
+        if isinstance(t, type):
+            return t.__module__ == "builtins"
+        return False
+    # Subscripted generic — recurse on args
+    args = get_args(t)
+    return all(_is_builtin_type(a) for a in args) if args else False
+
+
+def _collect_custom_types(annotation: Any) -> list[Any]:
+    """Recursively collect non-builtin types from *annotation*.
+
+    Returns deduplicated list of custom dataclass/enum type objects.
+    """
+    from enum import Enum
+
+    results: list[Any] = []
+    seen: set[str] = set()
+
+    def _walk(t: Any) -> None:
+        key = getattr(t, "__qualname__", getattr(t, "__name__", str(t)))
+        if key in seen:
+            return
+        origin = get_origin(t)
+        if origin is None:
+            # Leaf type — include if it's a custom class (dataclass, enum, etc.) and not builtin
+            if isinstance(t, type) and not _is_builtin_type(t):
+                if dataclasses.is_dataclass(t) or issubclass(t, Enum):
+                    seen.add(key)
+                    results.append(t)
+            return
+        # Subscripted — recurse on args
+        for arg in get_args(t):
+            _walk(arg)
+
+    _walk(annotation)
+    return results
+
+
+def _build_type_schema_block(annotation: Any, style: str = "python") -> str | None:
+    """Build a schema text block for non-builtin types in *annotation*.
+
+    Parameters
+    ----------
+    annotation: Any
+        The return type annotation (e.g. ``list[Node]``, ``dict[str, Edge]``).
+    style: str
+        ``"json"`` produces JSON Schema. ``"python"`` produces Python source
+        code (``@dataclass``, ``enum``).
+
+    Returns None when all types are builtins (nothing to describe).
+    """
+    from openhosta.guarded.wrapper import guarded_to_json, guarded_to_python
+
+    custom = _collect_custom_types(annotation)
+    if not custom:
+        return None
+
+    lines: list[str] = ["**Custom types:**"]
+    if style == "python":
+        for cls in custom:
+            py_source = guarded_to_python(cls)
+            lines.append(f"- `{cls.__name__}`:")
+            lines.append("```python")
+            lines.append(py_source)
+            lines.append("```")
+    else:
+        for cls in custom:
+            schema = guarded_to_json(cls)
+            lines.append(f"- `{cls.__name__}`:")
+            lines.append("```json")
+            lines.append(json.dumps(schema, indent=2, ensure_ascii=False))
+            lines.append("```")
+    return "\n".join(lines)
 
 
 def _format_type_hint(annotation: Any) -> str:
@@ -46,6 +137,7 @@ def build_infer_prompt(
     func: Any,
     capability_meta: CapabilityMetadata,
     *args: Any,
+    schema_style: str = "python",
     **kwargs: Any,
 ) -> str:
     """Build a structured prompt from a decorated function.
@@ -86,8 +178,14 @@ def build_infer_prompt(
         else:
             params_desc.append(f"- **{name}** (`{type_hint}`): *[not provided]*")
 
-    # Build return type description
+    # Build return type description - resolve string annotations (PEP 563)
     return_annotation = sig.return_annotation
+    try:
+        resolved_hints = get_type_hints(func)
+        return_annotation = resolved_hints.get("return", return_annotation)
+    except (NameError, AttributeError, TypeError):
+        pass  # Forward ref unresolvable; fall back to raw annotation
+
     if return_annotation is inspect.Signature.empty:
         return_desc = "str"
     else:
@@ -117,8 +215,18 @@ def build_infer_prompt(
     prompt_lines.extend([
         "",
         "**Return type:** " + return_desc,
+    ])
+
+    # Inject schema for custom types in the return annotation (use resolved annotation)
+    if return_annotation is not inspect.Signature.empty:
+        schema_block = _build_type_schema_block(return_annotation, style=schema_style)
+        if schema_block:
+            prompt_lines.append("")
+            prompt_lines.append(schema_block)
+
+    prompt_lines.extend([
         "",
-        "Execute this function contract. Return ONLY the result in the specified format.",
+        "Execute this function contract. Return ONLY the result as valid JSON matching the return type schema.",
         "Return no explanations, no markdown code blocks, and no wrapper text.",
     ])
 
@@ -371,10 +479,14 @@ def execute_inference(
     infer_body: dict[str, Any] = kwargs.pop("__infer_body__", {})
     infer_model_params: dict[str, Any] = kwargs.pop("__infer_model_params__", {})
     infer_timeout: int = kwargs.pop("__infer_timeout__", 120)
+    infer_schema_style: str = kwargs.pop("__infer_schema_style__", "python")
 
     try:
         # Step 1: Build prompt
-        prompt = build_infer_prompt(func, capability_meta, *args, **kwargs)
+        prompt = build_infer_prompt(
+            func, capability_meta, *args, **kwargs,
+            schema_style=infer_schema_style,
+        )
 
         # Step 2: Call backend
         raw_response, usage = call_backend(
@@ -384,6 +496,18 @@ def execute_inference(
             model_params=infer_model_params,
             timeout=infer_timeout,
         )
+
+        # DEBUG: uncomment to see full prompt + response
+        # if os.environ.get("OH_DEBUG"):
+        #     print("\n" + "=" * 80)
+        #     print(f"[OH DEBUG] func={capability_meta.name}")
+        #     print("=" * 80)
+        #     print(prompt)
+        #     print("-" * 80)
+        #     print(f"[OH DEBUG] raw_response ({len(raw_response)} chars):")
+        #     print("-" * 80)
+        #     print(raw_response)
+        #     print("=" * 80 + "\n")
 
         # Step 3: Parse with guarded types
         sig = inspect.signature(func)

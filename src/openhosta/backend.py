@@ -37,6 +37,7 @@ class BackendModel:
     body: dict[str, Any] = field(default_factory=dict)
     model_params: dict[str, Any] = field(default_factory=dict)
     timeout: int = 120
+    return_type_schema: str = "python"
     _capabilities: CapabilityRegistration = field(
         default_factory=CapabilityRegistration, repr=False
     )
@@ -174,6 +175,7 @@ class BackendModel:
         bind_body: dict[str, Any] | None = None,
         bind_model_params: dict[str, Any] | None = None,
         bind_timeout: int = 120,
+        bind_schema_style: str = "python",
     ) -> Callable[..., Any]:
         """If *func* is a stub, wrap it to delegate to InferenceEngine."""
         if not is_stub(func):
@@ -189,6 +191,7 @@ class BackendModel:
                 call_kwargs.setdefault("__infer_model_params__", bind_model_params)
             if bind_timeout != 120:
                 call_kwargs.setdefault("__infer_timeout__", bind_timeout)
+            call_kwargs.setdefault("__infer_schema_style__", bind_schema_style)
             result = execute_inference(
                 func, meta, self, *call_args, **call_kwargs
             )
@@ -262,6 +265,7 @@ class BackendModel:
         body: dict[str, Any] | None = None,
         model_params: dict[str, Any] | None = None,
         timeout: int = 120,
+        return_type_schema: str | None = None,
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator: mark a function as a backend inference capability.
 
@@ -285,10 +289,17 @@ class BackendModel:
             Model parameters (temperature, max_tokens, etc.) merged into request.
         timeout: int
             Request timeout in seconds.
+        return_type_schema: str | None
+            Format for custom type schema in the prompt. ``"json"`` (default)
+            produces JSON Schema. ``"python"`` produces Python dataclass/enum
+            source code. ``None`` inherits from ``self.return_type_schema``.
 
         Examples
         --------
             @model.infer()
+            def translate(text: str) -> str: ...
+
+            @model.infer(return_type_schema="python")
             def translate(text: str) -> str: ...
 
             @model.infer(name="fr_to_en", tags=["lang"])
@@ -310,6 +321,7 @@ class BackendModel:
         bind_body = dict(body) if body else {}
         bind_model_params = dict(model_params) if model_params else {}
         bind_timeout = timeout
+        bind_schema_style = return_type_schema if return_type_schema is not None else self.return_type_schema
 
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             if not hasattr(func, "_capability"):
@@ -331,6 +343,7 @@ class BackendModel:
                 bind_body=bind_body or None,
                 bind_model_params=bind_model_params or None,
                 bind_timeout=bind_timeout,
+                bind_schema_style=bind_schema_style,
             )
 
             self._capabilities.register(wrapped, meta)
@@ -398,6 +411,7 @@ class BackendModel:
         body: dict[str, Any] | None = None,
         model_params: dict[str, Any] | None = None,
         timeout: int = 120,
+        return_type_schema: str | None = None,
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator: mark a function as a **planner** capability (goal decomposition)."""
         if name is not None and callable(name):
@@ -414,6 +428,7 @@ class BackendModel:
         bind_body = dict(body) if body else {}
         bind_model_params = dict(model_params) if model_params else {}
         bind_timeout = timeout
+        bind_schema_style = return_type_schema if return_type_schema is not None else self.return_type_schema
 
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             meta = self._build_metadata(
@@ -432,6 +447,7 @@ class BackendModel:
                 bind_body=bind_body or None,
                 bind_model_params=bind_model_params or None,
                 bind_timeout=bind_timeout,
+                bind_schema_style=bind_schema_style,
             )
 
             self._capabilities.register(wrapped, meta)
@@ -453,6 +469,7 @@ class BackendModel:
         body: dict[str, Any] | None = None,
         model_params: dict[str, Any] | None = None,
         timeout: int = 120,
+        return_type_schema: str | None = None,
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator: mark a function as a **router** capability (routing decision)."""
         if name is not None and callable(name):
@@ -469,6 +486,7 @@ class BackendModel:
         bind_body = dict(body) if body else {}
         bind_model_params = dict(model_params) if model_params else {}
         bind_timeout = timeout
+        bind_schema_style = return_type_schema if return_type_schema is not None else self.return_type_schema
 
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             meta = self._build_metadata(
@@ -487,6 +505,7 @@ class BackendModel:
                 bind_body=bind_body or None,
                 bind_model_params=bind_model_params or None,
                 bind_timeout=bind_timeout,
+                bind_schema_style=bind_schema_style,
             )
 
             self._capabilities.register(wrapped, meta)

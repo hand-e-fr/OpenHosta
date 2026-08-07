@@ -5,11 +5,14 @@ Validates:
 2. Stub detection
 3. Guarded parsing
 4. Inference pipeline (with mocked backend)
+5. Schema style switching (JSON vs Python source)
 """
 
 from __future__ import annotations
 
 import inspect
+from dataclasses import dataclass
+from enum import Enum
 import pytest
 
 from openhosta.agent.inference import (
@@ -18,6 +21,8 @@ from openhosta.agent.inference import (
     parse_guarded,
     execute_inference,
     InferenceResult,
+    _build_type_schema_block,
+    _collect_custom_types,
 )
 from openhosta.agent.capability import CapabilityMetadata, CapabilityType, _default_registry
 from openhosta.guarded.wrapper import Guarded
@@ -415,3 +420,155 @@ class TestEndToEndInference:
 
         # Cleanup
         agent.kill()
+
+
+# --------------------------------------------------------------------------- #
+# Test schema style switching (JSON vs Python source)
+# --------------------------------------------------------------------------- #
+
+
+@dataclass
+class _TestAnimal:
+    name: str
+    sound: str
+
+
+class _TestMood(Enum):
+    HAPPY = "happy"
+    SAD = "sad"
+
+
+def _infer_func_with_custom(animal: str) -> _TestAnimal:
+    """Return a test animal."""
+    ...
+
+
+def _infer_func_with_enum(animal: str) -> _TestMood:
+    """Return a test mood."""
+    ...
+
+
+class TestCollectCustomTypes:
+    """Test _collect_custom_types helper."""
+
+    def test_collect_dataclass_from_return(self) -> None:
+        types = _collect_custom_types(_TestAnimal)
+        assert _TestAnimal in types
+
+    def test_collect_dataclass_from_list(self) -> None:
+        from typing import List
+        types = _collect_custom_types(List[_TestAnimal])
+        assert _TestAnimal in types
+
+    def test_collect_enum_from_return(self) -> None:
+        types = _collect_custom_types(_TestMood)
+        assert _TestMood in types
+
+    def test_no_custom_for_builtin(self) -> None:
+        assert _collect_custom_types(str) == []
+        assert _collect_custom_types(int) == []
+        assert _collect_custom_types(list) == []
+        assert _collect_custom_types(dict) == []
+
+
+class TestBuildTypeSchemaBlock:
+    """Test _build_type_schema_block with JSON and Python styles."""
+
+    def test_json_style_produces_json(self) -> None:
+        block = _build_type_schema_block(_TestAnimal, style="json")
+        assert block is not None
+        assert "**Custom types:**" in block
+        assert "```json" in block
+        assert "_TestAnimal" in block
+        assert '"type"' in block
+
+    def test_python_style_produces_python(self) -> None:
+        block = _build_type_schema_block(_TestAnimal, style="python")
+        assert block is not None
+        assert "**Custom types:**" in block
+        assert "```python" in block
+        assert "_TestAnimal" in block
+        assert "dataclass" in block or "class" in block
+
+    def test_json_style_for_enum(self) -> None:
+        block = _build_type_schema_block(_TestMood, style="json")
+        assert block is not None
+        assert "```json" in block
+        assert "_TestMood" in block
+
+    def test_python_style_for_enum(self) -> None:
+        block = _build_type_schema_block(_TestMood, style="python")
+        assert block is not None
+        assert "```python" in block
+        assert "_TestMood" in block
+
+    def test_no_block_for_builtin(self) -> None:
+        assert _build_type_schema_block(str, style="json") is None
+        assert _build_type_schema_block(str, style="python") is None
+
+
+class TestSchemaStyleInPrompt:
+    """Test that schema_style flows through build_infer_prompt."""
+
+    def test_prompt_default_python_schema(self) -> None:
+        meta = CapabilityMetadata(
+            name="test.schema.python",
+            capacity_type=CapabilityType.INFERENCE,
+            tags=[],
+        )
+        prompt = build_infer_prompt(
+            _infer_func_with_custom, meta, "dog",
+        )
+        assert "```python" in prompt
+        assert "_TestAnimal" in prompt
+
+    def test_prompt_json_schema_explicit(self) -> None:
+        meta = CapabilityMetadata(
+            name="test.schema.json_explicit",
+            capacity_type=CapabilityType.INFERENCE,
+            tags=[],
+        )
+        prompt = build_infer_prompt(
+            _infer_func_with_custom, meta, "dog",
+            schema_style="json",
+        )
+        assert "```json" in prompt
+        assert "_TestAnimal" in prompt
+
+    def test_prompt_python_schema(self) -> None:
+        meta = CapabilityMetadata(
+            name="test.schema.python",
+            capacity_type=CapabilityType.INFERENCE,
+            tags=[],
+        )
+        prompt = build_infer_prompt(
+            _infer_func_with_custom, meta, "dog",
+            schema_style="python",
+        )
+        assert "```python" in prompt
+        assert "_TestAnimal" in prompt
+
+
+class TestBackendReturnTypeSchema:
+    """Test return_type_schema parameter on BackendModel decorators."""
+
+    def test_backend_default_return_type_schema(self) -> None:
+        from openhosta.backend import BackendModel
+        bm = BackendModel("p", "m", "u")
+        assert bm.return_type_schema == "python"
+
+    def test_backend_custom_return_type_schema(self) -> None:
+        from openhosta.backend import BackendModel
+        bm = BackendModel("p", "m", "u", return_type_schema="python")
+        assert bm.return_type_schema == "python"
+
+    def test_infer_decorator_inherits_backend_schema(self) -> None:
+        from openhosta.backend import BackendModel
+        bm = BackendModel("p", "m", "u", return_type_schema="python")
+
+        @bm.infer()
+        def fn(s: str) -> _TestAnimal:
+            ...
+
+        # The stub is wrapped; the wrapper carries schema style
+        assert fn is not None

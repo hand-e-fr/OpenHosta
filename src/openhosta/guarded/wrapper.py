@@ -13,7 +13,7 @@ import dataclasses
 import inspect
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any, TypeVar, get_origin, get_args, Union as TypingUnion
 
 T = TypeVar("T")
 
@@ -505,10 +505,7 @@ def guarded_to_json(obj: Any) -> dict:
         required: list[str] = []
         for f in dataclasses.fields(obj):
             ann = f.type
-            if isinstance(ann, type):
-                properties[f.name] = guarded_to_json(ann)
-            else:
-                properties[f.name] = {"type": _json_type_name(ann)}
+            properties[f.name] = guarded_to_json(ann)
             required.append(f.name)
         doc = (obj.__doc__ or "").strip().split("\n")[0]
         result: dict[str, Any] = {
@@ -520,6 +517,50 @@ def guarded_to_json(obj: Any) -> dict:
         if doc:
             result["description"] = doc
         return result
+
+    # Subscripted generics: list[T], dict[K, V], set[T], tuple[T, ...], Union / Optional
+    origin = get_origin(obj)
+    if origin is not None:
+        args = get_args(obj)
+
+        if origin is list or origin is list:
+            inner = guarded_to_json(args[0]) if args else {"type": "string"}
+            return {"type": "array", "items": inner}
+
+        if origin is dict or origin is dict:
+            if args and len(args) == 2:
+                return {
+                    "type": "object",
+                    "additionalProperties": guarded_to_json(args[1]),
+                }
+            return {"type": "object"}
+
+        if origin is set or origin is set:
+            inner = guarded_to_json(args[0]) if args else {"type": "string"}
+            return {"type": "array", "items": inner}
+
+        if origin is tuple or origin is tuple:
+            if args:
+                # Filter out Ellipsis for variable-length tuples
+                if Ellipsis in args:
+                    inner = guarded_to_json(args[0])
+                    return {"type": "array", "items": inner}
+                items = [guarded_to_json(a) for a in args]
+                return {"type": "array", "prefixItems": items}
+            return {"type": "array"}
+
+        # Union / Optional — describe as any-of
+        import types
+
+        if origin is TypingUnion or (hasattr(types, "UnionType") and origin is types.UnionType):
+            non_none = [a for a in args if a is not type(None)]
+            has_none = any(a is type(None) for a in args)
+            options = [guarded_to_json(a) for a in non_none]
+            if len(options) == 1 and has_none:
+                return {**options[0], "nullable": True}
+            if options:
+                return {"anyOf": options}
+            return {"type": "null"}
 
     # Built-in type objects (str, int, float, bool, etc.)
     if isinstance(obj, type):
