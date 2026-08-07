@@ -10,6 +10,7 @@ src/openhosta.egg-info/dependency_links.txt
 src/openhosta.egg-info/requires.txt
 src/openhosta.egg-info/top_level.txt
 src/openhosta/agent/__init__.py
+src/openhosta/agent/_config.py
 src/openhosta/agent/agent.py
 src/openhosta/agent/capability.py
 src/openhosta/agent/dispatch.py
@@ -17,6 +18,7 @@ src/openhosta/agent/downstream.py
 src/openhosta/agent/engine.py
 src/openhosta/agent/events.py
 src/openhosta/agent/healing.py
+src/openhosta/agent/inference.py
 src/openhosta/agent/roles.py
 src/openhosta/agent/session.py
 src/openhosta/agent/status.py

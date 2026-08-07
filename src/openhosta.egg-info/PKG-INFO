@@ -126,33 +126,74 @@ The guarded types module implements the full specification CR-01 through CR-09:
 | CR-08 | Type resolution and metadata extraction |
 | CR-09 | Proxy wrappers and transparent value access |
 
-## Agent Runtime
+## Agent Runtime — Hello World V5
 
-The agent runtime provides a capability-driven architecture for building agents that can plan, execute, heal, and stream results.
+The agent runtime provides a capability-driven architecture for building, orchestrating, and deploying AI agents. The DX centers around three primitives: `Agent`, `BackendModel`, and `@compile()`.
 
-### Quick Example
+### Hello World
 
 ```python
-from openhosta import AgentEngine, AgentSession, tool
+from openhosta import Agent, BackendModel, tool
 
-# 1. Create an engine and session
-engine = AgentEngine()
-session = AgentSession(engine)
+# 1. Define your backend
+backend = BackendModel(
+    provider="openai_compatible",
+    model_name="cyankiwi/Qwen3.6-27B-AWQ-INT4",
+    base_url="http://127.0.0.1:8000/v1",
+    api_key="none",
+)
 
-# 2. Register a capability
-@tool(name="search", description="Search the knowledge base")
-def search_knowledge(query: str) -> str:
-    """Search and return relevant results for the given query."""
-    ...
+# 2. Declare your agent class and compile it against the backend
+@backend.compile()
+class MyAgent(Agent):
+    """A minimal agent with one tool capability."""
+    pass
 
-session.register(search_knowledge)
+# 3. Register a capability
+@tool(name="math.add", description="Add two numbers from a message")
+def add_tool(msg: str) -> str:
+    import re
+    nums = re.findall(r"\d+", msg)
+    return str(sum(int(n) for n in nums))
 
-# 3. Run a task
-result = session.run("Find information about Python type hints")
-# Returns a structured result with execution traces, confidence, and streaming events
+# 4. Lifecycle: recruit -> interact -> free
+agent = MyAgent()
+agent.recruit(quota=4096)         # CONFIGURED → RECRUITED
+result = agent.get("Add 12 and 15")  # Dispatches to @tool (returns "27")
+print(result)                     # 27
+agent.free()                      # RECRUITED → FREED
 ```
 
-### Features
+### Capability Decorators
+
+| Decorator | Purpose |
+|-----------|---------|
+| `@tool`   | Deterministic routine |
+| `@infer`  | LLM-based inference |
+| `@playbook` | Multi-step workflow |
+| `@planner` | Goal decomposition |
+| `@router` | Routing decision |
+
+### Agent Lifecycle
+
+```
+CONFIGURED ── recruit() ──▶ RECRUITED ── free() ──▶ FREED
+                                   │
+                              ── kill() ──▶ KILLED
+```
+
+### Key Classes
+
+| Class | Description |
+|-------|-------------|
+| `Agent` | Héritable agent with lifecycle management |
+| `BackendModel` | LLM backend configuration (`provider`, `model_name`, `base_url`) |
+| `BackendSelector` | Multi-backend resolver with tag-based selection |
+| `Workspace` | Governed filesystem access with path confinement |
+| `CapabilityDispatcher` | Routes messages to registered capabilities |
+| `CapabilityRegistration` | Global singleton registry for all capabilities |
+
+### Full Feature Set
 
 | Feature | Description |
 |---------|-------------|
