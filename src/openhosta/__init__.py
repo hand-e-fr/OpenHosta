@@ -11,10 +11,10 @@ from .guarded.primitives import GuardConfig as GuardedGuardConfig
 from .guarded.wrapper import GuardMetadata, Guarded, guard_info, guarded_to_json, guarded_to_markdown, guarded_to_python
 
 # V5 - Public Agent
-from openhosta.agent.agent import Agent
+from .agent.agent import Agent
 
 # V5 - Agent runtime
-from openhosta.agent import (
+from .agent import (
     AgentEngine,
     AgentSession,
     AgentStatus,
